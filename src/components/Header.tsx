@@ -4,6 +4,8 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../assets/HS2.ico';
 import ModalTrocarSenha from '../components/ModalTrocarSenha';
+import { authService } from '../services/chamadoshsapi';
+import toast from 'react-hot-toast';
 
 
 const Header: React.FC = () => {
@@ -53,9 +55,20 @@ const Header: React.FC = () => {
     };
   }, [menuVisivel]);
 
-  const handleConfirmarSenha = (novaSenha: string) => {
-    console.log('Nova senha:', novaSenha);
-    // 🔹 Aqui você pode adicionar a lógica para atualizar a senha via API
+  const handleConfirmarSenha = async (senhaAtual: string, novaSenha: string) => {
+    try {
+      await authService.alterarSenha({
+        senha_atual: senhaAtual,
+        senha_nova: novaSenha
+      });
+      toast.success('Senha alterada com sucesso!');
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        toast.error('Senha atual incorreta!');
+      } else {
+        toast.error('Erro ao alterar senha. Tente novamente.');
+      }
+    }
   };
 
   const iconBaseClass = 'w-5 h-5 mr-2 transition-colors';

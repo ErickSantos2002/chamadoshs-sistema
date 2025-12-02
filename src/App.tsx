@@ -20,6 +20,10 @@ const App: React.FC = () => {
         <AppRoutes />
         <Toaster
           position="top-right"
+          containerStyle={{
+            top: 80,
+            zIndex: 9999,
+          }}
           toastOptions={{
             duration: 4000,
             style: {
@@ -58,6 +62,10 @@ const App: React.FC = () => {
       </div>
       <Toaster
         position="top-right"
+        containerStyle={{
+          top: 80,
+          zIndex: 9999,
+        }}
         toastOptions={{
           duration: 4000,
           style: {

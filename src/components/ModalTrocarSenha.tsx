@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface ModalTrocarSenhaProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (novaSenha: string) => void;
+  onConfirm: (senhaAtual: string, novaSenha: string) => void;
 }
 
 const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
@@ -11,17 +11,33 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [repitaSenha, setRepitaSenha] = useState('');
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
+    if (!senhaAtual) {
+      alert('Digite sua senha atual!');
+      return;
+    }
+    if (!novaSenha) {
+      alert('Digite a nova senha!');
+      return;
+    }
+    if (novaSenha.length < 6) {
+      alert('A nova senha deve ter no mínimo 6 caracteres!');
+      return;
+    }
     if (novaSenha !== repitaSenha) {
       alert('As senhas não coincidem!');
       return;
     }
-    onConfirm(novaSenha);
+    onConfirm(senhaAtual, novaSenha);
+    setSenhaAtual('');
+    setNovaSenha('');
+    setRepitaSenha('');
     onClose();
   };
 
@@ -44,12 +60,31 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
         <div className="flex flex-col gap-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Senha atual:
+            </label>
+            <input
+              type="password"
+              value={senhaAtual}
+              onChange={(e) => setSenhaAtual(e.target.value)}
+              placeholder="Digite sua senha atual"
+              className="w-full mt-1 px-3 py-2 border rounded-lg
+                         bg-white dark:bg-[#181818]
+                         text-gray-800 dark:text-gray-200
+                         border-gray-300 dark:border-gray-600
+                         focus:outline-none focus:ring-2 focus:ring-blue-500
+                         transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Nova senha:
             </label>
             <input
               type="password"
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
               className="w-full mt-1 px-3 py-2 border rounded-lg
                          bg-white dark:bg-[#181818]
                          text-gray-800 dark:text-gray-200
@@ -67,6 +102,7 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
               type="password"
               value={repitaSenha}
               onChange={(e) => setRepitaSenha(e.target.value)}
+              placeholder="Repita a nova senha"
               className="w-full mt-1 px-3 py-2 border rounded-lg
                          bg-white dark:bg-[#181818]
                          text-gray-800 dark:text-gray-200
