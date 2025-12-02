@@ -32,60 +32,12 @@ const Sidebar: React.FC = () => {
       ),
     },
     {
-      label: 'Patrimônios',
-      to: '/patrimonios',
+      label: 'Chamados',
+      to: '/chamados',
       icon: (isActive: boolean) => (
         <img
-          src="https://img.icons8.com/?size=100&id=f6XnJbAyvoWg&format=png"
-          alt="Patrimônios"
-          className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'} 
-                  dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
-        />
-      ),
-    },
-    {
-      label: 'Transferências',
-      to: '/transferencias',
-      icon: (isActive: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=P1YG1sk94HiB&format=png&color=${getColor(isActive)}`}
-          alt="Transferências"
-          className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
-            dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
-        />
-      ),
-    },
-    {
-      label: 'Baixas',
-      to: '/baixas',
-      icon: (isActive: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=7746&format=png&color=${getColor(isActive)}`}
-          alt="Baixas"
-          className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
-            dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
-        />
-      ),
-    },
-    {
-      label: 'Inventário',
-      to: '/inventarios',
-      icon: (isActive: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=8372&format=png&color=${getColor(isActive)}`}
-          alt="Inventário"
-          className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
-            dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
-        />
-      ),
-    },
-    {
-      label: 'Cadastros',
-      to: '/cadastros',
-      icon: (isActive: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=59718&format=png&color=${getColor(isActive)}`}
-          alt="Cadastros"
+          src={`https://img.icons8.com/?size=100&id=85080&format=png&color=${getColor(isActive)}`}
+          alt="Chamados"
           className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
             dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
         />
@@ -94,11 +46,11 @@ const Sidebar: React.FC = () => {
     ...(user?.role === 'Administrador'
       ? [
           {
-            label: 'Log de Auditoria',
-            to: '/logs',
+            label: 'Cadastros',
+            to: '/cadastros',
             icon: (isActive: boolean) => (
               <img
-                src={`https://img.icons8.com/?size=100&id=2969&format=png&color=${getColor(isActive)}`}
+                src={`https://img.icons8.com/?size=100&id=59718&format=png&color=${getColor(isActive)}`}
                 alt="Cadastros"
                 className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
                   dark:filter dark:brightness-0 dark:invert transition-all duration-200`}

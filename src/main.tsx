@@ -6,15 +6,18 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ChamadosProvider } from './context/ChamadosContext';
 import './styles/index.css'; // Importa o Tailwind e estilos globais
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
       <ThemeProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
+          <ChamadosProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </ChamadosProvider>
         </AuthProvider>
       </ThemeProvider>
   </React.StrictMode>,

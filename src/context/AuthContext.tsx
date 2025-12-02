@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/chamadoshsapi';
+import { getRoleName } from '../utils/roleMapper';
 
 type AuthContextType = {
   user: { id: number; username: string; role: string; setor_id?: number } | null;
@@ -33,10 +34,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (savedToken && savedUser) {
       try {
         const userData = JSON.parse(savedUser);
+        // Se tiver role_id, converte para nome da role
+        const role = userData.role || getRoleName(userData.role_id || 3);
+
         setUser({
           id: userData.id,
           username: userData.nome,
-          role: userData.role,
+          role: role,
           setor_id: userData.setor_id,
         });
         setToken(savedToken);
@@ -66,11 +70,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Busca dados completos do usuário logado
       const userData = await authService.me();
 
+      // Converte role_id para nome da role
+      const roleName = getRoleName(userData.role_id);
+
       // Atualiza state com dados do usuário
       setUser({
         id: user_id,
         username: nome,
-        role: role,
+        role: roleName,
         setor_id: userData.setor_id,
       });
     } catch (err: any) {

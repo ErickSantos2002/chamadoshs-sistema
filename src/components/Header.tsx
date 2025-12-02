@@ -93,76 +93,28 @@ const Header: React.FC = () => {
       ),
     },
     {
-      label: 'Patrimônios',
-      to: '/patrimonios',
+      label: 'Chamados',
+      to: '/chamados',
       icon: (active: boolean) => (
         <img
-          src="https://img.icons8.com/?size=100&id=f6XnJbAyvoWg&format=png"
-          className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'} 
-                      dark:filter dark:brightness-0 dark:invert`}
-          alt="Patrimônios"
-        />
-      ),
-    },
-    {
-      label: 'Transferências',
-      to: '/transferencias',
-      icon: (active: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=P1YG1sk94HiB&format=png&color=${getColor(active, darkMode)}`}
+          src={`https://img.icons8.com/?size=100&id=85080&format=png&color=${getColor(active, darkMode)}`}
           className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}
                       dark:filter dark:brightness-0 dark:invert`}
-          alt="Transferências"
-        />
-      ),
-    },
-    {
-      label: 'Baixas',
-      to: '/baixas',
-      icon: (active: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=7746&format=png&color=${getColor(active, darkMode)}`}
-          className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}
-                      dark:filter dark:brightness-0 dark:invert`}
-          alt="Baixas"
-        />
-      ),
-    },
-    {
-      label: 'Inventário',
-      to: '/inventarios',
-      icon: (active: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=8372&format=png&color=${getColor(active, darkMode)}`}
-          className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}
-                      dark:filter dark:brightness-0 dark:invert`}
-          alt="Inventário"
-        />
-      ),
-    },
-    {
-      label: 'Cadastros',
-      to: '/cadastros',
-      icon: (active: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=59718&format=png&color=${getColor(active, darkMode)}`}
-          className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}
-                      dark:filter dark:brightness-0 dark:invert`}
-          alt="Cadastros"
+          alt="Chamados"
         />
       ),
     },
     ...(user?.role === 'Administrador'
       ? [
           {
-            label: 'Log de Auditoria',
-            to: '/logs',
+            label: 'Cadastros',
+            to: '/cadastros',
             icon: (active: boolean) => (
               <img
-                src={`https://img.icons8.com/?size=100&id=2969&format=png&color=${getColor(active, darkMode)}`}
+                src={`https://img.icons8.com/?size=100&id=59718&format=png&color=${getColor(active, darkMode)}`}
                 className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}
                             dark:filter dark:brightness-0 dark:invert`}
-                alt="Log"
+                alt="Cadastros"
               />
             ),
           },
@@ -200,7 +152,7 @@ const Header: React.FC = () => {
               alt="Logo"
               className="w-6 h-6 transition-transform duration-500 group-hover:rotate-[360deg]"
             />
-            <span>AlertHS</span>
+            <span>ChamadosHS</span>
           </Link>
         </div>
 

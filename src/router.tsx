@@ -4,6 +4,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Lazy loading de páginas para melhor performance
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Chamados = lazy(() => import('./pages/Chamados'));
+const ChamadoDetalhes = lazy(() => import('./pages/ChamadoDetalhes'));
+const NovoChamado = lazy(() => import('./pages/NovoChamado'));
+const CadastrosBasicos = lazy(() => import('./pages/CadastrosBasicos'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -28,6 +32,42 @@ const AppRoutes: React.FC = () => (
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/chamados"
+        element={
+          <ProtectedRoute>
+            <Chamados />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/chamados/novo"
+        element={
+          <ProtectedRoute>
+            <NovoChamado />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/chamados/:id"
+        element={
+          <ProtectedRoute>
+            <ChamadoDetalhes />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/cadastros"
+        element={
+          <ProtectedRoute>
+            <CadastrosBasicos />
           </ProtectedRoute>
         }
       />
