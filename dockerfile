@@ -20,6 +20,10 @@ COPY . .
 # Corrige permissões para Alpine (opcional, mas bom)
 RUN find node_modules/.bin -type f -exec chmod +x {} \;
 
+# Recebe a variável de ambiente do build
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Build do projeto Vite (gera /dist)
 RUN npm run build
 
