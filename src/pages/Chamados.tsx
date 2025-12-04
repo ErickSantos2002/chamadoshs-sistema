@@ -325,18 +325,15 @@ const Chamados: React.FC = () => {
 
           {/* === FECHADO === */}
           <KanbanColumn
-            title="Resolvido"
-            colorDot="bg-[#4ADE80]"
-            badgeColor="bg-[#4ADE80]/20 text-[#4ADE80]"
-            items={chamadosPorStatus[StatusEnum.RESOLVIDO]}
+            title="Fechado"
+            colorDot="bg-[#7C3AED]"
+            badgeColor="bg-[#7C3AED]/20 text-[#7C3AED]"
+            items={chamadosPorStatus[StatusEnum.FECHADO]}
             usuarios={usuarios}
             navigate={navigate}
             getPrioridadeColor={getPrioridadeColor}
           />
-
-
         </div>
-
       </div>
     </div>
   );
