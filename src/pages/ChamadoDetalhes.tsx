@@ -592,7 +592,6 @@ const ChamadoDetalhes: React.FC = () => {
     );
   }
 
-
   return (
     <div className="min-h-full bg-gray-100 dark:bg-[#121212] transition-colors">
       <div className="p-6 space-y-6">
@@ -602,9 +601,10 @@ const ChamadoDetalhes: React.FC = () => {
             {/* Botão Voltar */}
             <button
               onClick={() => navigate('/chamados')}
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 
+              className="text-[#7C3AED] hover:text-[#6D28D9]
+                        dark:text-[#A78BFA] dark:hover:text-[#C4B5FD]
                         mb-2 flex items-center gap-1 transition-colors"
-            >
+              >
               <ArrowLeft className="w-4 h-4" />
               Voltar
             </button>
