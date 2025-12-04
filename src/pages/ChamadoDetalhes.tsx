@@ -612,7 +612,7 @@ const ChamadoDetalhes: React.FC = () => {
             <div className="flex justify-between items-start">
               {/* Título e subtítulo */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-[#facc15] tracking-tight">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-[#A78BFA] tracking-tight">
                   Chamado #{chamado.protocolo}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-1">
