@@ -97,7 +97,7 @@ const Header: React.FC = () => {
       to: '/chamados',
       icon: (active: boolean) => (
         <img
-          src={`https://img.icons8.com/?size=100&id=85080&format=png&color=${getColor(active, darkMode)}`}
+          src={`https://img.icons8.com/?size=100&id=Kq0M1iiMVmnx&format=png&color=${getColor(active, darkMode)}`}
           className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}
                       dark:filter dark:brightness-0 dark:invert`}
           alt="Chamados"

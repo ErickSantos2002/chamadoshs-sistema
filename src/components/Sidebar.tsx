@@ -36,7 +36,7 @@ const Sidebar: React.FC = () => {
       to: '/chamados',
       icon: (isActive: boolean) => (
         <img
-          src={`https://img.icons8.com/?size=100&id=85080&format=png&color=${getColor(isActive)}`}
+          src={`https://img.icons8.com/?size=100&id=Kq0M1iiMVmnx&format=png&color=${getColor(isActive)}`}
           alt="Chamados"
           className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
             dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
