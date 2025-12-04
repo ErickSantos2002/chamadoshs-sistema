@@ -67,11 +67,8 @@ const Dashboard: React.FC = () => {
     let chamadosFiltrados = chamados;
     if (user?.role === 'Usuario') {
       chamadosFiltrados = chamados.filter((c) => c.solicitante_id === user.id);
-    } else if (user?.role === 'Tecnico') {
-      chamadosFiltrados = chamados.filter(
-        (c) => c.tecnico_responsavel_id === user.id || c.solicitante_id === user.id
-      );
     }
+    // Técnicos e Administradores veem todos os chamados
 
     // Aplicar filtros adicionais
     if (filtroStatus !== 'todos') {
