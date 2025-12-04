@@ -54,7 +54,7 @@ const UsuariosTab: React.FC = () => {
   // VERIFICAÇÃO DE PERMISSÕES
   // ========================================
 
-  const isAdmin = user?.role === 'Administrador';
+  const isAdmin = user?.role === 'Administrador' || user?.role === 'Tecnico';
 
   // ========================================
   // FILTRAGEM E ORDENAÇÃO

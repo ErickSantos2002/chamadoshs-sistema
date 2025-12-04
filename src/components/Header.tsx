@@ -104,7 +104,7 @@ const Header: React.FC = () => {
         />
       ),
     },
-    ...(user?.role === 'Administrador'
+    ...(user?.role === 'Administrador' || user?.role === 'Tecnico'
       ? [
           {
             label: 'Cadastros',

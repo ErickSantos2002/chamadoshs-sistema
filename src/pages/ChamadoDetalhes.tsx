@@ -50,16 +50,13 @@ const ChamadoDetalhes: React.FC = () => {
   const [categoriaEditada, setCategoriaEditada] = useState<number | undefined>();
   const [statusEditado, setStatusEditado] = useState<StatusEnum>(StatusEnum.ABERTO);
   const [prioridadeEditada, setPrioridadeEditada] = useState<PrioridadeEnum>(PrioridadeEnum.MEDIA);
-  const [urgenciaEditada, setUrgenciaEditada] = useState<UrgenciaEnum | undefined>();
   const [tecnicoEditado, setTecnicoEditado] = useState<number | undefined>();
   const [solucaoEditada, setSolucaoEditada] = useState('');
-  const [observacoesEditadas, setObservacoesEditadas] = useState('');
 
   // Estados para modal de resolução
   const [mostrarModalResolucao, setMostrarModalResolucao] = useState(false);
   const [statusAlvo, setStatusAlvo] = useState<StatusEnum>(StatusEnum.RESOLVIDO);
   const [solucaoModal, setSolucaoModal] = useState('');
-  const [observacoesModal, setObservacoesModal] = useState('');
 
   // Estados para avaliação
   const [avaliacao, setAvaliacao] = useState<number | null>(null);
@@ -133,10 +130,8 @@ const ChamadoDetalhes: React.FC = () => {
       setCategoriaEditada(chamadoData.categoria_id);
       setStatusEditado(chamadoData.status);
       setPrioridadeEditada(chamadoData.prioridade);
-      setUrgenciaEditada(chamadoData.urgencia);
       setTecnicoEditado(chamadoData.tecnico_responsavel_id);
       setSolucaoEditada(chamadoData.solucao || '');
-      setObservacoesEditadas(chamadoData.observacoes || '');
 
       // Carregar técnicos e categorias se for admin ou técnico
       if (podeEditar) {
@@ -190,10 +185,8 @@ const ChamadoDetalhes: React.FC = () => {
         categoria_id: categoriaEditada,
         status: statusEditado,
         prioridade: prioridadeEditada,
-        urgencia: urgenciaEditada,
         tecnico_responsavel_id: tecnicoEditado,
         solucao: solucaoEditada || undefined,
-        observacoes: observacoesEditadas || undefined,
       };
 
       await atualizarChamado(chamado.id, dadosAtualizacao, user.id);
@@ -260,7 +253,6 @@ const ChamadoDetalhes: React.FC = () => {
     if (novoStatus === StatusEnum.RESOLVIDO || novoStatus === StatusEnum.FECHADO) {
       setStatusAlvo(novoStatus);
       setSolucaoModal(chamado?.solucao || '');
-      setObservacoesModal(chamado?.observacoes || '');
       setMostrarModalResolucao(true);
       return;
     }
@@ -300,13 +292,11 @@ const ChamadoDetalhes: React.FC = () => {
       const dadosAtualizacao: ChamadoUpdate = {
         status: statusAlvo,
         solucao: solucaoModal,
-        observacoes: observacoesModal || undefined,
       };
 
       await atualizarChamado(chamado.id, dadosAtualizacao, user.id);
       setMostrarModalResolucao(false);
       setSolucaoModal('');
-      setObservacoesModal('');
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
       console.error('Erro ao atualizar chamado:', err);
@@ -617,227 +607,190 @@ const ChamadoDetalhes: React.FC = () => {
         {/* Informações do Chamado */}
         <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Informações do Chamado</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6">
-            {/* Linha 1: Solicitante | Técnico Responsável | Categoria */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            {/* Coluna Esquerda */}
+            <div className="space-y-6">
+              {/* Solicitante */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  <User className="w-4 h-4 inline mr-1" />
+                  Solicitante
+                </label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-gray-900 dark:text-white font-medium">
+                    {usuarios[chamado.solicitante_id]?.nome || `Usuário #${chamado.solicitante_id}`}
+                  </p>
+                  {usuarios[chamado.solicitante_id] && (
+                    <span
+                      className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+                        usuarios[chamado.solicitante_id].role_id
+                      )}`}
+                    >
+                      {getRoleName(usuarios[chamado.solicitante_id].role_id)}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-            {/* Solicitante */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                <User className="w-4 h-4 inline mr-1" />
-                Solicitante
-              </label>
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-gray-900 dark:text-white font-medium">
-                  {usuarios[chamado.solicitante_id]?.nome || `Usuário #${chamado.solicitante_id}`}
-                </p>
-                {usuarios[chamado.solicitante_id] && (
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  Status
+                </label>
+                {modoEdicao ? (
+                  <select
+                    value={statusEditado}
+                    onChange={(e) => setStatusEditado(e.target.value as StatusEnum)}
+                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                             text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  >
+                    {Object.values(StatusEnum).map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
                   <span
-                    className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadgeColor(
-                      usuarios[chamado.solicitante_id].role_id
+                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getStatusColor(
+                      chamado.status
                     )}`}
                   >
-                    {getRoleName(usuarios[chamado.solicitante_id].role_id)}
+                    {chamado.status}
                   </span>
                 )}
               </div>
+
+              {/* Categoria */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  Categoria
+                </label>
+                {modoEdicao ? (
+                  <select
+                    value={categoriaEditada || ''}
+                    onChange={(e) => setCategoriaEditada(e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                             text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  >
+                    <option value="">Sem categoria</option>
+                    {categorias.map((categoria) => (
+                      <option key={categoria.id} value={categoria.id}>
+                        {categoria.nome}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-gray-900 dark:text-white">
+                    {categoriaNome}
+                  </p>
+                )}
+              </div>
+
+              {/* Data de Abertura */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  Data de Abertura
+                </label>
+                <p className="text-gray-900 dark:text-white">{formatarData(chamado.data_abertura)}</p>
+              </div>
             </div>
 
-            {/* Técnico Responsável */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                Técnico Responsável
-              </label>
-              {modoEdicao && podeEditar ? (
-                <select
-                  value={tecnicoEditado || ''}
-                  onChange={(e) => setTecnicoEditado(e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600
-                           rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-[#2d2d2d]
-                           dark:text-white"
-                >
-                  <option value="">Sem atribuição</option>
-                  {tecnicos.map((tecnico) => (
-                    <option key={tecnico.id} value={tecnico.id}>
-                      {tecnico.nome}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {chamado.tecnico_responsavel_id ? (
-                    <>
-                      <p className="text-gray-900 dark:text-white font-medium">
-                        {tecnicos.find((t) => t.id === chamado.tecnico_responsavel_id)?.nome || 'Não encontrado'}
-                      </p>
-                      {usuarios[chamado.tecnico_responsavel_id] && (
-                        <span
-                          className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadgeColor(
-                            usuarios[chamado.tecnico_responsavel_id].role_id
-                          )}`}
-                        >
-                          {getRoleName(usuarios[chamado.tecnico_responsavel_id].role_id)}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-gray-900 dark:text-white">Sem atribuição</p>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* Coluna Direita */}
+            <div className="space-y-6">
+              {/* Técnico Responsável */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  Técnico Responsável
+                </label>
+                {modoEdicao && podeEditar ? (
+                  <select
+                    value={tecnicoEditado || ''}
+                    onChange={(e) => setTecnicoEditado(e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600
+                             rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-[#2d2d2d]
+                             dark:text-white"
+                  >
+                    <option value="">Sem atribuição</option>
+                    {tecnicos.map((tecnico) => (
+                      <option key={tecnico.id} value={tecnico.id}>
+                        {tecnico.nome}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {chamado.tecnico_responsavel_id ? (
+                      <>
+                        <p className="text-gray-900 dark:text-white font-medium">
+                          {tecnicos.find((t) => t.id === chamado.tecnico_responsavel_id)?.nome || 'Não encontrado'}
+                        </p>
+                        {usuarios[chamado.tecnico_responsavel_id] && (
+                          <span
+                            className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+                              usuarios[chamado.tecnico_responsavel_id].role_id
+                            )}`}
+                          >
+                            {getRoleName(usuarios[chamado.tecnico_responsavel_id].role_id)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-900 dark:text-white">Sem atribuição</p>
+                    )}
+                  </div>
+                )}
+              </div>
 
-            {/* Categoria */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                Categoria
-              </label>
-              {modoEdicao ? (
-                <select
-                  value={categoriaEditada || ''}
-                  onChange={(e) => setCategoriaEditada(e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                           text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                >
-                  <option value="">Sem categoria</option>
-                  {categorias.map((categoria) => (
-                    <option key={categoria.id} value={categoria.id}>
-                      {categoria.nome}
-                    </option>
-                  ))}
-                </select>
-              ) : (
+              {/* Prioridade */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  Prioridade
+                </label>
+                {modoEdicao ? (
+                  <select
+                    value={prioridadeEditada}
+                    onChange={(e) => setPrioridadeEditada(e.target.value as PrioridadeEnum)}
+                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                             text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  >
+                    {Object.values(PrioridadeEnum).map((prioridade) => (
+                      <option key={prioridade} value={prioridade}>
+                        {prioridade}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span
+                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getPrioridadeColor(
+                      chamado.prioridade
+                    )}`}
+                  >
+                    {chamado.prioridade}
+                  </span>
+                )}
+              </div>
+
+              {/* Protocolo */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  Protocolo
+                </label>
+                <p className="text-gray-900 dark:text-white font-mono">#{chamado.protocolo}</p>
+              </div>
+
+              {/* Última Atualização */}
+              <div>
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  Última Atualização
+                </label>
                 <p className="text-gray-900 dark:text-white">
-                  {categoriaNome}
+                  {chamado.updated_at ? formatarData(chamado.updated_at) : 'Não atualizado'}
                 </p>
-              )}
-            </div>
-
-            {/* Linha 2: Status | Prioridade | Urgência */}
-
-            {/* Status */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                Status
-              </label>
-              {modoEdicao ? (
-                <select
-                  value={statusEditado}
-                  onChange={(e) => setStatusEditado(e.target.value as StatusEnum)}
-                  className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                           text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                >
-                  {Object.values(StatusEnum).map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span
-                  className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getStatusColor(
-                    chamado.status
-                  )}`}
-                >
-                  {chamado.status}
-                </span>
-              )}
-            </div>
-
-            {/* Prioridade */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                Prioridade
-              </label>
-              {modoEdicao ? (
-                <select
-                  value={prioridadeEditada}
-                  onChange={(e) => setPrioridadeEditada(e.target.value as PrioridadeEnum)}
-                  className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                           text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                >
-                  {Object.values(PrioridadeEnum).map((prioridade) => (
-                    <option key={prioridade} value={prioridade}>
-                      {prioridade}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span
-                  className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getPrioridadeColor(
-                    chamado.prioridade
-                  )}`}
-                >
-                  {chamado.prioridade}
-                </span>
-              )}
-            </div>
-
-            {/* Urgência */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                Urgência
-              </label>
-              {modoEdicao ? (
-                <select
-                  value={urgenciaEditada || ''}
-                  onChange={(e) => setUrgenciaEditada(e.target.value ? (e.target.value as UrgenciaEnum) : undefined)}
-                  className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                           text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                >
-                  <option value="">Sem urgência</option>
-                  {Object.values(UrgenciaEnum).map((urgencia) => (
-                    <option key={urgencia} value={urgencia}>
-                      {urgencia}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <>
-                  {chamado.urgencia ? (
-                    <span
-                      className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getUrgenciaColor(
-                        chamado.urgencia
-                      )}`}
-                    >
-                      {chamado.urgencia}
-                    </span>
-                  ) : (
-                    <p className="text-gray-900 dark:text-white">Não definida</p>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Linha 3: Protocolo | Data de Abertura | Última Atualização */}
-
-            {/* Protocolo */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                Protocolo
-              </label>
-              <p className="text-gray-900 dark:text-white font-mono">#{chamado.protocolo}</p>
-            </div>
-
-            {/* Data de Abertura */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                Data de Abertura
-              </label>
-              <p className="text-gray-900 dark:text-white">{formatarData(chamado.data_abertura)}</p>
-            </div>
-
-            {/* Última Atualização */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                Última Atualização
-              </label>
-              <p className="text-gray-900 dark:text-white">
-                {chamado.updated_at ? formatarData(chamado.updated_at) : 'Não atualizado'}
-              </p>
+              </div>
             </div>
           </div>
 
@@ -882,30 +835,6 @@ const ChamadoDetalhes: React.FC = () => {
             ) : (
               <p className="text-gray-900 dark:text-white whitespace-pre-wrap break-words overflow-wrap-anywhere">
                 {chamado.solucao || 'Sem solução registrada'}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Observações */}
-        {(modoEdicao || chamado.observacoes) && (
-          <div className="mt-6">
-            <label className="block text-base font-bold text-gray-900 dark:text-[#facc15] mb-3">
-              Observações
-            </label>
-            {modoEdicao ? (
-              <textarea
-                value={observacoesEditadas}
-                onChange={(e) => setObservacoesEditadas(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                         text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                placeholder="Observações adicionais..."
-              />
-            ) : (
-              <p className="text-gray-900 dark:text-white whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                {chamado.observacoes || 'Sem observações'}
               </p>
             )}
           </div>
@@ -1107,7 +1036,6 @@ const ChamadoDetalhes: React.FC = () => {
                   onClick={() => {
                     setMostrarModalResolucao(false);
                     setSolucaoModal('');
-                    setObservacoesModal('');
                   }}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 >
@@ -1135,29 +1063,12 @@ const ChamadoDetalhes: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Campo de Observações */}
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
-                    Observações Adicionais
-                  </label>
-                  <textarea
-                    value={observacoesModal}
-                    onChange={(e) => setObservacoesModal(e.target.value)}
-                    rows={3}
-                    placeholder="Observações adicionais (opcional)..."
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600
-                             rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-[#2d2d2d]
-                             dark:text-white resize-none"
-                  />
-                </div>
-
                 {/* Botões de Ação */}
                 <div className="flex justify-end gap-3 pt-4">
                   <button
                     onClick={() => {
                       setMostrarModalResolucao(false);
                       setSolucaoModal('');
-                      setObservacoesModal('');
                     }}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700
                              dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-[#2a2a2a]

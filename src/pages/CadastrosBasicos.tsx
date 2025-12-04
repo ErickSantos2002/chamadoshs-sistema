@@ -19,7 +19,7 @@ const CadastrosBasicos: React.FC = () => {
   // VERIFICAÇÃO DE PERMISSÕES
   // ========================================
 
-  const podeVerUsuarios = user?.role === 'Administrador';
+  const podeVerUsuarios = user?.role === 'Administrador' || user?.role === 'Tecnico';
 
   // ========================================
   // CONFIGURAÇÃO DAS ABAS

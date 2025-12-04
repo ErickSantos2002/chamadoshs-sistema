@@ -46,8 +46,8 @@ const SetoresTab: React.FC = () => {
   // VERIFICAÇÃO DE PERMISSÕES
   // ========================================
 
-  const podeEditar = ['Administrador', 'Gerente'].includes(user?.role || '');
-  const podeExcluir = ['Administrador', 'Gerente'].includes(user?.role || '');
+  const podeEditar = ['Administrador', 'Gerente', 'Tecnico'].includes(user?.role || '');
+  const podeExcluir = ['Administrador', 'Gerente', 'Tecnico'].includes(user?.role || '');
 
   // ========================================
   // FILTRAGEM E ORDENAÇÃO
