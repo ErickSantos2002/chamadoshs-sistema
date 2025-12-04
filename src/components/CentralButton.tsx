@@ -20,9 +20,10 @@ const CentralButton: React.FC = () => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className="fixed bottom-6 right-6 z-50
-                 bg-blue-600 hover:bg-blue-700
-                 dark:bg-blue-500 dark:hover:bg-blue-600
-                 text-white rounded-full
+                 bg-white hover:bg-gray-50
+                 dark:bg-gray-800 dark:hover:bg-gray-700
+                 border-2 border-blue-600 dark:border-blue-500
+                 rounded-full
                  shadow-lg hover:shadow-2xl
                  transition-all duration-300 ease-in-out
                  flex items-center justify-center
@@ -38,7 +39,7 @@ const CentralButton: React.FC = () => {
         <img
           src={logo}
           alt="Central HS"
-          className="w-8 h-8 object-contain transition-transform duration-300
+          className="w-10 h-10 object-contain transition-transform duration-300
                    group-hover:rotate-12"
         />
 
