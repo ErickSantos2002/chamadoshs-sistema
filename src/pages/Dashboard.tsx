@@ -220,10 +220,11 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-full bg-gray-100 dark:bg-[#121212] transition-colors">
       <div className="p-6">
+
         {/* Cabeçalho */}
         <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
           <div className="px-6 py-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-[#facc15] tracking-tight">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-[#A78BFA] tracking-tight">
               Chamados - Dashboard
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-1">
@@ -246,6 +247,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -256,7 +258,7 @@ const Dashboard: React.FC = () => {
                 onChange={(e) => setFiltroStatus(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
                           text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                          focus:outline-none focus:ring-2 focus:ring-[#7C3AED] transition-colors"
               >
                 <option value="todos">Todos</option>
                 <option value={StatusEnum.ABERTO}>Abertos</option>
@@ -277,7 +279,7 @@ const Dashboard: React.FC = () => {
                 onChange={(e) => setFiltroPrioridade(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
                           text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                          focus:outline-none focus:ring-2 focus:ring-[#DB2777] transition-colors"
               >
                 <option value="todas">Todas</option>
                 <option value={PrioridadeEnum.BAIXA}>Baixa</option>
@@ -286,18 +288,19 @@ const Dashboard: React.FC = () => {
                 <option value={PrioridadeEnum.CRITICA}>Crítica</option>
               </select>
             </div>
+
           </div>
         </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+          {/* Total */}
           <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">
-                  Total de Chamados
-                </p>
-                <p className="text-3xl font-semibold text-blue-500 dark:text-blue-300 mt-2 tracking-tight">
+                <p className="text-sm text-gray-700 dark:text-gray-400">Total de Chamados</p>
+                <p className="text-3xl font-semibold text-[#2563EB] dark:text-[#60A5FA] mt-2 tracking-tight">
                   {metricas.total}
                 </p>
               </div>
@@ -307,69 +310,65 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* Abertos */}
           <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">
-                  Abertos
-                </p>
-                <p className="text-3xl font-semibold text-amber-500 dark:text-amber-300 mt-2 tracking-tight">
+                <p className="text-sm text-gray-700 dark:text-gray-400">Abertos</p>
+                <p className="text-3xl font-semibold text-[#DB2777] dark:text-[#F472B6] mt-2 tracking-tight">
                   {metricas.abertos}
                 </p>
               </div>
-              <div className="bg-amber-100/70 dark:bg-amber-900/50 p-3 rounded-full">
-                <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              <div className="bg-pink-100/70 dark:bg-pink-900/50 p-3 rounded-full">
+                <AlertCircle className="w-6 h-6 text-[#DB2777]" />
               </div>
             </div>
           </div>
 
+          {/* Em andamento */}
           <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">
-                  Em Andamento
-                </p>
-                <p className="text-3xl font-semibold text-orange-500 dark:text-orange-300 mt-2 tracking-tight">
+                <p className="text-sm text-gray-700 dark:text-gray-400">Em Andamento</p>
+                <p className="text-3xl font-semibold text-[#06B6D4] dark:text-[#67E8F9] mt-2 tracking-tight">
                   {metricas.emAndamento}
                 </p>
               </div>
-              <div className="bg-orange-100/70 dark:bg-orange-900/50 p-3 rounded-full">
-                <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              <div className="bg-cyan-100/70 dark:bg-cyan-900/50 p-3 rounded-full">
+                <Clock className="w-6 h-6 text-[#06B6D4]" />
               </div>
             </div>
           </div>
 
+          {/* Resolvidos */}
           <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">
-                  Resolvidos
-                </p>
-                <p className="text-3xl font-semibold text-green-500 dark:text-green-300 mt-2 tracking-tight">
+                <p className="text-sm text-gray-700 dark:text-gray-400">Resolvidos</p>
+                <p className="text-3xl font-semibold text-[#4ADE80] dark:text-[#86EFAC] mt-2 tracking-tight">
                   {metricas.resolvidos}
                 </p>
               </div>
               <div className="bg-green-100/70 dark:bg-green-900/50 p-3 rounded-full">
-                <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <CheckCircle2 className="w-6 h-6 text-[#4ADE80]" />
               </div>
             </div>
           </div>
+
         </div>
 
-        {/* Tempo Médio de Resolução */}
+        {/* Tempo Médio */}
         {metricas.tempoMedioResolucao > 0 && (
           <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mb-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">
-                  Tempo Médio de Resolução
-                </p>
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-2">
+                <p className="text-sm text-gray-700 dark:text-gray-400">Tempo Médio de Resolução</p>
+                <p className="text-2xl font-bold text-[#7C3AED] dark:text-[#A78BFA] mt-2">
                   {metricas.tempoMedioResolucao}h
                 </p>
               </div>
               <div className="bg-purple-100 dark:bg-purple-900/40 p-3 rounded-full">
-                <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <Activity className="w-6 h-6 text-[#7C3AED]" />
               </div>
             </div>
           </div>
@@ -377,39 +376,77 @@ const Dashboard: React.FC = () => {
 
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
           {/* Gráfico de Status */}
           <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
               Chamados por Status
             </h3>
+
             {metricas.porStatus.some(s => s.value > 0) ? (
               <ResponsiveContainer width="100%" height={300}>
                 <RChart>
                   <Pie
-                    data={metricas.porStatus}
+                    data={metricas.porStatus.map(s => ({
+                      ...s,
+                      color:
+                        s.name === "Abertos" ? "#DB2777" :
+                        s.name === "Em Andamento" ? "#06B6D4" :
+                        s.name === "Aguardando" ? "#A78BFA" :
+                        s.name === "Resolvidos" ? "#4ADE80" :
+                        "#7C3AED"
+                    }))}
                     cx="50%"
                     cy="50%"
-                    outerRadius={80}
+                    outerRadius={85}
                     dataKey="value"
-                    label={({ name, value }) =>
-                      value > 0 ? `${name}: ${value}` : ''
-                    }
+                    label={({ name, value }) => value > 0 ? `${name}: ${value}` : ""}
                   >
-                    {metricas.porStatus.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                    {metricas.porStatus.map((entry) => {
+                      const color =
+                        entry.name === "Abertos" ? "#DB2777" :
+                        entry.name === "Em Andamento" ? "#06B6D4" :
+                        entry.name === "Aguardando" ? "#A78BFA" :
+                        entry.name === "Resolvidos" ? "#4ADE80" :
+                        "#7C3AED";
+
+                      return <Cell key={entry.name} fill={color} />;
+                    })}
                   </Pie>
-                  <Tooltip />
+
+                  {/* TOOLTIP PADRONIZADO */}
+                  <Tooltip
+                    wrapperStyle={{ outline: "none" }}
+                    contentStyle={{
+                      backgroundColor: "#1f1b24",        // fundo roxo escuro (dark elegante)
+                      border: "1px solid #7C3AED",       // borda roxa
+                      borderRadius: "8px",
+                      color: "#F3E8FF",                  // texto lilás claro
+                      padding: "8px 12px",
+                      boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+                    }}
+                    labelStyle={{
+                      color: "#A78BFA",                  // título lilás
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                    itemStyle={{
+                      color: "#fff",                     // texto dos valores
+                    }}
+                  />
+
                   <Legend
                     verticalAlign="bottom"
                     align="center"
                     wrapperStyle={{
                       marginTop: 10,
-                      fontSize: '12px',
+                      fontSize: "12px",
+                      color: "#fff",
                     }}
                   />
                 </RChart>
               </ResponsiveContainer>
+
             ) : (
               <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
                 Sem dados para exibir
@@ -422,34 +459,66 @@ const Dashboard: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
               Chamados por Prioridade
             </h3>
+
             {metricas.porPrioridade.some(p => p.value > 0) ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={metricas.porPrioridade}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.1} />
-                  <XAxis dataKey="name" stroke="#6b7280" />
-                  <YAxis stroke="#6b7280" />
+                <BarChart
+                  data={metricas.porPrioridade.map(p => ({
+                    ...p,
+                    color:
+                      p.name === "Baixa" ? "#4ADE80" :
+                      p.name === "Média" ? "#06B6D4" :
+                      p.name === "Alta" ? "#DB2777" :
+                      "#7C3AED"
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+
+                  <XAxis dataKey="name" stroke="#A78BFA" />
+                  <YAxis stroke="#A78BFA" />
+
+                  {/* TOOLTIP PADRONIZADO */}
                   <Tooltip
+                    wrapperStyle={{ outline: "none" }}
                     contentStyle={{
-                      backgroundColor: '#f9fafb',
-                      color: '#000',
-                      borderRadius: '8px',
-                      border: '1px solid #d1d5db',
+                      backgroundColor: "#1f1b24",        // fundo roxo escuro
+                      border: "1px solid #7C3AED",       // borda roxa
+                      borderRadius: "8px",
+                      color: "#F3E8FF",                  // texto lilás claro
+                      padding: "8px 12px",
+                      boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
                     }}
-                    itemStyle={{ color: '#000' }}
+                    labelStyle={{
+                      color: "#A78BFA",                  // título lilás
+                      fontWeight: 600,
+                      marginBottom: "4px",
+                    }}
+                    itemStyle={{
+                      color: "#fff",                     // texto dos dados
+                    }}
                   />
+
                   <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                    {metricas.porPrioridade.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                    {metricas.porPrioridade.map((entry) => {
+                      const color =
+                        entry.name === "Baixa" ? "#4ADE80" :
+                        entry.name === "Média" ? "#06B6D4" :
+                        entry.name === "Alta" ? "#DB2777" :
+                        "#7C3AED";
+
+                      return <Cell key={entry.name} fill={color} />;
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+
             ) : (
               <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
                 Sem dados para exibir
               </div>
             )}
           </div>
+
         </div>
 
         {/* Top 5 Categorias */}
@@ -458,21 +527,40 @@ const Dashboard: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
               Top 5 Categorias
             </h3>
+
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={metricas.porCategoria} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.1} />
-                <XAxis type="number" stroke="#6b7280" />
-                <YAxis dataKey="name" type="category" stroke="#6b7280" width={150} />
-                <Bar dataKey="value" fill="#8b5cf6" radius={[0, 8, 8, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+
+                <XAxis type="number" stroke="#A78BFA" />
+                <YAxis dataKey="name" type="category" stroke="#A78BFA" width={150} />
+
+                <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+                  {metricas.porCategoria.map((_, idx) => {
+                    const palette = ["#7C3AED", "#A78BFA", "#2563EB", "#DB2777", "#06B6D4"];
+                    return <Cell key={idx} fill={palette[idx % palette.length]} />;
+                  })}
+                </Bar>
+
+                {/* TOOLTIP PADRONIZADO */}
                 <Tooltip
+                  wrapperStyle={{ outline: "none" }}
                   contentStyle={{
-                    backgroundColor: '#f9fafb',
-                    color: '#000',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
+                    backgroundColor: "#1f1b24",        // fundo roxo escuro elegante
+                    border: "1px solid #7C3AED",       // borda roxa primária
+                    borderRadius: "8px",
+                    color: "#F3E8FF",                  // texto lilás claro
+                    padding: "8px 12px",
+                    boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
                   }}
-                  itemStyle={{ color: '#000' }}
-                  labelStyle={{ color: '#8b5cf6', fontWeight: 600 }}
+                  labelStyle={{
+                    color: "#A78BFA",                  // título lilás
+                    fontWeight: 600,
+                    marginBottom: "4px",
+                  }}
+                  itemStyle={{
+                    color: "#fff",                     // texto dos valores
+                  }}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -481,47 +569,50 @@ const Dashboard: React.FC = () => {
 
         {/* Tabela de Chamados Recentes */}
         <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-[#A78BFA] mb-4">
             Chamados Recentes
           </h3>
 
           {metricas.chamadosRecentes.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-[#2a2a2a] border-b border-gray-200 dark:border-[#2d2d2d]">
+                <thead className="bg-gray-100 dark:bg-[#1e1e1e] border-b border-gray-200 dark:border-[#2d2d2d]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
                       Protocolo
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
                       Título
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
                       Prioridade
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
                       Data
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
                       Ações
                     </th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-gray-200 dark:divide-[#2d2d2d]">
                   {metricas.chamadosRecentes.map((chamado) => (
                     <tr
                       key={chamado.id}
-                      className="hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"
+                      className="transition-colors hover:bg-gray-50 dark:hover:bg-[#2a2a2a]/80"
                     >
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
                         #{chamado.protocolo}
                       </td>
+
                       <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">
                         {chamado.titulo}
                       </td>
+
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(
@@ -531,6 +622,7 @@ const Dashboard: React.FC = () => {
                           {chamado.status}
                         </span>
                       </td>
+
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeBadgeColor(
@@ -540,13 +632,15 @@ const Dashboard: React.FC = () => {
                           {chamado.prioridade}
                         </span>
                       </td>
+
                       <td className="px-4 py-3 text-sm text-center text-gray-700 dark:text-gray-300">
                         {formatarData(chamado.created_at)}
                       </td>
+
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => navigate(`/chamados/${chamado.id}`)}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium inline-flex items-center gap-1"
+                          className="text-[#2563EB] dark:text-[#60A5FA] hover:text-[#3B82F6] dark:hover:text-[#93C5FD] font-medium inline-flex items-center gap-1"
                         >
                           Ver detalhes
                           <ChevronRight className="w-4 h-4" />
@@ -555,6 +649,7 @@ const Dashboard: React.FC = () => {
                     </tr>
                   ))}
                 </tbody>
+
               </table>
             </div>
           ) : (
@@ -566,6 +661,7 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
