@@ -77,12 +77,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         params.solicitante_id = user.id;
       }
 
-      // Técnicos veem chamados atribuídos a eles
-      if (user.role === 'Tecnico') {
-        params.tecnico_id = user.id;
-      }
-
-      // Admins veem todos os chamados (sem filtro)
+      // Técnicos e Admins veem todos os chamados (sem filtro)
 
       const data = await chamadosService.listar(params);
       setChamados(data);
