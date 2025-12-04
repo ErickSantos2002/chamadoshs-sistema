@@ -15,7 +15,20 @@ import {
   Usuario,
   Categoria,
 } from '../types/api';
-import { ArrowLeft, Edit, Save, X, Loader2, CheckCircle, Clock, PlayCircle, XCircle, RotateCcw, User, Star } from 'lucide-react';
+import {
+  ArrowLeft,
+  Edit,
+  Save,
+  X,
+  Loader2,
+  CheckCircle,
+  Clock,
+  PlayCircle,
+  XCircle,
+  RotateCcw,
+  User,
+  Star,
+} from 'lucide-react';
 
 const ChamadoDetalhes: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,15 +60,23 @@ const ChamadoDetalhes: React.FC = () => {
 
   // Dados de edição
   const [descricaoEditada, setDescricaoEditada] = useState('');
-  const [categoriaEditada, setCategoriaEditada] = useState<number | undefined>();
-  const [statusEditado, setStatusEditado] = useState<StatusEnum>(StatusEnum.ABERTO);
-  const [prioridadeEditada, setPrioridadeEditada] = useState<PrioridadeEnum>(PrioridadeEnum.MEDIA);
+  const [categoriaEditada, setCategoriaEditada] = useState<
+    number | undefined
+  >();
+  const [statusEditado, setStatusEditado] = useState<StatusEnum>(
+    StatusEnum.ABERTO,
+  );
+  const [prioridadeEditada, setPrioridadeEditada] = useState<PrioridadeEnum>(
+    PrioridadeEnum.MEDIA,
+  );
   const [tecnicoEditado, setTecnicoEditado] = useState<number | undefined>();
   const [solucaoEditada, setSolucaoEditada] = useState('');
 
   // Estados para modal de resolução
   const [mostrarModalResolucao, setMostrarModalResolucao] = useState(false);
-  const [statusAlvo, setStatusAlvo] = useState<StatusEnum>(StatusEnum.RESOLVIDO);
+  const [statusAlvo, setStatusAlvo] = useState<StatusEnum>(
+    StatusEnum.RESOLVIDO,
+  );
   const [solucaoModal, setSolucaoModal] = useState('');
 
   // Estados para avaliação
@@ -69,8 +90,10 @@ const ChamadoDetalhes: React.FC = () => {
   const isUsuario = user?.role === 'Usuario';
   const podeEditar = isAdmin || isTecnico;
   const isSolicitante = chamado?.solicitante_id === user?.id;
-  const podeAvaliar = isSolicitante &&
-    (chamado?.status === StatusEnum.RESOLVIDO || chamado?.status === StatusEnum.FECHADO);
+  const podeAvaliar =
+    isSolicitante &&
+    (chamado?.status === StatusEnum.RESOLVIDO ||
+      chamado?.status === StatusEnum.FECHADO);
 
   useEffect(() => {
     if (id) {
@@ -115,7 +138,9 @@ const ChamadoDetalhes: React.FC = () => {
       // Buscar nome da categoria se existir
       if (chamadoData.categoria_id) {
         try {
-          const categoria = await categoriasService.buscar(chamadoData.categoria_id);
+          const categoria = await categoriasService.buscar(
+            chamadoData.categoria_id,
+          );
           setCategoriaNome(categoria.nome);
         } catch (err) {
           console.error('Erro ao buscar categoria:', err);
@@ -145,7 +170,8 @@ const ChamadoDetalhes: React.FC = () => {
       // Carregar dados dos usuários envolvidos (solicitante, comentários, histórico)
       const usuarioIds = new Set<number>();
       usuarioIds.add(chamadoData.solicitante_id);
-      if (chamadoData.tecnico_responsavel_id) usuarioIds.add(chamadoData.tecnico_responsavel_id);
+      if (chamadoData.tecnico_responsavel_id)
+        usuarioIds.add(chamadoData.tecnico_responsavel_id);
       comentariosData.forEach((c) => usuarioIds.add(c.usuario_id));
       historicoData.forEach((h) => usuarioIds.add(h.usuario_id));
 
@@ -250,7 +276,10 @@ const ChamadoDetalhes: React.FC = () => {
   // Função para mudança rápida de status
   const handleMudancaRapidaStatus = async (novoStatus: StatusEnum) => {
     // Se for resolver ou fechar, abrir modal para solicitar solução
-    if (novoStatus === StatusEnum.RESOLVIDO || novoStatus === StatusEnum.FECHADO) {
+    if (
+      novoStatus === StatusEnum.RESOLVIDO ||
+      novoStatus === StatusEnum.FECHADO
+    ) {
       setStatusAlvo(novoStatus);
       setSolucaoModal(chamado?.solucao || '');
       setMostrarModalResolucao(true);
@@ -313,14 +342,16 @@ const ChamadoDetalhes: React.FC = () => {
     const botoesComuns = [];
 
     switch (chamado.status) {
+
+      /* ================== ABERTO ================== */
       case StatusEnum.ABERTO:
         botoesComuns.push(
           <button
             key="iniciar"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium
-                     rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center gap-2"
+            className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium
+                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                      flex items-center gap-2"
           >
             <PlayCircle className="w-5 h-5" />
             Iniciar Atendimento
@@ -328,24 +359,26 @@ const ChamadoDetalhes: React.FC = () => {
         );
         break;
 
+      /* ================== EM ANDAMENTO ================== */
       case StatusEnum.EM_ANDAMENTO:
         botoesComuns.push(
           <button
             key="aguardando"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.AGUARDANDO)}
             className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium
-                     rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center gap-2"
+                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                      flex items-center gap-2"
           >
             <Clock className="w-5 h-5" />
             Aguardando Retorno
           </button>,
+
           <button
             key="resolver"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium
-                     rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center gap-2"
+            className="px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-medium
+                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                      flex items-center gap-2"
           >
             <CheckCircle className="w-5 h-5" />
             Marcar como Resolvido
@@ -353,24 +386,26 @@ const ChamadoDetalhes: React.FC = () => {
         );
         break;
 
+      /* ================== AGUARDANDO ================== */
       case StatusEnum.AGUARDANDO:
         botoesComuns.push(
           <button
             key="retomar"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium
-                     rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center gap-2"
+            className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium
+                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                      flex items-center gap-2"
           >
             <PlayCircle className="w-5 h-5" />
             Retomar Atendimento
           </button>,
+
           <button
             key="resolver"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium
-                     rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center gap-2"
+            className="px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-medium
+                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                      flex items-center gap-2"
           >
             <CheckCircle className="w-5 h-5" />
             Marcar como Resolvido
@@ -378,24 +413,26 @@ const ChamadoDetalhes: React.FC = () => {
         );
         break;
 
+      /* ================== RESOLVIDO ================== */
       case StatusEnum.RESOLVIDO:
         botoesComuns.push(
           <button
             key="fechar"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.FECHADO)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium
-                     rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center gap-2"
+            className="px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-medium
+                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                      flex items-center gap-2"
           >
             <CheckCircle className="w-5 h-5" />
             Fechar Chamado
           </button>,
+
           <button
             key="reabrir"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium
-                     rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center gap-2"
+            className="px-4 py-2 bg-[#DB2777] hover:bg-[#BE185D] text-white font-medium
+                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                      flex items-center gap-2"
           >
             <RotateCcw className="w-5 h-5" />
             Reabrir
@@ -403,14 +440,15 @@ const ChamadoDetalhes: React.FC = () => {
         );
         break;
 
+      /* ================== FECHADO ================== */
       case StatusEnum.FECHADO:
         botoesComuns.push(
           <button
             key="reabrir"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium
-                     rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center gap-2"
+            className="px-4 py-2 bg-[#DB2777] hover:bg-[#BE185D] text-white font-medium
+                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                      flex items-center gap-2"
           >
             <RotateCcw className="w-5 h-5" />
             Reabrir Chamado
@@ -422,52 +460,69 @@ const ChamadoDetalhes: React.FC = () => {
     return botoesComuns;
   };
 
+
   const getStatusColor = (status: StatusEnum) => {
     switch (status) {
       case StatusEnum.ABERTO:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+        return 'bg-[#2563EB]/20 text-[#2563EB] dark:bg-[#2563EB]/25 dark:text-[#93C5FD]'; // Azul
+
       case StatusEnum.EM_ANDAMENTO:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        return 'bg-[#7C3AED]/20 text-[#7C3AED] dark:bg-[#7C3AED]/25 dark:text-[#C4B5FD]'; // Roxo
+
       case StatusEnum.AGUARDANDO:
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+        return 'bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'; // Amber
+
       case StatusEnum.RESOLVIDO:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300'; // Verde
+
       case StatusEnum.FECHADO:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300'; // Cinza
+
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
     }
   };
+
 
   const getPrioridadeColor = (prioridade: PrioridadeEnum) => {
     switch (prioridade) {
       case PrioridadeEnum.BAIXA:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+
       case PrioridadeEnum.MEDIA:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        return 'bg-[#06B6D4]/20 text-[#06B6D4] dark:bg-[#06B6D4]/25 dark:text-[#67E8F9]'; // Ciano
+
       case PrioridadeEnum.ALTA:
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+        return 'bg-[#DB2777]/20 text-[#DB2777] dark:bg-[#DB2777]/25 dark:text-[#F9A8D4]'; // Rosa
+
       case PrioridadeEnum.CRITICA:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+        return 'bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-300'; // Vermelho
+
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
     }
   };
+
 
   const getUrgenciaColor = (urgencia: UrgenciaEnum) => {
     switch (urgencia) {
       case UrgenciaEnum.NAO_URGENTE:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+
       case UrgenciaEnum.NORMAL:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        return 'bg-[#06B6D4]/20 text-[#06B6D4] dark:bg-[#06B6D4]/25 dark:text-[#67E8F9]';
+
       case UrgenciaEnum.URGENTE:
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+        return 'bg-[#DB2777]/20 text-[#DB2777] dark:bg-[#DB2777]/25 dark:text-[#F9A8D4]';
+
       case UrgenciaEnum.MUITO_URGENTE:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+        return 'bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
     }
   };
+
 
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString('pt-BR', {
@@ -492,23 +547,29 @@ const ChamadoDetalhes: React.FC = () => {
   // Função para obter a cor do badge da role
   const getRoleBadgeColor = (roleId: number) => {
     switch (roleId) {
-      case 1: // Administrador
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400';
+      case 1: // Admin
+        return 'bg-[#7C3AED]/20 text-[#7C3AED] dark:bg-[#7C3AED]/25 dark:text-[#C4B5FD]';
+
       case 2: // Técnico
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400';
+        return 'bg-[#2563EB]/20 text-[#2563EB] dark:bg-[#2563EB]/25 dark:text-[#93C5FD]';
+
       case 3: // Usuário
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-400';
+        return 'bg-[#A78BFA]/20 text-[#A78BFA] dark:bg-[#A78BFA]/25 dark:text-[#DDD6FE]';
+
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-400';
+        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
     }
   };
+
 
   if (loading && !chamado) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Carregando chamado...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#7C3AED] mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">
+            Carregando chamado...
+          </p>
         </div>
       </div>
     );
@@ -518,12 +579,12 @@ const ChamadoDetalhes: React.FC = () => {
     return (
       <div className="p-6">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800
-                      text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+                        text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
           {error || 'Chamado não encontrado'}
         </div>
         <button
           onClick={() => navigate('/chamados')}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="mt-4 px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg"
         >
           Voltar para Chamados
         </button>
@@ -531,55 +592,69 @@ const ChamadoDetalhes: React.FC = () => {
     );
   }
 
+
   return (
     <div className="min-h-full bg-gray-100 dark:bg-[#121212] transition-colors">
       <div className="p-6 space-y-6">
         {/* Cabeçalho */}
         <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
           <div className="px-6 py-4">
+            {/* Botão Voltar */}
             <button
               onClick={() => navigate('/chamados')}
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 mb-2 flex items-center gap-1 transition-colors"
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 
+                        mb-2 flex items-center gap-1 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar
             </button>
+
             <div className="flex justify-between items-start">
+              {/* Título e subtítulo */}
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-[#facc15] tracking-tight">
                   Chamado #{chamado.protocolo}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-1">{chamado.titulo}</p>
+                <p className="text-gray-600 dark:text-gray-300 mt-1">
+                  {chamado.titulo}
+                </p>
               </div>
 
+              {/* Botões de ação (editar / salvar / cancelar) */}
               {podeEditar && (
                 <div className="flex gap-2">
                   {!modoEdicao ? (
+                    // Botão Editar
                     <button
                       onClick={() => setModoEdicao(true)}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700
-                               dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
-                               transition-colors flex items-center gap-2"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 
+                                text-gray-700 dark:text-gray-300 rounded-lg
+                                hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                                transition-colors flex items-center gap-2"
                     >
                       <Edit className="w-5 h-5" />
                       Editar Detalhes
                     </button>
                   ) : (
                     <>
+                      {/* Botão Cancelar */}
                       <button
                         onClick={() => setModoEdicao(false)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700
-                                 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
-                                 transition-colors flex items-center gap-2"
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 
+                                  text-gray-700 dark:text-gray-300 rounded-lg
+                                  hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                                  transition-colors flex items-center gap-2"
                       >
                         <X className="w-5 h-5" />
                         Cancelar
                       </button>
+
+                      {/* Botão Salvar */}
                       <button
                         onClick={handleSalvarEdicao}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium
-                                 rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                                 flex items-center gap-2"
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 
+                                  text-white font-medium rounded-lg shadow-sm 
+                                  hover:shadow-md transition-all duration-200 flex items-center gap-2"
                       >
                         <Save className="w-5 h-5" />
                         Salvar
@@ -605,26 +680,36 @@ const ChamadoDetalhes: React.FC = () => {
         )}
 
         {/* Informações do Chamado */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Informações do Chamado</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-            {/* Coluna Esquerda */}
+        <div
+          className="bg-white/95 dark:bg-[#1e1e1e]/95 
+        border border-gray-200 dark:border-[#2d2d2d]
+        rounded-xl shadow-md p-6 transition-colors"
+        >
+          {/* TÍTULO DA SEÇÃO */}
+          <h2 className="text-xl font-bold text-gray-900 dark:text-[#A78BFA] mb-6">
+            Informações do Chamado
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+            {/* ========================== COLUNA ESQUERDA ========================== */}
             <div className="space-y-6">
               {/* Solicitante */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
                   <User className="w-4 h-4 inline mr-1" />
                   Solicitante
                 </label>
+
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-gray-900 dark:text-white font-medium">
-                    {usuarios[chamado.solicitante_id]?.nome || `Usuário #${chamado.solicitante_id}`}
+                    {usuarios[chamado.solicitante_id]?.nome ||
+                      `Usuário #${chamado.solicitante_id}`}
                   </p>
+
                   {usuarios[chamado.solicitante_id] && (
                     <span
-                      className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadgeColor(
-                        usuarios[chamado.solicitante_id].role_id
-                      )}`}
+                      className={`px-2 py-0.5 text-xs font-semibold rounded-full 
+                    ${getRoleBadgeColor(usuarios[chamado.solicitante_id].role_id)}`}
                     >
                       {getRoleName(usuarios[chamado.solicitante_id].role_id)}
                     </span>
@@ -634,16 +719,22 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
                   Status
                 </label>
+
                 {modoEdicao ? (
                   <select
                     value={statusEditado}
-                    onChange={(e) => setStatusEditado(e.target.value as StatusEnum)}
-                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                             text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                             focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    onChange={(e) =>
+                      setStatusEditado(e.target.value as StatusEnum)
+                    }
+                    className="w-full px-3 py-2 border rounded-lg 
+                    bg-white dark:bg-[#2a2a2a]
+                    text-gray-800 dark:text-gray-200
+                    border-gray-300 dark:border-gray-600
+                    focus:outline-none focus:ring-2 
+                    focus:ring-[#7C3AED] transition-colors"
                   >
                     {Object.values(StatusEnum).map((status) => (
                       <option key={status} value={status}>
@@ -653,9 +744,8 @@ const ChamadoDetalhes: React.FC = () => {
                   </select>
                 ) : (
                   <span
-                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getStatusColor(
-                      chamado.status
-                    )}`}
+                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full 
+                  ${getStatusColor(chamado.status)}`}
                   >
                     {chamado.status}
                   </span>
@@ -664,18 +754,27 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Categoria */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
                   Categoria
                 </label>
+
                 {modoEdicao ? (
                   <select
                     value={categoriaEditada || ''}
-                    onChange={(e) => setCategoriaEditada(e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                             text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                             focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    onChange={(e) =>
+                      setCategoriaEditada(
+                        e.target.value ? parseInt(e.target.value) : undefined,
+                      )
+                    }
+                    className="w-full px-3 py-2 border rounded-lg 
+                    bg-white dark:bg-[#2a2a2a]
+                    text-gray-800 dark:text-gray-200
+                    border-gray-300 dark:border-gray-600
+                    focus:outline-none focus:ring-2 
+                    focus:ring-[#7C3AED] transition-colors"
                   >
                     <option value="">Sem categoria</option>
+
                     {categorias.map((categoria) => (
                       <option key={categoria.id} value={categoria.id}>
                         {categoria.nome}
@@ -689,31 +788,41 @@ const ChamadoDetalhes: React.FC = () => {
                 )}
               </div>
 
-              {/* Data de Abertura */}
+              {/* Data Abertura */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
                   Data de Abertura
                 </label>
-                <p className="text-gray-900 dark:text-white">{formatarData(chamado.data_abertura)}</p>
+
+                <p className="text-gray-900 dark:text-white">
+                  {formatarData(chamado.data_abertura)}
+                </p>
               </div>
             </div>
 
-            {/* Coluna Direita */}
+            {/* ========================== COLUNA DIREITA ========================== */}
             <div className="space-y-6">
               {/* Técnico Responsável */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
                   Técnico Responsável
                 </label>
-                {modoEdicao && podeEditar ? (
+
+                {modoEdicao ? (
                   <select
                     value={tecnicoEditado || ''}
-                    onChange={(e) => setTecnicoEditado(e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600
-                             rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-[#2d2d2d]
-                             dark:text-white"
+                    onChange={(e) =>
+                      setTecnicoEditado(
+                        e.target.value ? parseInt(e.target.value) : undefined,
+                      )
+                    }
+                    className="w-full px-3 py-2 border rounded-lg
+                    border-gray-300 dark:border-gray-600
+                    dark:bg-[#2d2d2d] dark:text-white
+                    focus:ring-2 focus:ring-[#7C3AED]"
                   >
                     <option value="">Sem atribuição</option>
+
                     {tecnicos.map((tecnico) => (
                       <option key={tecnico.id} value={tecnico.id}>
                         {tecnico.nome}
@@ -725,20 +834,26 @@ const ChamadoDetalhes: React.FC = () => {
                     {chamado.tecnico_responsavel_id ? (
                       <>
                         <p className="text-gray-900 dark:text-white font-medium">
-                          {tecnicos.find((t) => t.id === chamado.tecnico_responsavel_id)?.nome || 'Não encontrado'}
+                          {tecnicos.find(
+                            (t) => t.id === chamado.tecnico_responsavel_id,
+                          )?.nome || 'Não encontrado'}
                         </p>
+
                         {usuarios[chamado.tecnico_responsavel_id] && (
                           <span
-                            className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadgeColor(
-                              usuarios[chamado.tecnico_responsavel_id].role_id
-                            )}`}
+                            className={`px-2 py-0.5 text-xs font-semibold rounded-full 
+                          ${getRoleBadgeColor(usuarios[chamado.tecnico_responsavel_id].role_id)}`}
                           >
-                            {getRoleName(usuarios[chamado.tecnico_responsavel_id].role_id)}
+                            {getRoleName(
+                              usuarios[chamado.tecnico_responsavel_id].role_id,
+                            )}
                           </span>
                         )}
                       </>
                     ) : (
-                      <p className="text-gray-900 dark:text-white">Sem atribuição</p>
+                      <p className="text-gray-900 dark:text-white">
+                        Sem atribuição
+                      </p>
                     )}
                   </div>
                 )}
@@ -746,16 +861,22 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Prioridade */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
                   Prioridade
                 </label>
+
                 {modoEdicao ? (
                   <select
                     value={prioridadeEditada}
-                    onChange={(e) => setPrioridadeEditada(e.target.value as PrioridadeEnum)}
-                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                             text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                             focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    onChange={(e) =>
+                      setPrioridadeEditada(e.target.value as PrioridadeEnum)
+                    }
+                    className="w-full px-3 py-2 border rounded-lg 
+                    bg-white dark:bg-[#2a2a2a]
+                    text-gray-800 dark:text-gray-200
+                    border-gray-300 dark:border-gray-600
+                    focus:outline-none focus:ring-2 
+                    focus:ring-[#DB2777] transition-colors"
                   >
                     {Object.values(PrioridadeEnum).map((prioridade) => (
                       <option key={prioridade} value={prioridade}>
@@ -765,9 +886,8 @@ const ChamadoDetalhes: React.FC = () => {
                   </select>
                 ) : (
                   <span
-                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getPrioridadeColor(
-                      chamado.prioridade
-                    )}`}
+                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full 
+                  ${getPrioridadeColor(chamado.prioridade)}`}
                   >
                     {chamado.prioridade}
                   </span>
@@ -776,245 +896,291 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Protocolo */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
                   Protocolo
                 </label>
-                <p className="text-gray-900 dark:text-white font-mono">#{chamado.protocolo}</p>
+
+                <p className="text-gray-900 dark:text-white font-mono">
+                  #{chamado.protocolo}
+                </p>
               </div>
 
               {/* Última Atualização */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
                   Última Atualização
                 </label>
+
                 <p className="text-gray-900 dark:text-white">
-                  {chamado.updated_at ? formatarData(chamado.updated_at) : 'Não atualizado'}
+                  {chamado.updated_at
+                    ? formatarData(chamado.updated_at)
+                    : 'Não atualizado'}
                 </p>
               </div>
             </div>
           </div>
 
-        {/* Descrição */}
-        <div className="mt-6">
-          <label className="block text-base font-bold text-gray-900 dark:text-[#facc15] mb-3">
-            Descrição
-          </label>
-          {modoEdicao ? (
-            <textarea
-              value={descricaoEditada}
-              onChange={(e) => setDescricaoEditada(e.target.value)}
-              rows={4}
-              className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                       text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              placeholder="Descrição do chamado..."
-            />
-          ) : (
-            <p className="text-gray-900 dark:text-white whitespace-pre-wrap break-words overflow-wrap-anywhere">
-              {chamado.descricao}
-            </p>
-          )}
-        </div>
-
-        {/* Solução */}
-        {(modoEdicao || chamado.solucao) && (
+          {/* Descrição */}
           <div className="mt-6">
-            <label className="block text-base font-bold text-gray-900 dark:text-[#facc15] mb-3">
-              Solução
+            <label className="block text-base font-bold text-gray-900 dark:text-[#7C3AED] mb-3">
+              Descrição
             </label>
+
             {modoEdicao ? (
               <textarea
-                value={solucaoEditada}
-                onChange={(e) => setSolucaoEditada(e.target.value)}
+                value={descricaoEditada}
+                onChange={(e) => setDescricaoEditada(e.target.value)}
                 rows={4}
-                className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                         text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                placeholder="Descreva a solução aplicada..."
+                className="w-full px-3 py-2 border rounded-lg 
+                        bg-white dark:bg-[#2a2a2a]
+                        text-gray-800 dark:text-gray-200
+                        border-gray-300 dark:border-gray-600
+                        focus:outline-none focus:ring-2 
+                        focus:ring-[#7C3AED] transition-colors"
+                placeholder="Descrição do chamado..."
               />
             ) : (
               <p className="text-gray-900 dark:text-white whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                {chamado.solucao || 'Sem solução registrada'}
+                {chamado.descricao}
               </p>
             )}
           </div>
-        )}
 
-        {/* Avaliação */}
-        {(chamado.status === StatusEnum.RESOLVIDO || chamado.status === StatusEnum.FECHADO) && (
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Avaliação do Atendimento
-            </label>
+          {/* Solução */}
+          {(modoEdicao || chamado.solucao) && (
+            <div className="mt-6">
+              <label className="block text-base font-bold text-gray-900 dark:text-[#7C3AED] mb-3">
+                Solução
+              </label>
 
-            {podeAvaliar ? (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  {[1, 2, 3, 4, 5].map((nota) => (
-                    <button
-                      key={nota}
-                      onClick={() => handleSalvarAvaliacao(nota)}
-                      onMouseEnter={() => setHoverAvaliacao(nota)}
-                      onMouseLeave={() => setHoverAvaliacao(null)}
-                      disabled={salvandoAvaliacao}
-                      className="transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Star
-                        className={`w-8 h-8 transition-colors ${
-                          (hoverAvaliacao !== null ? nota <= hoverAvaliacao : nota <= (avaliacao || 0))
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300 dark:text-gray-600'
-                        }`}
-                      />
-                    </button>
-                  ))}
-                  {avaliacao && (
-                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                      {avaliacao} de 5 estrelas
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {avaliacao
-                    ? 'Clique nas estrelas para alterar sua avaliação'
-                    : 'Clique nas estrelas para avaliar o atendimento (opcional)'}
+              {modoEdicao ? (
+                <textarea
+                  value={solucaoEditada}
+                  onChange={(e) => setSolucaoEditada(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border rounded-lg 
+                          bg-white dark:bg-[#2a2a2a]
+                          text-gray-800 dark:text-gray-200
+                          border-gray-300 dark:border-gray-600
+                          focus:outline-none focus:ring-2 
+                          focus:ring-[#7C3AED] transition-colors"
+                  placeholder="Descreva a solução aplicada..."
+                />
+              ) : (
+                <p className="text-gray-900 dark:text-white whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                  {chamado.solucao || 'Sem solução registrada'}
                 </p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                {avaliacao ? (
-                  <>
+              )}
+            </div>
+          )}
+
+          {/* Avaliação */}
+          {(chamado.status === StatusEnum.RESOLVIDO ||
+            chamado.status === StatusEnum.FECHADO) && (
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <label className="block text-sm font-bold text-gray-900 dark:text-[#7C3AED] mb-3">
+                Avaliação do Atendimento
+              </label>
+
+              {podeAvaliar ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
                     {[1, 2, 3, 4, 5].map((nota) => (
-                      <Star
+                      <button
                         key={nota}
-                        className={`w-6 h-6 ${
-                          nota <= avaliacao
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300 dark:text-gray-600'
-                        }`}
-                      />
+                        onClick={() => handleSalvarAvaliacao(nota)}
+                        onMouseEnter={() => setHoverAvaliacao(nota)}
+                        onMouseLeave={() => setHoverAvaliacao(null)}
+                        disabled={salvandoAvaliacao}
+                        className="transition-all duration-200 hover:scale-110 
+                                disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Star
+                          className={`w-8 h-8 transition-colors ${
+                            (
+                              hoverAvaliacao !== null
+                                ? nota <= hoverAvaliacao
+                                : nota <= (avaliacao || 0)
+                            )
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300 dark:text-gray-600'
+                          }`}
+                        />
+                      </button>
                     ))}
-                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                      {avaliacao} de 5 estrelas
-                    </span>
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Aguardando avaliação do solicitante
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      {/* Comentários */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Comentários {comentarios.length > 0 && `(${comentarios.length})`}
-        </h2>
-
-        {/* Formulário de novo comentário */}
-        <div className="mb-6">
-          <textarea
-            value={novoComentario}
-            onChange={(e) => setNovoComentario(e.target.value)}
-            rows={3}
-            placeholder="Adicione um comentário..."
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600
-                     rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-[#2d2d2d]
-                     dark:text-white"
-          />
-          <button
-            onClick={handleEnviarComentario}
-            disabled={!novoComentario.trim() || enviandoComentario}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {enviandoComentario ? 'Enviando...' : 'Enviar Comentário'}
-          </button>
-        </div>
-
-        {/* Lista de comentários com scroll */}
-        <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
-          {comentarios.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-              Nenhum comentário ainda.
-            </p>
-          ) : (
-            comentarios.map((comentario) => {
-              const usuario = usuarios[comentario.usuario_id];
-              return (
-                <div
-                  key={comentario.id}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {usuario?.nome || `Usuário #${comentario.usuario_id}`}
+                    {avaliacao && (
+                      <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                        {avaliacao} de 5 estrelas
                       </span>
-                      {usuario && (
-                        <span
-                          className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadgeColor(
-                            usuario.role_id
-                          )}`}
-                        >
-                          {getRoleName(usuario.role_id)}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatarData(comentario.created_at)}
-                    </span>
+                    )}
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                    {comentario.comentario}
+
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {avaliacao
+                      ? 'Clique nas estrelas para alterar sua avaliação'
+                      : 'Clique nas estrelas para avaliar o atendimento (opcional)'}
                   </p>
                 </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      {/* Histórico */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Histórico {historico.length > 0 && `(${historico.length})`}
-        </h2>
-
-        {/* Lista de histórico com scroll */}
-        <div className="max-h-[500px] overflow-y-auto pr-2 space-y-3">
-          {historico.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-              Nenhum histórico registrado.
-            </p>
-          ) : (
-            historico.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-start gap-3 border-l-2 border-blue-500 pl-4 py-2"
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900 dark:text-white">{item.acao}</p>
-                  {item.descricao && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.descricao}</p>
-                  )}
-                  {item.status_anterior && item.status_novo && (
-                    <p className="text-sm text-gray-500 dark:text-gray-500">
-                      {limparValorEnum(item.status_anterior)} → {limparValorEnum(item.status_novo)}
+              ) : (
+                <div className="flex items-center gap-2">
+                  {avaliacao ? (
+                    <>
+                      {[1, 2, 3, 4, 5].map((nota) => (
+                        <Star
+                          key={nota}
+                          className={`w-6 h-6 ${
+                            nota <= avaliacao
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300 dark:text-gray-600'
+                          }`}
+                        />
+                      ))}
+                      <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                        {avaliacao} de 5 estrelas
+                      </span>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Aguardando avaliação do solicitante
                     </p>
                   )}
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                  {formatarData(item.created_at)}
-                </span>
-              </div>
-            ))
+              )}
+            </div>
           )}
         </div>
+
+        {/* Comentários */}
+        <div
+          className="bg-white/95 dark:bg-[#1e1e1e]/95 
+        border border-gray-200 dark:border-[#2d2d2d] 
+        rounded-xl shadow-md p-6 transition-colors"
+        >
+          <h2 className="text-xl font-bold text-gray-900 dark:text-[#7C3AED] mb-4">
+            Comentários {comentarios.length > 0 && `(${comentarios.length})`}
+          </h2>
+
+          {/* Formulário de novo comentário */}
+          <div className="mb-6">
+            <textarea
+              value={novoComentario}
+              onChange={(e) => setNovoComentario(e.target.value)}
+              rows={3}
+              placeholder="Adicione um comentário..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600
+                      rounded-lg focus:ring-2 focus:ring-[#7C3AED]
+                      dark:bg-[#2d2d2d] dark:text-white transition-colors"
+            />
+
+            <button
+              onClick={handleEnviarComentario}
+              disabled={!novoComentario.trim() || enviandoComentario}
+              className="mt-2 px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9]
+                      text-white rounded-lg
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      transition-colors"
+            >
+              {enviandoComentario ? 'Enviando...' : 'Enviar Comentário'}
+            </button>
+          </div>
+
+          {/* Lista de comentários com scroll */}
+          <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
+            {comentarios.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                Nenhum comentário ainda.
+              </p>
+            ) : (
+              comentarios.map((comentario) => {
+                const usuario = usuarios[comentario.usuario_id];
+
+                return (
+                  <div
+                    key={comentario.id}
+                    className="border border-gray-200 dark:border-gray-700 
+                            rounded-lg p-4 bg-white/80 dark:bg-[#1e1e1e]/80"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {usuario?.nome || `Usuário #${comentario.usuario_id}`}
+                        </span>
+
+                        {usuario && (
+                          <span
+                            className={`px-2 py-0.5 text-xs font-semibold rounded-full 
+                          ${getRoleBadgeColor(usuario.role_id)}`}
+                          >
+                            {getRoleName(usuario.role_id)}
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {formatarData(comentario.created_at)}
+                      </span>
+                    </div>
+
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                      {comentario.comentario}
+                    </p>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Histórico */}
+        <div
+          className="bg-white/95 dark:bg-[#1e1e1e]/95 
+        border border-gray-200 dark:border-[#2d2d2d] 
+        rounded-xl shadow-md p-6 transition-colors"
+        >
+          <h2 className="text-xl font-bold text-gray-900 dark:text-[#7C3AED] mb-4">
+            Histórico {historico.length > 0 && `(${historico.length})`}
+          </h2>
+
+          {/* Lista de histórico com scroll */}
+          <div className="max-h-[500px] overflow-y-auto pr-2 space-y-3">
+            {historico.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                Nenhum histórico registrado.
+              </p>
+            ) : (
+              historico.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-start gap-3 border-l-2 
+                          border-[#7C3AED] pl-4 py-2"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {item.acao}
+                    </p>
+
+                    {item.descricao && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {item.descricao}
+                      </p>
+                    )}
+
+                    {item.status_anterior && item.status_novo && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {limparValorEnum(item.status_anterior)} →{' '}
+                        {limparValorEnum(item.status_novo)}
+                      </p>
+                    )}
+                  </div>
+
+                  <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    {formatarData(item.created_at)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
@@ -1023,70 +1189,89 @@ const ChamadoDetalhes: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
+              
+              {/* Título e Fechar */}
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {statusAlvo === StatusEnum.RESOLVIDO ? 'Resolver Chamado' : 'Fechar Chamado'}
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-[#7C3AED]">
+                    {statusAlvo === StatusEnum.RESOLVIDO
+                      ? "Resolver Chamado"
+                      : "Fechar Chamado"}
                   </h2>
+
                   <p className="text-gray-600 dark:text-gray-400 mt-1">
                     Descreva a solução aplicada para este chamado
                   </p>
                 </div>
+
                 <button
                   onClick={() => {
                     setMostrarModalResolucao(false);
-                    setSolucaoModal('');
+                    setSolucaoModal("");
                   }}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="text-gray-500 hover:text-gray-700 
+                            dark:text-gray-400 dark:hover:text-gray-200"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
+              {/* Conteúdo */}
               <div className="space-y-4">
+
                 {/* Campo de Solução */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 dark:text-[#facc15] mb-2">
+                  <label className="block text-sm font-bold text-gray-900 dark:text-[#7C3AED] mb-2">
                     Solução <span className="text-red-500">*</span>
                   </label>
+
                   <textarea
                     value={solucaoModal}
                     onChange={(e) => setSolucaoModal(e.target.value)}
                     rows={6}
                     placeholder="Descreva detalhadamente a solução aplicada..."
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600
-                             rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-[#2d2d2d]
-                             dark:text-white resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700
+                              rounded-lg focus:ring-2 focus:ring-[#7C3AED]
+                              bg-white dark:bg-[#2a2a2a]
+                              text-gray-800 dark:text-gray-200 resize-none"
                   />
+
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Campo obrigatório - Descreva o que foi feito para resolver o problema
+                    Campo obrigatório — descreva o que foi feito para resolver o problema
                   </p>
                 </div>
 
-                {/* Botões de Ação */}
+                {/* Botões */}
                 <div className="flex justify-end gap-3 pt-4">
+                  
                   <button
                     onClick={() => {
                       setMostrarModalResolucao(false);
-                      setSolucaoModal('');
+                      setSolucaoModal("");
                     }}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700
-                             dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
-                             transition-colors"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600
+                              text-gray-700 dark:text-gray-300
+                              rounded-lg hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                              transition-colors"
                   >
                     Cancelar
                   </button>
+
                   <button
                     onClick={handleConfirmarResolucao}
                     disabled={!solucaoModal.trim()}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400
-                             disabled:cursor-not-allowed text-white font-medium rounded-lg
-                             shadow-sm hover:shadow-md transition-all duration-200
-                             flex items-center gap-2"
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700
+                              disabled:bg-gray-400 disabled:cursor-not-allowed
+                              text-white font-medium rounded-lg shadow-sm
+                              hover:shadow-md transition-all duration-200
+                              flex items-center gap-2"
                   >
                     <CheckCircle className="w-5 h-5" />
-                    {statusAlvo === StatusEnum.RESOLVIDO ? 'Marcar como Resolvido' : 'Fechar Chamado'}
+                    {statusAlvo === StatusEnum.RESOLVIDO
+                      ? "Marcar como Resolvido"
+                      : "Fechar Chamado"}
                   </button>
+
                 </div>
               </div>
             </div>
