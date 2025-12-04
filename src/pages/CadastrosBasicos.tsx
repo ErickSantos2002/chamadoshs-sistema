@@ -77,15 +77,18 @@ const CadastrosBasicos: React.FC = () => {
         {/* Header */}
         <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+
             {/* Título e Descrição */}
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-[#facc15] tracking-tight">
+              <h1 className="text-3xl font-bold text-[#7C3AED] dark:text-[#A78BFA] tracking-tight">
                 Gestão de Cadastros Básicos
               </h1>
+
               <p className="text-gray-600 dark:text-gray-300 mt-1">
                 Gerencie categorias, setores e usuários do sistema
               </p>
             </div>
+
           </div>
         </div>
 
