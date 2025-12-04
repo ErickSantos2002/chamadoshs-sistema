@@ -10,6 +10,13 @@ export enum PrioridadeEnum {
   CRITICA = 'Crítica',
 }
 
+export enum UrgenciaEnum {
+  NAO_URGENTE = 'Não Urgente',
+  NORMAL = 'Normal',
+  URGENTE = 'Urgente',
+  MUITO_URGENTE = 'Muito Urgente',
+}
+
 export enum StatusEnum {
   ABERTO = 'Aberto',
   EM_ANDAMENTO = 'Em Andamento',
@@ -119,6 +126,7 @@ export interface Chamado {
   titulo: string;
   descricao: string;
   prioridade: PrioridadeEnum;
+  urgencia?: UrgenciaEnum;
   status: StatusEnum;
   tecnico_responsavel_id?: number;
   solucao?: string;
@@ -145,6 +153,7 @@ export interface ChamadoUpdate {
   descricao?: string;
   categoria_id?: number;
   prioridade?: PrioridadeEnum;
+  urgencia?: UrgenciaEnum;
   status?: StatusEnum;
   tecnico_responsavel_id?: number;
   solucao?: string;

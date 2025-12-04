@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
-import { StatusEnum, PrioridadeEnum } from '../types/api';
-import { Filter, Plus, Search, Loader2 } from 'lucide-react';
+import { StatusEnum, PrioridadeEnum, Chamado, Usuario } from '../types/api';
+import { Filter, Plus, Search, Loader2, User } from 'lucide-react';
+import { usuariosService } from '../services/chamadoshsapi';
 
 const Chamados: React.FC = () => {
   const navigate = useNavigate();
@@ -15,10 +16,44 @@ const Chamados: React.FC = () => {
   const [filtroPrioridade, setFiltroPrioridade] = useState<PrioridadeEnum | ''>('');
   const [filtroProtocolo, setFiltroProtocolo] = useState('');
 
+  // Estado para armazenar os usuários (solicitantes)
+  const [usuarios, setUsuarios] = useState<Record<number, Usuario>>({});
+
   // Permissões baseadas em role
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
   const isUsuario = user?.role === 'Usuario';
+
+  // Buscar nomes dos usuários (solicitantes)
+  useEffect(() => {
+    const carregarUsuarios = async () => {
+      const usuarioIds = new Set<number>();
+      chamados.forEach((chamado) => {
+        usuarioIds.add(chamado.solicitante_id);
+      });
+
+      const usuariosPromises = Array.from(usuarioIds).map(async (userId) => {
+        try {
+          const usuario = await usuariosService.buscar(userId);
+          return { id: userId, usuario };
+        } catch {
+          return { id: userId, usuario: null };
+        }
+      });
+
+      const usuariosResult = await Promise.all(usuariosPromises);
+      const usuariosMap: Record<number, Usuario> = {};
+      usuariosResult.forEach(({ id, usuario }) => {
+        if (usuario) usuariosMap[id] = usuario;
+      });
+
+      setUsuarios(usuariosMap);
+    };
+
+    if (chamados.length > 0) {
+      carregarUsuarios();
+    }
+  }, [chamados]);
 
   // Filtra os chamados localmente
   const chamadosFiltrados = chamados.filter((chamado) => {
@@ -27,6 +62,23 @@ const Chamados: React.FC = () => {
     if (filtroProtocolo && !chamado.protocolo.toLowerCase().includes(filtroProtocolo.toLowerCase())) return false;
     return true;
   });
+
+  // Agrupa chamados por status para o layout Kanban
+  const chamadosPorStatus = useMemo(() => {
+    const grupos: Record<StatusEnum, Chamado[]> = {
+      [StatusEnum.ABERTO]: [],
+      [StatusEnum.EM_ANDAMENTO]: [],
+      [StatusEnum.AGUARDANDO]: [],
+      [StatusEnum.RESOLVIDO]: [],
+      [StatusEnum.FECHADO]: [],
+    };
+
+    chamadosFiltrados.forEach((chamado) => {
+      grupos[chamado.status].push(chamado);
+    });
+
+    return grupos;
+  }, [chamadosFiltrados]);
 
   // Função para obter a cor do status
   const getStatusColor = (status: StatusEnum) => {
@@ -217,98 +269,273 @@ const Chamados: React.FC = () => {
           Exibindo {chamadosFiltrados.length} de {chamados.length} chamados
         </div>
 
-        {/* Tabela de Chamados */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md overflow-hidden transition-colors">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-[#2a2a2a] border-b border-gray-200 dark:border-[#2d2d2d]">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
-                    Protocolo
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
-                    Título
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
-                    Prioridade
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
-                    Data Abertura
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-400 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-[#2d2d2d]">
-                {chamadosFiltrados.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                      <p className="text-lg">Nenhum chamado encontrado.</p>
-                    </td>
-                  </tr>
-                ) : (
-                  chamadosFiltrados.map((chamado) => (
-                    <tr
-                      key={chamado.id}
-                      className="hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors cursor-pointer"
-                      onClick={() => navigate(`/chamados/${chamado.id}`)}
-                    >
-                      <td className="px-4 py-3">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        {/* Layout Kanban */}
+        <div className="grid grid-cols-1 xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 gap-4">
+            {/* Coluna Aberto */}
+            <div>
+              <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
+                {/* Cabeçalho da Coluna */}
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-[#2d2d2d]">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                      Aberto
+                    </h3>
+                    <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
+                      {chamadosPorStatus[StatusEnum.ABERTO].length}
+                    </span>
+                  </div>
+                </div>
+                {/* Cards */}
+                <div className="p-3 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                  {chamadosPorStatus[StatusEnum.ABERTO].length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Nenhum chamado
+                    </p>
+                  ) : (
+                    chamadosPorStatus[StatusEnum.ABERTO].map((chamado) => (
+                      <div
+                        key={chamado.id}
+                        onClick={() => navigate(`/chamados/${chamado.id}`)}
+                        className="bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600
+                                 rounded-lg p-3 cursor-pointer hover:shadow-lg hover:border-blue-400
+                                 dark:hover:border-blue-500 transition-all duration-200"
+                      >
+                        {/* Protocolo */}
+                        <div className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-2">
                           #{chamado.protocolo}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                        </div>
+                        {/* Título */}
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
                           {chamado.titulo}
+                        </h4>
+                        {/* Solicitante */}
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <User className="w-3 h-3" />
+                          <span className="truncate">
+                            {usuarios[chamado.solicitante_id]?.nome || `Usuário #${chamado.solicitante_id}`}
+                          </span>
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">
-                          {chamado.descricao}
+                        {/* Prioridade */}
+                        <div className="flex items-center justify-end">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeColor(chamado.prioridade)}`}>
+                            {chamado.prioridade}
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                            chamado.status
-                          )}`}
-                        >
-                          {chamado.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeColor(
-                            chamado.prioridade
-                          )}`}
-                        >
-                          {chamado.prioridade}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-center text-gray-700 dark:text-gray-300">
-                        {formatarData(chamado.data_abertura)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/chamados/${chamado.id}`);
-                          }}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300
-                                   font-medium transition-colors"
-                        >
-                          Ver detalhes
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Coluna Em Andamento */}
+            <div>
+              <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-[#2d2d2d]">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                      Em Andamento
+                    </h3>
+                    <span className="px-2 py-1 text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 rounded-full">
+                      {chamadosPorStatus[StatusEnum.EM_ANDAMENTO].length}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                  {chamadosPorStatus[StatusEnum.EM_ANDAMENTO].length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Nenhum chamado
+                    </p>
+                  ) : (
+                    chamadosPorStatus[StatusEnum.EM_ANDAMENTO].map((chamado) => (
+                      <div
+                        key={chamado.id}
+                        onClick={() => navigate(`/chamados/${chamado.id}`)}
+                        className="bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600
+                                 rounded-lg p-3 cursor-pointer hover:shadow-lg hover:border-amber-400
+                                 dark:hover:border-amber-500 transition-all duration-200"
+                      >
+                        <div className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-2">
+                          #{chamado.protocolo}
+                        </div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                          {chamado.titulo}
+                        </h4>
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <User className="w-3 h-3" />
+                          <span className="truncate">
+                            {usuarios[chamado.solicitante_id]?.nome || `Usuário #${chamado.solicitante_id}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeColor(chamado.prioridade)}`}>
+                            {chamado.prioridade}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Coluna Aguardando */}
+            <div>
+              <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-[#2d2d2d]">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-gray-500"></span>
+                      Aguardando
+                    </h3>
+                    <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 rounded-full">
+                      {chamadosPorStatus[StatusEnum.AGUARDANDO].length}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                  {chamadosPorStatus[StatusEnum.AGUARDANDO].length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Nenhum chamado
+                    </p>
+                  ) : (
+                    chamadosPorStatus[StatusEnum.AGUARDANDO].map((chamado) => (
+                      <div
+                        key={chamado.id}
+                        onClick={() => navigate(`/chamados/${chamado.id}`)}
+                        className="bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600
+                                 rounded-lg p-3 cursor-pointer hover:shadow-lg hover:border-gray-400
+                                 dark:hover:border-gray-500 transition-all duration-200"
+                      >
+                        <div className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-2">
+                          #{chamado.protocolo}
+                        </div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                          {chamado.titulo}
+                        </h4>
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <User className="w-3 h-3" />
+                          <span className="truncate">
+                            {usuarios[chamado.solicitante_id]?.nome || `Usuário #${chamado.solicitante_id}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeColor(chamado.prioridade)}`}>
+                            {chamado.prioridade}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Coluna Resolvido */}
+            <div>
+              <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-[#2d2d2d]">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                      Resolvido
+                    </h3>
+                    <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full">
+                      {chamadosPorStatus[StatusEnum.RESOLVIDO].length}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                  {chamadosPorStatus[StatusEnum.RESOLVIDO].length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Nenhum chamado
+                    </p>
+                  ) : (
+                    chamadosPorStatus[StatusEnum.RESOLVIDO].map((chamado) => (
+                      <div
+                        key={chamado.id}
+                        onClick={() => navigate(`/chamados/${chamado.id}`)}
+                        className="bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600
+                                 rounded-lg p-3 cursor-pointer hover:shadow-lg hover:border-green-400
+                                 dark:hover:border-green-500 transition-all duration-200"
+                      >
+                        <div className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-2">
+                          #{chamado.protocolo}
+                        </div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                          {chamado.titulo}
+                        </h4>
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <User className="w-3 h-3" />
+                          <span className="truncate">
+                            {usuarios[chamado.solicitante_id]?.nome || `Usuário #${chamado.solicitante_id}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeColor(chamado.prioridade)}`}>
+                            {chamado.prioridade}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Coluna Fechado */}
+            <div>
+              <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-[#2d2d2d]">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-indigo-500"></span>
+                      Fechado
+                    </h3>
+                    <span className="px-2 py-1 text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-full">
+                      {chamadosPorStatus[StatusEnum.FECHADO].length}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                  {chamadosPorStatus[StatusEnum.FECHADO].length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Nenhum chamado
+                    </p>
+                  ) : (
+                    chamadosPorStatus[StatusEnum.FECHADO].map((chamado) => (
+                      <div
+                        key={chamado.id}
+                        onClick={() => navigate(`/chamados/${chamado.id}`)}
+                        className="bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600
+                                 rounded-lg p-3 cursor-pointer hover:shadow-lg hover:border-indigo-400
+                                 dark:hover:border-indigo-500 transition-all duration-200"
+                      >
+                        <div className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-2">
+                          #{chamado.protocolo}
+                        </div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                          {chamado.titulo}
+                        </h4>
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <User className="w-3 h-3" />
+                          <span className="truncate">
+                            {usuarios[chamado.solicitante_id]?.nome || `Usuário #${chamado.solicitante_id}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeColor(chamado.prioridade)}`}>
+                            {chamado.prioridade}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
         </div>
       </div>
     </div>
