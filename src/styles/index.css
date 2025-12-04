@@ -95,3 +95,19 @@ body,
   border: 1px solid var(--border-color);
 }
 */
+
+/* 🎯 Animação para tooltip do botão Central HS */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}

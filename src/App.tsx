@@ -5,6 +5,7 @@ import './styles/index.css'; // Importa o Tailwind e estilos globais
 import AppRoutes from './router';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import CentralButton from './components/CentralButton';
 
 // Rotas onde o layout (Header/Sidebar) não deve aparecer (ex: login)
 const noLayoutRoutes = ['/login'];
@@ -60,6 +61,10 @@ const App: React.FC = () => {
           </main>
         </div>
       </div>
+
+      {/* Botão Flutuante Central HS */}
+      <CentralButton />
+
       <Toaster
         position="top-right"
         containerStyle={{

@@ -33,7 +33,7 @@ import { useNavigate } from 'react-router-dom';
 // ========================================
 
 const Dashboard: React.FC = () => {
-  const { chamados, usuarios, categorias, loading } = useChamados();
+  const { chamados, categorias, loading } = useChamados();
   const { user } = useAuth();
   const navigate = useNavigate();
 
