@@ -5,11 +5,7 @@ const CentralButton: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleClick = () => {
-    // Quando o centralhs estiver pronto, usar:
-    // window.open('https://centralhs.healthsafetytech.com', '_blank');
-
-    // Por enquanto, apenas um alert
-    alert('Central HS em breve!');
+    window.open('https://centralhs.healthsafetytech.com', '_blank');
   };
 
   return (
