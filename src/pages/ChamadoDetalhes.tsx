@@ -216,7 +216,6 @@ const ChamadoDetalhes: React.FC = () => {
       setLoading(true);
 
       const dadosAtualizacao: ChamadoUpdate = {
-        descricao: descricaoEditada,
         categoria_id: categoriaEditada,
         status: statusEditado,
         prioridade: prioridadeEditada,
@@ -1026,19 +1025,23 @@ const ChamadoDetalhes: React.FC = () => {
           <div className="mt-6">
             <label className="block text-base font-bold text-gray-900 dark:text-[#7C3AED] mb-3">
               Descrição
+              {modoEdicao && (
+                <span className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">
+                  (não editável - preserva o relato original do solicitante)
+                </span>
+              )}
             </label>
 
             {modoEdicao ? (
               <textarea
-                value={descricaoEditada}
-                onChange={(e) => setDescricaoEditada(e.target.value)}
+                value={chamado.descricao}
+                disabled
                 rows={4}
-                className="w-full px-3 py-2 border rounded-lg 
-                        bg-white dark:bg-[#2a2a2a]
-                        text-gray-800 dark:text-gray-200
+                className="w-full px-3 py-2 border rounded-lg
+                        bg-gray-100 dark:bg-[#1e1e1e]
+                        text-gray-600 dark:text-gray-400
                         border-gray-300 dark:border-gray-600
-                        focus:outline-none focus:ring-2 
-                        focus:ring-[#7C3AED] transition-colors"
+                        cursor-not-allowed opacity-75"
                 placeholder="Descrição do chamado..."
               />
             ) : (
