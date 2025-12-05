@@ -30,6 +30,16 @@ const Chamados: React.FC = () => {
     carregarChamados();
   }, []);
 
+  // Auto-refresh a cada 10 minutos (para TV/monitoramento)
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      carregarChamados();
+    }, 600000); // 10 minutos em milissegundos
+
+    // Cleanup: limpar o intervalo quando o componente desmontar
+    return () => clearInterval(intervalo);
+  }, []);
+
   // Buscar nomes dos usuários (solicitantes)
   useEffect(() => {
     const carregarUsuarios = async () => {
