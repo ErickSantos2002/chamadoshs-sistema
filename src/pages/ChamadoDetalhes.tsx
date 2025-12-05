@@ -484,17 +484,6 @@ const ChamadoDetalhes: React.FC = () => {
       case StatusEnum.RESOLVIDO:
         botoesComuns.push(
           <button
-            key="fechar"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.FECHADO)}
-            className="px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-medium
-                      rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-                      flex items-center gap-2"
-          >
-            <CheckCircle className="w-5 h-5" />
-            Fechar Chamado
-          </button>,
-
-          <button
             key="reabrir"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
             className="px-4 py-2 bg-[#DB2777] hover:bg-[#BE185D] text-white font-medium
@@ -507,7 +496,7 @@ const ChamadoDetalhes: React.FC = () => {
         );
         break;
 
-      /* ================== FECHADO ================== */
+      /* ================== FECHADO (unificado com Resolvido visualmente) ================== */
       case StatusEnum.FECHADO:
         botoesComuns.push(
           <button
@@ -518,7 +507,7 @@ const ChamadoDetalhes: React.FC = () => {
                       flex items-center gap-2"
           >
             <RotateCcw className="w-5 h-5" />
-            Reabrir Chamado
+            Reabrir
           </button>
         );
         break;
@@ -543,11 +532,16 @@ const ChamadoDetalhes: React.FC = () => {
         return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300'; // Verde
 
       case StatusEnum.FECHADO:
-        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300'; // Cinza
+        return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300'; // Unificado com Resolvido
 
       default:
         return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
     }
+  };
+
+  // Função para exibir o status (Fechado vira Resolvido visualmente)
+  const getStatusDisplay = (status: StatusEnum): string => {
+    return status === StatusEnum.FECHADO ? 'Resolvido' : status;
   };
 
 
@@ -842,18 +836,20 @@ const ChamadoDetalhes: React.FC = () => {
                     focus:outline-none focus:ring-2 
                     focus:ring-[#7C3AED] transition-colors"
                   >
-                    {Object.values(StatusEnum).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
+                    {Object.values(StatusEnum)
+                      .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do dropdown
+                      .map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
                   </select>
                 ) : (
                   <span
-                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full 
+                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full
                   ${getStatusColor(chamado.status)}`}
                   >
-                    {chamado.status}
+                    {getStatusDisplay(chamado.status)}
                   </span>
                 )}
               </div>

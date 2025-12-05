@@ -96,7 +96,6 @@ const Dashboard: React.FC = () => {
         emAndamento: 0,
         aguardando: 0,
         resolvidos: 0,
-        fechados: 0,
         arquivados: 0,
         porStatus: [],
         porPrioridade: [],
@@ -126,20 +125,21 @@ const Dashboard: React.FC = () => {
     const chamadosArquivados = chamadosFiltrados.filter((c) => c.arquivado);
 
     // Contadores por status (APENAS ATIVOS - excluindo arquivados)
+    // Nota: Resolvidos inclui também os Fechados (unificado no frontend)
     const abertos = chamadosAtivos.filter((c) => c.status === StatusEnum.ABERTO).length;
     const emAndamento = chamadosAtivos.filter((c) => c.status === StatusEnum.EM_ANDAMENTO).length;
-    const resolvidos = chamadosAtivos.filter((c) => c.status === StatusEnum.RESOLVIDO).length;
-    const fechados = chamadosAtivos.filter((c) => c.status === StatusEnum.FECHADO).length;
+    const resolvidos = chamadosAtivos.filter(
+      (c) => c.status === StatusEnum.RESOLVIDO || c.status === StatusEnum.FECHADO
+    ).length;
     const aguardando = chamadosAtivos.filter((c) => c.status === StatusEnum.AGUARDANDO).length;
     const arquivados = chamadosArquivados.length;
 
-    // Dados para gráfico de status
+    // Dados para gráfico de status (Fechados unificados com Resolvidos)
     const porStatus = [
       { name: 'Abertos', value: abertos, color: '#3b82f6' },
       { name: 'Em Andamento', value: emAndamento, color: '#f59e0b' },
       { name: 'Aguardando', value: aguardando, color: '#6b7280' },
       { name: 'Resolvidos', value: resolvidos, color: '#10b981' },
-      { name: 'Fechados', value: fechados, color: '#6366f1' },
     ];
 
     // Dados para gráfico de prioridade
@@ -180,15 +180,18 @@ const Dashboard: React.FC = () => {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
 
-    // Tempo médio de resolução (em horas)
-    const chamadosResolvidos = chamadosFiltrados.filter(
-      (c) => c.tempo_resolucao_minutos !== null && c.tempo_resolucao_minutos !== undefined
+    // Tempo médio de resolução (em horas) - Considera Resolvidos E Fechados
+    const chamadosComResolucao = chamadosFiltrados.filter(
+      (c) =>
+        (c.status === StatusEnum.RESOLVIDO || c.status === StatusEnum.FECHADO) &&
+        c.tempo_resolucao_minutos !== null &&
+        c.tempo_resolucao_minutos !== undefined
     );
     const tempoMedioResolucao =
-      chamadosResolvidos.length > 0
+      chamadosComResolucao.length > 0
         ? Math.round(
-            chamadosResolvidos.reduce((acc, c) => acc + (c.tempo_resolucao_minutos || 0), 0) /
-              chamadosResolvidos.length / 60
+            chamadosComResolucao.reduce((acc, c) => acc + (c.tempo_resolucao_minutos || 0), 0) /
+              chamadosComResolucao.length / 60
           )
         : 0;
 
@@ -203,7 +206,6 @@ const Dashboard: React.FC = () => {
       emAndamento,
       aguardando,
       resolvidos,
-      fechados,
       arquivados,
       porStatus,
       porPrioridade,
@@ -223,9 +225,14 @@ const Dashboard: React.FC = () => {
       [StatusEnum.EM_ANDAMENTO]: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400',
       [StatusEnum.AGUARDANDO]: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-400',
       [StatusEnum.RESOLVIDO]: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
-      [StatusEnum.FECHADO]: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-400',
+      [StatusEnum.FECHADO]: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400', // Unificado com Resolvido
     };
     return colors[status] || '';
+  };
+
+  // Função para exibir o status (Fechado vira Resolvido visualmente)
+  const getStatusDisplay = (status: StatusEnum): string => {
+    return status === StatusEnum.FECHADO ? 'Resolvido' : status;
   };
 
   const getPrioridadeBadgeColor = (prioridade: PrioridadeEnum): string => {
@@ -337,7 +344,6 @@ const Dashboard: React.FC = () => {
                 <option value={StatusEnum.EM_ANDAMENTO}>Em Andamento</option>
                 <option value={StatusEnum.AGUARDANDO}>Aguardando</option>
                 <option value={StatusEnum.RESOLVIDO}>Resolvidos</option>
-                <option value={StatusEnum.FECHADO}>Fechados</option>
               </select>
             </div>
 
@@ -707,7 +713,7 @@ const Dashboard: React.FC = () => {
                               chamado.status
                             )}`}
                           >
-                            {chamado.status}
+                            {getStatusDisplay(chamado.status)}
                           </span>
                           {chamado.arquivado && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">

@@ -70,17 +70,23 @@ const Chamados: React.FC = () => {
   });
 
   // Agrupa chamados por status para o layout Kanban
+  // Nota: Fechados são unificados com Resolvidos visualmente
   const chamadosPorStatus = useMemo(() => {
     const grupos: Record<StatusEnum, Chamado[]> = {
       [StatusEnum.ABERTO]: [],
       [StatusEnum.EM_ANDAMENTO]: [],
       [StatusEnum.AGUARDANDO]: [],
       [StatusEnum.RESOLVIDO]: [],
-      [StatusEnum.FECHADO]: [],
+      [StatusEnum.FECHADO]: [], // Mantido para compatibilidade, mas não será exibido
     };
 
     chamadosFiltrados.forEach((chamado) => {
-      grupos[chamado.status].push(chamado);
+      // Unifica Fechados com Resolvidos
+      if (chamado.status === StatusEnum.FECHADO) {
+        grupos[StatusEnum.RESOLVIDO].push(chamado);
+      } else {
+        grupos[chamado.status].push(chamado);
+      }
     });
 
     return grupos;
@@ -98,10 +104,15 @@ const Chamados: React.FC = () => {
       case StatusEnum.RESOLVIDO:
         return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400';
       case StatusEnum.FECHADO:
-        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-400';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400'; // Unificado com Resolvido
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-400';
     }
+  };
+
+  // Função para exibir o status (Fechado vira Resolvido visualmente)
+  const getStatusDisplay = (status: StatusEnum): string => {
+    return status === StatusEnum.FECHADO ? 'Resolvido' : status;
   };
 
   // Função para obter a cor da prioridade
@@ -216,11 +227,13 @@ const Chamados: React.FC = () => {
                         focus:outline-none focus:ring-2 focus:ring-[#A78BFA] transition-colors"
               >
                 <option value="">Todos os status</option>
-                {Object.values(StatusEnum).map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
+                {Object.values(StatusEnum)
+                  .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do filtro
+                  .map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -278,8 +291,8 @@ const Chamados: React.FC = () => {
           Exibindo {chamadosFiltrados.length} de {chamados.length} chamados
         </div>
 
-        {/* Kanban */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 gap-4">
+        {/* Kanban - 4 colunas (Fechados unificados com Resolvidos) */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 lg:grid-cols-2 md:grid-cols-2 gap-4">
 
           {/* === COLUNA ABERTO === */}
           <KanbanColumn
@@ -292,7 +305,6 @@ const Chamados: React.FC = () => {
             getPrioridadeColor={getPrioridadeColor}
           />
 
-
           {/* === EM ANDAMENTO === */}
           <KanbanColumn
             title="Em Andamento"
@@ -303,7 +315,6 @@ const Chamados: React.FC = () => {
             navigate={navigate}
             getPrioridadeColor={getPrioridadeColor}
           />
-
 
           {/* === AGUARDANDO === */}
           <KanbanColumn
@@ -316,24 +327,12 @@ const Chamados: React.FC = () => {
             getPrioridadeColor={getPrioridadeColor}
           />
 
-          {/* === RESOLVIDO === */}
+          {/* === RESOLVIDO (inclui Fechados) === */}
           <KanbanColumn
             title="Resolvido"
             colorDot="bg-[#4ADE80]"
             badgeColor="bg-[#4ADE80]/20 text-[#4ADE80]"
             items={chamadosPorStatus[StatusEnum.RESOLVIDO]}
-            usuarios={usuarios}
-            navigate={navigate}
-            getPrioridadeColor={getPrioridadeColor}
-          />
-
-
-          {/* === FECHADO === */}
-          <KanbanColumn
-            title="Fechado"
-            colorDot="bg-[#7C3AED]"
-            badgeColor="bg-[#7C3AED]/20 text-[#7C3AED]"
-            items={chamadosPorStatus[StatusEnum.FECHADO]}
             usuarios={usuarios}
             navigate={navigate}
             getPrioridadeColor={getPrioridadeColor}
