@@ -25,6 +25,7 @@ import {
   Eye,
   EyeOff,
   Archive,
+  Ban,
 } from 'lucide-react';
 import { useChamados } from '../hooks/useChamados';
 import { useAuth } from '../hooks/useAuth';
@@ -712,6 +713,12 @@ const Dashboard: React.FC = () => {
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
                               <Archive className="w-3 h-3" />
                               Arquivado
+                            </span>
+                          )}
+                          {chamado.cancelado && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
+                              <Ban className="w-3 h-3" />
+                              Cancelado
                             </span>
                           )}
                         </div>
