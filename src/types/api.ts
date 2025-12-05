@@ -133,6 +133,8 @@ export interface Chamado {
   tempo_resolucao_minutos?: number;
   observacoes?: string;
   avaliacao?: number;
+  cancelado: boolean;
+  arquivado: boolean;
   data_abertura: string;
   data_atualizacao: string;
   data_resolucao?: string;
@@ -219,6 +221,8 @@ export interface ChamadosQueryParams {
   status?: StatusEnum;
   solicitante_id?: number;
   tecnico_id?: number;
+  incluir_cancelados?: boolean;
+  incluir_arquivados?: boolean;
 }
 
 export interface UsuariosQueryParams {

@@ -10,7 +10,7 @@ import { KanbanColumn } from '../components/KanbanColumn';
 const Chamados: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { chamados, loading, error } = useChamados();
+  const { chamados, loading, error, carregarChamados } = useChamados();
 
   // Filtros
   const [filtroStatus, setFiltroStatus] = useState<StatusEnum | ''>('');
@@ -24,6 +24,11 @@ const Chamados: React.FC = () => {
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
   const isUsuario = user?.role === 'Usuario';
+
+  // Forçar reload dos chamados quando a página é montada
+  useEffect(() => {
+    carregarChamados();
+  }, []);
 
   // Buscar nomes dos usuários (solicitantes)
   useEffect(() => {

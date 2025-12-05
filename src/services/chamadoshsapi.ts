@@ -150,6 +150,30 @@ export const chamadosService = {
   async deletar(id: number): Promise<void> {
     await api.delete(`/chamados/${id}`);
   },
+
+  /**
+   * Cancela um chamado
+   */
+  async cancelar(id: number, usuarioId: number): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/cancelar?usuario_id=${usuarioId}`);
+    return response.data;
+  },
+
+  /**
+   * Arquiva um chamado
+   */
+  async arquivar(id: number, usuarioId: number): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/arquivar?usuario_id=${usuarioId}`);
+    return response.data;
+  },
+
+  /**
+   * Desarquiva um chamado
+   */
+  async desarquivar(id: number, usuarioId: number): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/desarquivar?usuario_id=${usuarioId}`);
+    return response.data;
+  },
 };
 
 // ============================================

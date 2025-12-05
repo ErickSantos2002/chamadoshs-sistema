@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
-import { usuariosService, categoriasService } from '../services/chamadoshsapi';
+import { usuariosService, categoriasService, chamadosService } from '../services/chamadoshsapi';
 import { getRoleName } from '../utils/roleMapper';
 import {
   Chamado,
@@ -28,6 +28,9 @@ import {
   RotateCcw,
   User,
   Star,
+  Ban,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 
 const ChamadoDetalhes: React.FC = () => {
@@ -78,6 +81,12 @@ const ChamadoDetalhes: React.FC = () => {
     StatusEnum.RESOLVIDO,
   );
   const [solucaoModal, setSolucaoModal] = useState('');
+
+  // Estados para modais de cancelar e arquivar
+  const [mostrarModalCancelar, setMostrarModalCancelar] = useState(false);
+  const [mostrarModalArquivar, setMostrarModalArquivar] = useState(false);
+  const [processando, setProcessando] = useState(false);
+  const [motivoCancelamento, setMotivoCancelamento] = useState('');
 
   // Estados para avaliação
   const [avaliacao, setAvaliacao] = useState<number | null>(null);
@@ -332,6 +341,64 @@ const ChamadoDetalhes: React.FC = () => {
       setError('Erro ao atualizar chamado.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Função para cancelar chamado
+  const handleCancelarChamado = async () => {
+    if (!chamado || !user) return;
+
+    if (!motivoCancelamento.trim()) {
+      alert('Por favor, descreva o motivo do cancelamento.');
+      return;
+    }
+
+    try {
+      setProcessando(true);
+
+      // Primeiro cancela o chamado
+      await chamadosService.cancelar(chamado.id, user.id);
+
+      // Depois atualiza com o motivo (solução)
+      await atualizarChamado(chamado.id, { solucao: motivoCancelamento }, user.id);
+
+      setMostrarModalCancelar(false);
+      setMotivoCancelamento('');
+
+      // Redireciona para a página de chamados
+      navigate('/chamados', { replace: true });
+    } catch (err: any) {
+      console.error('Erro ao cancelar chamado:', err);
+      alert('Erro ao cancelar chamado.');
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  // Função para arquivar chamado
+  const handleArquivarChamado = async () => {
+    if (!chamado || !user) return;
+
+    try {
+      setProcessando(true);
+
+      if (chamado.arquivado) {
+        // Desarquivar
+        await chamadosService.desarquivar(chamado.id, user.id);
+      } else {
+        // Arquivar
+        await chamadosService.arquivar(chamado.id, user.id);
+      }
+
+      setMostrarModalArquivar(false);
+
+      // Redireciona para a página de chamados
+      navigate('/chamados', { replace: true });
+    } catch (err: any) {
+      console.error('Erro ao arquivar/desarquivar chamado:', err);
+      alert('Erro ao processar solicitação.');
+    } finally {
+      setProcessando(false);
     }
   };
 
@@ -620,27 +687,66 @@ const ChamadoDetalhes: React.FC = () => {
                 </p>
               </div>
 
-              {/* Botões de ação (editar / salvar / cancelar) */}
+              {/* Botões de ação (editar / salvar / cancelar / arquivar) */}
               {podeEditar && (
                 <div className="flex gap-2">
                   {!modoEdicao ? (
-                    // Botão Editar
-                    <button
-                      onClick={() => setModoEdicao(true)}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 
-                                text-gray-700 dark:text-gray-300 rounded-lg
-                                hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
-                                transition-colors flex items-center gap-2"
-                    >
-                      <Edit className="w-5 h-5" />
-                      Editar Detalhes
-                    </button>
+                    <>
+                      {/* Botão Cancelar Chamado */}
+                      {!chamado?.cancelado && (
+                        <button
+                          onClick={() => setMostrarModalCancelar(true)}
+                          className="px-4 py-2 border border-red-300 dark:border-red-600
+                                    text-red-700 dark:text-red-400 rounded-lg
+                                    hover:bg-red-50 dark:hover:bg-red-900/20
+                                    transition-colors flex items-center gap-2"
+                        >
+                          <Ban className="w-5 h-5" />
+                          Cancelar Chamado
+                        </button>
+                      )}
+
+                      {/* Botão Arquivar/Desarquivar */}
+                      <button
+                        onClick={() => setMostrarModalArquivar(true)}
+                        className={`px-4 py-2 border rounded-lg
+                                  transition-colors flex items-center gap-2 ${
+                                    chamado?.arquivado
+                                      ? 'border-green-300 dark:border-green-600 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                                      : 'border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                                  }`}
+                      >
+                        {chamado?.arquivado ? (
+                          <>
+                            <ArchiveRestore className="w-5 h-5" />
+                            Desarquivar
+                          </>
+                        ) : (
+                          <>
+                            <Archive className="w-5 h-5" />
+                            Arquivar
+                          </>
+                        )}
+                      </button>
+
+                      {/* Botão Editar */}
+                      <button
+                        onClick={() => setModoEdicao(true)}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600
+                                  text-gray-700 dark:text-gray-300 rounded-lg
+                                  hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                                  transition-colors flex items-center gap-2"
+                      >
+                        <Edit className="w-5 h-5" />
+                        Editar Detalhes
+                      </button>
+                    </>
                   ) : (
                     <>
-                      {/* Botão Cancelar */}
+                      {/* Botão Cancelar Edição */}
                       <button
                         onClick={() => setModoEdicao(false)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600
                                   text-gray-700 dark:text-gray-300 rounded-lg
                                   hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
                                   transition-colors flex items-center gap-2"
@@ -652,8 +758,8 @@ const ChamadoDetalhes: React.FC = () => {
                       {/* Botão Salvar */}
                       <button
                         onClick={handleSalvarEdicao}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 
-                                  text-white font-medium rounded-lg shadow-sm 
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700
+                                  text-white font-medium rounded-lg shadow-sm
                                   hover:shadow-md transition-all duration-200 flex items-center gap-2"
                       >
                         <Save className="w-5 h-5" />
@@ -1189,7 +1295,7 @@ const ChamadoDetalhes: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              
+
               {/* Título e Fechar */}
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -1209,7 +1315,7 @@ const ChamadoDetalhes: React.FC = () => {
                     setMostrarModalResolucao(false);
                     setSolucaoModal("");
                   }}
-                  className="text-gray-500 hover:text-gray-700 
+                  className="text-gray-500 hover:text-gray-700
                             dark:text-gray-400 dark:hover:text-gray-200"
                 >
                   <X className="w-6 h-6" />
@@ -1243,7 +1349,7 @@ const ChamadoDetalhes: React.FC = () => {
 
                 {/* Botões */}
                 <div className="flex justify-end gap-3 pt-4">
-                  
+
                   <button
                     onClick={() => {
                       setMostrarModalResolucao(false);
@@ -1273,6 +1379,165 @@ const ChamadoDetalhes: React.FC = () => {
                   </button>
 
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cancelar Chamado */}
+      {mostrarModalCancelar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-[#7C3AED]">
+                    Cancelar Chamado
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    Descreva o motivo do cancelamento deste chamado
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setMostrarModalCancelar(false);
+                    setMotivoCancelamento('');
+                  }}
+                  className="text-gray-500 hover:text-gray-700
+                            dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  Esta ação irá marcar o chamado como cancelado. O chamado não será excluído, mas não aparecerá mais na listagem padrão.
+                </p>
+              </div>
+
+              {/* Campo de Motivo */}
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-gray-900 dark:text-[#7C3AED] mb-2">
+                  Motivo do Cancelamento <span className="text-red-500">*</span>
+                </label>
+
+                <textarea
+                  value={motivoCancelamento}
+                  onChange={(e) => setMotivoCancelamento(e.target.value)}
+                  rows={6}
+                  placeholder="Descreva o motivo pelo qual este chamado está sendo cancelado..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700
+                            rounded-lg focus:ring-2 focus:ring-red-500
+                            bg-white dark:bg-[#2a2a2a]
+                            text-gray-800 dark:text-gray-200 resize-none"
+                />
+
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Campo obrigatório — explique por que o chamado foi cancelado
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setMostrarModalCancelar(false);
+                    setMotivoCancelamento('');
+                  }}
+                  disabled={processando}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600
+                            text-gray-700 dark:text-gray-300 rounded-lg
+                            hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                            transition-colors disabled:opacity-50"
+                >
+                  Não, voltar
+                </button>
+                <button
+                  onClick={handleCancelarChamado}
+                  disabled={processando || !motivoCancelamento.trim()}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700
+                            disabled:bg-gray-400 disabled:cursor-not-allowed
+                            text-white font-medium rounded-lg shadow-sm
+                            hover:shadow-md transition-all duration-200
+                            flex items-center gap-2"
+                >
+                  <Ban className="w-5 h-5" />
+                  {processando ? 'Cancelando...' : 'Sim, cancelar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Arquivar/Desarquivar Chamado */}
+      {mostrarModalArquivar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-[#7C3AED]">
+                    {chamado?.arquivado ? 'Desarquivar Chamado' : 'Arquivar Chamado'}
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    {chamado?.arquivado
+                      ? 'Este chamado voltará a aparecer na listagem padrão.'
+                      : 'Este chamado será ocultado da listagem padrão.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setMostrarModalArquivar(false)}
+                  className="text-gray-500 hover:text-gray-700
+                            dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className={`${chamado?.arquivado ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'} border rounded-lg p-4 mb-4`}>
+                <p className={`text-sm ${chamado?.arquivado ? 'text-green-800 dark:text-green-200' : 'text-amber-800 dark:text-amber-200'}`}>
+                  {chamado?.arquivado
+                    ? 'O chamado será restaurado e voltará a aparecer na listagem principal.'
+                    : 'O chamado não será excluído, apenas ocultado da visualização padrão. Você poderá visualizá-lo novamente usando os filtros.'}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setMostrarModalArquivar(false)}
+                  disabled={processando}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600
+                            text-gray-700 dark:text-gray-300 rounded-lg
+                            hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                            transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleArquivarChamado}
+                  disabled={processando}
+                  className={`px-4 py-2 font-medium rounded-lg shadow-sm
+                            hover:shadow-md transition-all duration-200
+                            flex items-center gap-2 disabled:opacity-50 text-white ${
+                              chamado?.arquivado
+                                ? 'bg-green-600 hover:bg-green-700'
+                                : 'bg-amber-600 hover:bg-amber-700'
+                            }`}
+                >
+                  {chamado?.arquivado ? (
+                    <>
+                      <ArchiveRestore className="w-5 h-5" />
+                      {processando ? 'Desarquivando...' : 'Sim, desarquivar'}
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="w-5 h-5" />
+                      {processando ? 'Arquivando...' : 'Sim, arquivar'}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

@@ -22,26 +22,66 @@ import {
   XCircle,
   Loader2,
   Activity,
+  Eye,
+  EyeOff,
+  Archive,
 } from 'lucide-react';
 import { useChamados } from '../hooks/useChamados';
 import { useAuth } from '../hooks/useAuth';
 import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
 import { useNavigate } from 'react-router-dom';
+import { chamadosService } from '../services/chamadoshsapi';
 
 // ========================================
 // COMPONENTE PRINCIPAL
 // ========================================
 
 const Dashboard: React.FC = () => {
-  const { chamados, categorias, loading } = useChamados();
+  const { categorias } = useChamados();
   const { user } = useAuth();
   const navigate = useNavigate();
 
   // Estados locais
+  const [chamados, setChamados] = useState<Chamado[]>([]);
+  const [loading, setLoading] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>('todas');
+  const [incluirCancelados, setIncluirCancelados] = useState(false);
 
   const CORES_GRAFICO = ['#3b82f6', '#22c55e', '#facc15', '#ef4444', '#a855f7'];
+
+  // ========================================
+  // CARREGAR CHAMADOS COM FILTROS CORRETOS
+  // ========================================
+
+  useEffect(() => {
+    const carregarChamadosDashboard = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+
+        const params: any = {
+          incluir_arquivados: true, // Dashboard sempre inclui arquivados
+          incluir_cancelados: incluirCancelados, // Controlado pelo filtro
+        };
+
+        // Usuários comuns só veem seus próprios chamados
+        if (user.role === 'Usuario') {
+          params.solicitante_id = user.id;
+        }
+
+        const data = await chamadosService.listar(params);
+        setChamados(data);
+      } catch (err) {
+        console.error('Erro ao carregar chamados do dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarChamadosDashboard();
+  }, [user, incluirCancelados]);
 
   // ========================================
   // CÁLCULO DE MÉTRICAS
@@ -53,8 +93,10 @@ const Dashboard: React.FC = () => {
         total: 0,
         abertos: 0,
         emAndamento: 0,
+        aguardando: 0,
         resolvidos: 0,
         fechados: 0,
+        arquivados: 0,
         porStatus: [],
         porPrioridade: [],
         porCategoria: [],
@@ -78,12 +120,17 @@ const Dashboard: React.FC = () => {
       chamadosFiltrados = chamadosFiltrados.filter((c) => c.prioridade === filtroPrioridade);
     }
 
-    // Contadores por status
-    const abertos = chamadosFiltrados.filter((c) => c.status === StatusEnum.ABERTO).length;
-    const emAndamento = chamadosFiltrados.filter((c) => c.status === StatusEnum.EM_ANDAMENTO).length;
-    const resolvidos = chamadosFiltrados.filter((c) => c.status === StatusEnum.RESOLVIDO).length;
-    const fechados = chamadosFiltrados.filter((c) => c.status === StatusEnum.FECHADO).length;
-    const aguardando = chamadosFiltrados.filter((c) => c.status === StatusEnum.AGUARDANDO).length;
+    // Separar arquivados dos ativos
+    const chamadosAtivos = chamadosFiltrados.filter((c) => !c.arquivado);
+    const chamadosArquivados = chamadosFiltrados.filter((c) => c.arquivado);
+
+    // Contadores por status (APENAS ATIVOS - excluindo arquivados)
+    const abertos = chamadosAtivos.filter((c) => c.status === StatusEnum.ABERTO).length;
+    const emAndamento = chamadosAtivos.filter((c) => c.status === StatusEnum.EM_ANDAMENTO).length;
+    const resolvidos = chamadosAtivos.filter((c) => c.status === StatusEnum.RESOLVIDO).length;
+    const fechados = chamadosAtivos.filter((c) => c.status === StatusEnum.FECHADO).length;
+    const aguardando = chamadosAtivos.filter((c) => c.status === StatusEnum.AGUARDANDO).length;
+    const arquivados = chamadosArquivados.length;
 
     // Dados para gráfico de status
     const porStatus = [
@@ -153,15 +200,17 @@ const Dashboard: React.FC = () => {
       total: chamadosFiltrados.length,
       abertos,
       emAndamento,
+      aguardando,
       resolvidos,
       fechados,
+      arquivados,
       porStatus,
       porPrioridade,
       porCategoria,
       tempoMedioResolucao,
       chamadosRecentes,
     };
-  }, [chamados, user, categorias, filtroStatus, filtroPrioridade]);
+  }, [chamados, user, categorias, filtroStatus, filtroPrioridade, incluirCancelados]);
 
   // ========================================
   // FUNÇÕES AUXILIARES
@@ -236,11 +285,36 @@ const Dashboard: React.FC = () => {
 
         {/* Filtros */}
         <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mt-6 mb-6 transition-colors">
-          <div className="flex items-center mb-6">
-            <Filter className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-300" />
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-              Filtros
-            </h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <Filter className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-300" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                Filtros
+              </h2>
+            </div>
+
+            {/* Botão Toggle Cancelados */}
+            <button
+              onClick={() => setIncluirCancelados(!incluirCancelados)}
+              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-medium ${
+                incluirCancelados
+                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              title={incluirCancelados ? 'Ocultar cancelados' : 'Mostrar cancelados'}
+            >
+              {incluirCancelados ? (
+                <>
+                  <Eye className="w-4 h-4" />
+                  <span className="hidden sm:inline">Exibindo cancelados</span>
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-4 h-4" />
+                  <span className="hidden sm:inline">Cancelados ocultos</span>
+                </>
+              )}
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -290,7 +364,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
 
           {/* Total */}
           <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
@@ -348,6 +422,21 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="bg-green-100/70 dark:bg-green-900/50 p-3 rounded-full">
                 <CheckCircle2 className="w-6 h-6 text-[#4ADE80]" />
+              </div>
+            </div>
+          </div>
+
+          {/* Arquivados */}
+          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-400">Arquivados</p>
+                <p className="text-3xl font-semibold text-[#F59E0B] dark:text-[#FCD34D] mt-2 tracking-tight">
+                  {metricas.arquivados}
+                </p>
+              </div>
+              <div className="bg-amber-100/70 dark:bg-amber-900/50 p-3 rounded-full">
+                <Archive className="w-6 h-6 text-[#F59E0B]" />
               </div>
             </div>
           </div>
@@ -611,13 +700,21 @@ const Dashboard: React.FC = () => {
                       </td>
 
                       <td className="px-4 py-3 text-center">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(
-                            chamado.status
-                          )}`}
-                        >
-                          {chamado.status}
-                        </span>
+                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(
+                              chamado.status
+                            )}`}
+                          >
+                            {chamado.status}
+                          </span>
+                          {chamado.arquivado && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+                              <Archive className="w-3 h-3" />
+                              Arquivado
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="px-4 py-3 text-center">
