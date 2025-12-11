@@ -99,6 +99,11 @@ const Chamados: React.FC = () => {
       }
     });
 
+    // Ordena cada grupo por ID decrescente (mais recente primeiro)
+    Object.keys(grupos).forEach((status) => {
+      grupos[status as StatusEnum].sort((a, b) => b.id - a.id);
+    });
+
     return grupos;
   }, [chamadosFiltrados]);
 
