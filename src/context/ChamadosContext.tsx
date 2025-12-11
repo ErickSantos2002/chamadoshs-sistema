@@ -23,6 +23,7 @@ type ChamadosContextType = {
   chamados: Chamado[];
   categorias: Categoria[];
   tecnicos: Usuario[];
+  usuarios: Usuario[];
   loading: boolean;
   error: string | null;
 
@@ -43,6 +44,7 @@ type ChamadosContextType = {
   // Funções auxiliares
   carregarCategorias: () => Promise<void>;
   carregarTecnicos: () => Promise<void>;
+  carregarUsuarios: () => Promise<void>;
   limparErro: () => void;
 };
 
@@ -54,6 +56,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [tecnicos, setTecnicos] = useState<Usuario[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +64,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
   const [chamadosCarregados, setChamadosCarregados] = useState(false);
   const [categoriasCarregadas, setCategoriasCarregadas] = useState(false);
   const [tecnicosCarregados, setTecnicosCarregados] = useState(false);
+  const [usuariosCarregados, setUsuariosCarregados] = useState(false);
 
   // Carregar chamados baseado na role do usuário
   const carregarChamados = useCallback(async () => {
@@ -249,6 +253,19 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [tecnicosCarregados]);
 
+  // Carregar usuários (todos os usuários ativos)
+  const carregarUsuarios = useCallback(async () => {
+    if (usuariosCarregados) return;
+
+    try {
+      const data = await usuariosService.listar({ ativo: true }); // Todos os usuários ativos
+      setUsuarios(data);
+      setUsuariosCarregados(true);
+    } catch (err: any) {
+      console.error('Erro ao carregar usuários:', err);
+    }
+  }, [usuariosCarregados]);
+
   // Limpar erro
   const limparErro = useCallback(() => {
     setError(null);
@@ -279,6 +296,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         chamados,
         categorias,
         tecnicos,
+        usuarios,
         loading,
         error,
         carregarChamados,
@@ -291,6 +309,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         carregarHistorico,
         carregarCategorias,
         carregarTecnicos,
+        carregarUsuarios,
         limparErro,
       }}
     >

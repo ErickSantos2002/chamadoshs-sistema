@@ -8,19 +8,27 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 const NovoChamado: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { categorias, criarChamado, carregarCategorias } = useChamados();
+  const { categorias, usuarios, criarChamado, carregarCategorias, carregarUsuarios } = useChamados();
 
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [prioridade, setPrioridade] = useState<PrioridadeEnum>(PrioridadeEnum.MEDIA);
   const [categoriaId, setCategoriaId] = useState<number | undefined>();
+  const [solicitanteId, setSolicitanteId] = useState<number | undefined>();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Verifica se o usuário logado é técnico
+  const isTecnico = user?.role === 'Tecnico' || user?.role === 'Administrador';
+
   useEffect(() => {
     carregarCategorias();
-  }, [carregarCategorias]);
+    // Carrega usuários se for técnico
+    if (isTecnico) {
+      carregarUsuarios();
+    }
+  }, [carregarCategorias, carregarUsuarios, isTecnico]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,16 +43,24 @@ const NovoChamado: React.FC = () => {
       return;
     }
 
+    // Se for técnico, solicitante é obrigatório
+    if (isTecnico && !solicitanteId) {
+      setError('Por favor, selecione o solicitante');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
       const novoChamado: ChamadoCreate = {
-        solicitante_id: user.id,
+        solicitante_id: isTecnico ? solicitanteId! : user.id,
         titulo: titulo.trim(),
         descricao: descricao.trim(),
         prioridade,
         categoria_id: categoriaId,
+        // Se for técnico, define automaticamente como técnico responsável
+        tecnico_responsavel_id: isTecnico ? user.id : undefined,
       };
 
       const chamadoCriado = await criarChamado(novoChamado);
@@ -79,13 +95,15 @@ const NovoChamado: React.FC = () => {
               Voltar
             </button>
 
-            <h1 className="text-3xl font-bold text-gray-900 
+            <h1 className="text-3xl font-bold text-gray-900
                           dark:text-[#A78BFA] tracking-tight">
               Novo Chamado
             </h1>
 
             <p className="text-gray-600 dark:text-gray-300 mt-1">
-              Preencha os dados abaixo para abrir um novo chamado
+              {isTecnico
+                ? 'Preencha os dados abaixo para abrir um chamado em nome de um usuário'
+                : 'Preencha os dados abaixo para abrir um novo chamado'}
             </p>
           </div>
         </div>
@@ -144,11 +162,11 @@ const NovoChamado: React.FC = () => {
               onChange={(e) => setDescricao(e.target.value)}
               rows={6}
               placeholder="Descreva detalhadamente o problema ou solicitação..."
-              className="w-full px-4 py-2 border rounded-lg 
+              className="w-full px-4 py-2 border rounded-lg
                         bg-white dark:bg-[#2a2a2a]
-                        text-gray-800 dark:text-gray-200 
+                        text-gray-800 dark:text-gray-200
                         border-gray-300 dark:border-gray-600
-                        focus:outline-none focus:ring-2 
+                        focus:outline-none focus:ring-2
                         focus:ring-[#7C3AED] transition-colors resize-none"
               required
             />
@@ -157,6 +175,45 @@ const NovoChamado: React.FC = () => {
               Seja o mais detalhado possível para agilizar o atendimento
             </p>
           </div>
+
+          {/* Campo de Solicitante (apenas para técnicos) */}
+          {isTecnico && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Solicitante <span className="text-red-500">*</span>
+              </label>
+
+              <select
+                value={solicitanteId || ''}
+                onChange={(e) => setSolicitanteId(e.target.value ? parseInt(e.target.value) : undefined)}
+                className="w-full px-4 py-2 border rounded-lg
+                          bg-white dark:bg-[#2a2a2a]
+                          text-gray-800 dark:text-gray-200
+                          border-gray-300 dark:border-gray-600
+                          focus:outline-none focus:ring-2
+                          focus:ring-[#7C3AED] transition-colors"
+                required={isTecnico}
+              >
+                <option value="">Selecione o solicitante</option>
+
+                {usuarios.map((usuario) => (
+                  <option key={usuario.id} value={usuario.id}>
+                    {usuario.nome}
+                  </option>
+                ))}
+              </select>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Você será definido automaticamente como técnico responsável
+              </p>
+
+              {usuarios.length === 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Nenhum usuário disponível
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Grid Categoria + Prioridade */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -255,10 +312,10 @@ const NovoChamado: React.FC = () => {
 
             <button
               type="submit"
-              disabled={loading || !titulo.trim() || !descricao.trim()}
-              className="px-6 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] 
+              disabled={loading || !titulo.trim() || !descricao.trim() || (isTecnico && !solicitanteId)}
+              className="px-6 py-2 bg-[#7C3AED] hover:bg-[#6D28D9]
                         dark:bg-[#A78BFA] dark:hover:bg-[#C4B5FD]
-                        text-white font-medium rounded-lg shadow-sm 
+                        text-white font-medium rounded-lg shadow-sm
                         hover:shadow-md transition-all duration-200
                         disabled:opacity-50 flex items-center gap-2"
             >

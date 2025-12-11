@@ -148,6 +148,7 @@ export interface ChamadoCreate {
   titulo: string;
   descricao: string;
   prioridade?: PrioridadeEnum;
+  tecnico_responsavel_id?: number;
 }
 
 export interface ChamadoUpdate {
