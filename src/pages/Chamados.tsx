@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { StatusEnum, PrioridadeEnum, Chamado, Usuario } from '../types/api';
-import { Filter, Plus, Search, Loader2, User } from 'lucide-react';
+import { Filter, Plus, Search, Loader2, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { usuariosService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
 
@@ -16,6 +16,7 @@ const Chamados: React.FC = () => {
   const [filtroStatus, setFiltroStatus] = useState<StatusEnum | ''>('');
   const [filtroPrioridade, setFiltroPrioridade] = useState<PrioridadeEnum | ''>('');
   const [filtroProtocolo, setFiltroProtocolo] = useState('');
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
   // Estado para armazenar os usuários (solicitantes)
   const [usuarios, setUsuarios] = useState<Record<number, Usuario>>({});
@@ -200,96 +201,119 @@ const Chamados: React.FC = () => {
         </div>
 
         {/* Filtros */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mb-6 transition-colors">
-          <div className="flex items-center mb-6">
-            <Filter className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-300" />
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Filtros
-            </h2>
+        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mb-4 transition-colors">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Filter className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-300" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Filtros
+              </h2>
+            </div>
+            <button
+              onClick={() => setMostrarFiltros(!mostrarFiltros)}
+              className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300
+                        hover:text-[#2563EB] dark:hover:text-[#60A5FA] font-medium transition-colors"
+            >
+              {mostrarFiltros ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  Ocultar filtros
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  Mostrar filtros
+                </>
+              )}
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {mostrarFiltros && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
 
-            {/* Filtro Protocolo */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Protocolo
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={filtroProtocolo}
-                  onChange={(e) => setFiltroProtocolo(e.target.value)}
-                  placeholder="Buscar por protocolo..."
-                  className="pl-10 w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                          text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                          focus:outline-none focus:ring-2 focus:ring-[#7C3AED] transition-colors"
-                />
+                {/* Filtro Protocolo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Protocolo
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={filtroProtocolo}
+                      onChange={(e) => setFiltroProtocolo(e.target.value)}
+                      placeholder="Buscar por protocolo..."
+                      className="pl-10 w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                              text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                              focus:outline-none focus:ring-2 focus:ring-[#7C3AED] transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtro Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={filtroStatus}
+                    onChange={(e) => setFiltroStatus(e.target.value as StatusEnum | '')}
+                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                            text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                            focus:outline-none focus:ring-2 focus:ring-[#A78BFA] transition-colors"
+                  >
+                    <option value="">Todos os status</option>
+                    {Object.values(StatusEnum)
+                      .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do filtro
+                      .map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* Filtro Prioridade */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Prioridade
+                  </label>
+                  <select
+                    value={filtroPrioridade}
+                    onChange={(e) => setFiltroPrioridade(e.target.value as PrioridadeEnum | '')}
+                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                            text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                            focus:outline-none focus:ring-2 focus:ring-[#DB2777] transition-colors"
+                  >
+                    <option value="">Todas as prioridades</option>
+                    {Object.values(PrioridadeEnum).map((prioridade) => (
+                      <option key={prioridade} value={prioridade}>
+                        {prioridade}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
               </div>
-            </div>
 
-            {/* Filtro Status */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Status
-              </label>
-              <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value as StatusEnum | '')}
-                className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                        text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                        focus:outline-none focus:ring-2 focus:ring-[#A78BFA] transition-colors"
-              >
-                <option value="">Todos os status</option>
-                {Object.values(StatusEnum)
-                  .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do filtro
-                  .map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            {/* Filtro Prioridade */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Prioridade
-              </label>
-              <select
-                value={filtroPrioridade}
-                onChange={(e) => setFiltroPrioridade(e.target.value as PrioridadeEnum | '')}
-                className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                        text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                        focus:outline-none focus:ring-2 focus:ring-[#DB2777] transition-colors"
-              >
-                <option value="">Todas as prioridades</option>
-                {Object.values(PrioridadeEnum).map((prioridade) => (
-                  <option key={prioridade} value={prioridade}>
-                    {prioridade}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-          </div>
-
-          {/* Botão limpar filtros */}
-          {(filtroStatus || filtroPrioridade || filtroProtocolo) && (
-            <div className="mt-4">
-              <button
-                onClick={() => {
-                  setFiltroStatus('');
-                  setFiltroPrioridade('');
-                  setFiltroProtocolo('');
-                }}
-                className="text-sm text-[#2563EB] hover:text-[#1E40AF] dark:text-[#60A5FA]
-                          dark:hover:text-[#93C5FD] font-medium"
-              >
-                Limpar filtros
-              </button>
-            </div>
+              {/* Botão limpar filtros */}
+              {(filtroStatus || filtroPrioridade || filtroProtocolo) && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      setFiltroStatus('');
+                      setFiltroPrioridade('');
+                      setFiltroProtocolo('');
+                    }}
+                    className="text-sm text-[#2563EB] hover:text-[#1E40AF] dark:text-[#60A5FA]
+                              dark:hover:text-[#93C5FD] font-medium"
+                  >
+                    Limpar filtros
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -302,7 +326,7 @@ const Chamados: React.FC = () => {
         )}
 
         {/* Contador */}
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
           Exibindo {chamadosFiltrados.length} de {chamados.length} chamados
         </div>
 
