@@ -3,9 +3,6 @@ import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../assets/HS2.ico';
-import ModalTrocarSenha from '../components/ModalTrocarSenha';
-import { authService } from '../services/chamadoshsapi';
-import toast from 'react-hot-toast';
 
 
 const Header: React.FC = () => {
@@ -15,7 +12,6 @@ const Header: React.FC = () => {
 
   const [menuVisivel, setMenuVisivel] = useState(false);
   const [menuAnimado, setMenuAnimado] = useState(false);
-  const [modalSenhaAberta, setModalSenhaAberta] = useState(false);
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -54,22 +50,6 @@ const Header: React.FC = () => {
       document.body.style.overflow = '';
     };
   }, [menuVisivel]);
-
-  const handleConfirmarSenha = async (senhaAtual: string, novaSenha: string) => {
-    try {
-      await authService.alterarSenha({
-        senha_atual: senhaAtual,
-        senha_nova: novaSenha
-      });
-      toast.success('Senha alterada com sucesso!');
-    } catch (error: any) {
-      if (error.response?.status === 400) {
-        toast.error('Senha atual incorreta!');
-      } else {
-        toast.error('Erro ao alterar senha. Tente novamente.');
-      }
-    }
-  };
 
   const iconBaseClass = 'w-5 h-5 mr-2 transition-colors';
 
@@ -158,17 +138,14 @@ const Header: React.FC = () => {
 
         {/* Infos e botão sair */}
         <div className="flex items-center gap-4 text-sm">
-          <button
-            onClick={() => setModalSenhaAberta(true)}
-            className="group text-gray-700 dark:text-gray-300 underline underline-offset-4 transition hover:text-blue-600 dark:hover:text-blue-400"
-          >
+          <span className="group text-gray-700 dark:text-gray-300">
             <span>
               {user?.username}{' '}
-              <span className="text-xs text-gray-400 group-hover:text-blue-400 transition">
+              <span className="text-xs text-gray-400">
                 ({user?.role})
               </span>
             </span>
-          </button>
+          </span>
 
           {!menuVisivel && (
             <button
@@ -279,13 +256,6 @@ const Header: React.FC = () => {
           </div>
         </>
       )}
-
-      {/* 🔹 Modal de Trocar Senha */}
-      <ModalTrocarSenha
-        isOpen={modalSenhaAberta}
-        onClose={() => setModalSenhaAberta(false)}
-        onConfirm={handleConfirmarSenha}
-      />
     </>
   );
 };
