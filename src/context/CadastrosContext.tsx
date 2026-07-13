@@ -131,9 +131,10 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (err: any) {
       console.error('❌ Erro ao excluir categoria:', err);
 
-      // Verifica se é erro de vínculo
+      // Verifica se é erro de vínculo (a API manda a contagem em detail, ex.:
+      // "Não é possível excluir categoria com 12 chamado(s) vinculado(s)")
       if (err.response?.status === 400) {
-        setError('Não é possível excluir categoria com chamados vinculados');
+        setError(err.response?.data?.detail || 'Não é possível excluir categoria com chamados vinculados');
       } else {
         setError(err.response?.data?.detail || 'Erro ao excluir categoria');
       }
