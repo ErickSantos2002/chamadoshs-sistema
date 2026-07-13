@@ -19,6 +19,7 @@ import {
   SetorCreate,
   Categoria,
   CategoriaCreate,
+  SLAConfig,
 } from '../types/api';
 
 // ============================================
@@ -118,6 +119,34 @@ export const chamadosService = {
   async listar(params?: ChamadosQueryParams): Promise<Chamado[]> {
     const response = await api.get<Chamado[]>('/chamados/', { params });
     return response.data;
+  },
+
+  /**
+   * Lista todos os chamados, buscando página a página até o fim.
+   * A API limita cada resposta a um número fixo de registros, então uma única
+   * chamada devolve apenas o começo da lista.
+   */
+  async listarTodos(params?: ChamadosQueryParams): Promise<Chamado[]> {
+    const tamanhoPagina = 200;
+    const maxPaginas = 100; // trava de segurança contra loop infinito
+    const todos: Chamado[] = [];
+
+    for (let pagina = 0; pagina < maxPaginas; pagina++) {
+      const lote = await this.listar({
+        ...params,
+        skip: pagina * tamanhoPagina,
+        limit: tamanhoPagina,
+      });
+
+      todos.push(...lote);
+
+      if (lote.length < tamanhoPagina) return todos;
+    }
+
+    console.warn(
+      `listarTodos: parou em ${maxPaginas} páginas (${todos.length} chamados). Pode haver registros não carregados.`
+    );
+    return todos;
   },
 
   /**
@@ -371,6 +400,34 @@ export const categoriasService = {
 };
 
 // ============================================
+// SERVIÇO DE CONFIGURAÇÃO DE SLA
+// ============================================
+
+export const slaConfigsService = {
+  /**
+   * Lista os prazos de SLA de todas as prioridades
+   */
+  async listar(): Promise<SLAConfig[]> {
+    const response = await api.get<SLAConfig[]>('/sla-configs/');
+    return response.data;
+  },
+
+  /**
+   * Atualiza os prazos de uma prioridade
+   */
+  async atualizar(
+    prioridade: string,
+    dados: { minutos_resposta: number; minutos_resolucao: number }
+  ): Promise<SLAConfig> {
+    const response = await api.put<SLAConfig>(
+      `/sla-configs/${encodeURIComponent(prioridade)}`,
+      dados
+    );
+    return response.data;
+  },
+};
+
+// ============================================
 // EXPORTAÇÃO DEFAULT
 // ============================================
 
@@ -382,6 +439,7 @@ const chamadosHSApi = {
   usuarios: usuariosService,
   setores: setoresService,
   categorias: categoriasService,
+  slaConfigs: slaConfigsService,
 };
 
 export default chamadosHSApi;

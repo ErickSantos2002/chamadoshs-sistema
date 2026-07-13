@@ -144,7 +144,7 @@ export type ModalMode = 'create' | 'edit' | 'view' | null;
 /**
  * Type para identificar a aba ativa
  */
-export type TipoAba = 'categorias' | 'setores' | 'usuarios';
+export type TipoAba = 'categorias' | 'setores' | 'usuarios' | 'sla';
 
 /**
  * Interface para filtros de busca

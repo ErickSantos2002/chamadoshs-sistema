@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Settings, Tag, Building, Users } from 'lucide-react';
+import { Settings, Tag, Building, Users, Clock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { CadastrosProvider } from '../context/CadastrosContext';
 import CategoriasTab from '../components/cadastros/CategoriasTab';
 import SetoresTab from '../components/cadastros/SetoresTab';
 import UsuariosTab from '../components/cadastros/UsuariosTab';
+import SlaTab from '../components/cadastros/SlaTab';
 import type { TipoAba } from '../types/cadastros.types';
 
 // ========================================
@@ -20,6 +21,7 @@ const CadastrosBasicos: React.FC = () => {
   // ========================================
 
   const podeVerUsuarios = user?.role === 'Administrador' || user?.role === 'Tecnico';
+  const podeVerSla = user?.role === 'Administrador';
 
   // ========================================
   // CONFIGURAÇÃO DAS ABAS
@@ -54,6 +56,13 @@ const CadastrosBasicos: React.FC = () => {
       icon: <Users className="w-4 h-4" />,
       component: <UsuariosTab />,
       visible: podeVerUsuarios,
+    },
+    {
+      id: 'sla',
+      label: 'SLA',
+      icon: <Clock className="w-4 h-4" />,
+      component: <SlaTab ativo={abaAtiva === 'sla'} />,
+      visible: podeVerSla,
     },
   ];
 

@@ -72,7 +72,7 @@ const Dashboard: React.FC = () => {
           params.solicitante_id = user.id;
         }
 
-        const data = await chamadosService.listar(params);
+        const data = await chamadosService.listarTodos(params);
         setChamados(data);
       } catch (err) {
         console.error('Erro ao carregar chamados do dashboard:', err);
@@ -214,6 +214,46 @@ const Dashboard: React.FC = () => {
       chamadosRecentes,
     };
   }, [chamados, user, categorias, filtroStatus, filtroPrioridade, incluirCancelados]);
+
+  // Métricas de SLA
+  const metricasSla = useMemo(() => {
+    const resolvidos = chamados.filter(
+      (c) => c.status === StatusEnum.RESOLVIDO || c.status === StatusEnum.FECHADO
+    );
+    // Cancelados são excluídos explicitamente de "em aberto": cancelado é um
+    // booleano independente do status, e um chamado cancelado não é trabalho pendente.
+    const emAberto = chamados.filter(
+      (c) => c.status !== StatusEnum.RESOLVIDO && c.status !== StatusEnum.FECHADO && !c.cancelado
+    );
+
+    // % dentro do SLA: só faz sentido sobre os resolvidos que de fato têm SLA
+    // calculado (a API manda sla: null quando não há configuração ou o chamado
+    // foi cancelado). Calcular sobre o total de resolvidos mascararia a ausência
+    // de dado como "0% no prazo".
+    const resolvidosComSla = resolvidos.filter((c) => c.sla);
+    const resolvidosNoPrazo = resolvidosComSla.filter(
+      (c) => c.sla!.situacao !== 'Estourado'
+    ).length;
+
+    const percentualNoPrazo =
+      resolvidosComSla.length > 0
+        ? Math.round((resolvidosNoPrazo / resolvidosComSla.length) * 100)
+        : null;
+
+    // Estourados em aberto: a dor de agora
+    const estouradosEmAberto = emAberto.filter(
+      (c) => c.sla?.situacao === 'Estourado'
+    ).length;
+
+    const emAtencao = emAberto.filter((c) => c.sla?.situacao === 'Atenção').length;
+
+    return {
+      percentualNoPrazo,
+      totalResolvidosComSla: resolvidosComSla.length,
+      estouradosEmAberto,
+      emAtencao,
+    };
+  }, [chamados]);
 
   // ========================================
   // FUNÇÕES AUXILIARES
@@ -448,6 +488,56 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
+        </div>
+
+        {/* ======================================== */}
+        {/* MÉTRICAS DE SLA                          */}
+        {/* ======================================== */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            SLA
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Resolvidos dentro do prazo
+              </p>
+              <p
+                className={`text-3xl font-bold ${
+                  metricasSla.percentualNoPrazo !== null
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                {metricasSla.percentualNoPrazo !== null
+                  ? `${metricasSla.percentualNoPrazo}%`
+                  : '—'}
+              </p>
+              <p className="text-xs text-gray-400">
+                {metricasSla.percentualNoPrazo !== null
+                  ? `de ${metricasSla.totalResolvidosComSla} chamado(s) resolvido(s)`
+                  : 'sem dados de SLA'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Estourados em aberto
+              </p>
+              <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+                {metricasSla.estouradosEmAberto}
+              </p>
+              <p className="text-xs text-gray-400">precisam de ação agora</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Em atenção (≥80% do prazo)
+              </p>
+              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                {metricasSla.emAtencao}
+              </p>
+              <p className="text-xs text-gray-400">prestes a estourar</p>
+            </div>
+          </div>
         </div>
 
         {/* Tempo Médio */}

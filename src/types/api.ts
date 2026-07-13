@@ -117,6 +117,26 @@ export interface UsuarioUpdate {
   ativo?: boolean;
 }
 
+// SLA
+export type SLASituacao = 'No prazo' | 'Atenção' | 'Estourado';
+
+export interface SLAInfo {
+  prazo_resposta: string | null;
+  prazo_resolucao: string | null;
+  minutos_resposta_consumidos: number;
+  minutos_resolucao_consumidos: number;
+  minutos_pausados: number;
+  percentual_resolucao: number;
+  situacao: SLASituacao;
+  resposta_cumprida: boolean;
+}
+
+export interface SLAConfig {
+  prioridade: PrioridadeEnum;
+  minutos_resposta: number;
+  minutos_resolucao: number;
+}
+
 // Chamados
 export interface Chamado {
   id: number;
@@ -140,6 +160,7 @@ export interface Chamado {
   data_resolucao?: string;
   created_at: string;
   updated_at: string;
+  sla?: SLAInfo;
 }
 
 export interface ChamadoCreate {

@@ -1,5 +1,6 @@
 import { User } from "lucide-react";
 import { Chamado, PrioridadeEnum, Usuario } from "../types/api";
+import SlaBadge from "./SlaBadge";
 
 interface KanbanColumnProps {
   title: string;
@@ -70,8 +71,9 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 </span>
               </div>
 
-              {/* Prioridade */}
-              <div className="flex items-center justify-end">
+              {/* Prioridade e SLA */}
+              <div className="flex items-center justify-end gap-2">
+                <SlaBadge sla={chamado.sla} compacto />
                 <span
                   className={`px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeColor(
                     chamado.prioridade
