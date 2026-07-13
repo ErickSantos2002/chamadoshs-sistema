@@ -83,7 +83,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
 
       // Técnicos e Admins veem todos os chamados (sem filtro)
 
-      const data = await chamadosService.listar(params);
+      const data = await chamadosService.listarTodos(params);
       setChamados(data);
       setChamadosCarregados(true);
     } catch (err: any) {

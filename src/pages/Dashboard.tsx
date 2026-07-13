@@ -72,7 +72,7 @@ const Dashboard: React.FC = () => {
           params.solicitante_id = user.id;
         }
 
-        const data = await chamadosService.listar(params);
+        const data = await chamadosService.listarTodos(params);
         setChamados(data);
       } catch (err) {
         console.error('Erro ao carregar chamados do dashboard:', err);

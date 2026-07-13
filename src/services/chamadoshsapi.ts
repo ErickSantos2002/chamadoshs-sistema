@@ -121,6 +121,34 @@ export const chamadosService = {
   },
 
   /**
+   * Lista todos os chamados, buscando página a página até o fim.
+   * A API limita cada resposta a um número fixo de registros, então uma única
+   * chamada devolve apenas o começo da lista.
+   */
+  async listarTodos(params?: ChamadosQueryParams): Promise<Chamado[]> {
+    const tamanhoPagina = 200;
+    const maxPaginas = 100; // trava de segurança contra loop infinito
+    const todos: Chamado[] = [];
+
+    for (let pagina = 0; pagina < maxPaginas; pagina++) {
+      const lote = await this.listar({
+        ...params,
+        skip: pagina * tamanhoPagina,
+        limit: tamanhoPagina,
+      });
+
+      todos.push(...lote);
+
+      if (lote.length < tamanhoPagina) return todos;
+    }
+
+    console.warn(
+      `listarTodos: parou em ${maxPaginas} páginas (${todos.length} chamados). Pode haver registros não carregados.`
+    );
+    return todos;
+  },
+
+  /**
    * Busca um chamado por ID
    */
   async buscar(id: number): Promise<Chamado> {
