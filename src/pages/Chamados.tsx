@@ -10,11 +10,12 @@ import { KanbanColumn } from '../components/KanbanColumn';
 const Chamados: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { chamados, loading, error, carregarChamados } = useChamados();
+  const { chamados, categorias, loading, error, carregarChamados } = useChamados();
 
   // Filtros
   const [filtroStatus, setFiltroStatus] = useState<StatusEnum | ''>('');
   const [filtroPrioridade, setFiltroPrioridade] = useState<PrioridadeEnum | ''>('');
+  const [filtroCategoria, setFiltroCategoria] = useState<number | ''>('');
   const [filtroProtocolo, setFiltroProtocolo] = useState('');
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
@@ -76,6 +77,7 @@ const Chamados: React.FC = () => {
   const chamadosFiltrados = chamados.filter((chamado) => {
     if (filtroStatus && chamado.status !== filtroStatus) return false;
     if (filtroPrioridade && chamado.prioridade !== filtroPrioridade) return false;
+    if (filtroCategoria && chamado.categoria_id !== filtroCategoria) return false;
     if (filtroProtocolo && !chamado.protocolo.toLowerCase().includes(filtroProtocolo.toLowerCase())) return false;
     return true;
   });
@@ -230,7 +232,7 @@ const Chamados: React.FC = () => {
 
           {mostrarFiltros && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-6">
 
                 {/* Filtro Protocolo */}
                 <div>
@@ -295,15 +297,39 @@ const Chamados: React.FC = () => {
                   </select>
                 </div>
 
+                {/* Filtro por categoria */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Categoria
+                  </label>
+                  <select
+                    value={filtroCategoria}
+                    onChange={(e) =>
+                      setFiltroCategoria(e.target.value ? Number(e.target.value) : '')
+                    }
+                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                            text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                            focus:outline-none focus:ring-2 focus:ring-[#DB2777] transition-colors"
+                  >
+                    <option value="">Todas as categorias</option>
+                    {categorias.map((categoria) => (
+                      <option key={categoria.id} value={categoria.id}>
+                        {categoria.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
               </div>
 
               {/* Botão limpar filtros */}
-              {(filtroStatus || filtroPrioridade || filtroProtocolo) && (
+              {(filtroStatus || filtroPrioridade || filtroCategoria || filtroProtocolo) && (
                 <div className="mt-4">
                   <button
                     onClick={() => {
                       setFiltroStatus('');
                       setFiltroPrioridade('');
+                      setFiltroCategoria('');
                       setFiltroProtocolo('');
                     }}
                     className="text-sm text-[#2563EB] hover:text-[#1E40AF] dark:text-[#60A5FA]
