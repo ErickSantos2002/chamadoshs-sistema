@@ -220,19 +220,25 @@ const Dashboard: React.FC = () => {
     const resolvidos = chamados.filter(
       (c) => c.status === StatusEnum.RESOLVIDO || c.status === StatusEnum.FECHADO
     );
+    // Cancelados são excluídos explicitamente de "em aberto": cancelado é um
+    // booleano independente do status, e um chamado cancelado não é trabalho pendente.
     const emAberto = chamados.filter(
-      (c) => c.status !== StatusEnum.RESOLVIDO && c.status !== StatusEnum.FECHADO
+      (c) => c.status !== StatusEnum.RESOLVIDO && c.status !== StatusEnum.FECHADO && !c.cancelado
     );
 
-    // % dentro do SLA: entre os JÁ RESOLVIDOS, quantos fecharam sem estourar
-    const resolvidosNoPrazo = resolvidos.filter(
-      (c) => c.sla && c.sla.situacao !== 'Estourado'
+    // % dentro do SLA: só faz sentido sobre os resolvidos que de fato têm SLA
+    // calculado (a API manda sla: null quando não há configuração ou o chamado
+    // foi cancelado). Calcular sobre o total de resolvidos mascararia a ausência
+    // de dado como "0% no prazo".
+    const resolvidosComSla = resolvidos.filter((c) => c.sla);
+    const resolvidosNoPrazo = resolvidosComSla.filter(
+      (c) => c.sla!.situacao !== 'Estourado'
     ).length;
 
     const percentualNoPrazo =
-      resolvidos.length > 0
-        ? Math.round((resolvidosNoPrazo / resolvidos.length) * 100)
-        : 100;
+      resolvidosComSla.length > 0
+        ? Math.round((resolvidosNoPrazo / resolvidosComSla.length) * 100)
+        : null;
 
     // Estourados em aberto: a dor de agora
     const estouradosEmAberto = emAberto.filter(
@@ -243,7 +249,7 @@ const Dashboard: React.FC = () => {
 
     return {
       percentualNoPrazo,
-      totalResolvidos: resolvidos.length,
+      totalResolvidosComSla: resolvidosComSla.length,
       estouradosEmAberto,
       emAtencao,
     };
@@ -496,11 +502,21 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Resolvidos dentro do prazo
               </p>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                {metricasSla.percentualNoPrazo}%
+              <p
+                className={`text-3xl font-bold ${
+                  metricasSla.percentualNoPrazo !== null
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                {metricasSla.percentualNoPrazo !== null
+                  ? `${metricasSla.percentualNoPrazo}%`
+                  : '—'}
               </p>
               <p className="text-xs text-gray-400">
-                de {metricasSla.totalResolvidos} chamado(s) resolvido(s)
+                {metricasSla.percentualNoPrazo !== null
+                  ? `de ${metricasSla.totalResolvidosComSla} chamado(s) resolvido(s)`
+                  : 'sem dados de SLA'}
               </p>
             </div>
             <div>
