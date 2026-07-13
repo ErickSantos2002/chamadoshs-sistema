@@ -13,7 +13,12 @@ const formatarMinutos = (minutos: number): string => {
   return `${horas}h úteis`;
 };
 
-const SlaTab: React.FC = () => {
+interface SlaTabProps {
+  /** Indica se a aba SLA está ativa/visível no momento. */
+  ativo: boolean;
+}
+
+const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
   const [configs, setConfigs] = useState<SLAConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -31,9 +36,14 @@ const SlaTab: React.FC = () => {
     }
   };
 
+  // Recarrega os prazos do servidor sempre que a aba se torna ativa, para
+  // descartar qualquer edição não salva ao sair e voltar (evita mostrar
+  // um valor "sujo" que não reflete o que está persistido no banco).
   useEffect(() => {
-    carregar();
-  }, []);
+    if (ativo) {
+      carregar();
+    }
+  }, [ativo]);
 
   const alterarCampo = (
     prioridade: string,

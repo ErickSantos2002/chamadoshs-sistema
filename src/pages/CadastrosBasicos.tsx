@@ -61,7 +61,7 @@ const CadastrosBasicos: React.FC = () => {
       id: 'sla',
       label: 'SLA',
       icon: <Clock className="w-4 h-4" />,
-      component: <SlaTab />,
+      component: <SlaTab ativo={abaAtiva === 'sla'} />,
       visible: podeVerSla,
     },
   ];
