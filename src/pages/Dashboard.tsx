@@ -215,6 +215,40 @@ const Dashboard: React.FC = () => {
     };
   }, [chamados, user, categorias, filtroStatus, filtroPrioridade, incluirCancelados]);
 
+  // Métricas de SLA
+  const metricasSla = useMemo(() => {
+    const resolvidos = chamados.filter(
+      (c) => c.status === StatusEnum.RESOLVIDO || c.status === StatusEnum.FECHADO
+    );
+    const emAberto = chamados.filter(
+      (c) => c.status !== StatusEnum.RESOLVIDO && c.status !== StatusEnum.FECHADO
+    );
+
+    // % dentro do SLA: entre os JÁ RESOLVIDOS, quantos fecharam sem estourar
+    const resolvidosNoPrazo = resolvidos.filter(
+      (c) => c.sla && c.sla.situacao !== 'Estourado'
+    ).length;
+
+    const percentualNoPrazo =
+      resolvidos.length > 0
+        ? Math.round((resolvidosNoPrazo / resolvidos.length) * 100)
+        : 100;
+
+    // Estourados em aberto: a dor de agora
+    const estouradosEmAberto = emAberto.filter(
+      (c) => c.sla?.situacao === 'Estourado'
+    ).length;
+
+    const emAtencao = emAberto.filter((c) => c.sla?.situacao === 'Atenção').length;
+
+    return {
+      percentualNoPrazo,
+      totalResolvidos: resolvidos.length,
+      estouradosEmAberto,
+      emAtencao,
+    };
+  }, [chamados]);
+
   // ========================================
   // FUNÇÕES AUXILIARES
   // ========================================
@@ -448,6 +482,46 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
+        </div>
+
+        {/* ======================================== */}
+        {/* MÉTRICAS DE SLA                          */}
+        {/* ======================================== */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            SLA
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Resolvidos dentro do prazo
+              </p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                {metricasSla.percentualNoPrazo}%
+              </p>
+              <p className="text-xs text-gray-400">
+                de {metricasSla.totalResolvidos} chamado(s) resolvido(s)
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Estourados em aberto
+              </p>
+              <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+                {metricasSla.estouradosEmAberto}
+              </p>
+              <p className="text-xs text-gray-400">precisam de ação agora</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Em atenção (≥80% do prazo)
+              </p>
+              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                {metricasSla.emAtencao}
+              </p>
+              <p className="text-xs text-gray-400">prestes a estourar</p>
+            </div>
+          </div>
         </div>
 
         {/* Tempo Médio */}
