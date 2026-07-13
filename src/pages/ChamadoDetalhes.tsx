@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { usuariosService, categoriasService, chamadosService } from '../services/chamadoshsapi';
 import { getRoleName } from '../utils/roleMapper';
+import SlaBadge from '../components/SlaBadge';
 import {
   Chamado,
   Comentario,
@@ -986,12 +987,15 @@ const ChamadoDetalhes: React.FC = () => {
                     ))}
                   </select>
                 ) : (
-                  <span
-                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full 
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full
                   ${getPrioridadeColor(chamado.prioridade)}`}
-                  >
-                    {chamado.prioridade}
-                  </span>
+                    >
+                      {chamado.prioridade}
+                    </span>
+                    <SlaBadge sla={chamado?.sla} />
+                  </div>
                 )}
               </div>
 
