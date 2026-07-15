@@ -595,6 +595,18 @@ const ChamadoDetalhes: React.FC = () => {
     });
   };
 
+  // Formata uma duração em minutos de forma amigável: "2d 3h", "4h 15min", "30min".
+  const formatarDuracao = (minutos: number): string => {
+    const total = Math.max(0, Math.round(minutos));
+    if (total < 1) return 'menos de 1min';
+    const dias = Math.floor(total / 1440);
+    const horas = Math.floor((total % 1440) / 60);
+    const mins = total % 60;
+    if (dias > 0) return `${dias}d${horas > 0 ? ` ${horas}h` : ''}`;
+    if (horas > 0) return `${horas}h${mins > 0 ? ` ${mins}min` : ''}`;
+    return `${mins}min`;
+  };
+
   // Função para limpar valores de enum (remove prefixos como "StatusEnum.", "PrioridadeEnum.", etc.)
   const limparValorEnum = (valor: string | null | undefined): string => {
     if (!valor) return '';
@@ -900,6 +912,31 @@ const ChamadoDetalhes: React.FC = () => {
                   {formatarData(chamado.data_abertura)}
                 </p>
               </div>
+
+              {/* Tempo em aberto (tempo útil de SLA: horas úteis, descontando pausas em Aguardando) */}
+              {chamado.sla && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                    Tempo em aberto
+                  </label>
+
+                  <p className="text-gray-900 dark:text-white">
+                    {formatarDuracao(chamado.sla.minutos_resolucao_consumidos)}
+                    {chamado.status !== StatusEnum.RESOLVIDO &&
+                      chamado.status !== StatusEnum.FECHADO && (
+                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                          (em andamento)
+                        </span>
+                      )}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    tempo útil de atendimento
+                    {chamado.sla.minutos_pausados > 0
+                      ? `, descontado ${formatarDuracao(chamado.sla.minutos_pausados)} em Aguardando`
+                      : ''}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* ========================== COLUNA DIREITA ========================== */}
