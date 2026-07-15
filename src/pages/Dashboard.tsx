@@ -34,6 +34,55 @@ import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 
 // ========================================
+// HELPERS DE PERÍODO (data)
+// ========================================
+
+// Formata um Date local como YYYY-MM-DD (compatível com <input type="date">)
+const toInputDate = (d: Date): string => {
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+};
+
+// Intervalos dos atalhos
+const rangeEsteMes = (): { inicio: string; fim: string } => {
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0); // último dia do mês
+  return { inicio: toInputDate(inicio), fim: toInputDate(fim) };
+};
+
+const rangeMesPassado = (): { inicio: string; fim: string } => {
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+  const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0); // último dia do mês anterior
+  return { inicio: toInputDate(inicio), fim: toInputDate(fim) };
+};
+
+const rangeUltimos30 = (): { inicio: string; fim: string } => {
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 29);
+  return { inicio: toInputDate(inicio), fim: toInputDate(hoje) };
+};
+
+// Verdadeiro se a data cai dentro de [inicio, fim] (limites inclusivos, dia inteiro).
+// Sem início e sem fim => "Tudo" (não filtra). Sem a data (ex.: chamado não
+// resolvido, data_resolucao ausente) => fica de fora quando há recorte ativo.
+const dentroDoPeriodo = (
+  dataStr: string | null | undefined,
+  inicio: string,
+  fim: string
+): boolean => {
+  if (!inicio && !fim) return true;
+  if (!dataStr) return false;
+  const data = new Date(dataStr);
+  if (inicio && data < new Date(`${inicio}T00:00:00`)) return false;
+  if (fim && data > new Date(`${fim}T23:59:59.999`)) return false;
+  return true;
+};
+
+// ========================================
 // COMPONENTE PRINCIPAL
 // ========================================
 
@@ -48,6 +97,30 @@ const Dashboard: React.FC = () => {
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>('todas');
   const [incluirCancelados, setIncluirCancelados] = useState(false);
+
+  // Período (default: mês atual). presetAtivo controla o destaque dos atalhos.
+  const [periodoInicio, setPeriodoInicio] = useState<string>(() => rangeEsteMes().inicio);
+  const [periodoFim, setPeriodoFim] = useState<string>(() => rangeEsteMes().fim);
+  const [presetAtivo, setPresetAtivo] = useState<
+    'mes' | 'mesPassado' | '30d' | 'tudo' | 'custom'
+  >('mes');
+
+  const aplicarPreset = (preset: 'mes' | 'mesPassado' | '30d' | 'tudo') => {
+    setPresetAtivo(preset);
+    if (preset === 'tudo') {
+      setPeriodoInicio('');
+      setPeriodoFim('');
+      return;
+    }
+    const r =
+      preset === 'mes'
+        ? rangeEsteMes()
+        : preset === 'mesPassado'
+          ? rangeMesPassado()
+          : rangeUltimos30();
+    setPeriodoInicio(r.inicio);
+    setPeriodoFim(r.fim);
+  };
 
   const CORES_GRAFICO = ['#3b82f6', '#22c55e', '#facc15', '#ef4444', '#a855f7'];
 
@@ -111,6 +184,11 @@ const Dashboard: React.FC = () => {
       chamadosFiltrados = chamados.filter((c) => c.solicitante_id === user.id);
     }
     // Técnicos e Administradores veem todos os chamados
+
+    // Recorte por período: KPIs e gráficos consideram chamados ABERTOS no período.
+    chamadosFiltrados = chamadosFiltrados.filter((c) =>
+      dentroDoPeriodo(c.data_abertura, periodoInicio, periodoFim)
+    );
 
     // Aplicar filtros adicionais
     if (filtroStatus !== 'todos') {
@@ -213,12 +291,17 @@ const Dashboard: React.FC = () => {
       tempoMedioResolucao,
       chamadosRecentes,
     };
-  }, [chamados, user, categorias, filtroStatus, filtroPrioridade, incluirCancelados]);
+  }, [chamados, user, categorias, filtroStatus, filtroPrioridade, incluirCancelados, periodoInicio, periodoFim]);
 
   // Métricas de SLA
   const metricasSla = useMemo(() => {
+    // % de SLA do período: considera chamados RESOLVIDOS dentro do intervalo
+    // escolhido (por data_resolucao). É o indicador "quanto do que fechou no
+    // período bateu o prazo".
     const resolvidos = chamados.filter(
-      (c) => c.status === StatusEnum.RESOLVIDO || c.status === StatusEnum.FECHADO
+      (c) =>
+        (c.status === StatusEnum.RESOLVIDO || c.status === StatusEnum.FECHADO) &&
+        dentroDoPeriodo(c.data_resolucao, periodoInicio, periodoFim)
     );
     // Cancelados são excluídos explicitamente de "em aberto": cancelado é um
     // booleano independente do status, e um chamado cancelado não é trabalho pendente.
@@ -253,7 +336,7 @@ const Dashboard: React.FC = () => {
       estouradosEmAberto,
       emAtencao,
     };
-  }, [chamados]);
+  }, [chamados, periodoInicio, periodoFim]);
 
   // ========================================
   // FUNÇÕES AUXILIARES
@@ -363,6 +446,73 @@ const Dashboard: React.FC = () => {
                 </>
               )}
             </button>
+          </div>
+
+          {/* Período */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Período
+            </label>
+
+            {/* Atalhos */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {([
+                { key: 'mes', label: 'Este mês' },
+                { key: 'mesPassado', label: 'Mês passado' },
+                { key: '30d', label: 'Últimos 30 dias' },
+                { key: 'tudo', label: 'Tudo' },
+              ] as const).map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => aplicarPreset(p.key)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    presetAtivo === p.key
+                      ? 'bg-[#7C3AED] text-white shadow'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Intervalo personalizado */}
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  De
+                </label>
+                <input
+                  type="date"
+                  value={periodoInicio}
+                  max={periodoFim || undefined}
+                  onChange={(e) => {
+                    setPeriodoInicio(e.target.value);
+                    setPresetAtivo('custom');
+                  }}
+                  className="px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                            text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                            focus:outline-none focus:ring-2 focus:ring-[#7C3AED] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Até
+                </label>
+                <input
+                  type="date"
+                  value={periodoFim}
+                  min={periodoInicio || undefined}
+                  onChange={(e) => {
+                    setPeriodoFim(e.target.value);
+                    setPresetAtivo('custom');
+                  }}
+                  className="px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
+                            text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
+                            focus:outline-none focus:ring-2 focus:ring-[#7C3AED] transition-colors"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -515,8 +665,8 @@ const Dashboard: React.FC = () => {
               </p>
               <p className="text-xs text-gray-400">
                 {metricasSla.percentualNoPrazo !== null
-                  ? `de ${metricasSla.totalResolvidosComSla} chamado(s) resolvido(s)`
-                  : 'sem dados de SLA'}
+                  ? `de ${metricasSla.totalResolvidosComSla} chamado(s) resolvido(s) no período`
+                  : 'sem dados de SLA no período'}
               </p>
             </div>
             <div>
