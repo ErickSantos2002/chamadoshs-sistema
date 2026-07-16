@@ -362,20 +362,23 @@ const TarefasRecorrentes: React.FC = () => {
   };
 
   const excluir = async (t: TarefaRecorrente) => {
-    if (!window.confirm(`Excluir a tarefa "${t.titulo}"?`)) return;
+    const temHistorico = t.total_execucoes > 0;
+    const mensagem = temHistorico
+      ? `Tem certeza que quer excluir "${t.titulo}"?\n\n` +
+        `Essa tarefa tem ${t.total_execucoes} ` +
+        `${t.total_execucoes === 1 ? 'realização registrada' : 'realizações registradas'} no histórico. ` +
+        `Excluir vai apagar a tarefa E todo esse histórico de realizações.\n\n` +
+        `Esta ação NÃO pode ser desfeita.`
+      : `Tem certeza que quer excluir "${t.titulo}"?\n\nEsta ação não pode ser desfeita.`;
+
+    if (!window.confirm(mensagem)) return;
     try {
       await tarefasRecorrentesService.excluir(t.id);
       toast.success('Tarefa excluída');
       await carregar();
-    } catch (err: any) {
-      if (err?.response?.status === 409) {
-        toast.error(
-          'Essa tarefa já tem execuções. Desative-a (botão de ligar/desligar) em vez de excluir.',
-          { duration: 6000 }
-        );
-      } else {
-        toast.error('Erro ao excluir a tarefa');
-      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao excluir a tarefa');
     }
   };
 
