@@ -2,10 +2,25 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
-import { StatusEnum, PrioridadeEnum, Chamado, Usuario } from '../types/api';
-import { Filter, Plus, Search, Loader2, User, ChevronDown, ChevronUp } from 'lucide-react';
-import { usuariosService } from '../services/chamadoshsapi';
+import { StatusEnum, PrioridadeEnum, Chamado, Usuario, TarefaRecorrente } from '../types/api';
+import { Filter, Plus, Search, Loader2, User, ChevronDown, ChevronUp, CalendarClock } from 'lucide-react';
+import { usuariosService, tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
+
+// Data de hoje (local) em YYYY-MM-DD, para comparar com proxima_data das tarefas
+const hojeYMD = (): string => {
+  const d = new Date();
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+};
+
+const formatarDataBR = (ymd?: string | null): string => {
+  if (!ymd) return '—';
+  const [ano, mes, dia] = ymd.split('-');
+  return `${dia}/${mes}/${ano}`;
+};
 
 const Chamados: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +37,9 @@ const Chamados: React.FC = () => {
   // Estado para armazenar os usuários (solicitantes)
   const [usuarios, setUsuarios] = useState<Record<number, Usuario>>({});
 
+  // Lembrete de tarefas recorrentes pendentes (hoje + atrasadas) — só técnico/admin
+  const [tarefasPendentes, setTarefasPendentes] = useState<TarefaRecorrente[]>([]);
+
   // Permissões baseadas em role
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
@@ -31,6 +49,18 @@ const Chamados: React.FC = () => {
   useEffect(() => {
     carregarChamados();
   }, []);
+
+  // Carrega as tarefas recorrentes pendentes (proxima_data <= hoje) para o lembrete
+  useEffect(() => {
+    if (!(isAdmin || isTecnico)) return;
+    const hoje = hojeYMD();
+    tarefasRecorrentesService
+      .listar({ ativo: true })
+      .then((todas) =>
+        setTarefasPendentes(todas.filter((t) => t.proxima_data <= hoje))
+      )
+      .catch(() => setTarefasPendentes([]));
+  }, [isAdmin, isTecnico]);
 
   // Auto-refresh a cada 10 minutos (para TV/monitoramento)
   useEffect(() => {
@@ -201,6 +231,50 @@ const Chamados: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Lembrete de tarefas recorrentes (só técnico/admin) */}
+        {(isAdmin || isTecnico) && (
+          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mb-4 transition-colors">
+            <div className="flex items-center mb-2">
+              <CalendarClock className="w-5 h-5 mr-2 text-[#7C3AED] dark:text-[#A78BFA]" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Tarefas recorrentes do dia
+              </h2>
+            </div>
+
+            {tarefasPendentes.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Nenhuma tarefa recorrente para hoje. ✅
+              </p>
+            ) : (
+              <ul className="space-y-1.5">
+                {tarefasPendentes.map((t) => {
+                  const atrasada = t.proxima_data < hojeYMD();
+                  return (
+                    <li key={t.id} className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => navigate('/tarefas-recorrentes')}
+                        className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-[#7C3AED] dark:hover:text-[#A78BFA] hover:underline transition-colors text-left"
+                        title="Ir para Tarefas Recorrentes"
+                      >
+                        {t.titulo}
+                      </button>
+                      {atrasada ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                          Atrasada desde {formatarDataBR(t.proxima_data)}
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                          Hoje
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Filtros */}
         <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mb-4 transition-colors">
