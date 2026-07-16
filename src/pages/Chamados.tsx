@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { StatusEnum, PrioridadeEnum, Chamado, Usuario, TarefaRecorrente } from '../types/api';
-import { Filter, Plus, Search, Loader2, User, ChevronDown, ChevronUp, CalendarClock } from 'lucide-react';
+import { Filter, Plus, Search, Loader2, User, ChevronDown, ChevronUp, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { usuariosService, tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
 
@@ -37,8 +37,8 @@ const Chamados: React.FC = () => {
   // Estado para armazenar os usuários (solicitantes)
   const [usuarios, setUsuarios] = useState<Record<number, Usuario>>({});
 
-  // Lembrete de tarefas recorrentes pendentes (hoje + atrasadas) — só técnico/admin
-  const [tarefasPendentes, setTarefasPendentes] = useState<TarefaRecorrente[]>([]);
+  // Lembrete de tarefas recorrentes do dia (pendentes + realizadas hoje) — só técnico/admin
+  const [tarefasDoDia, setTarefasDoDia] = useState<TarefaRecorrente[]>([]);
 
   // Permissões baseadas em role
   const isAdmin = user?.role === 'Administrador';
@@ -50,16 +50,23 @@ const Chamados: React.FC = () => {
     carregarChamados();
   }, []);
 
-  // Carrega as tarefas recorrentes pendentes (proxima_data <= hoje) para o lembrete
+  // Carrega as tarefas recorrentes do dia para o lembrete: as pendentes
+  // (proxima_data <= hoje) e as que já foram realizadas hoje (ultima_execucao).
   useEffect(() => {
     if (!(isAdmin || isTecnico)) return;
     const hoje = hojeYMD();
     tarefasRecorrentesService
       .listar({ ativo: true })
       .then((todas) =>
-        setTarefasPendentes(todas.filter((t) => t.proxima_data <= hoje))
+        setTarefasDoDia(
+          todas.filter(
+            (t) =>
+              t.proxima_data <= hoje ||
+              (t.ultima_execucao ?? '').slice(0, 10) === hoje
+          )
+        )
       )
-      .catch(() => setTarefasPendentes([]));
+      .catch(() => setTarefasDoDia([]));
   }, [isAdmin, isTecnico]);
 
   // Auto-refresh a cada 10 minutos (para TV/monitoramento)
@@ -242,31 +249,54 @@ const Chamados: React.FC = () => {
               </h2>
             </div>
 
-            {tarefasPendentes.length === 0 ? (
+            {tarefasDoDia.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Nenhuma tarefa recorrente para hoje. ✅
               </p>
             ) : (
               <ul className="space-y-1.5">
-                {tarefasPendentes.map((t) => {
-                  const atrasada = t.proxima_data < hojeYMD();
+                {tarefasDoDia.map((t) => {
+                  const hoje = hojeYMD();
+                  const pendente = t.proxima_data <= hoje;
+                  const realizadaHoje =
+                    (t.ultima_execucao ?? '').slice(0, 10) === hoje;
+                  const atrasada = t.proxima_data < hoje;
                   return (
                     <li key={t.id} className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() => navigate('/tarefas-recorrentes')}
-                        className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-[#7C3AED] dark:hover:text-[#A78BFA] hover:underline transition-colors text-left"
+                        className={`text-sm font-medium hover:text-[#7C3AED] dark:hover:text-[#A78BFA] hover:underline transition-colors text-left ${
+                          !pendente && realizadaHoje
+                            ? 'text-gray-500 dark:text-gray-400'
+                            : 'text-gray-800 dark:text-gray-200'
+                        }`}
                         title="Ir para Tarefas Recorrentes"
                       >
                         {t.titulo}
                       </button>
-                      {atrasada ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                          Atrasada desde {formatarDataBR(t.proxima_data)}
-                        </span>
+
+                      {pendente ? (
+                        atrasada ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                            Atrasada desde {formatarDataBR(t.proxima_data)}
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                            Hoje
+                          </span>
+                        )
                       ) : (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                          Hoje
-                        </span>
+                        realizadaHoje && (
+                          <>
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Realizada
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Próxima: {formatarDataBR(t.proxima_data)}
+                            </span>
+                          </>
+                        )
                       )}
                     </li>
                   );
