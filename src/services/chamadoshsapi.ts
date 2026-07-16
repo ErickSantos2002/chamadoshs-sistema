@@ -20,6 +20,11 @@ import {
   Categoria,
   CategoriaCreate,
   SLAConfig,
+  TarefaRecorrente,
+  TarefaRecorrenteExecucao,
+  TarefaRecorrenteCreate,
+  TarefaRecorrenteUpdate,
+  RealizarTarefaRequest,
 } from '../types/api';
 
 // ============================================
@@ -428,6 +433,86 @@ export const slaConfigsService = {
 };
 
 // ============================================
+// SERVIÇO DE TAREFAS RECORRENTES
+// ============================================
+
+export const tarefasRecorrentesService = {
+  /**
+   * Lista tarefas recorrentes (ordenadas pela próxima data)
+   */
+  async listar(params?: {
+    ativo?: boolean;
+    apenas_atrasadas?: boolean;
+  }): Promise<TarefaRecorrente[]> {
+    const response = await api.get<TarefaRecorrente[]>('/tarefas-recorrentes/', {
+      params,
+    });
+    return response.data;
+  },
+
+  /**
+   * Busca uma tarefa recorrente por ID
+   */
+  async buscar(id: number): Promise<TarefaRecorrente> {
+    const response = await api.get<TarefaRecorrente>(`/tarefas-recorrentes/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Cria uma tarefa recorrente
+   */
+  async criar(dados: TarefaRecorrenteCreate): Promise<TarefaRecorrente> {
+    const response = await api.post<TarefaRecorrente>('/tarefas-recorrentes/', dados);
+    return response.data;
+  },
+
+  /**
+   * Atualiza uma tarefa recorrente
+   */
+  async atualizar(
+    id: number,
+    dados: TarefaRecorrenteUpdate
+  ): Promise<TarefaRecorrente> {
+    const response = await api.put<TarefaRecorrente>(
+      `/tarefas-recorrentes/${id}`,
+      dados
+    );
+    return response.data;
+  },
+
+  /**
+   * Exclui uma tarefa recorrente (a API bloqueia com 409 se já houver execuções)
+   */
+  async excluir(id: number): Promise<void> {
+    await api.delete(`/tarefas-recorrentes/${id}`);
+  },
+
+  /**
+   * Lista o histórico de execuções de uma tarefa
+   */
+  async listarExecucoes(id: number): Promise<TarefaRecorrenteExecucao[]> {
+    const response = await api.get<TarefaRecorrenteExecucao[]>(
+      `/tarefas-recorrentes/${id}/execucoes`
+    );
+    return response.data;
+  },
+
+  /**
+   * Registra uma execução e avança a próxima data
+   */
+  async realizar(
+    id: number,
+    dados: RealizarTarefaRequest
+  ): Promise<TarefaRecorrente> {
+    const response = await api.post<TarefaRecorrente>(
+      `/tarefas-recorrentes/${id}/realizar`,
+      dados
+    );
+    return response.data;
+  },
+};
+
+// ============================================
 // EXPORTAÇÃO DEFAULT
 // ============================================
 
@@ -440,6 +525,7 @@ const chamadosHSApi = {
   setores: setoresService,
   categorias: categoriasService,
   slaConfigs: slaConfigsService,
+  tarefasRecorrentes: tarefasRecorrentesService,
 };
 
 export default chamadosHSApi;

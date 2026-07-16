@@ -254,3 +254,63 @@ export interface UsuariosQueryParams {
   role_id?: number;
   ativo?: boolean;
 }
+
+// ============================================
+// TAREFAS RECORRENTES
+// ============================================
+
+export type TipoRecorrencia = 'diaria' | 'semanal' | 'mensal';
+
+export interface TarefaRecorrente {
+  id: number;
+  titulo: string;
+  descricao?: string | null;
+  instrucoes?: string | null;
+  categoria_id?: number | null;
+  categoria_nome?: string | null;
+  responsavel_id?: number | null;
+  responsavel_nome?: string | null;
+  prioridade: PrioridadeEnum;
+  tipo_recorrencia: TipoRecorrencia;
+  intervalo: number;
+  dia_semana?: number | null; // 0=Dom..6=Sáb
+  dia_mes?: number | null; // 1..31
+  proxima_data: string; // YYYY-MM-DD
+  ativo: boolean;
+  total_execucoes: number;
+  ultima_execucao?: string | null;
+  created_at: string;
+}
+
+export interface TarefaRecorrenteExecucao {
+  id: number;
+  tarefa_id: number;
+  usuario_id: number;
+  usuario_nome?: string | null;
+  data_prevista?: string | null;
+  realizada_em: string;
+  observacao?: string | null;
+}
+
+export interface TarefaRecorrenteCreate {
+  titulo: string;
+  descricao?: string | null;
+  instrucoes?: string | null;
+  categoria_id?: number | null;
+  responsavel_id?: number | null;
+  prioridade?: PrioridadeEnum;
+  tipo_recorrencia: TipoRecorrencia;
+  intervalo?: number;
+  dia_semana?: number | null;
+  dia_mes?: number | null;
+  proxima_data?: string | null;
+}
+
+export type TarefaRecorrenteUpdate = Partial<TarefaRecorrenteCreate> & {
+  ativo?: boolean;
+};
+
+export interface RealizarTarefaRequest {
+  usuario_id: number;
+  observacao?: string | null;
+}
