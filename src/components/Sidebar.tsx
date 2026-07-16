@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { Repeat } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 
@@ -54,6 +55,15 @@ const Sidebar: React.FC = () => {
                 alt="Cadastros"
                 className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
                   dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
+              />
+            ),
+          },
+          {
+            label: 'Tarefas Recorrentes',
+            to: '/tarefas-recorrentes',
+            icon: (isActive: boolean) => (
+              <Repeat
+                className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'} text-[#1D4ED8] dark:text-[#D1D1D1]`}
               />
             ),
           },

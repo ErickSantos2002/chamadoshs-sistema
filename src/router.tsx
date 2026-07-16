@@ -8,6 +8,7 @@ const Chamados = lazy(() => import('./pages/Chamados'));
 const ChamadoDetalhes = lazy(() => import('./pages/ChamadoDetalhes'));
 const NovoChamado = lazy(() => import('./pages/NovoChamado'));
 const CadastrosBasicos = lazy(() => import('./pages/CadastrosBasicos'));
+const TarefasRecorrentes = lazy(() => import('./pages/TarefasRecorrentes'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -68,6 +69,15 @@ const AppRoutes: React.FC = () => (
         element={
           <ProtectedRoute>
             <CadastrosBasicos />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/tarefas-recorrentes"
+        element={
+          <ProtectedRoute>
+            <TarefasRecorrentes />
           </ProtectedRoute>
         }
       />
