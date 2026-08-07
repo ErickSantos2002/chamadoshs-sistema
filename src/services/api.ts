@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import toast from 'react-hot-toast';
 
 // URL base da API - ajuste conforme seu ambiente
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -47,9 +48,17 @@ api.interceptors.response.use(
       }
     }
 
-    // Usuário sem permissão
+    // Usuário sem permissão. A API restringe várias operações por perfil, e sem
+    // aviso na tela a ação simplesmente não acontece — o usuário clica e nada
+    // muda. O id fixo evita empilhar um toast por requisição quando uma tela
+    // dispara várias chamadas negadas de uma vez.
     if (error.response?.status === 403) {
-      console.error('Acesso negado');
+      const detalhe = (error.response.data as { detail?: string } | undefined)?.detail;
+
+      toast.error(
+        detalhe ? `Sem permissão. ${detalhe}` : 'Você não tem permissão para essa ação.',
+        { id: 'acesso-negado' }
+      );
     }
 
     return Promise.reject(error);
