@@ -282,15 +282,8 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
                   </div>
                   <div>
                     <span className="font-medium">Criado em:</span>{' '}
-                    {categoria.criado_em 
-                      ? new Date(categoria.criado_em).toLocaleString('pt-BR')
-                      : 'N/A'
-                    }
-                  </div>
-                  <div>
-                    <span className="font-medium">Atualizado em:</span>{' '}
-                    {categoria.atualizado_em 
-                      ? new Date(categoria.atualizado_em).toLocaleString('pt-BR')
+                    {categoria.created_at
+                      ? new Date(categoria.created_at).toLocaleString('pt-BR')
                       : 'N/A'
                     }
                   </div>

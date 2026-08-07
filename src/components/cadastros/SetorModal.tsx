@@ -282,15 +282,8 @@ const SetorModal: React.FC<SetorModalProps> = ({
                   </div>
                   <div>
                     <span className="font-medium">Criado em:</span>{' '}
-                    {setor.criado_em 
-                      ? new Date(setor.criado_em).toLocaleString('pt-BR')
-                      : 'N/A'
-                    }
-                  </div>
-                  <div>
-                    <span className="font-medium">Atualizado em:</span>{' '}
-                    {setor.atualizado_em 
-                      ? new Date(setor.atualizado_em).toLocaleString('pt-BR')
+                    {setor.created_at
+                      ? new Date(setor.created_at).toLocaleString('pt-BR')
                       : 'N/A'
                     }
                   </div>

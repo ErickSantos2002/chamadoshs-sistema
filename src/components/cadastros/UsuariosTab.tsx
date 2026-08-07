@@ -66,9 +66,8 @@ const UsuariosTab: React.FC = () => {
     const termo = busca.toLowerCase();
     return usuarios.filter(
       (u) =>
-        u.username.toLowerCase().includes(termo) ||
-        u.role_name?.toLowerCase().includes(termo) ||
-        (u.role?.name && u.role.name.toLowerCase().includes(termo))
+        u.nome.toLowerCase().includes(termo) ||
+        getRoleName(u.role_id).toLowerCase().includes(termo)
     );
   }, [usuarios, busca]);
 
@@ -78,9 +77,9 @@ const UsuariosTab: React.FC = () => {
       let bVal: any;
 
       switch (ordenacao.campo) {
-        case 'username':
-          aVal = a.username;
-          bVal = b.username;
+        case 'nome':
+          aVal = a.nome;
+          bVal = b.nome;
           break;
         case 'created_at':
           aVal = a.created_at || '';
@@ -168,7 +167,7 @@ const UsuariosTab: React.FC = () => {
 
     try {
       await updateUsuarioPassword(resetPasswordFor.id, novaSenha);
-      alert(`Senha do usuário ${resetPasswordFor.username} atualizada com sucesso!`);
+      alert(`Senha do usuário ${resetPasswordFor.nome} atualizada com sucesso!`);
       setResetPasswordFor(null);
       setNovaSenha('');
       setConfirmarSenha('');
@@ -312,11 +311,11 @@ const UsuariosTab: React.FC = () => {
                 </th>
                 <th className="px-6 py-3 text-left">
                   <button
-                    onClick={() => handleOrdenar('username')}
+                    onClick={() => handleOrdenar('nome')}
                     className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                   >
                     Usuário
-                    {ordenacao.campo === 'username' && (
+                    {ordenacao.campo === 'nome' && (
                       ordenacao.direcao === 'asc' ? 
                         <ChevronUp className="w-4 h-4" /> : 
                         <ChevronDown className="w-4 h-4" />
@@ -494,7 +493,7 @@ const UsuariosTab: React.FC = () => {
             <div className="relative w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-lg shadow-xl">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Resetar Senha - {resetPasswordFor.username}
+                  Resetar Senha - {resetPasswordFor.nome}
                 </h3>
                 
                 <div className="mb-4">

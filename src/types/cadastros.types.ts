@@ -90,7 +90,8 @@ export interface UsuarioCreate {
  */
 export interface UsuarioUpdate {
   username?: string;
-  senha?: string;
+  password?: string;
+  senha?: string;  // Campo para manter compatibilidade
   role_name?: string;
   setor_id?: number;
 }
@@ -156,7 +157,7 @@ export interface FiltrosCadastros {
 /**
  * Type para campo de ordenação
  */
-export type OrdenacaoCampo = 'id' | 'nome' | 'criado_em' | 'username' | 'created_at';
+export type OrdenacaoCampo = 'id' | 'nome' | 'created_at';
 
 /**
  * Type para direção de ordenação
