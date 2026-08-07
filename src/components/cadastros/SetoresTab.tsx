@@ -260,11 +260,11 @@ const SetoresTab: React.FC = () => {
                 </th>
                 <th className="px-6 py-3 text-left">
                   <button
-                    onClick={() => handleOrdenar('criado_em')}
+                    onClick={() => handleOrdenar('created_at')}
                     className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                   >
                     Criado em
-                    {ordenacao.campo === 'criado_em' && (
+                    {ordenacao.campo === 'created_at' && (
                       ordenacao.direcao === 'asc' ? 
                         <ChevronUp className="w-4 h-4" /> : 
                         <ChevronDown className="w-4 h-4" />
@@ -299,7 +299,7 @@ const SetoresTab: React.FC = () => {
                     {setor.descricao || '-'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                    {formatDate(setor.criado_em)}
+                    {formatDate(setor.created_at)}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">

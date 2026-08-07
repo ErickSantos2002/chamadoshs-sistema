@@ -265,7 +265,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       if (data.username) dadosAtualizacao.nome = data.username;
       // Aceita tanto 'senha' quanto 'password' para compatibilidade
       if (data.senha) dadosAtualizacao.senha = data.senha;
-      if ((data as any).password) dadosAtualizacao.senha = (data as any).password;
+      if (data.password) dadosAtualizacao.senha = data.password;
       if (data.setor_id !== undefined) dadosAtualizacao.setor_id = data.setor_id;
       if (data.role_name) {
         dadosAtualizacao.role_id =
