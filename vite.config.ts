@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -10,5 +11,12 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+  },
+  test: {
+    // jsdom porque os testes dos interceptors dependem de localStorage e
+    // window.location, que não existem no ambiente node.
+    environment: 'jsdom',
+    globals: true,
+    restoreMocks: true,
   },
 })
