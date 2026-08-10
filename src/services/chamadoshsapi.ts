@@ -283,6 +283,38 @@ export const usuariosService = {
   },
 
   /**
+   * Lista todos os usuários, buscando página a página até o fim.
+   *
+   * O endpoint tem `limit` com padrão 100. Uma chamada só funciona hoje, mas
+   * truncaria em silêncio quando a empresa passar de 100 cadastros — e o
+   * sintoma seria nome de usuário sumindo da tela, difícil de associar à causa.
+   */
+  async listarTodos(
+    params?: Omit<UsuariosQueryParams, 'skip' | 'limit'>
+  ): Promise<Usuario[]> {
+    const tamanhoPagina = 100;
+    const maxPaginas = 50; // trava de segurança contra loop infinito
+    const todos: Usuario[] = [];
+
+    for (let pagina = 0; pagina < maxPaginas; pagina++) {
+      const lote = await this.listar({
+        ...params,
+        skip: pagina * tamanhoPagina,
+        limit: tamanhoPagina,
+      });
+
+      todos.push(...lote);
+
+      if (lote.length < tamanhoPagina) return todos;
+    }
+
+    console.warn(
+      `listarTodos: parou em ${maxPaginas} páginas (${todos.length} usuários). Pode haver registros não carregados.`
+    );
+    return todos;
+  },
+
+  /**
    * Busca um usuário por ID
    */
   async buscar(id: number): Promise<Usuario> {

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
-import { usuariosService, categoriasService, chamadosService } from '../services/chamadoshsapi';
+import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
+import { categoriasService, chamadosService } from '../services/chamadoshsapi';
 import { getRoleName } from '../utils/roleMapper';
 import SlaBadge from '../components/SlaBadge';
 import {
@@ -51,7 +52,7 @@ const ChamadoDetalhes: React.FC = () => {
   const [chamado, setChamado] = useState<Chamado | null>(null);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [historico, setHistorico] = useState<Historico[]>([]);
-  const [usuarios, setUsuarios] = useState<Record<number, Usuario>>({});
+  const usuarios = useUsuariosPorId();
   const [categoriaNome, setCategoriaNome] = useState<string>('');
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,31 +178,8 @@ const ChamadoDetalhes: React.FC = () => {
         setCategorias(categoriasData);
       }
 
-      // Carregar dados dos usuários envolvidos (solicitante, comentários, histórico)
-      const usuarioIds = new Set<number>();
-      usuarioIds.add(chamadoData.solicitante_id);
-      if (chamadoData.tecnico_responsavel_id)
-        usuarioIds.add(chamadoData.tecnico_responsavel_id);
-      comentariosData.forEach((c) => usuarioIds.add(c.usuario_id));
-      historicoData.forEach((h) => usuarioIds.add(h.usuario_id));
-
-      // Buscar usuários em paralelo
-      const usuariosPromises = Array.from(usuarioIds).map(async (userId) => {
-        try {
-          const usuario = await usuariosService.buscar(userId);
-          return { id: userId, usuario };
-        } catch {
-          return { id: userId, usuario: null };
-        }
-      });
-
-      const usuariosResult = await Promise.all(usuariosPromises);
-      const usuariosMap: Record<number, Usuario> = {};
-      usuariosResult.forEach(({ id, usuario }) => {
-        if (usuario) usuariosMap[id] = usuario;
-      });
-
-      setUsuarios(usuariosMap);
+      // Os nomes de solicitante, técnico, autores de comentário e de histórico
+      // vêm do índice montado por useUsuariosPorId, numa listagem só.
     } catch (err: any) {
       console.error('Erro ao carregar dados:', err);
       setError('Erro ao carregar dados do chamado.');

@@ -2,9 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
-import { StatusEnum, PrioridadeEnum, Chamado, Usuario, TarefaRecorrente } from '../types/api';
+import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
+import { StatusEnum, PrioridadeEnum, Chamado, TarefaRecorrente } from '../types/api';
 import { Filter, Plus, Search, Loader2, User, ChevronDown, ChevronUp, CalendarClock, CheckCircle2 } from 'lucide-react';
-import { usuariosService, tarefasRecorrentesService } from '../services/chamadoshsapi';
+import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
 
 // Data de hoje (local) em YYYY-MM-DD, para comparar com proxima_data das tarefas
@@ -35,7 +36,7 @@ const Chamados: React.FC = () => {
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
   // Estado para armazenar os usuários (solicitantes)
-  const [usuarios, setUsuarios] = useState<Record<number, Usuario>>({});
+  const usuarios = useUsuariosPorId();
 
   // Lembrete de tarefas recorrentes do dia (pendentes + realizadas hoje) — só técnico/admin
   const [tarefasDoDia, setTarefasDoDia] = useState<TarefaRecorrente[]>([]);
@@ -79,36 +80,7 @@ const Chamados: React.FC = () => {
     return () => clearInterval(intervalo);
   }, []);
 
-  // Buscar nomes dos usuários (solicitantes)
-  useEffect(() => {
-    const carregarUsuarios = async () => {
-      const usuarioIds = new Set<number>();
-      chamados.forEach((chamado) => {
-        usuarioIds.add(chamado.solicitante_id);
-      });
-
-      const usuariosPromises = Array.from(usuarioIds).map(async (userId) => {
-        try {
-          const usuario = await usuariosService.buscar(userId);
-          return { id: userId, usuario };
-        } catch {
-          return { id: userId, usuario: null };
-        }
-      });
-
-      const usuariosResult = await Promise.all(usuariosPromises);
-      const usuariosMap: Record<number, Usuario> = {};
-      usuariosResult.forEach(({ id, usuario }) => {
-        if (usuario) usuariosMap[id] = usuario;
-      });
-
-      setUsuarios(usuariosMap);
-    };
-
-    if (chamados.length > 0) {
-      carregarUsuarios();
-    }
-  }, [chamados]);
+  // Nomes dos solicitantes: uma listagem só, em vez de um GET por usuário.
 
   // Filtra os chamados localmente
   const chamadosFiltrados = chamados.filter((chamado) => {
