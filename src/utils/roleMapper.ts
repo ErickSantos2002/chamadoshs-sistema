@@ -51,3 +51,18 @@ export function isTecnico(roleId: number): boolean {
 export function isUsuario(roleId: number): boolean {
   return roleId === 3;
 }
+
+/**
+ * Quem pode ser responsável por um chamado.
+ *
+ * Administrador entra junto com técnico: na HS as mesmas pessoas administram o
+ * sistema e atendem chamado. O cadastro guarda um perfil só por usuário, mas o
+ * papel no dia a dia é duplo — filtrar apenas por técnico deixaria metade da
+ * equipe fora da lista de atribuição.
+ *
+ * A API aceita qualquer usuário como responsável: `tecnico_responsavel_id` é
+ * uma FK simples, sem restrição de perfil.
+ */
+export function podeAtenderChamado(roleId: number): boolean {
+  return isAdmin(roleId) || isTecnico(roleId);
+}

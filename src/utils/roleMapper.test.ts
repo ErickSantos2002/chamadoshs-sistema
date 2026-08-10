@@ -6,6 +6,7 @@ import {
   isAdmin,
   isTecnico,
   isUsuario,
+  podeAtenderChamado,
 } from './roleMapper';
 
 describe('roleMapper', () => {
@@ -86,6 +87,18 @@ describe('roleMapper', () => {
       expect(isUsuario(3)).toBe(true);
       expect(isUsuario(1)).toBe(false);
       expect(isUsuario(2)).toBe(false);
+    });
+
+    // A equipe de TI da HS administra o sistema E atende chamado. Filtrar a
+    // lista de atribuição só por técnico deixaria os administradores de fora.
+    it('administrador e técnico podem ser responsáveis por chamado', () => {
+      expect(podeAtenderChamado(1)).toBe(true);
+      expect(podeAtenderChamado(2)).toBe(true);
+    });
+
+    it('usuário comum não pode ser responsável por chamado', () => {
+      expect(podeAtenderChamado(3)).toBe(false);
+      expect(podeAtenderChamado(99)).toBe(false);
     });
 
     it('as três verificações são mutuamente exclusivas', () => {

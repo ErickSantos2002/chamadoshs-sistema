@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { podeAtenderChamado } from '../utils/roleMapper';
 import {
   chamadosService,
   comentariosService,
@@ -245,8 +246,12 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
     if (tecnicosCarregados) return;
 
     try {
-      const data = await usuariosService.listar({ role_id: 2, ativo: true }); // Role 2 = Técnico
-      setTecnicos(data);
+      // O endpoint filtra por um role_id só, e precisamos de dois: quem atende
+      // chamado é técnico ou administrador (ver podeAtenderChamado). Traz os
+      // ativos numa listagem e separa em memória.
+      const ativos = await usuariosService.listarTodos({ ativo: true });
+
+      setTecnicos(ativos.filter((usuario) => podeAtenderChamado(usuario.role_id)));
       setTecnicosCarregados(true);
     } catch (err: any) {
       console.error('Erro ao carregar técnicos:', err);
