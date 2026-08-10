@@ -224,7 +224,7 @@ const ChamadoDetalhes: React.FC = () => {
         solucao: solucaoEditada || undefined,
       };
 
-      await atualizarChamado(chamado.id, dadosAtualizacao, user.id);
+      await atualizarChamado(chamado.id, dadosAtualizacao);
 
       setModoEdicao(false);
       await carregarDados(true); // Forçar busca da API
@@ -244,7 +244,6 @@ const ChamadoDetalhes: React.FC = () => {
 
       await criarComentario({
         chamado_id: chamado.id,
-        usuario_id: user.id,
         comentario: novoComentario,
         is_interno: false,
       });
@@ -270,7 +269,7 @@ const ChamadoDetalhes: React.FC = () => {
         avaliacao: nota,
       };
 
-      await atualizarChamado(chamado.id, dadosAtualizacao, user.id);
+      await atualizarChamado(chamado.id, dadosAtualizacao);
       setAvaliacao(nota);
 
       // Não precisa recarregar tudo, já atualizamos o estado local
@@ -305,7 +304,7 @@ const ChamadoDetalhes: React.FC = () => {
         status: novoStatus,
       };
 
-      await atualizarChamado(chamado.id, dadosAtualizacao, user.id);
+      await atualizarChamado(chamado.id, dadosAtualizacao);
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
       console.error('Erro ao atualizar status:', err);
@@ -332,7 +331,7 @@ const ChamadoDetalhes: React.FC = () => {
         solucao: solucaoModal,
       };
 
-      await atualizarChamado(chamado.id, dadosAtualizacao, user.id);
+      await atualizarChamado(chamado.id, dadosAtualizacao);
       setMostrarModalResolucao(false);
       setSolucaoModal('');
       await carregarDados(true); // Forçar busca da API
@@ -357,10 +356,10 @@ const ChamadoDetalhes: React.FC = () => {
       setProcessando(true);
 
       // Primeiro cancela o chamado
-      await chamadosService.cancelar(chamado.id, user.id);
+      await chamadosService.cancelar(chamado.id);
 
       // Depois atualiza com o motivo (solução)
-      await atualizarChamado(chamado.id, { solucao: motivoCancelamento }, user.id);
+      await atualizarChamado(chamado.id, { solucao: motivoCancelamento });
 
       setMostrarModalCancelar(false);
       setMotivoCancelamento('');
@@ -384,10 +383,10 @@ const ChamadoDetalhes: React.FC = () => {
 
       if (chamado.arquivado) {
         // Desarquivar
-        await chamadosService.desarquivar(chamado.id, user.id);
+        await chamadosService.desarquivar(chamado.id);
       } else {
         // Arquivar
-        await chamadosService.arquivar(chamado.id, user.id);
+        await chamadosService.arquivar(chamado.id);
       }
 
       setMostrarModalArquivar(false);

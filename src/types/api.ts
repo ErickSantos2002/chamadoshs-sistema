@@ -198,7 +198,8 @@ export interface Comentario {
 
 export interface ComentarioCreate {
   chamado_id: number;
-  usuario_id: number;
+  // Sem usuario_id: o autor vem do token JWT, na API. Mandar daqui permitiria
+  // registrar comentário em nome de outra pessoa.
   comentario: string;
   is_interno?: boolean;
 }
@@ -311,6 +312,6 @@ export type TarefaRecorrenteUpdate = Partial<TarefaRecorrenteCreate> & {
 };
 
 export interface RealizarTarefaRequest {
-  usuario_id: number;
+  // Sem usuario_id: quem realizou vem do token JWT, na API.
   observacao?: string | null;
 }

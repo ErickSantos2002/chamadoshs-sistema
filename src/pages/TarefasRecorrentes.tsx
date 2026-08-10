@@ -320,7 +320,6 @@ const TarefasRecorrentes: React.FC = () => {
     try {
       setSalvando(true);
       await tarefasRecorrentesService.realizar(selecionada.id, {
-        usuario_id: user.id,
         observacao: observacao.trim() || null,
       });
       toast.success('Tarefa realizada! Próxima data atualizada.');

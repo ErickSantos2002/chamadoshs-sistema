@@ -173,8 +173,8 @@ export const chamadosService = {
   /**
    * Atualiza um chamado existente
    */
-  async atualizar(id: number, dados: ChamadoUpdate, usuarioId: number): Promise<Chamado> {
-    const response = await api.put<Chamado>(`/chamados/${id}?usuario_id=${usuarioId}`, dados);
+  async atualizar(id: number, dados: ChamadoUpdate): Promise<Chamado> {
+    const response = await api.put<Chamado>(`/chamados/${id}`, dados);
     return response.data;
   },
 
@@ -188,24 +188,24 @@ export const chamadosService = {
   /**
    * Cancela um chamado
    */
-  async cancelar(id: number, usuarioId: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/cancelar?usuario_id=${usuarioId}`);
+  async cancelar(id: number): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/cancelar`);
     return response.data;
   },
 
   /**
    * Arquiva um chamado
    */
-  async arquivar(id: number, usuarioId: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/arquivar?usuario_id=${usuarioId}`);
+  async arquivar(id: number): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/arquivar`);
     return response.data;
   },
 
   /**
    * Desarquiva um chamado
    */
-  async desarquivar(id: number, usuarioId: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/desarquivar?usuario_id=${usuarioId}`);
+  async desarquivar(id: number): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/desarquivar`);
     return response.data;
   },
 };

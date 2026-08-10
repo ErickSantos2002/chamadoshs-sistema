@@ -31,7 +31,7 @@ type ChamadosContextType = {
   carregarChamados: () => Promise<void>;
   buscarChamado: (id: number) => Promise<Chamado | null>;
   criarChamado: (dados: ChamadoCreate) => Promise<Chamado>;
-  atualizarChamado: (id: number, dados: ChamadoUpdate, usuarioId: number) => Promise<Chamado>;
+  atualizarChamado: (id: number, dados: ChamadoUpdate) => Promise<Chamado>;
   deletarChamado: (id: number) => Promise<void>;
 
   // Funções de comentários
@@ -153,12 +153,12 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
 
   // Atualizar chamado
   const atualizarChamado = useCallback(
-    async (id: number, dados: ChamadoUpdate, usuarioId: number): Promise<Chamado> => {
+    async (id: number, dados: ChamadoUpdate): Promise<Chamado> => {
       try {
         setLoading(true);
         setError(null);
 
-        const chamadoAtualizado = await chamadosService.atualizar(id, dados, usuarioId);
+        const chamadoAtualizado = await chamadosService.atualizar(id, dados);
 
         // Atualiza o cache
         setChamados((prev) => prev.map((c) => (c.id === id ? chamadoAtualizado : c)));
