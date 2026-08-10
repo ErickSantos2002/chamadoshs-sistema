@@ -3,3 +3,17 @@ node_modules/
 .vscode/
 *.log
 .DS_Store
+
+# O Vite lê arquivos .env durante o build. Se eles entrarem no contexto,
+# o valor da máquina de quem builda disputa com o ARG VITE_API_URL do
+# dockerfile — e a imagem pode sair apontando para o ambiente errado.
+.env
+.env.*
+!.env.example
+
+# Não fazem parte da imagem
+.git/
+.gitignore
+.gitattributes
+.claude/
+*.md
