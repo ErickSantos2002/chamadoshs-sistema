@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import axios from 'axios';
 import toast from 'react-hot-toast';
 import api from './api';
 
@@ -25,23 +26,120 @@ function erroDaApi(status: number, url = '/chamados/', data?: unknown) {
   };
 }
 
+/** Monta um JWT de mentira cujo `exp` vence daqui a `minutos`. */
+function tokenQueVenceEm(minutos: number, marca = 'tok'): string {
+  const exp = Math.floor((Date.now() + minutos * 60_000) / 1000);
+  const payload = btoa(JSON.stringify({ sub: '1', marca, exp }))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  return `cabecalho.${payload}.assinatura`;
+}
+
 describe('interceptor de requisição', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     localStorage.clear();
   });
 
-  it('anexa o token do localStorage no header Authorization', () => {
-    localStorage.setItem('token', 'abc123');
+  it('anexa o token do localStorage no header Authorization', async () => {
+    localStorage.setItem('token', tokenQueVenceEm(300));
 
-    const config = aoEnviar({ headers: {} });
+    const config = await aoEnviar({ headers: {}, url: '/chamados/' });
 
-    expect(config.headers.Authorization).toBe('Bearer abc123');
+    expect(config.headers.Authorization).toMatch(/^Bearer /);
   });
 
-  it('não inventa header quando não há token guardado', () => {
-    const config = aoEnviar({ headers: {} });
+  it('não inventa header quando não há token guardado', async () => {
+    const config = await aoEnviar({ headers: {}, url: '/chamados/' });
 
     expect(config.headers.Authorization).toBeUndefined();
+  });
+});
+
+describe('renovação preventiva do token', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it('não renova enquanto o token está longe de vencer', async () => {
+    const enviar = vi.spyOn(axios, 'post');
+    localStorage.setItem('token', tokenQueVenceEm(300));
+
+    await aoEnviar({ headers: {}, url: '/chamados/' });
+
+    expect(enviar).not.toHaveBeenCalled();
+  });
+
+  it('renova quando falta pouco e passa a usar o token novo', async () => {
+    const tokenNovo = tokenQueVenceEm(380, 'renovado');
+    const enviar = vi.spyOn(axios, 'post').mockResolvedValue({
+      data: { access_token: tokenNovo, user_id: 1, nome: 'Rickelme', role: 'Administrador' },
+    } as never);
+
+    localStorage.setItem('token', tokenQueVenceEm(5));
+
+    const config = await aoEnviar({ headers: {}, url: '/chamados/' });
+
+    expect(enviar).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem('token')).toBe(tokenNovo);
+    expect(config.headers.Authorization).toBe(`Bearer ${tokenNovo}`);
+  });
+
+  // Uma tela que dispara várias chamadas ao mesmo tempo não pode abrir uma
+  // renovação por chamada — todas compartilham a mesma promessa.
+  it('renova uma única vez mesmo com várias requisições simultâneas', async () => {
+    const tokenNovo = tokenQueVenceEm(380, 'renovado');
+    const enviar = vi.spyOn(axios, 'post').mockResolvedValue({
+      data: { access_token: tokenNovo, user_id: 1, nome: 'Rickelme', role: 'Administrador' },
+    } as never);
+
+    localStorage.setItem('token', tokenQueVenceEm(5));
+
+    await Promise.all([
+      aoEnviar({ headers: {}, url: '/chamados/' }),
+      aoEnviar({ headers: {}, url: '/usuarios/' }),
+      aoEnviar({ headers: {}, url: '/setores/' }),
+    ]);
+
+    expect(enviar).toHaveBeenCalledTimes(1);
+  });
+
+  // A renovação é uma tentativa oportunista: se falhar, a requisição do
+  // usuário segue com o token atual em vez de morrer no caminho.
+  it('segue com o token atual quando a renovação falha', async () => {
+    vi.spyOn(axios, 'post').mockRejectedValue(new Error('rede fora'));
+
+    const tokenAtual = tokenQueVenceEm(5);
+    localStorage.setItem('token', tokenAtual);
+
+    const config = await aoEnviar({ headers: {}, url: '/chamados/' });
+
+    expect(config.headers.Authorization).toBe(`Bearer ${tokenAtual}`);
+    expect(localStorage.getItem('token')).toBe(tokenAtual);
+  });
+
+  it('não tenta renovar com token malformado', async () => {
+    const enviar = vi.spyOn(axios, 'post');
+    localStorage.setItem('token', 'isto-nao-e-um-jwt');
+
+    const config = await aoEnviar({ headers: {}, url: '/chamados/' });
+
+    expect(enviar).not.toHaveBeenCalled();
+    expect(config.headers.Authorization).toBe('Bearer isto-nao-e-um-jwt');
+  });
+
+  // Sem esta exceção a própria renovação entraria no interceptor de novo.
+  it('não dispara renovação nas rotas de autenticação', async () => {
+    const enviar = vi.spyOn(axios, 'post');
+    localStorage.setItem('token', tokenQueVenceEm(5));
+
+    await aoEnviar({ headers: {}, url: '/auth/refresh' });
+    await aoEnviar({ headers: {}, url: '/auth/login' });
+
+    expect(enviar).not.toHaveBeenCalled();
   });
 });
 
