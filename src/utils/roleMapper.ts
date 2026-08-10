@@ -66,3 +66,22 @@ export function isUsuario(roleId: number): boolean {
 export function podeAtenderChamado(roleId: number): boolean {
   return isAdmin(roleId) || isTecnico(roleId);
 }
+
+/**
+ * Quem pode ser escolhido como responsável no seletor de técnico.
+ *
+ * Além do perfil, exclui contas que não representam pessoas — o painel de TV
+ * da sala e o login usado pelo FortiPAM. Elas precisam existir e fazer login
+ * (desativar as impediria de entrar), mas atribuir um chamado a elas não diz
+ * quem é o responsável de verdade.
+ *
+ * `conta_de_servico` ausente conta como `false`: mantém o comportamento atual
+ * enquanto a API não expõe o campo, sem exigir ordem de deploy entre os dois
+ * repositórios.
+ */
+export function podeSerResponsavel(usuario: {
+  role_id: number;
+  conta_de_servico?: boolean;
+}): boolean {
+  return podeAtenderChamado(usuario.role_id) && !usuario.conta_de_servico;
+}

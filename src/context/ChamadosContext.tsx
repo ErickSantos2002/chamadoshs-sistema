@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { podeAtenderChamado } from '../utils/roleMapper';
+import { podeSerResponsavel } from '../utils/roleMapper';
 import {
   chamadosService,
   comentariosService,
@@ -167,7 +167,10 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         return chamadoAtualizado;
       } catch (err: any) {
         console.error('Erro ao atualizar chamado:', err);
-        setError('Erro ao atualizar chamado.');
+        // A API explica a recusa no `detail` — por exemplo ao tentar atribuir
+        // o chamado a uma conta de serviço. Engolir isso numa mensagem
+        // genérica deixaria o usuário sem saber o que corrigir.
+        setError(err.response?.data?.detail || 'Erro ao atualizar chamado.');
         throw err;
       } finally {
         setLoading(false);
@@ -247,11 +250,12 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       // O endpoint filtra por um role_id só, e precisamos de dois: quem atende
-      // chamado é técnico ou administrador (ver podeAtenderChamado). Traz os
-      // ativos numa listagem e separa em memória.
+      // chamado é técnico ou administrador. Fora isso, contas de serviço não
+      // entram (ver podeSerResponsavel). Traz os ativos numa listagem e separa
+      // em memória.
       const ativos = await usuariosService.listarTodos({ ativo: true });
 
-      setTecnicos(ativos.filter((usuario) => podeAtenderChamado(usuario.role_id)));
+      setTecnicos(ativos.filter(podeSerResponsavel));
       setTecnicosCarregados(true);
     } catch (err: any) {
       console.error('Erro ao carregar técnicos:', err);

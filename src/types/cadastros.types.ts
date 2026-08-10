@@ -70,6 +70,8 @@ export interface Usuario {
   setor_id?: number;
   role_id: number;
   ativo: boolean;
+  /** Conta que não representa uma pessoa (painel de TV, login de integração). */
+  conta_de_servico?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +85,7 @@ export interface UsuarioCreate {
   senha?: string;  // Campo para manter compatibilidade
   role_name?: string;
   setor_id?: number;
+  conta_de_servico?: boolean;
 }
 
 /**
@@ -94,6 +97,7 @@ export interface UsuarioUpdate {
   senha?: string;  // Campo para manter compatibilidade
   role_name?: string;
   setor_id?: number;
+  conta_de_servico?: boolean;
 }
 
 // ========================================

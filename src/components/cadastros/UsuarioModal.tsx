@@ -72,6 +72,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
         password: '', // Não mostra senha existente
         role_name: getRoleName(usuario.role_id),
         setor_id: usuario.setor_id,
+        conta_de_servico: usuario.conta_de_servico ?? false,
       });
     } else {
       setFormData({
@@ -79,6 +80,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
         password: '',
         role_name: 'Usuario',
         setor_id: undefined,
+        conta_de_servico: false,
       });
       setConfirmarSenha('');
     }
@@ -174,6 +176,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
           username: formData.username,
           role_name: formData.role_name,
           setor_id: formData.setor_id,
+          conta_de_servico: formData.conta_de_servico ?? false,
         };
         
         // Só inclui senha se foi fornecida
@@ -464,6 +467,40 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Conta de serviço */}
+            <div className="mb-6">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="conta_de_servico"
+                  checked={formData.conta_de_servico ?? false}
+                  onChange={(e) =>
+                    setFormData((anterior) => ({
+                      ...anterior,
+                      conta_de_servico: e.target.checked,
+                    }))
+                  }
+                  disabled={isReadOnly}
+                  className={`
+                    mt-0.5 w-4 h-4 rounded
+                    border-gray-300 dark:border-gray-600
+                    text-blue-600 focus:ring-2 focus:ring-blue-500
+                    ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
+                  `}
+                />
+                <span>
+                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Conta de serviço
+                  </span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Marque para contas que não são pessoas — painel de TV, login de
+                    integração. Elas continuam acessando o sistema, mas deixam de
+                    aparecer na lista de técnico responsável.
+                  </span>
+                </span>
+              </label>
             </div>
 
             {/* Informações de auditoria (apenas visualização) */}

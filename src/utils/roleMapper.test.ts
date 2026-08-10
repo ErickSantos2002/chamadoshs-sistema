@@ -7,6 +7,7 @@ import {
   isTecnico,
   isUsuario,
   podeAtenderChamado,
+  podeSerResponsavel,
 } from './roleMapper';
 
 describe('roleMapper', () => {
@@ -102,6 +103,42 @@ describe('roleMapper', () => {
     });
 
     it('as três verificações são mutuamente exclusivas', () => {
+      for (const id of [1, 2, 3]) {
+        const positivas = [isAdmin(id), isTecnico(id), isUsuario(id)].filter(Boolean);
+        expect(positivas).toHaveLength(1);
+      }
+    });
+  });
+
+  describe('podeSerResponsavel', () => {
+    it('aceita pessoa com perfil de administrador ou técnico', () => {
+      expect(podeSerResponsavel({ role_id: 1, conta_de_servico: false })).toBe(true);
+      expect(podeSerResponsavel({ role_id: 2, conta_de_servico: false })).toBe(true);
+    });
+
+    // O painel de TV da sala e o login do FortiPAM têm perfil de técnico para
+    // conseguir enxergar os chamados, mas atribuir chamado a eles não diz quem
+    // é o responsável.
+    it('recusa conta de serviço mesmo com perfil que atenderia', () => {
+      expect(podeSerResponsavel({ role_id: 1, conta_de_servico: true })).toBe(false);
+      expect(podeSerResponsavel({ role_id: 2, conta_de_servico: true })).toBe(false);
+    });
+
+    it('recusa usuário comum, com ou sem a marca', () => {
+      expect(podeSerResponsavel({ role_id: 3 })).toBe(false);
+      expect(podeSerResponsavel({ role_id: 3, conta_de_servico: true })).toBe(false);
+    });
+
+    // Enquanto a API não expuser o campo, o comportamento tem que ser o de
+    // hoje — é o que permite os dois repositórios subirem em qualquer ordem.
+    it('trata campo ausente como pessoa', () => {
+      expect(podeSerResponsavel({ role_id: 1 })).toBe(true);
+      expect(podeSerResponsavel({ role_id: 2 })).toBe(true);
+    });
+  });
+
+  describe('exclusividade dos perfis', () => {
+    it('continua mutuamente exclusiva', () => {
       for (const id of [1, 2, 3]) {
         const positivas = [isAdmin(id), isTecnico(id), isUsuario(id)].filter(Boolean);
         expect(positivas).toHaveLength(1);

@@ -45,6 +45,7 @@ export interface UsuarioCreate {
   setor_id?: number;
   role_id: number;
   ativo?: boolean;
+  conta_de_servico?: boolean;
 }
 
 export interface AlterarSenhaRequest {
@@ -105,6 +106,13 @@ export interface Usuario {
   setor_id?: number;
   role_id: number;
   ativo: boolean;
+  /**
+   * Conta que não representa uma pessoa (painel de TV, login de integração).
+   * Precisa existir e fazer login, mas não deve aparecer como responsável por
+   * chamado. Opcional para o front continuar funcionando contra versões da API
+   * anteriores ao campo — ausente é tratado como `false`.
+   */
+  conta_de_servico?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -115,6 +123,7 @@ export interface UsuarioUpdate {
   setor_id?: number;
   role_id?: number;
   ativo?: boolean;
+  conta_de_servico?: boolean;
 }
 
 // SLA

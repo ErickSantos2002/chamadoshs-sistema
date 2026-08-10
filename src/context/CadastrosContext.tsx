@@ -231,6 +231,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
         setor_id: data.setor_id,
         role_id: data.role_name === 'Administrador' ? 1 : data.role_name === 'Tecnico' ? 2 : 3,
         ativo: true,
+        conta_de_servico: data.conta_de_servico ?? false,
       };
 
       console.log('🔍 Dados sendo enviados para criar usuário:', { ...dadosUsuario, senha: '***' });
@@ -270,6 +271,11 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       if (data.role_name) {
         dadosAtualizacao.role_id =
           data.role_name === 'Administrador' ? 1 : data.role_name === 'Tecnico' ? 2 : 3;
+      }
+      // Comparação com undefined, não checagem de veracidade: desmarcar a
+      // caixa manda `false`, e um `if (data.conta_de_servico)` engoliria isso.
+      if (data.conta_de_servico !== undefined) {
+        dadosAtualizacao.conta_de_servico = data.conta_de_servico;
       }
 
       const usuarioAtualizado = await usuariosService.atualizar(id, dadosAtualizacao);
