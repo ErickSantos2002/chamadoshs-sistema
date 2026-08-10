@@ -6,6 +6,7 @@ import CategoriasTab from '../components/cadastros/CategoriasTab';
 import SetoresTab from '../components/cadastros/SetoresTab';
 import UsuariosTab from '../components/cadastros/UsuariosTab';
 import SlaTab from '../components/cadastros/SlaTab';
+import Bloqueio from './Bloqueio';
 import type { TipoAba } from '../types/cadastros.types';
 
 // ========================================
@@ -19,9 +20,12 @@ const CadastrosBasicos: React.FC = () => {
   // ========================================
   // VERIFICAÇÃO DE PERMISSÕES
   // ========================================
+  //
+  // A tela inteira é de administrador: criar, editar e excluir usuário, setor,
+  // categoria e prazo de SLA exigem esse perfil na API. O menu já esconde o
+  // item, e esta guarda cobre quem chegar digitando a URL.
 
-  const podeVerUsuarios = user?.role === 'Administrador' || user?.role === 'Tecnico';
-  const podeVerSla = user?.role === 'Administrador';
+  const podeGerenciarCadastros = user?.role === 'Administrador';
 
   // ========================================
   // CONFIGURAÇÃO DAS ABAS
@@ -55,30 +59,27 @@ const CadastrosBasicos: React.FC = () => {
       label: 'Usuários',
       icon: <Users className="w-4 h-4" />,
       component: <UsuariosTab />,
-      visible: podeVerUsuarios,
+      visible: true,
     },
     {
       id: 'sla',
       label: 'SLA',
       icon: <Clock className="w-4 h-4" />,
       component: <SlaTab ativo={abaAtiva === 'sla'} />,
-      visible: podeVerSla,
+      visible: true,
     },
   ];
 
   // Filtra abas visíveis
   const abasVisiveis = abas.filter((aba) => aba.visible);
 
-  // Se a aba ativa não está visível, muda para a primeira aba visível
-  React.useEffect(() => {
-    if (!abasVisiveis.find((aba) => aba.id === abaAtiva)) {
-      setAbaAtiva(abasVisiveis[0]?.id || 'categorias');
-    }
-  }, [podeVerUsuarios, abaAtiva, abasVisiveis]);
-
   // ========================================
   // RENDER
   // ========================================
+
+  if (!podeGerenciarCadastros) {
+    return <Bloqueio />;
+  }
 
   return (
     <CadastrosProvider>

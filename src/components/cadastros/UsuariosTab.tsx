@@ -54,7 +54,9 @@ const UsuariosTab: React.FC = () => {
   // VERIFICAÇÃO DE PERMISSÕES
   // ========================================
 
-  const isAdmin = user?.role === 'Administrador' || user?.role === 'Tecnico';
+  // Criar, editar e excluir usuário exigem administrador na API. O nome antigo
+  // (`isAdmin`) incluía o técnico e liberava botões que respondiam 403.
+  const isAdmin = user?.role === 'Administrador';
 
   // ========================================
   // FILTRAGEM E ORDENAÇÃO

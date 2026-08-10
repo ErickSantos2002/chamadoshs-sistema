@@ -13,6 +13,9 @@ const Sidebar: React.FC = () => {
 
   const iconBaseClass = 'w-5 h-5 mr-2 transition-colors';
 
+  const ehAdministrador = user?.role === 'Administrador';
+  const ehEquipe = ehAdministrador || user?.role === 'Tecnico';
+
   const getColor = (isActive: boolean) => {
     if (darkMode) {
       return 'D1D1D1'; // ícones em cinza claro no dark
@@ -44,7 +47,10 @@ const Sidebar: React.FC = () => {
         />
       ),
     },
-    ...(user?.role === 'Administrador' || user?.role === 'Tecnico'
+    // Cadastros só para administrador: criar, editar e excluir usuário, setor,
+    // categoria e prazo de SLA exigem esse perfil na API. Para o técnico a tela
+    // inteira seria só botão que responde 403.
+    ...(ehAdministrador
       ? [
           {
             label: 'Cadastros',
@@ -58,6 +64,11 @@ const Sidebar: React.FC = () => {
               />
             ),
           },
+        ]
+      : []),
+    // Tarefas recorrentes a API libera para administrador e técnico.
+    ...(ehEquipe
+      ? [
           {
             label: 'Tarefas Recorrentes',
             to: '/tarefas-recorrentes',

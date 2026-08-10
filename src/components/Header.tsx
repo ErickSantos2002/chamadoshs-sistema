@@ -84,7 +84,8 @@ const Header: React.FC = () => {
         />
       ),
     },
-    ...(user?.role === 'Administrador' || user?.role === 'Tecnico'
+    // Só administrador: as operações de cadastro exigem esse perfil na API.
+    ...(user?.role === 'Administrador'
       ? [
           {
             label: 'Cadastros',
