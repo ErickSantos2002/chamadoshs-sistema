@@ -2,6 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Tokens de tema ───────────────────────────────────────────────────
+ *
+ * Um nome por PAPEL na interface, não por cor. `--superficie` continua
+ * fazendo sentido quando o fundo mudar de tom; `mediumGray` não.
+ *
+ * O par claro/escuro fica aqui, num lugar só. A consequência prática é que
+ * o componente escreve `bg-superficie` e para — sem `dark:` em toda classe,
+ * que é como as telas antigas fazem e o motivo de cada uma ter divergido um
+ * pouco das outras.
+ *
+ * Valores em "R G B" separados por espaço: é o formato que o Tailwind exige
+ * para conseguir aplicar opacidade por cima (`bg-superficie/50`).
+ *
+ * A classe `dark` é aplicada no <html> pelo ThemeContext.
+ */
+@layer base {
+  :root {
+    --superficie-base: 248 250 252;    /* #F8FAFC — fundo da página      */
+    --superficie: 255 255 255;         /* #FFFFFF — cards, painéis       */
+    --superficie-elevada: 241 245 249; /* #F1F5F9 — hover, cabeçalhos    */
+
+    --borda: 226 232 240;              /* #E2E8F0 — divisores visíveis   */
+    --borda-suave: 241 245 249;        /* #F1F5F9 — separação sutil      */
+
+    --conteudo: 15 23 42;              /* #0F172A — texto principal      */
+    --conteudo-suave: 71 85 105;       /* #475569 — texto secundário     */
+    --conteudo-tenue: 148 163 184;     /* #94A3B8 — rótulos, placeholder */
+  }
+
+  .dark {
+    --superficie-base: 13 27 42;       /* #0D1B2A */
+    --superficie: 19 34 56;            /* #132238 */
+    --superficie-elevada: 26 47 74;    /* #1A2F4A */
+
+    --borda: 30 58 95;                 /* #1E3A5F */
+    --borda-suave: 19 34 56;           /* #132238 */
+
+    --conteudo: 241 245 249;           /* #F1F5F9 */
+    --conteudo-suave: 148 163 184;     /* #94A3B8 */
+    --conteudo-tenue: 100 116 139;     /* #64748B */
+  }
+}
+
 /* 1) preencher a viewport inteira */
 html,
 body,
