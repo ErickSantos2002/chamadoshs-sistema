@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
@@ -243,17 +244,30 @@ const ChamadoDetalhes: React.FC = () => {
     try {
       setSalvandoAvaliacao(true);
 
-      const dadosAtualizacao: ChamadoUpdate = {
-        avaliacao: nota,
-      };
+      // Endpoint próprio do solicitante. O PUT usado pelo resto da tela exige
+      // perfil de técnico ou administrador e devolvia 403 para quem abriu o
+      // chamado — ou seja, para justamente quem deveria avaliar.
+      const atualizado = await chamadosService.avaliar(chamado.id, nota);
 
-      await atualizarChamado(chamado.id, dadosAtualizacao);
-      setAvaliacao(nota);
+      // A resposta é o ChamadoResponse completo, com o bloco de SLA. Usar ela
+      // direto evita uma segunda ida à API só para reler o que acabou de ser
+      // gravado.
+      setChamado(atualizado);
+      setAvaliacao(atualizado.avaliacao ?? nota);
 
-      // Não precisa recarregar tudo, já atualizamos o estado local
+      toast.success('Obrigado pela avaliação!');
     } catch (err: any) {
       console.error('Erro ao salvar avaliação:', err);
-      alert('Erro ao salvar avaliação.');
+
+      const status = err?.response?.status;
+
+      if (status === 409) {
+        toast.error('Só é possível avaliar depois que o chamado é resolvido.');
+      } else if (status !== 403) {
+        // O 403 já é anunciado pelo interceptor do api.ts; avisar de novo aqui
+        // mostraria duas mensagens para o mesmo erro.
+        toast.error(err?.response?.data?.detail || 'Erro ao salvar avaliação.');
+      }
     } finally {
       setSalvandoAvaliacao(false);
     }

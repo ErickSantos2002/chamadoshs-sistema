@@ -444,6 +444,7 @@ const Chamados: React.FC = () => {
             usuarios={usuarios}
             navigate={navigate}
             getPrioridadeColor={getPrioridadeColor}
+            usuarioLogadoId={user?.id}
           />
 
           {/* === EM ANDAMENTO === */}
@@ -455,6 +456,7 @@ const Chamados: React.FC = () => {
             usuarios={usuarios}
             navigate={navigate}
             getPrioridadeColor={getPrioridadeColor}
+            usuarioLogadoId={user?.id}
           />
 
           {/* === AGUARDANDO === */}
@@ -466,6 +468,7 @@ const Chamados: React.FC = () => {
             usuarios={usuarios}
             navigate={navigate}
             getPrioridadeColor={getPrioridadeColor}
+            usuarioLogadoId={user?.id}
           />
 
           {/* === RESOLVIDO (inclui Fechados) === */}
@@ -477,6 +480,7 @@ const Chamados: React.FC = () => {
             usuarios={usuarios}
             navigate={navigate}
             getPrioridadeColor={getPrioridadeColor}
+            usuarioLogadoId={user?.id}
           />
         </div>
       </div>

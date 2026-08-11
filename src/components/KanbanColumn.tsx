@@ -1,5 +1,6 @@
-import { User } from "lucide-react";
+import { Star, User } from "lucide-react";
 import { Chamado, PrioridadeEnum, Usuario } from "../types/api";
+import { precisaAvaliar } from "../utils/avaliacao";
 import SlaBadge from "./SlaBadge";
 
 interface KanbanColumnProps {
@@ -10,6 +11,8 @@ interface KanbanColumnProps {
   usuarios: Record<number, Usuario>;
   navigate: (path: string) => void;
   getPrioridadeColor: (p: PrioridadeEnum) => string;
+  /** Quem está logado, para saber de quem pedir avaliação. */
+  usuarioLogadoId?: number;
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -20,6 +23,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   usuarios,
   navigate,
   getPrioridadeColor,
+  usuarioLogadoId,
 }) => {
   return (
     <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
@@ -73,6 +77,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
               {/* Prioridade e SLA */}
               <div className="flex items-center justify-end gap-2">
+                {precisaAvaliar(chamado, usuarioLogadoId) && (
+                  <span
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full
+                               bg-yellow-100 text-yellow-800
+                               dark:bg-yellow-900/30 dark:text-yellow-300"
+                  >
+                    <Star className="w-3 h-3" aria-hidden="true" />
+                    Avaliar
+                  </span>
+                )}
                 <SlaBadge sla={chamado.sla} compacto />
                 <span
                   className={`px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeColor(

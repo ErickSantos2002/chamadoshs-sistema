@@ -208,6 +208,23 @@ export const chamadosService = {
     const response = await api.patch<Chamado>(`/chamados/${id}/desarquivar`);
     return response.data;
   },
+
+  /**
+   * Registra a nota de satisfação do solicitante.
+   *
+   * Endpoint próprio em vez do `atualizar`: o PUT exige perfil de técnico ou
+   * administrador, então o solicitante comum levava 403 e não conseguia
+   * avaliar. Abrir o PUT para ele resolveria a avaliação e de quebra deixaria
+   * qualquer um mudar status, prioridade e responsável do próprio chamado.
+   *
+   * Reavaliar é permitido: a segunda chamada sobrescreve a nota.
+   */
+  async avaliar(id: number, nota: number): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/avaliar`, {
+      avaliacao: nota,
+    });
+    return response.data;
+  },
 };
 
 // ============================================

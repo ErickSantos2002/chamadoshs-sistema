@@ -15,7 +15,35 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ## [Não publicado]
 
-Nada pendente.
+### Added
+
+- Selo **Avaliar** na lista de chamados, nos chamados resolvidos do próprio
+  usuário que ainda não têm nota. As estrelas existiam só dentro da página de
+  detalhe, onde o solicitante não tem motivo para voltar depois que o problema
+  acabou — nos primeiros nove meses, 12 chamados de 144 foram avaliados.
+
+### Fixed
+
+- **O solicitante volta a conseguir avaliar o atendimento.** A avaliação era
+  salva pelo mesmo endpoint que edita o chamado, restrito a técnico e
+  administrador desde que a API passou a exigir autorização. Quem abriu o
+  chamado — justamente quem deve avaliar — recebia "sem permissão". Agora a
+  nota vai por um endpoint próprio, que aceita só a nota e nada mais.
+
+### Changed
+
+- Ícones da Sidebar, do Header e do Login deixam de vir do `img.icons8.com` e
+  passam a ser gerados no próprio bundle. Some a dependência de um servidor de
+  terceiro para a navegação funcionar, e o host interno do sistema deixa de ser
+  anunciado a um domínio externo a cada carregamento.
+
+### ⚠️ Requer ação no deploy
+
+- **A API vai primeiro.** A avaliação depende do endpoint
+  `PATCH /api/v1/chamados/{id}/avaliar`, entregue no `chamadoshs-api`. Subir o
+  front antes faz as estrelas chamarem uma rota que ainda responde 404 — e o
+  selo novo convida todo mundo a tentar. Sem migration e sem variável nova nos
+  dois lados.
 
 ---
 
