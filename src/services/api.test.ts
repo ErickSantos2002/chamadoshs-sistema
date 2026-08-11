@@ -260,4 +260,50 @@ describe('interceptor de resposta', () => {
       expect(localStorage.getItem('token')).toBeNull();
     });
   });
+
+  describe('detalhe de erro do FastAPI', () => {
+    // O 422 devolve `detail` como lista de objetos. Sem normalizar, o array
+    // chega às telas que fazem setError(detail) e o React quebra ao renderizar
+    // — tela branca no lugar de "titulo: muito curto".
+    it('achata a lista de validação em texto antes de repassar', async () => {
+      const erro: any = {
+        config: { url: '/chamados/' },
+        response: {
+          status: 422,
+          data: {
+            detail: [
+              { loc: ['body', 'titulo'], msg: 'String should have at least 10 characters' },
+            ],
+          },
+        },
+      };
+
+      await expect(aoFalhar(erro)).rejects.toBeDefined();
+
+      expect(typeof erro.response.data.detail).toBe('string');
+      expect(erro.response.data.detail).toContain('titulo');
+    });
+
+    it('não mexe no detail quando já é texto', async () => {
+      const erro: any = {
+        config: { url: '/chamados/1' },
+        response: { status: 404, data: { detail: 'Chamado não encontrado' } },
+      };
+
+      await expect(aoFalhar(erro)).rejects.toBeDefined();
+
+      expect(erro.response.data.detail).toBe('Chamado não encontrado');
+    });
+
+    it('não inventa detail em resposta que não tem', async () => {
+      const erro: any = {
+        config: { url: '/chamados/' },
+        response: { status: 500, data: {} },
+      };
+
+      await expect(aoFalhar(erro)).rejects.toBeDefined();
+
+      expect('detail' in erro.response.data).toBe(false);
+    });
+  });
 });

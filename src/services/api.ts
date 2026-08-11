@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import toast from 'react-hot-toast';
+import { normalizarDetalhe } from '../lib/erroApi';
 
 // URL base da API - ajuste conforme seu ambiente
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -130,6 +131,20 @@ api.interceptors.response.use(
   },
   (error: AxiosError) => {
     const isLoginRequest = error.config?.url?.includes('/auth/login');
+
+    // O `detail` do FastAPI é texto no HTTPException e LISTA DE OBJETOS no erro
+    // de validação (422). Mais de vinte telas fazem `setError(data.detail)` e
+    // renderizam direto — com a lista, o React quebra e a tela fica branca em
+    // vez de mostrar qual campo está inválido.
+    //
+    // Normalizar aqui resolve todas de uma vez: é o único ponto por onde todas
+    // as respostas passam.
+    if (error.response?.data && typeof error.response.data === 'object') {
+      const corpo = error.response.data as { detail?: unknown };
+      if ('detail' in corpo) {
+        corpo.detail = normalizarDetalhe(corpo.detail);
+      }
+    }
 
     // Token expirado ou inválido (mas não em tentativa de login)
     if (error.response?.status === 401 && !isLoginRequest) {
