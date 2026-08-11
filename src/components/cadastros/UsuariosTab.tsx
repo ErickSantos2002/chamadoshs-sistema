@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Key,
   Building,
+  RotateCcw,
 } from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -30,7 +31,16 @@ import type {
 // ========================================
 
 const UsuariosTab: React.FC = () => {
-  const { usuarios, setores, deleteUsuario, updateUsuarioPassword, refreshData, loading, error } = useCadastros();
+  const {
+    usuarios,
+    setores,
+    deleteUsuario,
+    updateUsuario,
+    updateUsuarioPassword,
+    refreshData,
+    loading,
+    error,
+  } = useCadastros();
   const { user } = useAuth();
 
   // ========================================
@@ -153,6 +163,14 @@ const UsuariosTab: React.FC = () => {
     setConfirmDelete(null);
   };
 
+  const handleReativarUsuario = async (usuario: Usuario) => {
+    try {
+      await updateUsuario(usuario.id, { ativo: true });
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Erro ao reativar usuário');
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!resetPasswordFor) return;
 
@@ -198,7 +216,7 @@ const UsuariosTab: React.FC = () => {
     const roleColors: Record<string, string> = {
       'Administrador': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400',
       'Tecnico': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
-      'Usuario': 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-400',
+      'Usuario': 'bg-superficie-elevada text-conteudo-tenue',
     };
     return roleColors[role] || roleColors['Usuario'];
   };
@@ -213,7 +231,7 @@ const UsuariosTab: React.FC = () => {
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex items-center gap-3">
           <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-xl font-semibold text-conteudo">
             Usuários
           </h2>
           <span className="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400 rounded-full">
@@ -224,13 +242,13 @@ const UsuariosTab: React.FC = () => {
         <div className="flex gap-3">
           {/* Busca */}
           <div className="relative flex-1 sm:flex-none sm:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-conteudo-tenue" />
             <input
               type="text"
               placeholder="Buscar usuários..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:ring-2 focus:ring-info"
             />
           </div>
 
@@ -238,7 +256,7 @@ const UsuariosTab: React.FC = () => {
           <button
             onClick={refreshData}
             disabled={loading}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-superficie-elevada text-conteudo-suave rounded-lg hover:bg-borda transition-colors flex items-center gap-2"
             aria-label="Atualizar dados"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -259,8 +277,8 @@ const UsuariosTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+        <div className="mb-4 p-4 bg-perigo/10 border border-perigo/30 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
           <div className="flex-1">
             <p className="text-red-800 dark:text-red-300">{error}</p>
           </div>
@@ -268,18 +286,18 @@ const UsuariosTab: React.FC = () => {
       )}
 
       {/* Tabela */}
-      <div className="flex-1 overflow-auto bg-white dark:bg-[#1e1e1e] rounded-lg shadow">
+      <div className="flex-1 overflow-auto bg-superficie rounded-lg shadow">
         {loading && !usuarios.length ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-gray-500 dark:text-gray-400">
+            <div className="text-conteudo-tenue">
               <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
               Carregando usuários...
             </div>
           </div>
         ) : usuariosOrdenados.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8">
-            <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-center">
+            <Users className="w-12 h-12 text-conteudo-tenue mb-4" />
+            <p className="text-conteudo-tenue text-center">
               {busca 
                 ? 'Nenhum usuário encontrado com os critérios de busca'
                 : 'Nenhum usuário cadastrado ainda'}
@@ -297,11 +315,11 @@ const UsuariosTab: React.FC = () => {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
+              <tr className="border-b border-borda">
                 <th className="px-6 py-3 text-left">
                   <button
                     onClick={() => handleOrdenar('id')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
                   >
                     ID
                     {ordenacao.campo === 'id' && (
@@ -314,7 +332,7 @@ const UsuariosTab: React.FC = () => {
                 <th className="px-6 py-3 text-left">
                   <button
                     onClick={() => handleOrdenar('nome')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
                   >
                     Usuário
                     {ordenacao.campo === 'nome' && (
@@ -325,19 +343,19 @@ const UsuariosTab: React.FC = () => {
                   </button>
                 </th>
                 <th className="px-6 py-3 text-left">
-                  <span className="font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <span className="font-medium text-xs uppercase tracking-wider text-conteudo-tenue">
                     Perfil
                   </span>
                 </th>
                 <th className="px-6 py-3 text-left">
-                  <span className="font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <span className="font-medium text-xs uppercase tracking-wider text-conteudo-tenue">
                     Setor
                   </span>
                 </th>
                 <th className="px-6 py-3 text-left">
                   <button
                     onClick={() => handleOrdenar('created_at')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
                   >
                     Criado em
                     {ordenacao.campo === 'created_at' && (
@@ -348,27 +366,37 @@ const UsuariosTab: React.FC = () => {
                   </button>
                 </th>
                 <th className="px-6 py-3 text-right">
-                  <span className="font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <span className="font-medium text-xs uppercase tracking-wider text-conteudo-tenue">
                     Ações
                   </span>
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-borda">
               {usuariosOrdenados.map((usuario) => (
                 <tr
                   key={usuario.id}
-                  className="hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"
+                  className={`hover:bg-superficie-elevada transition-colors ${
+                    usuario.ativo ? '' : 'opacity-60'
+                  }`}
                 >
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                  <td className="px-6 py-4 text-sm text-conteudo">
                     #{usuario.id}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <Users className="w-4 h-4 text-conteudo-tenue" />
+                      <span className="text-sm font-medium text-conteudo">
                         {usuario.nome}
                       </span>
+                      {/* A API desativa em vez de apagar, para não quebrar a FK
+                          dos chamados que a pessoa abriu. Sem este selo, a linha
+                          volta idêntica à ativa e parece que a ação falhou. */}
+                      {!usuario.ativo && (
+                        <span className="inline-flex rounded-full bg-superficie-elevada px-2 py-0.5 text-[11px] font-medium text-conteudo-tenue">
+                          Inativo
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -378,13 +406,13 @@ const UsuariosTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                      <Building className="w-4 h-4 text-conteudo-tenue" />
+                      <span className="text-sm text-conteudo-suave">
                         {getSetorNome(usuario.setor_id)}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                  <td className="px-6 py-4 text-sm text-conteudo-suave">
                     {formatDate(usuario.created_at)}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -392,17 +420,17 @@ const UsuariosTab: React.FC = () => {
                       {/* Visualizar sempre disponível */}
                       <button
                         onClick={() => handleVisualizarUsuario(usuario)}
-                        className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        className="p-2 text-conteudo-suave hover:bg-superficie-elevada rounded-lg transition-colors"
                         aria-label="Visualizar usuário"
                       >
-                        <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <Eye className="w-4 h-4 text-info-forte dark:text-info-suave" />
                       </button>
 
                       {/* Editar - apenas admin */}
                       {isAdmin && (
                         <button
                           onClick={() => handleEditarUsuario(usuario)}
-                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-info-forte dark:text-info-suave hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           aria-label="Editar usuário"
                         >
                           <Edit className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
@@ -420,19 +448,31 @@ const UsuariosTab: React.FC = () => {
                         </button>
                       )}
 
-                      {/* Excluir - apenas admin e não pode excluir a si mesmo */}
+                      {/* Desativar ou reativar — apenas admin, e não em si mesmo.
+                          O rótulo diz "desativar" porque é o que a API faz: o
+                          usuário perde o acesso mas o histórico dele continua
+                          referenciando um registro que existe. */}
                       {isAdmin && usuario.id !== Number(user?.id) && (
-                        confirmDelete === usuario.id ? (
+                        !usuario.ativo ? (
+                          <button
+                            onClick={() => handleReativarUsuario(usuario)}
+                            className="p-2 text-sucesso-forte dark:text-sucesso-suave hover:bg-sucesso/10 rounded-lg transition-colors"
+                            aria-label={`Reativar ${usuario.nome}`}
+                            title="Reativar"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        ) : confirmDelete === usuario.id ? (
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleExcluirUsuario(usuario.id)}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                              className="px-2 py-1 bg-perigo hover:bg-perigo-forte text-white text-xs rounded transition-colors"
                             >
-                              Confirmar
+                              Desativar
                             </button>
                             <button
                               onClick={() => setConfirmDelete(null)}
-                              className="px-2 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-xs rounded transition-colors"
+                              className="px-2 py-1 bg-superficie-elevada hover:bg-borda text-conteudo-suave text-xs rounded transition-colors"
                             >
                               Cancelar
                             </button>
@@ -440,8 +480,9 @@ const UsuariosTab: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => handleExcluirUsuario(usuario.id)}
-                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            aria-label="Excluir usuário"
+                            className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/10 rounded-lg transition-colors"
+                            aria-label={`Desativar ${usuario.nome}`}
+                            title="Desativar"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -457,7 +498,7 @@ const UsuariosTab: React.FC = () => {
       </div>
 
       {/* Footer com informações */}
-      <div className="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
+      <div className="mt-4 flex justify-between items-center text-sm text-conteudo-suave">
         <div>
           Total: {usuariosOrdenados.length} usuário(s)
         </div>
@@ -492,14 +533,14 @@ const UsuariosTab: React.FC = () => {
             }}
           />
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-lg shadow-xl">
+            <div className="relative w-full max-w-md bg-superficie rounded-lg shadow-xl">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                <h3 className="text-lg font-semibold text-conteudo mb-4">
                   Resetar Senha - {resetPasswordFor.nome}
                 </h3>
                 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-conteudo-suave mb-2">
                     Nova Senha
                   </label>
                   <input
@@ -509,13 +550,13 @@ const UsuariosTab: React.FC = () => {
                       setNovaSenha(e.target.value);
                       setSenhaError('');
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo"
                     placeholder="Mínimo 6 caracteres"
                   />
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-conteudo-suave mb-2">
                     Confirmar Senha
                   </label>
                   <input
@@ -525,7 +566,7 @@ const UsuariosTab: React.FC = () => {
                       setConfirmarSenha(e.target.value);
                       setSenhaError('');
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo"
                     placeholder="Digite a senha novamente"
                   />
                 </div>
@@ -542,7 +583,7 @@ const UsuariosTab: React.FC = () => {
                       setConfirmarSenha('');
                       setSenhaError('');
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-[#2a2a2a] border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-[#333333]"
+                    className="px-4 py-2 text-sm font-medium text-conteudo-suave bg-superficie border border-borda rounded-lg hover:bg-superficie-elevada"
                   >
                     Cancelar
                   </button>

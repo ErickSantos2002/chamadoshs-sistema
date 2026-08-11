@@ -59,6 +59,8 @@ export interface SetorCreate {
 export interface SetorUpdate {
   nome?: string;
   descricao?: string;
+  /** `DELETE` no setor faz `ativo = false`; reativar é um update. */
+  ativo?: boolean;
 }
 
 /**
@@ -98,6 +100,12 @@ export interface UsuarioUpdate {
   role_name?: string;
   setor_id?: number;
   conta_de_servico?: boolean;
+  /**
+   * A API desativa em vez de apagar (`DELETE` faz `ativo = false`), então
+   * reativar é um update com `ativo: true`. Sem este campo aqui, não havia
+   * como desfazer uma desativação pela interface.
+   */
+  ativo?: boolean;
 }
 
 // ========================================

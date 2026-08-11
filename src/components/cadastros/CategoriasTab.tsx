@@ -144,8 +144,8 @@ const CategoriasTab: React.FC = () => {
       {/* Header com ações */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex items-center gap-3">
-          <Tag className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <Tag className="w-6 h-6 text-info-forte dark:text-info-suave" />
+          <h2 className="text-xl font-semibold text-conteudo">
             Categorias
           </h2>
         </div>
@@ -153,13 +153,13 @@ const CategoriasTab: React.FC = () => {
         <div className="flex gap-3">
           {/* Busca */}
           <div className="relative flex-1 sm:flex-none sm:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-conteudo-tenue" />
             <input
               type="text"
               placeholder="Buscar categorias..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:ring-2 focus:ring-info"
             />
           </div>
 
@@ -167,7 +167,7 @@ const CategoriasTab: React.FC = () => {
           <button
             onClick={refreshData}
             disabled={loading}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-superficie-elevada text-conteudo-suave rounded-lg hover:bg-borda transition-colors flex items-center gap-2"
             aria-label="Atualizar dados"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -177,7 +177,7 @@ const CategoriasTab: React.FC = () => {
           {podeEditar && (
             <button
               onClick={handleNovaCategoria}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-info hover:bg-info-forte dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Nova Categoria</span>
@@ -188,8 +188,8 @@ const CategoriasTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+        <div className="mb-4 p-4 bg-perigo/10 border border-perigo/30 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
           <div className="flex-1">
             <p className="text-red-800 dark:text-red-300">{error}</p>
           </div>
@@ -197,18 +197,18 @@ const CategoriasTab: React.FC = () => {
       )}
 
       {/* Tabela */}
-      <div className="flex-1 overflow-auto bg-white dark:bg-[#1e1e1e] rounded-lg shadow">
+      <div className="flex-1 overflow-auto bg-superficie rounded-lg shadow">
         {loading && !categorias.length ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-gray-500 dark:text-gray-400">
+            <div className="text-conteudo-tenue">
               <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
               Carregando categorias...
             </div>
           </div>
         ) : categoriasOrdenadas.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8">
-            <Tag className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-center">
+            <Tag className="w-12 h-12 text-conteudo-tenue mb-4" />
+            <p className="text-conteudo-tenue text-center">
               {busca 
                 ? 'Nenhuma categoria encontrada com os critérios de busca'
                 : 'Nenhuma categoria cadastrada ainda'}
@@ -216,7 +216,7 @@ const CategoriasTab: React.FC = () => {
             {podeEditar && !busca && (
               <button
                 onClick={handleNovaCategoria}
-                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="mt-4 px-4 py-2 bg-info hover:bg-info-forte dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Criar primeira categoria
@@ -226,11 +226,11 @@ const CategoriasTab: React.FC = () => {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
+              <tr className="border-b border-borda">
                 <th className="px-6 py-3 text-left">
                   <button
                     onClick={() => handleOrdenar('id')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
                   >
                     ID
                     {ordenacao.campo === 'id' && (
@@ -243,7 +243,7 @@ const CategoriasTab: React.FC = () => {
                 <th className="px-6 py-3 text-left">
                   <button
                     onClick={() => handleOrdenar('nome')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
                   >
                     Nome
                     {ordenacao.campo === 'nome' && (
@@ -254,14 +254,14 @@ const CategoriasTab: React.FC = () => {
                   </button>
                 </th>
                 <th className="px-6 py-3 text-left">
-                  <span className="font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <span className="font-medium text-xs uppercase tracking-wider text-conteudo-tenue">
                     Descrição
                   </span>
                 </th>
                 <th className="px-6 py-3 text-left">
                   <button
                     onClick={() => handleOrdenar('created_at')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
                   >
                     Criado em
                     {ordenacao.campo === 'created_at' && (
@@ -272,33 +272,43 @@ const CategoriasTab: React.FC = () => {
                   </button>
                 </th>
                 <th className="px-6 py-3 text-right">
-                  <span className="font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <span className="font-medium text-xs uppercase tracking-wider text-conteudo-tenue">
                     Ações
                   </span>
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-borda">
               {categoriasOrdenadas.map((categoria) => (
                 <tr
                   key={categoria.id}
-                  className="hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"
+                  className={`hover:bg-superficie-elevada transition-colors ${
+                    categoria.ativo ? '' : 'opacity-60'
+                  }`}
                 >
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                  <td className="px-6 py-4 text-sm text-conteudo">
                     #{categoria.id}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <Tag className="w-4 h-4 text-conteudo-tenue" />
+                      <span className="text-sm font-medium text-conteudo">
                         {categoria.nome}
                       </span>
+                      {/* Diferente de usuário e setor, categoria é apagada de
+                          verdade — mas só quando não há chamado vinculado. A
+                          inativa existe e precisa ser distinguível da ativa. */}
+                      {!categoria.ativo && (
+                        <span className="inline-flex rounded-full bg-superficie-elevada px-2 py-0.5 text-[11px] font-medium text-conteudo-tenue">
+                          Inativa
+                        </span>
+                      )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                  <td className="px-6 py-4 text-sm text-conteudo-suave">
                     {categoria.descricao || '-'}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                  <td className="px-6 py-4 text-sm text-conteudo-suave">
                     {formatDate(categoria.created_at)}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -306,17 +316,17 @@ const CategoriasTab: React.FC = () => {
                       {/* Visualizar sempre disponível */}
                       <button
                         onClick={() => handleVisualizarCategoria(categoria)}
-                        className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        className="p-2 text-conteudo-suave hover:bg-superficie-elevada rounded-lg transition-colors"
                         aria-label="Visualizar categoria"
                       >
-                        <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <Eye className="w-4 h-4 text-info-forte dark:text-info-suave" />
                       </button>
 
                       {/* Editar - apenas para admin/gerente */}
                       {podeEditar && (
                         <button
                           onClick={() => handleEditarCategoria(categoria)}
-                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-info-forte dark:text-info-suave hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           aria-label="Editar categoria"
                         >
                           <Edit className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
@@ -329,13 +339,13 @@ const CategoriasTab: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleExcluirCategoria(categoria.id)}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                              className="px-2 py-1 bg-perigo hover:bg-perigo-forte text-white text-xs rounded transition-colors"
                             >
                               Confirmar
                             </button>
                             <button
                               onClick={() => setConfirmDelete(null)}
-                              className="px-2 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-xs rounded transition-colors"
+                              className="px-2 py-1 bg-superficie-elevada hover:bg-borda text-conteudo-suave text-xs rounded transition-colors"
                             >
                               Cancelar
                             </button>
@@ -343,7 +353,7 @@ const CategoriasTab: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => handleExcluirCategoria(categoria.id)}
-                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             aria-label="Excluir categoria"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -360,7 +370,7 @@ const CategoriasTab: React.FC = () => {
       </div>
 
       {/* Footer com informações */}
-      <div className="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
+      <div className="mt-4 flex justify-between items-center text-sm text-conteudo-suave">
         <div>
           Total: {categoriasOrdenadas.length} categoria(s)
         </div>

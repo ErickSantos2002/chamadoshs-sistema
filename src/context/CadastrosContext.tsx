@@ -278,6 +278,12 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
         dadosAtualizacao.conta_de_servico = data.conta_de_servico;
       }
 
+      // Mesmo motivo: reativar manda `true`, desativar mandaria `false`, e a
+      // checagem de veracidade engoliria o segundo caso.
+      if (data.ativo !== undefined) {
+        dadosAtualizacao.ativo = data.ativo;
+      }
+
       const usuarioAtualizado = await usuariosService.atualizar(id, dadosAtualizacao);
       setUsuarios((prev) =>
         prev.map((u) => (u.id === id ? usuarioAtualizado : u))
