@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { Button, Input, Modal } from './ui';
 
 interface ModalTrocarSenhaProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (senhaAtual: string, novaSenha: string) => void;
 }
+
+const MINIMO_SENHA = 6;
 
 const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
   isOpen,
@@ -14,146 +17,111 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [repitaSenha, setRepitaSenha] = useState('');
+  const [erro, setErro] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
-  const handleConfirm = () => {
-    if (!senhaAtual) {
-      alert('Digite sua senha atual!');
-      return;
-    }
-    if (!novaSenha) {
-      alert('Digite a nova senha!');
-      return;
-    }
-    if (novaSenha.length < 6) {
-      alert('A nova senha deve ter no mínimo 6 caracteres!');
-      return;
-    }
-    if (novaSenha !== repitaSenha) {
-      alert('As senhas não coincidem!');
-      return;
-    }
-    onConfirm(senhaAtual, novaSenha);
+  const limpar = () => {
     setSenhaAtual('');
     setNovaSenha('');
     setRepitaSenha('');
+    setErro(null);
+  };
+
+  const fechar = () => {
+    limpar();
     onClose();
   };
 
+  /**
+   * Erro do primeiro campo que não passa, ou `null`.
+   *
+   * A ordem segue a leitura do formulário: de nada adianta reclamar da
+   * confirmação enquanto a senha nova ainda está vazia.
+   */
+  const validar = (): string | null => {
+    if (!senhaAtual) return 'Digite sua senha atual.';
+    if (!novaSenha) return 'Digite a nova senha.';
+    if (novaSenha.length < MINIMO_SENHA)
+      return `A nova senha precisa de pelo menos ${MINIMO_SENHA} caracteres.`;
+    if (novaSenha === senhaAtual) return 'A nova senha é igual à atual.';
+    if (novaSenha !== repitaSenha) return 'A confirmação não confere com a nova senha.';
+    return null;
+  };
+
+  const confirmar = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const problema = validar();
+    if (problema) {
+      setErro(problema);
+      return;
+    }
+
+    onConfirm(senhaAtual, novaSenha);
+    limpar();
+    onClose();
+  };
+
+  const rotulo = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center 
-                bg-black/60 backdrop-blur-sm z-50 transition-opacity">
-
-      <div
-        className="bg-superficie 
-                  border border-borda
-                  rounded-xl shadow-xl p-8 sm:p-6 
-                  max-w-md w-[90%] sm:w-full 
-                  mx-4 sm:mx-0 transition-colors"
-      >
-
-        {/* Título */}
-        <h2 className="text-xl font-bold mb-6 text-center 
-                      text-info tracking-tight">
-          Trocar Senha
-        </h2>
-
-        {/* Campos */}
-        <div className="flex flex-col gap-5">
-
-          {/* Senha atual */}
-          <div>
-            <label className="block text-sm font-medium text-conteudo-suave">
-              Senha atual:
-            </label>
-
-            <input
-              type="password"
-              value={senhaAtual}
-              onChange={(e) => setSenhaAtual(e.target.value)}
-              placeholder="Digite sua senha atual"
-              className="w-full mt-1 px-3 py-2 border rounded-lg
-                        bg-superficie-base
-                        text-conteudo
-                        border-borda
-                        focus:outline-none focus:ring-2 
-                        focus:ring-info
-                        transition-colors"
-            />
+    <Modal aberto={isOpen} aoFechar={fechar} titulo="Trocar senha" largura="sm">
+      <form onSubmit={confirmar} className="space-y-4">
+        {erro && (
+          <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+            {erro}
           </div>
+        )}
 
-          {/* Nova senha */}
-          <div>
-            <label className="block text-sm font-medium text-conteudo-suave">
-              Nova senha:
-            </label>
-
-            <input
-              type="password"
-              value={novaSenha}
-              onChange={(e) => setNovaSenha(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
-              className="w-full mt-1 px-3 py-2 border rounded-lg
-                        bg-superficie-base
-                        text-conteudo
-                        border-borda
-                        focus:outline-none focus:ring-2 
-                        focus:ring-info
-                        transition-colors"
-            />
-          </div>
-
-          {/* Confirmar nova senha */}
-          <div>
-            <label className="block text-sm font-medium text-conteudo-suave">
-              Repita nova senha:
-            </label>
-
-            <input
-              type="password"
-              value={repitaSenha}
-              onChange={(e) => setRepitaSenha(e.target.value)}
-              placeholder="Repita a nova senha"
-              className="w-full mt-1 px-3 py-2 border rounded-lg
-                        bg-superficie-base
-                        text-conteudo
-                        border-borda
-                        focus:outline-none focus:ring-2 
-                        focus:ring-info
-                        transition-colors"
-            />
-          </div>
+        <div>
+          <label htmlFor="senha-atual" className={rotulo}>
+            Senha atual
+          </label>
+          <Input
+            id="senha-atual"
+            type="password"
+            autoComplete="current-password"
+            value={senhaAtual}
+            onChange={(e) => setSenhaAtual(e.target.value)}
+            placeholder="Digite sua senha atual"
+          />
         </div>
 
-        {/* Botões */}
-        <div className="mt-8 flex justify-end gap-3">
+        <div>
+          <label htmlFor="nova-senha" className={rotulo}>
+            Nova senha
+          </label>
+          <Input
+            id="nova-senha"
+            type="password"
+            autoComplete="new-password"
+            value={novaSenha}
+            onChange={(e) => setNovaSenha(e.target.value)}
+            placeholder={`Mínimo ${MINIMO_SENHA} caracteres`}
+          />
+        </div>
 
-          {/* Cancelar */}
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg font-medium
-                      bg-superficie-elevada hover:bg-borda
-                      bg-superficie dark:hover:bg-[#3a3a3a]
-                      text-conteudo
-                      transition-colors"
-          >
+        <div>
+          <label htmlFor="repita-senha" className={rotulo}>
+            Repita a nova senha
+          </label>
+          <Input
+            id="repita-senha"
+            type="password"
+            autoComplete="new-password"
+            value={repitaSenha}
+            onChange={(e) => setRepitaSenha(e.target.value)}
+            placeholder="Repita a nova senha"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variante="secundario" onClick={fechar}>
             Cancelar
-          </button>
-
-          {/* Confirmar */}
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 rounded-lg font-medium
-                      bg-info hover:bg-info-forte
-                      dark:bg-info dark:hover:bg-[#C4B5FD]
-                      text-white shadow-sm transition-colors"
-          >
-            Confirmar
-          </button>
+          </Button>
+          <Button type="submit">Trocar senha</Button>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 };
 

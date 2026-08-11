@@ -530,7 +530,7 @@ const ChamadoDetalhes: React.FC = () => {
         return 'bg-[#2563EB]/20 text-[#2563EB] dark:bg-[#2563EB]/25 dark:text-[#93C5FD]'; // Azul
 
       case StatusEnum.EM_ANDAMENTO:
-        return 'bg-info/20 text-info dark:bg-info/25 dark:text-[#C4B5FD]'; // Roxo
+        return 'bg-info/15 text-info-forte dark:text-info-suave'; // Roxo
 
       case StatusEnum.AGUARDANDO:
         return 'bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'; // Amber
@@ -628,7 +628,7 @@ const ChamadoDetalhes: React.FC = () => {
   const getRoleBadgeColor = (roleId: number) => {
     switch (roleId) {
       case 1: // Admin
-        return 'bg-info/20 text-info dark:bg-info/25 dark:text-[#C4B5FD]';
+        return 'bg-info/15 text-info-forte dark:text-info-suave';
 
       case 2: // Técnico
         return 'bg-[#2563EB]/20 text-[#2563EB] dark:bg-[#2563EB]/25 dark:text-[#93C5FD]';
@@ -681,8 +681,7 @@ const ChamadoDetalhes: React.FC = () => {
             {/* Botão Voltar */}
             <button
               onClick={() => navigate('/chamados')}
-              className="text-info hover:text-[#6D28D9]
-                        text-info dark:hover:text-[#C4B5FD]
+              className="text-info hover:text-info-forte
                         mb-2 flex items-center gap-1 transition-colors"
               >
               <ArrowLeft className="w-4 h-4" />

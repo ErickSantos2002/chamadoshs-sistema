@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X,
   Save,
-  Users,
   AlertCircle,
   Building,
   Shield,
@@ -10,6 +8,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
+import { Button, Modal } from '../ui';
 import { getRoleName } from '../../utils/roleMapper';
 import type {
   Usuario,
@@ -220,35 +219,8 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
   const roles = ['Administrador', 'Tecnico', 'Usuario'];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-md bg-superficie rounded-lg shadow-xl">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-borda">
-            <div className="flex items-center gap-3">
-              <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <h2 className="text-xl font-semibold text-conteudo">
-                {modalTitle}
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1 rounded-lg hover:bg-superficie-elevada transition-colors"
-              aria-label="Fechar modal"
-            >
-              <X className="w-5 h-5 text-conteudo-tenue" />
-            </button>
-          </div>
-
-          {/* Conteúdo */}
-          <form onSubmit={handleSubmit} className="p-6">
+    <Modal aberto={isOpen} aoFechar={onClose} titulo={modalTitle} largura="sm">
+      <form onSubmit={handleSubmit}>
             {/* Campo Username */}
             <div className="mb-4">
               <label
@@ -525,49 +497,20 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
             )}
 
             {/* Botões */}
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-conteudo-suave
-                  bg-superficie
-                  border border-borda
-                  rounded-lg hover:bg-superficie-elevada
-                  transition-colors"
-              >
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variante="secundario" onClick={onClose}>
                 {isReadOnly ? 'Fechar' : 'Cancelar'}
-              </button>
-              
+              </Button>
+
               {!isReadOnly && (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`
-                    px-4 py-2 text-sm font-medium text-white
-                    bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600
-                    rounded-lg transition-colors
-                    flex items-center gap-2
-                    ${loading ? 'opacity-60 cursor-not-allowed' : ''}
-                  `}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Salvando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Salvar</span>
-                    </>
-                  )}
-                </button>
+                <Button type="submit" carregando={loading}>
+                  <Save className="h-4 w-4" aria-hidden="true" />
+                  Salvar
+                </Button>
               )}
             </div>
-          </form>
-        </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 };
 

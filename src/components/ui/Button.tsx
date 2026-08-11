@@ -1,7 +1,12 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 
-export type VarianteBotao = 'primario' | 'secundario' | 'perigo' | 'fantasma';
+export type VarianteBotao =
+  | 'primario'
+  | 'secundario'
+  | 'sucesso'
+  | 'perigo'
+  | 'fantasma';
 export type TamanhoBotao = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,12 +19,15 @@ const VARIANTES: Record<VarianteBotao, string> = {
   primario: 'bg-info text-white hover:bg-info-forte focus-visible:ring-info',
   secundario:
     'bg-superficie-elevada text-conteudo border border-borda hover:bg-borda-suave focus-visible:ring-borda',
+  // Para concluir algo — registrar execução, marcar como feito. É o mesmo verde
+  // de "no prazo" e "resolvido": a cor já carrega esse significado no sistema.
+  sucesso: 'bg-sucesso text-white hover:bg-sucesso-forte focus-visible:ring-sucesso',
   perigo: 'bg-perigo text-white hover:bg-perigo-forte focus-visible:ring-perigo',
   fantasma: 'text-conteudo-suave hover:bg-superficie-elevada focus-visible:ring-borda',
 };
 
 const TAMANHOS: Record<TamanhoBotao, string> = {
-  sm: 'px-2.5 py-1 text-xs',
+  sm: 'px-3 py-1.5 text-xs',
   md: 'px-4 py-2 text-sm',
   lg: 'px-5 py-2.5 text-base',
 };

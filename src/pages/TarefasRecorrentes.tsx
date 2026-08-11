@@ -7,7 +7,6 @@ import {
   Pencil,
   Trash2,
   Power,
-  X,
   CalendarClock,
   AlertTriangle,
   Loader2,
@@ -18,6 +17,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
+import { Button, Modal } from '../components/ui';
 import {
   tarefasRecorrentesService,
   usuariosService,
@@ -450,7 +450,7 @@ const TarefasRecorrentes: React.FC = () => {
             </div>
             <button
               onClick={abrirCriar}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-[#6D28D9] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-info-forte transition-colors"
             >
               <Plus className="w-4 h-4" />
               Nova tarefa
@@ -556,54 +556,50 @@ const TarefasRecorrentes: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Ações */}
-                  <div className="flex flex-wrap items-center gap-2 mt-4">
+                  {/* Ações.
+                      Antes eram seis botões do mesmo peso, cada um com sua cor:
+                      realizar a tarefa do dia disputava atenção com excluí-la.
+                      Agora só a ação principal é sólida, as de consulta ficam
+                      discretas, e a destrutiva sai do grupo — encostada na
+                      direita, para não ser clicada por vizinhança. */}
+                  <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-borda-suave pt-3">
                     {t.ativo && (
-                      <button
-                        onClick={() => abrirRealizar(t)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
+                      <Button variante="sucesso" tamanho="sm" onClick={() => abrirRealizar(t)}>
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                         Realizar
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      onClick={() => abrirDetalhes(t)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-superficie-elevada text-conteudo-suave text-sm hover:bg-borda transition-colors"
-                    >
-                      <Info className="w-4 h-4" />
+
+                    <Button variante="secundario" tamanho="sm" onClick={() => abrirDetalhes(t)}>
+                      <Info className="h-4 w-4" aria-hidden="true" />
                       Detalhes
-                    </button>
-                    <button
-                      onClick={() => abrirHistorico(t)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-superficie-elevada text-conteudo-suave text-sm hover:bg-borda transition-colors"
-                    >
-                      <History className="w-4 h-4" />
+                    </Button>
+
+                    <Button variante="secundario" tamanho="sm" onClick={() => abrirHistorico(t)}>
+                      <History className="h-4 w-4" aria-hidden="true" />
                       Histórico
-                    </button>
-                    <button
-                      onClick={() => abrirEditar(t)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-superficie-elevada text-conteudo-suave text-sm hover:bg-borda transition-colors"
-                    >
-                      <Pencil className="w-4 h-4" />
+                    </Button>
+
+                    <Button variante="secundario" tamanho="sm" onClick={() => abrirEditar(t)}>
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
                       Editar
-                    </button>
-                    <button
-                      onClick={() => alternarAtivo(t)}
-                      title={t.ativo ? 'Desativar' : 'Reativar'}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-superficie-elevada text-conteudo-suave text-sm hover:bg-borda transition-colors"
-                    >
-                      <Power className="w-4 h-4" />
+                    </Button>
+
+                    <Button variante="secundario" tamanho="sm" onClick={() => alternarAtivo(t)}>
+                      <Power className="h-4 w-4" aria-hidden="true" />
                       {t.ativo ? 'Desativar' : 'Reativar'}
-                    </button>
-                    <button
+                    </Button>
+
+                    <Button
+                      variante="secundario"
+                      tamanho="sm"
                       onClick={() => excluir(t)}
-                      title="Excluir"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-perigo/10 text-perigo-forte dark:text-perigo-suave text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                      title={`Excluir ${t.titulo}`}
+                      className="ml-auto border-perigo/40 text-perigo hover:bg-perigo/10 hover:border-perigo/60"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                       Excluir
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -614,28 +610,12 @@ const TarefasRecorrentes: React.FC = () => {
 
       {/* ==================== MODAL CRIAR/EDITAR ==================== */}
       {(modal === 'criar' || modal === 'editar') && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setModal(null)}
-          />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-3xl bg-superficie rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-6 border-b border-borda">
-                <div className="flex items-center gap-3">
-                  <Repeat className="w-5 h-5 text-info" />
-                  <h2 className="text-xl font-semibold text-conteudo">
-                    {modal === 'editar' ? 'Editar tarefa' : 'Nova tarefa recorrente'}
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setModal(null)}
-                  className="p-1 rounded-lg hover:bg-superficie-elevada"
-                  aria-label="Fechar"
-                >
-                  <X className="w-5 h-5 text-conteudo-tenue" />
-                </button>
-              </div>
+        <Modal
+          aberto
+          aoFechar={() => setModal(null)}
+          titulo={modal === 'editar' ? 'Editar tarefa' : 'Nova tarefa recorrente'}
+          largura="md"
+        >
 
               <form onSubmit={salvar} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
                 <div>
@@ -840,7 +820,7 @@ const TarefasRecorrentes: React.FC = () => {
                   <button
                     type="submit"
                     disabled={salvando}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-[#6D28D9] disabled:opacity-60"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-info-forte disabled:opacity-60"
                   >
                     {salvando ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -851,35 +831,17 @@ const TarefasRecorrentes: React.FC = () => {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* ==================== MODAL REALIZAR ==================== */}
       {modal === 'realizar' && selecionada && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setModal(null)}
-          />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-md bg-superficie rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-6 border-b border-borda">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-sucesso-forte dark:text-sucesso-suave" />
-                  <h2 className="text-xl font-semibold text-conteudo">
-                    Realizar tarefa
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setModal(null)}
-                  className="p-1 rounded-lg hover:bg-superficie-elevada"
-                  aria-label="Fechar"
-                >
-                  <X className="w-5 h-5 text-conteudo-tenue" />
-                </button>
-              </div>
+        <Modal
+          aberto
+          aoFechar={() => setModal(null)}
+          titulo="Realizar tarefa"
+          largura="sm"
+        >
               <div className="p-6 space-y-4">
                 <div>
                   <p className="font-medium text-conteudo">
@@ -926,35 +888,17 @@ const TarefasRecorrentes: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* ==================== MODAL HISTÓRICO ==================== */}
       {modal === 'historico' && selecionada && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setModal(null)}
-          />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-2xl bg-superficie rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-6 border-b border-borda">
-                <div className="flex items-center gap-3">
-                  <History className="w-5 h-5 text-info" />
-                  <h2 className="text-xl font-semibold text-conteudo">
-                    Histórico — {selecionada.titulo}
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setModal(null)}
-                  className="p-1 rounded-lg hover:bg-superficie-elevada"
-                  aria-label="Fechar"
-                >
-                  <X className="w-5 h-5 text-conteudo-tenue" />
-                </button>
-              </div>
+        <Modal
+          aberto
+          aoFechar={() => setModal(null)}
+          titulo="Histórico — {selecionada.titulo}"
+          largura="md"
+        >
               <div className="p-6 max-h-[70vh] overflow-y-auto">
                 {historico.length === 0 ? (
                   <p className="text-center text-conteudo-tenue py-8">
@@ -991,35 +935,17 @@ const TarefasRecorrentes: React.FC = () => {
                   </table>
                 )}
               </div>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* ==================== MODAL DETALHES (só leitura) ==================== */}
       {modal === 'detalhes' && selecionada && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setModal(null)}
-          />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-lg bg-superficie rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-6 border-b border-borda">
-                <div className="flex items-center gap-3">
-                  <Info className="w-5 h-5 text-info" />
-                  <h2 className="text-xl font-semibold text-conteudo">
-                    Detalhes da tarefa
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setModal(null)}
-                  className="p-1 rounded-lg hover:bg-superficie-elevada"
-                  aria-label="Fechar"
-                >
-                  <X className="w-5 h-5 text-conteudo-tenue" />
-                </button>
-              </div>
+        <Modal
+          aberto
+          aoFechar={() => setModal(null)}
+          titulo="Detalhes da tarefa"
+          largura="sm"
+        >
 
               <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
                 <div>
@@ -1103,15 +1029,13 @@ const TarefasRecorrentes: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setModal(null)}
-                    className="px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-[#6D28D9]"
+                    className="px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-info-forte"
                   >
                     Fechar
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

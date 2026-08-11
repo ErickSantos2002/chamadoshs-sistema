@@ -15,6 +15,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
+import { Button, Input, Modal } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
@@ -29,6 +30,8 @@ import type {
 // ========================================
 // COMPONENTE USUARIOS TAB
 // ========================================
+
+const ROTULO = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
 
 const UsuariosTab: React.FC = () => {
   const {
@@ -171,6 +174,13 @@ const UsuariosTab: React.FC = () => {
     }
   };
 
+  const fecharResetSenha = () => {
+    setResetPasswordFor(null);
+    setNovaSenha('');
+    setConfirmarSenha('');
+    setSenhaError('');
+  };
+
   const handleResetPassword = async () => {
     if (!resetPasswordFor) return;
 
@@ -188,10 +198,7 @@ const UsuariosTab: React.FC = () => {
     try {
       await updateUsuarioPassword(resetPasswordFor.id, novaSenha);
       alert(`Senha do usuário ${resetPasswordFor.nome} atualizada com sucesso!`);
-      setResetPasswordFor(null);
-      setNovaSenha('');
-      setConfirmarSenha('');
-      setSenhaError('');
+      fecharResetSenha();
     } catch (err: any) {
       setSenhaError(err.response?.data?.detail || 'Erro ao resetar senha');
     }
@@ -521,85 +528,65 @@ const UsuariosTab: React.FC = () => {
       />
 
       {/* Modal de Reset de Senha */}
-      {resetPasswordFor && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-            onClick={() => {
-              setResetPasswordFor(null);
-              setNovaSenha('');
-              setConfirmarSenha('');
-              setSenhaError('');
-            }}
-          />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-md bg-superficie rounded-lg shadow-xl">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-conteudo mb-4">
-                  Resetar Senha - {resetPasswordFor.nome}
-                </h3>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-conteudo-suave mb-2">
-                    Nova Senha
-                  </label>
-                  <input
-                    type="password"
-                    value={novaSenha}
-                    onChange={(e) => {
-                      setNovaSenha(e.target.value);
-                      setSenhaError('');
-                    }}
-                    className="w-full px-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo"
-                    placeholder="Mínimo 6 caracteres"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-conteudo-suave mb-2">
-                    Confirmar Senha
-                  </label>
-                  <input
-                    type="password"
-                    value={confirmarSenha}
-                    onChange={(e) => {
-                      setConfirmarSenha(e.target.value);
-                      setSenhaError('');
-                    }}
-                    className="w-full px-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo"
-                    placeholder="Digite a senha novamente"
-                  />
-                </div>
-
-                {senhaError && (
-                  <div className="mb-4 text-red-500 text-sm">{senhaError}</div>
-                )}
-
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={() => {
-                      setResetPasswordFor(null);
-                      setNovaSenha('');
-                      setConfirmarSenha('');
-                      setSenhaError('');
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-conteudo-suave bg-superficie border border-borda rounded-lg hover:bg-superficie-elevada"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleResetPassword}
-                    className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 rounded-lg flex items-center gap-2"
-                  >
-                    <Key className="w-4 h-4" />
-                    Resetar Senha
-                  </button>
-                </div>
-              </div>
+      <Modal
+        aberto={resetPasswordFor !== null}
+        aoFechar={fecharResetSenha}
+        titulo="Resetar senha"
+        descricao={resetPasswordFor?.nome}
+        largura="sm"
+      >
+        <div className="space-y-4">
+          {senhaError && (
+            <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+              {senhaError}
             </div>
+          )}
+
+          <div>
+            <label htmlFor="nova-senha" className={ROTULO}>
+              Nova senha
+            </label>
+            <Input
+              id="nova-senha"
+              type="password"
+              autoComplete="new-password"
+              value={novaSenha}
+              onChange={(e) => {
+                setNovaSenha(e.target.value);
+                setSenhaError('');
+              }}
+              placeholder="Mínimo 6 caracteres"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirmar-senha" className={ROTULO}>
+              Confirmar senha
+            </label>
+            <Input
+              id="confirmar-senha"
+              type="password"
+              autoComplete="new-password"
+              value={confirmarSenha}
+              onChange={(e) => {
+                setConfirmarSenha(e.target.value);
+                setSenhaError('');
+              }}
+              placeholder="Digite a senha novamente"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variante="secundario" onClick={fecharResetSenha}>
+              Cancelar
+            </Button>
+            <Button onClick={handleResetPassword}>
+              <Key className="h-4 w-4" aria-hidden="true" />
+              Resetar senha
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X,
   Save,
-  Building,
   AlertCircle,
 } from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
+import { Button, Input, Modal, Textarea } from '../ui';
 import type {
   Setor,
   SetorCreate,
@@ -13,6 +12,17 @@ import type {
   ModalMode,
   ValidationErrors,
 } from '../../types/cadastros.types';
+
+const ROTULO = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
+
+/** Erro de campo. Nada é renderizado quando não há erro. */
+const MensagemDeErro: React.FC<{ texto?: string }> = ({ texto }) =>
+  texto ? (
+    <p className="mt-1 flex items-center gap-1 text-sm text-perigo">
+      <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+      {texto}
+    </p>
+  ) : null;
 
 // ========================================
 // INTERFACE DO COMPONENTE
@@ -156,185 +166,89 @@ const SetorModal: React.FC<SetorModalProps> = ({
       : 'Detalhes do Setor';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-md bg-superficie rounded-lg shadow-xl">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-borda">
-            <div className="flex items-center gap-3">
-              <Building className="w-5 h-5 text-sucesso-forte dark:text-sucesso-suave" />
-              <h2 className="text-xl font-semibold text-conteudo">
-                {modalTitle}
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1 rounded-lg hover:bg-superficie-elevada transition-colors"
-              aria-label="Fechar modal"
-            >
-              <X className="w-5 h-5 text-conteudo-tenue" />
-            </button>
-          </div>
-
-          {/* Conteúdo */}
-          <form onSubmit={handleSubmit} className="p-6">
-            {/* Campo Nome */}
-            <div className="mb-4">
-              <label
-                htmlFor="nome"
-                className="block text-sm font-medium text-conteudo-suave mb-2"
-              >
-                Nome <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="nome"
-                name="nome"
-                value={formData.nome}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                className={`
-                  w-full px-4 py-2 border rounded-lg
-                  bg-superficie
-                  text-conteudo
-                  ${errors.nome 
-                    ? 'border-red-500 dark:border-red-400' 
-                    : 'border-borda'
-                  }
-                  ${isReadOnly
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-info'
-                  }
-                  transition-colors
-                `}
-                placeholder="Digite o nome do setor"
-                maxLength={100}
-              />
-              {errors.nome && (
-                <div className="mt-1 flex items-center gap-1 text-red-500 dark:text-red-400 text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{errors.nome}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Campo Descrição */}
-            <div className="mb-6">
-              <label
-                htmlFor="descricao"
-                className="block text-sm font-medium text-conteudo-suave mb-2"
-              >
-                Descrição
-              </label>
-              <textarea
-                id="descricao"
-                name="descricao"
-                value={formData.descricao}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                rows={4}
-                className={`
-                  w-full px-4 py-2 border rounded-lg
-                  bg-superficie
-                  text-conteudo
-                  ${errors.descricao 
-                    ? 'border-red-500 dark:border-red-400' 
-                    : 'border-borda'
-                  }
-                  ${isReadOnly
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-info'
-                  }
-                  transition-colors resize-none
-                `}
-                placeholder="Digite uma descrição (opcional)"
-                maxLength={500}
-              />
-              {errors.descricao && (
-                <div className="mt-1 flex items-center gap-1 text-red-500 dark:text-red-400 text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{errors.descricao}</span>
-                </div>
-              )}
-              {!isReadOnly && (
-                <div className="mt-1 text-xs text-conteudo-tenue">
-                  {formData.descricao?.length || 0}/500 caracteres
-                </div>
-              )}
-            </div>
-
-            {/* Informações de auditoria (apenas visualização) */}
-            {mode === 'view' && setor && (
-              <div className="mb-6 p-4 bg-superficie-elevada rounded-lg">
-                <h3 className="text-sm font-medium text-conteudo-suave mb-2">
-                  Informações de Auditoria
-                </h3>
-                <div className="space-y-2 text-sm text-conteudo-suave">
-                  <div>
-                    <span className="font-medium">ID:</span> #{setor.id}
-                  </div>
-                  <div>
-                    <span className="font-medium">Criado em:</span>{' '}
-                    {setor.created_at
-                      ? new Date(setor.created_at).toLocaleString('pt-BR')
-                      : 'N/A'
-                    }
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Botões */}
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-conteudo-suave
-                  bg-superficie
-                  border border-borda
-                  rounded-lg hover:bg-superficie-elevada
-                  transition-colors"
-              >
-                {isReadOnly ? 'Fechar' : 'Cancelar'}
-              </button>
-              
-              {!isReadOnly && (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`
-                    px-4 py-2 text-sm font-medium text-white
-                    bg-sucesso hover:bg-sucesso-forte dark:bg-green-500 dark:hover:bg-green-600
-                    rounded-lg transition-colors
-                    flex items-center gap-2
-                    ${loading ? 'opacity-60 cursor-not-allowed' : ''}
-                  `}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Salvando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Salvar</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </form>
+    <Modal
+      aberto={isOpen}
+      aoFechar={onClose}
+      titulo={modalTitle}
+      largura="sm"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="nome" className={ROTULO}>
+            Nome <span className="text-perigo">*</span>
+          </label>
+          <Input
+            id="nome"
+            name="nome"
+            value={formData.nome}
+            onChange={handleInputChange}
+            disabled={isReadOnly}
+            placeholder="Digite o nome do setor"
+            maxLength={100}
+            className={errors.nome ? 'border-perigo' : undefined}
+          />
+          <MensagemDeErro texto={errors.nome} />
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label htmlFor="descricao" className={ROTULO}>
+            Descrição
+          </label>
+          <Textarea
+            id="descricao"
+            name="descricao"
+            value={formData.descricao}
+            onChange={handleInputChange}
+            disabled={isReadOnly}
+            rows={4}
+            placeholder="Digite uma descrição (opcional)"
+            maxLength={500}
+            className={errors.descricao ? 'border-perigo' : undefined}
+          />
+          <MensagemDeErro texto={errors.descricao} />
+          {!isReadOnly && (
+            <p className="mt-1 text-xs text-conteudo-tenue">
+              {formData.descricao?.length || 0}/500 caracteres
+            </p>
+          )}
+        </div>
+
+        {mode === 'view' && setor && (
+          <div className="rounded-lg bg-superficie-elevada p-4">
+            <h3 className="mb-2 text-sm font-medium text-conteudo-suave">
+              Informações de Auditoria
+            </h3>
+            <dl className="space-y-1 text-sm text-conteudo-suave">
+              <div>
+                <dt className="inline font-medium">ID:</dt>{' '}
+                <dd className="inline">#{setor.id}</dd>
+              </div>
+              <div>
+                <dt className="inline font-medium">Criado em:</dt>{' '}
+                <dd className="inline">
+                  {setor.created_at
+                    ? new Date(setor.created_at).toLocaleString('pt-BR')
+                    : 'N/A'}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variante="secundario" onClick={onClose}>
+            {isReadOnly ? 'Fechar' : 'Cancelar'}
+          </Button>
+
+          {!isReadOnly && (
+            <Button type="submit" carregando={loading}>
+              <Save className="h-4 w-4" aria-hidden="true" />
+              Salvar
+            </Button>
+          )}
+        </div>
+      </form>
+    </Modal>
   );
 };
 
