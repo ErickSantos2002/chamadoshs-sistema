@@ -415,10 +415,10 @@ const TarefasRecorrentes: React.FC = () => {
 
   if (!podeGerenciar) {
     return (
-      <div className="min-h-full bg-gray-100 dark:bg-[#121212] flex items-center justify-center p-6">
+      <div className="min-h-full bg-superficie-base flex items-center justify-center p-6">
         <div className="text-center">
           <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <p className="text-gray-700 dark:text-gray-300 text-lg">
+          <p className="text-conteudo-suave text-lg">
             Você não tem permissão para acessar Tarefas Recorrentes.
           </p>
         </div>
@@ -431,18 +431,18 @@ const TarefasRecorrentes: React.FC = () => {
   // ========================================
 
   return (
-    <div className="min-h-full bg-gray-100 dark:bg-[#121212] transition-colors">
+    <div className="min-h-full bg-superficie-base transition-colors">
       <div className="p-6">
         {/* Cabeçalho */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
+        <div className="bg-superficie border border-borda rounded-xl shadow-md transition-colors">
           <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <Repeat className="w-7 h-7 text-[#7C3AED] dark:text-[#A78BFA]" />
+              <Repeat className="w-7 h-7 text-info" />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-[#A78BFA] tracking-tight">
+                <h1 className="text-3xl font-bold text-conteudo text-info tracking-tight">
                   Tarefas Recorrentes
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                <p className="text-conteudo-tenue text-sm mt-1">
                   Rotinas que se repetem — registre cada realização e a próxima
                   data avança sozinha.
                 </p>
@@ -450,7 +450,7 @@ const TarefasRecorrentes: React.FC = () => {
             </div>
             <button
               onClick={abrirCriar}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#7C3AED] text-white font-medium hover:bg-[#6D28D9] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-[#6D28D9] transition-colors"
             >
               <Plus className="w-4 h-4" />
               Nova tarefa
@@ -460,12 +460,12 @@ const TarefasRecorrentes: React.FC = () => {
 
         {/* Filtro */}
         <div className="mt-6 mb-6 flex items-center gap-3">
-          <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+          <label className="inline-flex items-center gap-2 text-sm text-conteudo-suave cursor-pointer">
             <input
               type="checkbox"
               checked={mostrarInativas}
               onChange={(e) => setMostrarInativas(e.target.checked)}
-              className="w-4 h-4 accent-[#7C3AED]"
+              className="w-4 h-4 accent-[#3B82F6]"
             />
             Mostrar também as desativadas
           </label>
@@ -474,12 +474,12 @@ const TarefasRecorrentes: React.FC = () => {
         {/* Lista */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-[#7C3AED]" />
+            <Loader2 className="w-10 h-10 animate-spin text-info" />
           </div>
         ) : tarefasOrdenadas.length === 0 ? (
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-12 text-center">
-            <Repeat className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-12 text-center">
+            <Repeat className="w-12 h-12 text-conteudo-tenue mx-auto mb-4" />
+            <p className="text-conteudo-tenue text-lg">
               Nenhuma tarefa recorrente cadastrada.
             </p>
           </div>
@@ -490,30 +490,30 @@ const TarefasRecorrentes: React.FC = () => {
               return (
                 <div
                   key={t.id}
-                  className={`bg-white/95 dark:bg-[#1e1e1e]/95 border rounded-xl shadow-md p-5 transition-colors ${
+                  className={`bg-superficie border rounded-xl shadow-md p-5 transition-colors ${
                     t.ativo
-                      ? 'border-gray-200 dark:border-[#2d2d2d]'
-                      : 'border-gray-300 dark:border-gray-700 opacity-60'
+                      ? 'border-borda'
+                      : 'border-borda opacity-60'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      <h3 className="text-lg font-semibold text-conteudo truncate">
                         {t.titulo}
                       </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      <p className="text-xs text-conteudo-tenue mt-0.5">
                         {recorrenciaLabel(t)}
                       </p>
                     </div>
                     {!t.ativo && (
-                      <span className="shrink-0 text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                      <span className="shrink-0 text-xs px-2 py-1 rounded-full bg-superficie-elevada text-conteudo-suave">
                         Desativada
                       </span>
                     )}
                   </div>
 
                   {t.descricao && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
+                    <p className="text-sm text-conteudo-suave mt-2 line-clamp-2">
                       {t.descricao}
                     </p>
                   )}
@@ -524,22 +524,22 @@ const TarefasRecorrentes: React.FC = () => {
                       {t.prioridade}
                     </span>
                     {(t.categoria_nome || nomeCategoria(t.categoria_id)) && (
-                      <span className="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                      <span className="px-2 py-1 rounded-full bg-info/15 text-blue-700 dark:text-blue-300">
                         {t.categoria_nome || nomeCategoria(t.categoria_id)}
                       </span>
                     )}
                     {(t.responsavel_nome || nomeUsuario(t.responsavel_id)) && (
-                      <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                      <span className="px-2 py-1 rounded-full bg-superficie-elevada text-conteudo-suave">
                         Resp.: {t.responsavel_nome || nomeUsuario(t.responsavel_id)}
                       </span>
                     )}
                   </div>
 
                   {/* Próxima data + contador */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-[#2d2d2d]">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 border-borda">
                     <div className="flex items-center gap-2">
-                      <CalendarClock className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                      <CalendarClock className="w-4 h-4 text-conteudo-tenue" />
+                      <span className="text-sm text-conteudo-suave">
                         Próxima: {formatarDataBR(t.proxima_data)}
                       </span>
                       {st && (
@@ -550,7 +550,7 @@ const TarefasRecorrentes: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-xs text-conteudo-tenue">
                       {t.total_execucoes}{' '}
                       {t.total_execucoes === 1 ? 'realização' : 'realizações'}
                     </span>
@@ -569,21 +569,21 @@ const TarefasRecorrentes: React.FC = () => {
                     )}
                     <button
                       onClick={() => abrirDetalhes(t)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-superficie-elevada text-conteudo-suave text-sm hover:bg-borda transition-colors"
                     >
                       <Info className="w-4 h-4" />
                       Detalhes
                     </button>
                     <button
                       onClick={() => abrirHistorico(t)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-superficie-elevada text-conteudo-suave text-sm hover:bg-borda transition-colors"
                     >
                       <History className="w-4 h-4" />
                       Histórico
                     </button>
                     <button
                       onClick={() => abrirEditar(t)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-superficie-elevada text-conteudo-suave text-sm hover:bg-borda transition-colors"
                     >
                       <Pencil className="w-4 h-4" />
                       Editar
@@ -591,7 +591,7 @@ const TarefasRecorrentes: React.FC = () => {
                     <button
                       onClick={() => alternarAtivo(t)}
                       title={t.ativo ? 'Desativar' : 'Reativar'}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-superficie-elevada text-conteudo-suave text-sm hover:bg-borda transition-colors"
                     >
                       <Power className="w-4 h-4" />
                       {t.ativo ? 'Desativar' : 'Reativar'}
@@ -599,7 +599,7 @@ const TarefasRecorrentes: React.FC = () => {
                     <button
                       onClick={() => excluir(t)}
                       title="Excluir"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-perigo/10 text-perigo-forte dark:text-perigo-suave text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                       Excluir
@@ -620,71 +620,71 @@ const TarefasRecorrentes: React.FC = () => {
             onClick={() => setModal(null)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-lg bg-white dark:bg-[#1e1e1e] rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative w-full max-w-3xl bg-superficie rounded-lg shadow-xl">
+              <div className="flex items-center justify-between p-6 border-b border-borda">
                 <div className="flex items-center gap-3">
-                  <Repeat className="w-5 h-5 text-[#7C3AED] dark:text-[#A78BFA]" />
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  <Repeat className="w-5 h-5 text-info" />
+                  <h2 className="text-xl font-semibold text-conteudo">
                     {modal === 'editar' ? 'Editar tarefa' : 'Nova tarefa recorrente'}
                   </h2>
                 </div>
                 <button
                   onClick={() => setModal(null)}
-                  className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="p-1 rounded-lg hover:bg-superficie-elevada"
                   aria-label="Fechar"
                 >
-                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <X className="w-5 h-5 text-conteudo-tenue" />
                 </button>
               </div>
 
-              <form onSubmit={salvar} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <form onSubmit={salvar} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
                     Título *
                   </label>
                   <input
                     type="text"
                     value={form.titulo}
                     onChange={(e) => atualizarForm({ titulo: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     placeholder="Ex: Abertura de logs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
                     Descrição
                   </label>
                   <textarea
                     value={form.descricao}
                     onChange={(e) => atualizarForm({ descricao: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    rows={3}
+                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
                     Instruções / procedimento
                   </label>
                   <textarea
                     value={form.instrucoes}
                     onChange={(e) => atualizarForm({ instrucoes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    rows={8}
+                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     placeholder="Passo a passo de como executar"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       Categoria
                     </label>
                     <select
                       value={form.categoria_id}
                       onChange={(e) => atualizarForm({ categoria_id: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     >
                       <option value="">Sem categoria</option>
                       {categorias.map((c) => (
@@ -695,13 +695,13 @@ const TarefasRecorrentes: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       Responsável padrão
                     </label>
                     <select
                       value={form.responsavel_id}
                       onChange={(e) => atualizarForm({ responsavel_id: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     >
                       <option value="">Sem responsável</option>
                       {usuarios.map((u) => (
@@ -715,7 +715,7 @@ const TarefasRecorrentes: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       Prioridade
                     </label>
                     <select
@@ -723,7 +723,7 @@ const TarefasRecorrentes: React.FC = () => {
                       onChange={(e) =>
                         atualizarForm({ prioridade: e.target.value as PrioridadeEnum })
                       }
-                      className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     >
                       {Object.values(PrioridadeEnum).map((p) => (
                         <option key={p} value={p}>
@@ -733,7 +733,7 @@ const TarefasRecorrentes: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       Recorrência
                     </label>
                     <select
@@ -743,7 +743,7 @@ const TarefasRecorrentes: React.FC = () => {
                           tipo_recorrencia: e.target.value as TipoRecorrencia,
                         })
                       }
-                      className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     >
                       <option value="diaria">Diária</option>
                       <option value="semanal">Semanal</option>
@@ -756,7 +756,7 @@ const TarefasRecorrentes: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {form.tipo_recorrencia === 'semanal' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-conteudo-suave mb-1">
                         Dia da semana
                       </label>
                       <select
@@ -764,7 +764,7 @@ const TarefasRecorrentes: React.FC = () => {
                         onChange={(e) =>
                           atualizarForm({ dia_semana: Number(e.target.value) })
                         }
-                        className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                        className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                       >
                         {DIAS_SEMANA.map((d, i) => (
                           <option key={i} value={i}>
@@ -776,7 +776,7 @@ const TarefasRecorrentes: React.FC = () => {
                   )}
                   {form.tipo_recorrencia === 'mensal' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-conteudo-suave mb-1">
                         Dia do mês
                       </label>
                       <input
@@ -787,12 +787,12 @@ const TarefasRecorrentes: React.FC = () => {
                         onChange={(e) =>
                           atualizarForm({ dia_mes: Number(e.target.value) })
                         }
-                        className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                        className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                       />
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       A cada (intervalo)
                     </label>
                     <input
@@ -802,9 +802,9 @@ const TarefasRecorrentes: React.FC = () => {
                       onChange={(e) =>
                         atualizarForm({ intervalo: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     />
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-conteudo-tenue mt-1">
                       {form.tipo_recorrencia === 'diaria'
                         ? 'dias'
                         : form.tipo_recorrencia === 'semanal'
@@ -815,7 +815,7 @@ const TarefasRecorrentes: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
                     Próxima data {modal === 'criar' && '(sugerida — pode ajustar)'}
                   </label>
                   <input
@@ -825,7 +825,7 @@ const TarefasRecorrentes: React.FC = () => {
                       setProximaEditada(true);
                       setForm((a) => ({ ...a, proxima_data: e.target.value }));
                     }}
-                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                   />
                 </div>
 
@@ -833,14 +833,14 @@ const TarefasRecorrentes: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setModal(null)}
-                    className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    className="px-4 py-2 rounded-lg bg-superficie-elevada text-conteudo-suave hover:bg-borda"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={salvando}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#7C3AED] text-white font-medium hover:bg-[#6D28D9] disabled:opacity-60"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-[#6D28D9] disabled:opacity-60"
                   >
                     {salvando ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -864,51 +864,51 @@ const TarefasRecorrentes: React.FC = () => {
             onClick={() => setModal(null)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative w-full max-w-md bg-superficie rounded-lg shadow-xl">
+              <div className="flex items-center justify-between p-6 border-b border-borda">
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  <CheckCircle2 className="w-5 h-5 text-sucesso-forte dark:text-sucesso-suave" />
+                  <h2 className="text-xl font-semibold text-conteudo">
                     Realizar tarefa
                   </h2>
                 </div>
                 <button
                   onClick={() => setModal(null)}
-                  className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="p-1 rounded-lg hover:bg-superficie-elevada"
                   aria-label="Fechar"
                 >
-                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <X className="w-5 h-5 text-conteudo-tenue" />
                 </button>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                  <p className="font-medium text-conteudo">
                     {selecionada.titulo}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-conteudo-tenue">
                     Agendada para {formatarDataBR(selecionada.proxima_data)}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
                     Observação (opcional)
                   </label>
                   <textarea
                     value={observacao}
                     onChange={(e) => setObservacao(e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-sucesso"
                     placeholder="O que foi feito, alguma ocorrência..."
                   />
                 </div>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-conteudo-tenue">
                   Vai registrar você como responsável, com data e hora de agora, e
                   avançar a próxima data automaticamente.
                 </p>
                 <div className="flex justify-end gap-3">
                   <button
                     onClick={() => setModal(null)}
-                    className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    className="px-4 py-2 rounded-lg bg-superficie-elevada text-conteudo-suave hover:bg-borda"
                   >
                     Cancelar
                   </button>
@@ -939,30 +939,30 @@ const TarefasRecorrentes: React.FC = () => {
             onClick={() => setModal(null)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-2xl bg-white dark:bg-[#1e1e1e] rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative w-full max-w-2xl bg-superficie rounded-lg shadow-xl">
+              <div className="flex items-center justify-between p-6 border-b border-borda">
                 <div className="flex items-center gap-3">
-                  <History className="w-5 h-5 text-[#7C3AED] dark:text-[#A78BFA]" />
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  <History className="w-5 h-5 text-info" />
+                  <h2 className="text-xl font-semibold text-conteudo">
                     Histórico — {selecionada.titulo}
                   </h2>
                 </div>
                 <button
                   onClick={() => setModal(null)}
-                  className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="p-1 rounded-lg hover:bg-superficie-elevada"
                   aria-label="Fechar"
                 >
-                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <X className="w-5 h-5 text-conteudo-tenue" />
                 </button>
               </div>
               <div className="p-6 max-h-[70vh] overflow-y-auto">
                 {historico.length === 0 ? (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <p className="text-center text-conteudo-tenue py-8">
                     Nenhuma execução registrada ainda.
                   </p>
                 ) : (
                   <table className="w-full text-sm">
-                    <thead className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-[#2d2d2d]">
+                    <thead className="text-left text-xs uppercase text-conteudo-tenue border-b border-borda">
                       <tr>
                         <th className="py-2 pr-4">Realizada em</th>
                         <th className="py-2 pr-4">Quem</th>
@@ -970,19 +970,19 @@ const TarefasRecorrentes: React.FC = () => {
                         <th className="py-2">Observação</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-[#2d2d2d]">
+                    <tbody className="divide-y divide-gray-100 divide-borda">
                       {historico.map((e) => (
                         <tr key={e.id}>
-                          <td className="py-2 pr-4 text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                          <td className="py-2 pr-4 text-conteudo whitespace-nowrap">
                             {formatarDataHora(e.realizada_em)}
                           </td>
-                          <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">
+                          <td className="py-2 pr-4 text-conteudo-suave">
                             {e.usuario_nome || nomeUsuario(e.usuario_id) || `#${e.usuario_id}`}
                           </td>
-                          <td className="py-2 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          <td className="py-2 pr-4 text-conteudo-tenue whitespace-nowrap">
                             {formatarDataBR(e.data_prevista)}
                           </td>
-                          <td className="py-2 text-gray-600 dark:text-gray-300">
+                          <td className="py-2 text-conteudo-suave">
                             {e.observacao || '—'}
                           </td>
                         </tr>
@@ -1004,29 +1004,29 @@ const TarefasRecorrentes: React.FC = () => {
             onClick={() => setModal(null)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-lg bg-white dark:bg-[#1e1e1e] rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative w-full max-w-lg bg-superficie rounded-lg shadow-xl">
+              <div className="flex items-center justify-between p-6 border-b border-borda">
                 <div className="flex items-center gap-3">
-                  <Info className="w-5 h-5 text-[#7C3AED] dark:text-[#A78BFA]" />
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  <Info className="w-5 h-5 text-info" />
+                  <h2 className="text-xl font-semibold text-conteudo">
                     Detalhes da tarefa
                   </h2>
                 </div>
                 <button
                   onClick={() => setModal(null)}
-                  className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="p-1 rounded-lg hover:bg-superficie-elevada"
                   aria-label="Fechar"
                 >
-                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <X className="w-5 h-5 text-conteudo-tenue" />
                 </button>
               </div>
 
               <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-semibold text-conteudo">
                     {selecionada.titulo}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p className="text-sm text-conteudo-tenue mt-0.5">
                     {recorrenciaLabel(selecionada)}
                   </p>
                 </div>
@@ -1037,14 +1037,14 @@ const TarefasRecorrentes: React.FC = () => {
                   </span>
                   {(selecionada.categoria_nome ||
                     nomeCategoria(selecionada.categoria_id)) && (
-                    <span className="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                    <span className="px-2 py-1 rounded-full bg-info/15 text-blue-700 dark:text-blue-300">
                       {selecionada.categoria_nome ||
                         nomeCategoria(selecionada.categoria_id)}
                     </span>
                   )}
                   {(selecionada.responsavel_nome ||
                     nomeUsuario(selecionada.responsavel_id)) && (
-                    <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                    <span className="px-2 py-1 rounded-full bg-superficie-elevada text-conteudo-suave">
                       Resp.:{' '}
                       {selecionada.responsavel_nome ||
                         nomeUsuario(selecionada.responsavel_id)}
@@ -1053,8 +1053,8 @@ const TarefasRecorrentes: React.FC = () => {
                   <span
                     className={`px-2 py-1 rounded-full ${
                       selecionada.ativo
-                        ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                        ? 'bg-sucesso/15 text-green-700 dark:text-green-300'
+                        : 'bg-superficie-elevada text-conteudo-suave'
                     }`}
                   >
                     {selecionada.ativo ? 'Ativa' : 'Desativada'}
@@ -1063,32 +1063,32 @@ const TarefasRecorrentes: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-xs uppercase text-gray-400">Próxima data</p>
-                    <p className="text-gray-800 dark:text-gray-200">
+                    <p className="text-xs uppercase text-conteudo-tenue">Próxima data</p>
+                    <p className="text-conteudo">
                       {formatarDataBR(selecionada.proxima_data)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase text-gray-400">Realizações</p>
-                    <p className="text-gray-800 dark:text-gray-200">
+                    <p className="text-xs uppercase text-conteudo-tenue">Realizações</p>
+                    <p className="text-conteudo">
                       {selecionada.total_execucoes}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-xs uppercase text-gray-400 mb-1">Descrição</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  <p className="text-xs uppercase text-conteudo-tenue mb-1">Descrição</p>
+                  <p className="text-sm text-conteudo-suave whitespace-pre-wrap">
                     {selecionada.descricao || '—'}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs uppercase text-gray-400 mb-1 flex items-center gap-1.5">
+                  <p className="text-xs uppercase text-conteudo-tenue mb-1 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5" />
                     Instruções / procedimento
                   </p>
-                  <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap rounded-lg bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#2d2d2d] p-3">
+                  <div className="text-sm text-conteudo-suave whitespace-pre-wrap rounded-lg bg-superficie-elevada border border-borda p-3">
                     {selecionada.instrucoes || 'Sem instruções cadastradas.'}
                   </div>
                 </div>
@@ -1096,14 +1096,14 @@ const TarefasRecorrentes: React.FC = () => {
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     onClick={() => abrirEditar(selecionada)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-superficie-elevada text-conteudo-suave hover:bg-borda"
                   >
                     <Pencil className="w-4 h-4" />
                     Editar
                   </button>
                   <button
                     onClick={() => setModal(null)}
-                    className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white font-medium hover:bg-[#6D28D9]"
+                    className="px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-[#6D28D9]"
                   >
                     Fechar
                   </button>

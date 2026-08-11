@@ -341,7 +341,7 @@ const Chamados: React.FC = () => {
           <KanbanColumn
             title="Aguardando"
             descricao="Relógio de SLA pausado"
-            colorDot="bg-[#A78BFA]"
+            colorDot="bg-info"
             items={chamadosPorStatus[StatusEnum.AGUARDANDO]}
             usuarios={usuarios}
             categorias={categorias}

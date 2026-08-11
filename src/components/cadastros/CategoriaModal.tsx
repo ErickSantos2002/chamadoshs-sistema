@@ -165,21 +165,21 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-lg shadow-xl">
+        <div className="relative w-full max-w-md bg-superficie rounded-lg shadow-xl">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-6 border-b border-borda">
             <div className="flex items-center gap-3">
-              <Tag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              <Tag className="w-5 h-5 text-info-forte dark:text-info-suave" />
+              <h2 className="text-xl font-semibold text-conteudo">
                 {modalTitle}
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-1 rounded-lg hover:bg-superficie-elevada transition-colors"
               aria-label="Fechar modal"
             >
-              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <X className="w-5 h-5 text-conteudo-tenue" />
             </button>
           </div>
 
@@ -189,7 +189,7 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
             <div className="mb-4">
               <label
                 htmlFor="nome"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                className="block text-sm font-medium text-conteudo-suave mb-2"
               >
                 Nome <span className="text-red-500">*</span>
               </label>
@@ -202,15 +202,15 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
                 disabled={isReadOnly}
                 className={`
                   w-full px-4 py-2 border rounded-lg
-                  bg-white dark:bg-[#2a2a2a]
-                  text-gray-900 dark:text-gray-100
+                  bg-superficie
+                  text-conteudo
                   ${errors.nome 
                     ? 'border-red-500 dark:border-red-400' 
-                    : 'border-gray-300 dark:border-gray-600'
+                    : 'border-borda'
                   }
                   ${isReadOnly
                     ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    : 'focus:outline-none focus:ring-2 focus:ring-info'
                   }
                   transition-colors
                 `}
@@ -229,7 +229,7 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
             <div className="mb-6">
               <label
                 htmlFor="descricao"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                className="block text-sm font-medium text-conteudo-suave mb-2"
               >
                 Descrição
               </label>
@@ -242,15 +242,15 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
                 rows={4}
                 className={`
                   w-full px-4 py-2 border rounded-lg
-                  bg-white dark:bg-[#2a2a2a]
-                  text-gray-900 dark:text-gray-100
+                  bg-superficie
+                  text-conteudo
                   ${errors.descricao 
                     ? 'border-red-500 dark:border-red-400' 
-                    : 'border-gray-300 dark:border-gray-600'
+                    : 'border-borda'
                   }
                   ${isReadOnly
                     ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    : 'focus:outline-none focus:ring-2 focus:ring-info'
                   }
                   transition-colors resize-none
                 `}
@@ -264,7 +264,7 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
                 </div>
               )}
               {!isReadOnly && (
-                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <div className="mt-1 text-xs text-conteudo-tenue">
                   {formData.descricao?.length || 0}/500 caracteres
                 </div>
               )}
@@ -272,11 +272,11 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
 
             {/* Informações de auditoria (apenas visualização) */}
             {mode === 'view' && categoria && (
-              <div className="mb-6 p-4 bg-gray-50 dark:bg-[#2a2a2a] rounded-lg">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="mb-6 p-4 bg-superficie-elevada rounded-lg">
+                <h3 className="text-sm font-medium text-conteudo-suave mb-2">
                   Informações de Auditoria
                 </h3>
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="space-y-2 text-sm text-conteudo-suave">
                   <div>
                     <span className="font-medium">ID:</span> #{categoria.id}
                   </div>
@@ -296,10 +296,10 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300
-                  bg-white dark:bg-[#2a2a2a]
-                  border border-gray-300 dark:border-gray-600
-                  rounded-lg hover:bg-gray-50 dark:hover:bg-[#333333]
+                className="px-4 py-2 text-sm font-medium text-conteudo-suave
+                  bg-superficie
+                  border border-borda
+                  rounded-lg hover:bg-superficie-elevada
                   transition-colors"
               >
                 {isReadOnly ? 'Fechar' : 'Cancelar'}
@@ -311,7 +311,7 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
                   disabled={loading}
                   className={`
                     px-4 py-2 text-sm font-medium text-white
-                    bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600
+                    bg-info hover:bg-info-forte dark:bg-blue-500 dark:hover:bg-blue-600
                     rounded-lg transition-colors
                     flex items-center gap-2
                     ${loading ? 'opacity-60 cursor-not-allowed' : ''}

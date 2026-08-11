@@ -72,12 +72,12 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
   };
 
   if (loading) {
-    return <p className="text-gray-500 dark:text-gray-400">Carregando prazos...</p>;
+    return <p className="text-conteudo-tenue">Carregando prazos...</p>;
   }
 
   return (
     <div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+      <p className="text-sm text-conteudo-tenue mb-4">
         Prazos em <strong>minutos úteis</strong>. O relógio só corre de seg a sex, das 8h às
         17h, com pausa de 12h às 13h — ou seja, <strong>1 dia útil = 480 minutos</strong>.
         Alterar um prazo recalcula o SLA de todos os chamados, inclusive os antigos.
@@ -91,20 +91,20 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
 
       <table className="w-full text-left">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="py-2 text-sm text-gray-600 dark:text-gray-300">Prioridade</th>
-            <th className="py-2 text-sm text-gray-600 dark:text-gray-300">Resposta (min)</th>
-            <th className="py-2 text-sm text-gray-600 dark:text-gray-300">Resolução (min)</th>
-            <th className="py-2 text-sm text-gray-600 dark:text-gray-300"></th>
+          <tr className="border-b border-borda">
+            <th className="py-2 text-sm text-conteudo-suave">Prioridade</th>
+            <th className="py-2 text-sm text-conteudo-suave">Resposta (min)</th>
+            <th className="py-2 text-sm text-conteudo-suave">Resolução (min)</th>
+            <th className="py-2 text-sm text-conteudo-suave"></th>
           </tr>
         </thead>
         <tbody>
           {configs.map((config) => (
             <tr
               key={config.prioridade}
-              className="border-b border-gray-100 dark:border-gray-700"
+              className="border-b border-borda-suave"
             >
-              <td className="py-3 font-medium text-gray-900 dark:text-white">
+              <td className="py-3 font-medium text-conteudo">
                 {config.prioridade}
               </td>
               <td className="py-3">
@@ -115,9 +115,9 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                   onChange={(e) =>
                     alterarCampo(config.prioridade, 'minutos_resposta', Number(e.target.value))
                   }
-                  className="w-24 px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-24 px-2 py-1 border rounded bg-superficie border-borda text-conteudo"
                 />
-                <span className="ml-2 text-xs text-gray-400">
+                <span className="ml-2 text-xs text-conteudo-tenue">
                   {formatarMinutos(config.minutos_resposta)}
                 </span>
               </td>
@@ -129,9 +129,9 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                   onChange={(e) =>
                     alterarCampo(config.prioridade, 'minutos_resolucao', Number(e.target.value))
                   }
-                  className="w-24 px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-24 px-2 py-1 border rounded bg-superficie border-borda text-conteudo"
                 />
-                <span className="ml-2 text-xs text-gray-400">
+                <span className="ml-2 text-xs text-conteudo-tenue">
                   {formatarMinutos(config.minutos_resolucao)}
                 </span>
               </td>
@@ -139,7 +139,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                 <button
                   onClick={() => salvar(config)}
                   disabled={salvando === config.prioridade}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm rounded"
+                  className="px-3 py-1 bg-info hover:bg-info-forte disabled:opacity-50 text-white text-sm rounded"
                 >
                   {salvando === config.prioridade ? 'Salvando...' : 'Salvar'}
                 </button>

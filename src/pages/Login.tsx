@@ -31,7 +31,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center dark bg-darkGray">
+    <div className="fixed inset-0 flex items-center justify-center dark bg-superficie-base">
       {/* Card vidro fosco */}
       <div
         className="relative w-full max-w-[360px] bg-white/10 backdrop-blur-md border border-white/20 
@@ -55,7 +55,7 @@ const Login: React.FC = () => {
 
         {/* Título */}
         <h1 className="text-[22px] font-bold text-white mb-1">Bem-vindo</h1>
-        <p className="text-gray-300 text-sm mb-6">Faça login para continuar</p>
+        <p className="text-conteudo-suave text-sm mb-6">Faça login para continuar</p>
 
         {/* Formulário */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -94,7 +94,7 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full h-[48px] bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 
+            className="mt-2 w-full h-[48px] bg-info hover:bg-info-forte disabled:bg-blue-600/50 
                        text-white font-semibold text-[16px] rounded-lg transition flex items-center 
                        justify-center shadow-md"
           >

@@ -83,18 +83,18 @@ const CadastrosBasicos: React.FC = () => {
 
   return (
     <CadastrosProvider>
-      <div className="h-full flex flex-col p-6 bg-gray-100 dark:bg-[#121212]">
+      <div className="h-full flex flex-col p-6 bg-superficie-base">
         {/* Header */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors mb-6">
+        <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 
             {/* Título e Descrição */}
             <div>
-              <h1 className="text-3xl font-bold text-[#7C3AED] dark:text-[#A78BFA] tracking-tight">
+              <h1 className="text-3xl font-bold text-info tracking-tight">
                 Gestão de Cadastros Básicos
               </h1>
 
-              <p className="text-gray-600 dark:text-gray-300 mt-1">
+              <p className="text-conteudo-suave mt-1">
                 Gerencie categorias, setores e usuários do sistema
               </p>
             </div>
@@ -103,9 +103,9 @@ const CadastrosBasicos: React.FC = () => {
         </div>
 
         {/* Container Principal */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 rounded-xl border border-gray-200 dark:border-[#2d2d2d] shadow-md transition-colors">
+        <div className="bg-superficie rounded-xl border border-borda shadow-md transition-colors">
           {/* Sistema de Abas */}
-          <div className="border-b border-gray-200 dark:border-[#2d2d2d]">
+          <div className="border-b border-borda">
             <nav className="flex overflow-x-auto -mb-px px-4">
               {abasVisiveis.map((aba) => (
                 <button
@@ -116,8 +116,8 @@ const CadastrosBasicos: React.FC = () => {
             border-b-2 transition-all duration-200 whitespace-nowrap
             ${
               abaAtiva === aba.id
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-[#3a3a3a]'
+                ? 'border-blue-600 text-info-forte dark:text-info-suave'
+                : 'border-transparent text-conteudo-tenue hover:text-conteudo hover:border-borda dark:hover:border-[#3a3a3a]'
             }
           `}
                 >

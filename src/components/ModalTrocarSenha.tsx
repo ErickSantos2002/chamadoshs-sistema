@@ -46,8 +46,8 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
                 bg-black/60 backdrop-blur-sm z-50 transition-opacity">
 
       <div
-        className="bg-white/95 dark:bg-[#1e1e1e]/95 
-                  border border-gray-200 dark:border-[#2d2d2d]
+        className="bg-superficie 
+                  border border-borda
                   rounded-xl shadow-xl p-8 sm:p-6 
                   max-w-md w-[90%] sm:w-full 
                   mx-4 sm:mx-0 transition-colors"
@@ -55,7 +55,7 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
 
         {/* Título */}
         <h2 className="text-xl font-bold mb-6 text-center 
-                      text-[#7C3AED] dark:text-[#A78BFA] tracking-tight">
+                      text-info tracking-tight">
           Trocar Senha
         </h2>
 
@@ -64,7 +64,7 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
 
           {/* Senha atual */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-conteudo-suave">
               Senha atual:
             </label>
 
@@ -74,18 +74,18 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
               onChange={(e) => setSenhaAtual(e.target.value)}
               placeholder="Digite sua senha atual"
               className="w-full mt-1 px-3 py-2 border rounded-lg
-                        bg-white dark:bg-[#181818]
-                        text-gray-800 dark:text-gray-200
-                        border-gray-300 dark:border-gray-600
+                        bg-superficie-base
+                        text-conteudo
+                        border-borda
                         focus:outline-none focus:ring-2 
-                        focus:ring-[#7C3AED]
+                        focus:ring-info
                         transition-colors"
             />
           </div>
 
           {/* Nova senha */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-conteudo-suave">
               Nova senha:
             </label>
 
@@ -95,18 +95,18 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
               onChange={(e) => setNovaSenha(e.target.value)}
               placeholder="Mínimo 6 caracteres"
               className="w-full mt-1 px-3 py-2 border rounded-lg
-                        bg-white dark:bg-[#181818]
-                        text-gray-800 dark:text-gray-200
-                        border-gray-300 dark:border-gray-600
+                        bg-superficie-base
+                        text-conteudo
+                        border-borda
                         focus:outline-none focus:ring-2 
-                        focus:ring-[#7C3AED]
+                        focus:ring-info
                         transition-colors"
             />
           </div>
 
           {/* Confirmar nova senha */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-conteudo-suave">
               Repita nova senha:
             </label>
 
@@ -116,11 +116,11 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
               onChange={(e) => setRepitaSenha(e.target.value)}
               placeholder="Repita a nova senha"
               className="w-full mt-1 px-3 py-2 border rounded-lg
-                        bg-white dark:bg-[#181818]
-                        text-gray-800 dark:text-gray-200
-                        border-gray-300 dark:border-gray-600
+                        bg-superficie-base
+                        text-conteudo
+                        border-borda
                         focus:outline-none focus:ring-2 
-                        focus:ring-[#7C3AED]
+                        focus:ring-info
                         transition-colors"
             />
           </div>
@@ -133,9 +133,9 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg font-medium
-                      bg-gray-300 hover:bg-gray-400
-                      dark:bg-[#2a2a2a] dark:hover:bg-[#3a3a3a]
-                      text-gray-800 dark:text-gray-100
+                      bg-superficie-elevada hover:bg-borda
+                      bg-superficie dark:hover:bg-[#3a3a3a]
+                      text-conteudo
                       transition-colors"
           >
             Cancelar
@@ -145,8 +145,8 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
           <button
             onClick={handleConfirm}
             className="px-4 py-2 rounded-lg font-medium
-                      bg-[#7C3AED] hover:bg-[#6D28D9]
-                      dark:bg-[#A78BFA] dark:hover:bg-[#C4B5FD]
+                      bg-info hover:bg-info-forte
+                      dark:bg-info dark:hover:bg-[#C4B5FD]
                       text-white shadow-sm transition-colors"
           >
             Confirmar

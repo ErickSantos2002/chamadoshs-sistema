@@ -5,28 +5,16 @@ module.exports = {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  safelist: [
-    "bg-white",
-    "bg-red-500",
-    "bg-blue-500",
-    "dark:bg-darkGray",
-    "dark:text-lightGray",
-    "dark:hover:bg-accentGray",
-  ],
+  // A safelist tinha classes da paleta antiga, que saíram com ela. Só entra
+  // aqui classe montada em tempo de execução, que o Tailwind não enxerga no
+  // código-fonte — hoje não há nenhuma.
+  safelist: [],
   theme: {
     extend: {
       colors: {
         primary: {
           DEFAULT: "#2563eb", // azul principal (mantido)
         },
-
-        // 🎨 Paleta de tons de cinza para o modo escuro
-        // LEGADO: usada pelas telas antigas. Sai quando a última migrar para
-        // os tokens semânticos abaixo.
-        darkGray: "#121212",    // fundo principal (substitui o darkBlue)
-        mediumGray: "#2a2a2a",  // painéis / cards
-        lightGray: "#d1d1d1",   // texto claro
-        accentGray: "#3a3a3a",  // bordas, hover, divisores
 
         // ── Tokens semânticos ────────────────────────────────────────
         // Nomeados pelo PAPEL, não pela cor: `surface` continua fazendo

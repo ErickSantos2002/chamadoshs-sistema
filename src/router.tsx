@@ -18,7 +18,7 @@ const PageLoader: React.FC = () => (
   <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#0f0f0f] dark:to-[#1a1a1a]">
     <div className="text-center">
       <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-      <p className="mt-4 text-gray-600 dark:text-gray-300">Carregando...</p>
+      <p className="mt-4 text-conteudo-suave">Carregando...</p>
     </div>
   </div>
 );

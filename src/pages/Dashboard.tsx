@@ -346,7 +346,7 @@ const Dashboard: React.FC = () => {
     const colors: Record<StatusEnum, string> = {
       [StatusEnum.ABERTO]: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
       [StatusEnum.EM_ANDAMENTO]: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400',
-      [StatusEnum.AGUARDANDO]: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-400',
+      [StatusEnum.AGUARDANDO]: 'bg-superficie-elevada text-conteudo-tenue',
       [StatusEnum.RESOLVIDO]: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
       [StatusEnum.FECHADO]: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400', // Unificado com Resolvido
     };
@@ -383,10 +383,10 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-full bg-gray-100 dark:bg-[#121212] flex items-center justify-center">
+      <div className="min-h-full bg-superficie-base flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-conteudo-suave">
             Carregando dashboard...
           </p>
         </div>
@@ -395,31 +395,31 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-gray-100 dark:bg-[#121212] transition-colors">
+    <div className="min-h-full bg-superficie-base transition-colors">
       <div className="p-6">
 
         {/* Cabeçalho */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
+        <div className="bg-superficie border border-borda rounded-xl shadow-md transition-colors">
           <div className="px-6 py-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-[#A78BFA] tracking-tight">
+            <h1 className="text-3xl font-bold text-conteudo text-info tracking-tight">
               Chamados - Dashboard
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-1">
+            <p className="text-conteudo-suave mt-1">
               Bem-vindo, <span className="font-semibold">{user?.username}</span>{' '}
               ({user?.role})
             </p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+            <p className="text-conteudo-tenue text-sm mt-2">
               Visualize os indicadores e a situação atual dos chamados do sistema.
             </p>
           </div>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mt-6 mb-6 transition-colors">
+        <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 mt-6 mb-6 transition-colors">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-              <Filter className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-300" />
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+              <Filter className="w-5 h-5 mr-2 text-conteudo-suave" />
+              <h2 className="text-lg font-semibold text-conteudo">
                 Filtros
               </h2>
             </div>
@@ -429,8 +429,8 @@ const Dashboard: React.FC = () => {
               onClick={() => setIncluirCancelados(!incluirCancelados)}
               className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-medium ${
                 incluirCancelados
-                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-perigo/15 text-perigo-forte dark:text-perigo-suave hover:bg-red-200 dark:hover:bg-red-900/50'
+                  : 'bg-superficie-elevada text-conteudo-suave hover:bg-superficie-elevada'
               }`}
               title={incluirCancelados ? 'Ocultar cancelados' : 'Mostrar cancelados'}
             >
@@ -450,7 +450,7 @@ const Dashboard: React.FC = () => {
 
           {/* Período */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-conteudo-suave mb-2">
               Período
             </label>
 
@@ -467,8 +467,8 @@ const Dashboard: React.FC = () => {
                   onClick={() => aplicarPreset(p.key)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     presetAtivo === p.key
-                      ? 'bg-[#7C3AED] text-white shadow'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      ? 'bg-info text-white shadow'
+                      : 'bg-superficie-elevada text-conteudo-suave hover:bg-superficie-elevada'
                   }`}
                 >
                   {p.label}
@@ -479,7 +479,7 @@ const Dashboard: React.FC = () => {
             {/* Intervalo personalizado */}
             <div className="flex flex-wrap items-end gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-conteudo-tenue mb-1">
                   De
                 </label>
                 <input
@@ -490,13 +490,13 @@ const Dashboard: React.FC = () => {
                     setPeriodoInicio(e.target.value);
                     setPresetAtivo('custom');
                   }}
-                  className="px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                            text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                            focus:outline-none focus:ring-2 focus:ring-[#7C3AED] transition-colors"
+                  className="px-3 py-2 border rounded-lg bg-superficie
+                            text-conteudo border-borda
+                            focus:outline-none focus:ring-2 focus:ring-info transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-conteudo-tenue mb-1">
                   Até
                 </label>
                 <input
@@ -507,9 +507,9 @@ const Dashboard: React.FC = () => {
                     setPeriodoFim(e.target.value);
                     setPresetAtivo('custom');
                   }}
-                  className="px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                            text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                            focus:outline-none focus:ring-2 focus:ring-[#7C3AED] transition-colors"
+                  className="px-3 py-2 border rounded-lg bg-superficie
+                            text-conteudo border-borda
+                            focus:outline-none focus:ring-2 focus:ring-info transition-colors"
                 />
               </div>
             </div>
@@ -519,15 +519,15 @@ const Dashboard: React.FC = () => {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-conteudo-suave mb-1">
                 Status
               </label>
               <select
                 value={filtroStatus}
                 onChange={(e) => setFiltroStatus(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                          text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                          focus:outline-none focus:ring-2 focus:ring-[#7C3AED] transition-colors"
+                className="w-full px-3 py-2 border rounded-lg bg-superficie
+                          text-conteudo border-borda
+                          focus:outline-none focus:ring-2 focus:ring-info transition-colors"
               >
                 <option value="todos">Todos</option>
                 <option value={StatusEnum.ABERTO}>Abertos</option>
@@ -539,15 +539,15 @@ const Dashboard: React.FC = () => {
 
             {/* Prioridade */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-conteudo-suave mb-1">
                 Prioridade
               </label>
               <select
                 value={filtroPrioridade}
                 onChange={(e) => setFiltroPrioridade(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#2a2a2a]
-                          text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                          focus:outline-none focus:ring-2 focus:ring-[#DB2777] transition-colors"
+                className="w-full px-3 py-2 border rounded-lg bg-superficie
+                          text-conteudo border-borda
+                          focus:outline-none focus:ring-2 focus:ring-info transition-colors"
               >
                 <option value="todas">Todas</option>
                 <option value={PrioridadeEnum.BAIXA}>Baixa</option>
@@ -564,25 +564,25 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
 
           {/* Total */}
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">Total de Chamados</p>
+                <p className="text-sm text-conteudo-tenue">Total de Chamados</p>
                 <p className="text-3xl font-semibold text-[#2563EB] dark:text-[#60A5FA] mt-2 tracking-tight">
                   {metricas.total}
                 </p>
               </div>
               <div className="bg-blue-100/70 dark:bg-blue-900/50 p-3 rounded-full">
-                <Ticket className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <Ticket className="w-6 h-6 text-info-forte dark:text-info-suave" />
               </div>
             </div>
           </div>
 
           {/* Abertos */}
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">Abertos</p>
+                <p className="text-sm text-conteudo-tenue">Abertos</p>
                 <p className="text-3xl font-semibold text-[#DB2777] dark:text-[#F472B6] mt-2 tracking-tight">
                   {metricas.abertos}
                 </p>
@@ -594,10 +594,10 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Em andamento */}
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">Em Andamento</p>
+                <p className="text-sm text-conteudo-tenue">Em Andamento</p>
                 <p className="text-3xl font-semibold text-[#06B6D4] dark:text-[#67E8F9] mt-2 tracking-tight">
                   {metricas.emAndamento}
                 </p>
@@ -609,10 +609,10 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Resolvidos */}
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">Resolvidos</p>
+                <p className="text-sm text-conteudo-tenue">Resolvidos</p>
                 <p className="text-3xl font-semibold text-[#4ADE80] dark:text-[#86EFAC] mt-2 tracking-tight">
                   {metricas.resolvidos}
                 </p>
@@ -624,10 +624,10 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Arquivados */}
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">Arquivados</p>
+                <p className="text-sm text-conteudo-tenue">Arquivados</p>
                 <p className="text-3xl font-semibold text-[#F59E0B] dark:text-[#FCD34D] mt-2 tracking-tight">
                   {metricas.arquivados}
                 </p>
@@ -643,65 +643,65 @@ const Dashboard: React.FC = () => {
         {/* ======================================== */}
         {/* MÉTRICAS DE SLA                          */}
         {/* ======================================== */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="bg-superficie-elevada rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-semibold text-conteudo mb-4">
             SLA
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-conteudo-tenue">
                 Resolvidos dentro do prazo
               </p>
               <p
                 className={`text-3xl font-bold ${
                   metricasSla.percentualNoPrazo !== null
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-gray-400 dark:text-gray-500'
+                    ? 'text-sucesso-forte dark:text-sucesso-suave'
+                    : 'text-conteudo-tenue'
                 }`}
               >
                 {metricasSla.percentualNoPrazo !== null
                   ? `${metricasSla.percentualNoPrazo}%`
                   : '—'}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-conteudo-tenue">
                 {metricasSla.percentualNoPrazo !== null
                   ? `de ${metricasSla.totalResolvidosComSla} chamado(s) resolvido(s) no período`
                   : 'sem dados de SLA no período'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-conteudo-tenue">
                 Estourados em aberto
               </p>
-              <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+              <p className="text-3xl font-bold text-perigo-forte dark:text-perigo-suave">
                 {metricasSla.estouradosEmAberto}
               </p>
-              <p className="text-xs text-gray-400">precisam de ação agora</p>
+              <p className="text-xs text-conteudo-tenue">precisam de ação agora</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-conteudo-tenue">
                 Em atenção (≥80% do prazo)
               </p>
               <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
                 {metricasSla.emAtencao}
               </p>
-              <p className="text-xs text-gray-400">prestes a estourar</p>
+              <p className="text-xs text-conteudo-tenue">prestes a estourar</p>
             </div>
           </div>
         </div>
 
         {/* Tempo Médio */}
         {metricas.tempoMedioResolucao > 0 && (
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mb-6 transition-colors">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 mb-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-400">Tempo Médio de Resolução</p>
-                <p className="text-2xl font-bold text-[#7C3AED] dark:text-[#A78BFA] mt-2">
+                <p className="text-sm text-conteudo-tenue">Tempo Médio de Resolução</p>
+                <p className="text-2xl font-bold text-info mt-2">
                   {metricas.tempoMedioResolucao}h
                 </p>
               </div>
               <div className="bg-purple-100 dark:bg-purple-900/40 p-3 rounded-full">
-                <Activity className="w-6 h-6 text-[#7C3AED]" />
+                <Activity className="w-6 h-6 text-info" />
               </div>
             </div>
           </div>
@@ -711,8 +711,8 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
           {/* Gráfico de Status */}
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
+            <h3 className="text-lg font-semibold text-conteudo mb-4">
               Chamados por Status
             </h3>
 
@@ -725,9 +725,9 @@ const Dashboard: React.FC = () => {
                       color:
                         s.name === "Abertos" ? "#DB2777" :
                         s.name === "Em Andamento" ? "#06B6D4" :
-                        s.name === "Aguardando" ? "#A78BFA" :
+                        s.name === "Aguardando" ? "#60A5FA" :
                         s.name === "Resolvidos" ? "#4ADE80" :
-                        "#7C3AED"
+                        "#3B82F6"
                     }))}
                     cx="50%"
                     cy="50%"
@@ -739,9 +739,9 @@ const Dashboard: React.FC = () => {
                       const color =
                         entry.name === "Abertos" ? "#DB2777" :
                         entry.name === "Em Andamento" ? "#06B6D4" :
-                        entry.name === "Aguardando" ? "#A78BFA" :
+                        entry.name === "Aguardando" ? "#60A5FA" :
                         entry.name === "Resolvidos" ? "#4ADE80" :
-                        "#7C3AED";
+                        "#3B82F6";
 
                       return <Cell key={entry.name} fill={color} />;
                     })}
@@ -752,14 +752,14 @@ const Dashboard: React.FC = () => {
                     wrapperStyle={{ outline: "none" }}
                     contentStyle={{
                       backgroundColor: "#1f1b24",        // fundo roxo escuro (dark elegante)
-                      border: "1px solid #7C3AED",       // borda roxa
+                      border: "1px solid #3B82F6",       // borda roxa
                       borderRadius: "8px",
                       color: "#F3E8FF",                  // texto lilás claro
                       padding: "8px 12px",
                       boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
                     }}
                     labelStyle={{
-                      color: "#A78BFA",                  // título lilás
+                      color: "#60A5FA",                  // título lilás
                       fontWeight: 600,
                       marginBottom: "4px",
                     }}
@@ -781,15 +781,15 @@ const Dashboard: React.FC = () => {
               </ResponsiveContainer>
 
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+              <div className="h-[300px] flex items-center justify-center text-conteudo-tenue">
                 Sem dados para exibir
               </div>
             )}
           </div>
 
           {/* Gráfico de Prioridade */}
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
+            <h3 className="text-lg font-semibold text-conteudo mb-4">
               Chamados por Prioridade
             </h3>
 
@@ -802,27 +802,27 @@ const Dashboard: React.FC = () => {
                       p.name === "Baixa" ? "#4ADE80" :
                       p.name === "Média" ? "#06B6D4" :
                       p.name === "Alta" ? "#DB2777" :
-                      "#7C3AED"
+                      "#3B82F6"
                   }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
 
-                  <XAxis dataKey="name" stroke="#A78BFA" />
-                  <YAxis stroke="#A78BFA" />
+                  <XAxis dataKey="name" stroke="#60A5FA" />
+                  <YAxis stroke="#60A5FA" />
 
                   {/* TOOLTIP PADRONIZADO */}
                   <Tooltip
                     wrapperStyle={{ outline: "none" }}
                     contentStyle={{
                       backgroundColor: "#1f1b24",        // fundo roxo escuro
-                      border: "1px solid #7C3AED",       // borda roxa
+                      border: "1px solid #3B82F6",       // borda roxa
                       borderRadius: "8px",
                       color: "#F3E8FF",                  // texto lilás claro
                       padding: "8px 12px",
                       boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
                     }}
                     labelStyle={{
-                      color: "#A78BFA",                  // título lilás
+                      color: "#60A5FA",                  // título lilás
                       fontWeight: 600,
                       marginBottom: "4px",
                     }}
@@ -837,7 +837,7 @@ const Dashboard: React.FC = () => {
                         entry.name === "Baixa" ? "#4ADE80" :
                         entry.name === "Média" ? "#06B6D4" :
                         entry.name === "Alta" ? "#DB2777" :
-                        "#7C3AED";
+                        "#3B82F6";
 
                       return <Cell key={entry.name} fill={color} />;
                     })}
@@ -846,7 +846,7 @@ const Dashboard: React.FC = () => {
               </ResponsiveContainer>
 
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+              <div className="h-[300px] flex items-center justify-center text-conteudo-tenue">
                 Sem dados para exibir
               </div>
             )}
@@ -856,8 +856,8 @@ const Dashboard: React.FC = () => {
 
         {/* Top 5 Categorias */}
         {metricas.porCategoria.length > 0 && (
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 mb-6 transition-colors">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 mb-6 transition-colors">
+            <h3 className="text-lg font-semibold text-conteudo mb-4">
               Top 5 Categorias
             </h3>
 
@@ -865,12 +865,12 @@ const Dashboard: React.FC = () => {
               <BarChart data={metricas.porCategoria} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
 
-                <XAxis type="number" stroke="#A78BFA" />
-                <YAxis dataKey="name" type="category" stroke="#A78BFA" width={150} />
+                <XAxis type="number" stroke="#60A5FA" />
+                <YAxis dataKey="name" type="category" stroke="#60A5FA" width={150} />
 
                 <Bar dataKey="value" radius={[0, 8, 8, 0]}>
                   {metricas.porCategoria.map((_, idx) => {
-                    const palette = ["#7C3AED", "#A78BFA", "#2563EB", "#DB2777", "#06B6D4"];
+                    const palette = ["#3B82F6", "#60A5FA", "#2563EB", "#DB2777", "#06B6D4"];
                     return <Cell key={idx} fill={palette[idx % palette.length]} />;
                   })}
                 </Bar>
@@ -880,14 +880,14 @@ const Dashboard: React.FC = () => {
                   wrapperStyle={{ outline: "none" }}
                   contentStyle={{
                     backgroundColor: "#1f1b24",        // fundo roxo escuro elegante
-                    border: "1px solid #7C3AED",       // borda roxa primária
+                    border: "1px solid #3B82F6",       // borda roxa primária
                     borderRadius: "8px",
                     color: "#F3E8FF",                  // texto lilás claro
                     padding: "8px 12px",
                     boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
                   }}
                   labelStyle={{
-                    color: "#A78BFA",                  // título lilás
+                    color: "#60A5FA",                  // título lilás
                     fontWeight: 600,
                     marginBottom: "4px",
                   }}
@@ -901,48 +901,48 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Tabela de Chamados Recentes */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-6 transition-colors">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-[#A78BFA] mb-4">
+        <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
+          <h3 className="text-lg font-semibold text-conteudo text-info mb-4">
             Chamados Recentes
           </h3>
 
           {metricas.chamadosRecentes.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-100 dark:bg-[#1e1e1e] border-b border-gray-200 dark:border-[#2d2d2d]">
+                <thead className="bg-superficie-elevada border-b border-borda">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
                       Protocolo
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
                       Título
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
                       Prioridade
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
                       Data
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-[#A78BFA]">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
                       Ações
                     </th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-200 dark:divide-[#2d2d2d]">
+                <tbody className="divide-y divide-borda divide-borda">
                   {metricas.chamadosRecentes.map((chamado) => (
                     <tr
                       key={chamado.id}
-                      className="transition-colors hover:bg-gray-50 dark:hover:bg-[#2a2a2a]/80"
+                      className="transition-colors hover:bg-superficie-elevada/80"
                     >
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <td className="px-4 py-3 text-sm font-medium text-conteudo">
                         #{chamado.protocolo}
                       </td>
 
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">
+                      <td className="px-4 py-3 text-sm text-conteudo-suave max-w-xs truncate">
                         {chamado.titulo}
                       </td>
 
@@ -956,13 +956,13 @@ const Dashboard: React.FC = () => {
                             {getStatusDisplay(chamado.status)}
                           </span>
                           {chamado.arquivado && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
                               <Archive className="w-3 h-3" />
                               Arquivado
                             </span>
                           )}
                           {chamado.cancelado && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-perigo/15 text-perigo-forte dark:text-perigo-suave">
                               <Ban className="w-3 h-3" />
                               Cancelado
                             </span>
@@ -980,7 +980,7 @@ const Dashboard: React.FC = () => {
                         </span>
                       </td>
 
-                      <td className="px-4 py-3 text-sm text-center text-gray-700 dark:text-gray-300">
+                      <td className="px-4 py-3 text-sm text-center text-conteudo-suave">
                         {formatarData(chamado.created_at)}
                       </td>
 
@@ -1001,8 +1001,8 @@ const Dashboard: React.FC = () => {
             </div>
           ) : (
             <div className="py-12 text-center">
-              <XCircle className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 text-lg">
+              <XCircle className="w-12 h-12 text-conteudo-tenue mx-auto mb-4" />
+              <p className="text-conteudo-tenue text-lg">
                 Nenhum chamado encontrado
               </p>
             </div>

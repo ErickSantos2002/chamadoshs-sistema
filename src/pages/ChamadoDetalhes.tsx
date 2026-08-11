@@ -450,7 +450,7 @@ const ChamadoDetalhes: React.FC = () => {
           <button
             key="resolver"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}
-            className="px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-medium
+            className="px-4 py-2 bg-info hover:bg-info-forte text-white font-medium
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
@@ -477,7 +477,7 @@ const ChamadoDetalhes: React.FC = () => {
           <button
             key="resolver"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}
-            className="px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-medium
+            className="px-4 py-2 bg-info hover:bg-info-forte text-white font-medium
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
@@ -530,7 +530,7 @@ const ChamadoDetalhes: React.FC = () => {
         return 'bg-[#2563EB]/20 text-[#2563EB] dark:bg-[#2563EB]/25 dark:text-[#93C5FD]'; // Azul
 
       case StatusEnum.EM_ANDAMENTO:
-        return 'bg-[#7C3AED]/20 text-[#7C3AED] dark:bg-[#7C3AED]/25 dark:text-[#C4B5FD]'; // Roxo
+        return 'bg-info/20 text-info dark:bg-info/25 dark:text-[#C4B5FD]'; // Roxo
 
       case StatusEnum.AGUARDANDO:
         return 'bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'; // Amber
@@ -542,7 +542,7 @@ const ChamadoDetalhes: React.FC = () => {
         return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300'; // Unificado com Resolvido
 
       default:
-        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
+        return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
     }
   };
 
@@ -567,7 +567,7 @@ const ChamadoDetalhes: React.FC = () => {
         return 'bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-300'; // Vermelho
 
       default:
-        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
+        return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
     }
   };
 
@@ -587,7 +587,7 @@ const ChamadoDetalhes: React.FC = () => {
         return 'bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-300';
 
       default:
-        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
+        return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
     }
   };
 
@@ -628,16 +628,16 @@ const ChamadoDetalhes: React.FC = () => {
   const getRoleBadgeColor = (roleId: number) => {
     switch (roleId) {
       case 1: // Admin
-        return 'bg-[#7C3AED]/20 text-[#7C3AED] dark:bg-[#7C3AED]/25 dark:text-[#C4B5FD]';
+        return 'bg-info/20 text-info dark:bg-info/25 dark:text-[#C4B5FD]';
 
       case 2: // Técnico
         return 'bg-[#2563EB]/20 text-[#2563EB] dark:bg-[#2563EB]/25 dark:text-[#93C5FD]';
 
       case 3: // Usuário
-        return 'bg-[#A78BFA]/20 text-[#A78BFA] dark:bg-[#A78BFA]/25 dark:text-[#DDD6FE]';
+        return 'bg-info/20 text-info dark:bg-info/25 dark:text-[#DDD6FE]';
 
       default:
-        return 'bg-gray-300 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300';
+        return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
     }
   };
 
@@ -646,8 +646,8 @@ const ChamadoDetalhes: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#7C3AED] mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-info mx-auto"></div>
+          <p className="mt-4 text-conteudo-suave">
             Carregando chamado...
           </p>
         </div>
@@ -658,8 +658,8 @@ const ChamadoDetalhes: React.FC = () => {
   if (error || !chamado) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800
-                        text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+        <div className="bg-perigo/10 border border-perigo/30
+                        text-perigo-forte dark:text-perigo-suave px-4 py-3 rounded-lg">
           {error || 'Chamado não encontrado'}
         </div>
         <button
@@ -673,16 +673,16 @@ const ChamadoDetalhes: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-gray-100 dark:bg-[#121212] transition-colors">
+    <div className="min-h-full bg-superficie-base transition-colors">
       <div className="p-6 space-y-6">
         {/* Cabeçalho */}
-        <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md transition-colors">
+        <div className="bg-superficie border border-borda rounded-xl shadow-md transition-colors">
           <div className="px-6 py-4">
             {/* Botão Voltar */}
             <button
               onClick={() => navigate('/chamados')}
-              className="text-[#7C3AED] hover:text-[#6D28D9]
-                        dark:text-[#A78BFA] dark:hover:text-[#C4B5FD]
+              className="text-info hover:text-[#6D28D9]
+                        text-info dark:hover:text-[#C4B5FD]
                         mb-2 flex items-center gap-1 transition-colors"
               >
               <ArrowLeft className="w-4 h-4" />
@@ -692,10 +692,10 @@ const ChamadoDetalhes: React.FC = () => {
             <div className="flex justify-between items-start">
               {/* Título e subtítulo */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-[#A78BFA] tracking-tight">
+                <h1 className="text-3xl font-bold text-conteudo text-info tracking-tight">
                   Chamado #{chamado.protocolo}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-1">
+                <p className="text-conteudo-suave mt-1">
                   {chamado.titulo}
                 </p>
               </div>
@@ -710,7 +710,7 @@ const ChamadoDetalhes: React.FC = () => {
                         <button
                           onClick={() => setMostrarModalCancelar(true)}
                           className="px-4 py-2 border border-red-300 dark:border-red-600
-                                    text-red-700 dark:text-red-400 rounded-lg
+                                    text-perigo-forte dark:text-perigo-suave rounded-lg
                                     hover:bg-red-50 dark:hover:bg-red-900/20
                                     transition-colors flex items-center gap-2"
                         >
@@ -725,8 +725,8 @@ const ChamadoDetalhes: React.FC = () => {
                         className={`px-4 py-2 border rounded-lg
                                   transition-colors flex items-center gap-2 ${
                                     chamado?.arquivado
-                                      ? 'border-green-300 dark:border-green-600 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
-                                      : 'border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                                      ? 'border-green-300 dark:border-green-600 text-sucesso-forte dark:text-sucesso-suave hover:bg-green-50 dark:hover:bg-green-900/20'
+                                      : 'border-amber-300 dark:border-amber-600 text-alerta-forte dark:text-alerta-suave hover:bg-amber-50 dark:hover:bg-amber-900/20'
                                   }`}
                       >
                         {chamado?.arquivado ? (
@@ -745,9 +745,9 @@ const ChamadoDetalhes: React.FC = () => {
                       {/* Botão Editar */}
                       <button
                         onClick={() => setModoEdicao(true)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600
-                                  text-gray-700 dark:text-gray-300 rounded-lg
-                                  hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                        className="px-4 py-2 border border-borda
+                                  text-conteudo-suave rounded-lg
+                                  hover:bg-superficie-elevada
                                   transition-colors flex items-center gap-2"
                       >
                         <Edit className="w-5 h-5" />
@@ -759,9 +759,9 @@ const ChamadoDetalhes: React.FC = () => {
                       {/* Botão Cancelar Edição */}
                       <button
                         onClick={() => setModoEdicao(false)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600
-                                  text-gray-700 dark:text-gray-300 rounded-lg
-                                  hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                        className="px-4 py-2 border border-borda
+                                  text-conteudo-suave rounded-lg
+                                  hover:bg-superficie-elevada
                                   transition-colors flex items-center gap-2"
                       >
                         <X className="w-5 h-5" />
@@ -771,7 +771,7 @@ const ChamadoDetalhes: React.FC = () => {
                       {/* Botão Salvar */}
                       <button
                         onClick={handleSalvarEdicao}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700
+                        className="px-4 py-2 bg-sucesso hover:bg-sucesso-forte
                                   text-white font-medium rounded-lg shadow-sm
                                   hover:shadow-md transition-all duration-200 flex items-center gap-2"
                       >
@@ -788,9 +788,9 @@ const ChamadoDetalhes: React.FC = () => {
 
         {/* Botões de Ação Rápida */}
         {podeEditar && !modoEdicao && (
-          <div className="bg-white/95 dark:bg-[#1e1e1e]/95 border border-gray-200 dark:border-[#2d2d2d] rounded-xl shadow-md p-4 transition-colors">
+          <div className="bg-superficie border border-borda rounded-xl shadow-md p-4 transition-colors">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-sm font-medium text-conteudo-suave">
                 Ações Rápidas:
               </span>
               {getBotoesAcao()}
@@ -800,12 +800,12 @@ const ChamadoDetalhes: React.FC = () => {
 
         {/* Informações do Chamado */}
         <div
-          className="bg-white/95 dark:bg-[#1e1e1e]/95 
-        border border-gray-200 dark:border-[#2d2d2d]
+          className="bg-superficie 
+        border border-borda
         rounded-xl shadow-md p-6 transition-colors"
         >
           {/* TÍTULO DA SEÇÃO */}
-          <h2 className="text-xl font-bold text-gray-900 dark:text-[#A78BFA] mb-6">
+          <h2 className="text-xl font-bold text-conteudo text-info mb-6">
             Informações do Chamado
           </h2>
 
@@ -814,13 +814,13 @@ const ChamadoDetalhes: React.FC = () => {
             <div className="space-y-6">
               {/* Solicitante */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                   <User className="w-4 h-4 inline mr-1" />
                   Solicitante
                 </label>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-gray-900 dark:text-white font-medium">
+                  <p className="text-conteudo font-medium">
                     {usuarios[chamado.solicitante_id]?.nome ||
                       `Usuário #${chamado.solicitante_id}`}
                   </p>
@@ -838,7 +838,7 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                   Status
                 </label>
 
@@ -849,11 +849,11 @@ const ChamadoDetalhes: React.FC = () => {
                       setStatusEditado(e.target.value as StatusEnum)
                     }
                     className="w-full px-3 py-2 border rounded-lg 
-                    bg-white dark:bg-[#2a2a2a]
-                    text-gray-800 dark:text-gray-200
-                    border-gray-300 dark:border-gray-600
+                    bg-superficie
+                    text-conteudo
+                    border-borda
                     focus:outline-none focus:ring-2 
-                    focus:ring-[#7C3AED] transition-colors"
+                    focus:ring-info transition-colors"
                   >
                     {Object.values(StatusEnum)
                       .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do dropdown
@@ -875,7 +875,7 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Categoria */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                   Categoria
                 </label>
 
@@ -888,11 +888,11 @@ const ChamadoDetalhes: React.FC = () => {
                       )
                     }
                     className="w-full px-3 py-2 border rounded-lg 
-                    bg-white dark:bg-[#2a2a2a]
-                    text-gray-800 dark:text-gray-200
-                    border-gray-300 dark:border-gray-600
+                    bg-superficie
+                    text-conteudo
+                    border-borda
                     focus:outline-none focus:ring-2 
-                    focus:ring-[#7C3AED] transition-colors"
+                    focus:ring-info transition-colors"
                   >
                     <option value="">Sem categoria</option>
 
@@ -903,7 +903,7 @@ const ChamadoDetalhes: React.FC = () => {
                     ))}
                   </select>
                 ) : (
-                  <p className="text-gray-900 dark:text-white">
+                  <p className="text-conteudo">
                     {categoriaNome}
                   </p>
                 )}
@@ -911,11 +911,11 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Data Abertura */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                   Data de Abertura
                 </label>
 
-                <p className="text-gray-900 dark:text-white">
+                <p className="text-conteudo">
                   {formatarData(chamado.data_abertura)}
                 </p>
               </div>
@@ -923,20 +923,20 @@ const ChamadoDetalhes: React.FC = () => {
               {/* Tempo em aberto (tempo útil de SLA: horas úteis, descontando pausas em Aguardando) */}
               {chamado.sla && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                  <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                     Tempo em aberto
                   </label>
 
-                  <p className="text-gray-900 dark:text-white">
+                  <p className="text-conteudo">
                     {formatarDuracao(chamado.sla.minutos_resolucao_consumidos)}
                     {chamado.status !== StatusEnum.RESOLVIDO &&
                       chamado.status !== StatusEnum.FECHADO && (
-                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="ml-2 text-xs text-conteudo-tenue">
                           (em andamento)
                         </span>
                       )}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p className="text-xs text-conteudo-tenue mt-0.5">
                     tempo útil de atendimento
                     {chamado.sla.minutos_pausados > 0
                       ? `, descontado ${formatarDuracao(chamado.sla.minutos_pausados)} em Aguardando`
@@ -950,7 +950,7 @@ const ChamadoDetalhes: React.FC = () => {
             <div className="space-y-6">
               {/* Técnico Responsável */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                   Técnico Responsável
                 </label>
 
@@ -963,9 +963,9 @@ const ChamadoDetalhes: React.FC = () => {
                       )
                     }
                     className="w-full px-3 py-2 border rounded-lg
-                    border-gray-300 dark:border-gray-600
-                    dark:bg-[#2d2d2d] dark:text-white
-                    focus:ring-2 focus:ring-[#7C3AED]"
+                    border-borda
+                    bg-superficie text-conteudo
+                    focus:ring-2 focus:ring-info"
                   >
                     <option value="">Sem atribuição</option>
 
@@ -979,7 +979,7 @@ const ChamadoDetalhes: React.FC = () => {
                   <div className="flex items-center gap-2 flex-wrap">
                     {chamado.tecnico_responsavel_id ? (
                       <>
-                        <p className="text-gray-900 dark:text-white font-medium">
+                        <p className="text-conteudo font-medium">
                           {tecnicos.find(
                             (t) => t.id === chamado.tecnico_responsavel_id,
                           )?.nome || 'Não encontrado'}
@@ -997,7 +997,7 @@ const ChamadoDetalhes: React.FC = () => {
                         )}
                       </>
                     ) : (
-                      <p className="text-gray-900 dark:text-white">
+                      <p className="text-conteudo">
                         Sem atribuição
                       </p>
                     )}
@@ -1007,7 +1007,7 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Prioridade */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                   Prioridade
                 </label>
 
@@ -1018,11 +1018,11 @@ const ChamadoDetalhes: React.FC = () => {
                       setPrioridadeEditada(e.target.value as PrioridadeEnum)
                     }
                     className="w-full px-3 py-2 border rounded-lg 
-                    bg-white dark:bg-[#2a2a2a]
-                    text-gray-800 dark:text-gray-200
-                    border-gray-300 dark:border-gray-600
+                    bg-superficie
+                    text-conteudo
+                    border-borda
                     focus:outline-none focus:ring-2 
-                    focus:ring-[#DB2777] transition-colors"
+                    focus:ring-info transition-colors"
                   >
                     {Object.values(PrioridadeEnum).map((prioridade) => (
                       <option key={prioridade} value={prioridade}>
@@ -1045,22 +1045,22 @@ const ChamadoDetalhes: React.FC = () => {
 
               {/* Protocolo */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                   Protocolo
                 </label>
 
-                <p className="text-gray-900 dark:text-white font-mono">
+                <p className="text-conteudo font-mono">
                   #{chamado.protocolo}
                 </p>
               </div>
 
               {/* Última Atualização */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[#7C3AED] mb-1">
+                <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
                   Última Atualização
                 </label>
 
-                <p className="text-gray-900 dark:text-white">
+                <p className="text-conteudo">
                   {chamado.updated_at
                     ? formatarData(chamado.updated_at)
                     : 'Não atualizado'}
@@ -1071,10 +1071,10 @@ const ChamadoDetalhes: React.FC = () => {
 
           {/* Descrição */}
           <div className="mt-6">
-            <label className="block text-base font-bold text-gray-900 dark:text-[#7C3AED] mb-3">
+            <label className="block text-base font-bold text-conteudo dark:text-info mb-3">
               Descrição
               {modoEdicao && (
-                <span className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">
+                <span className="ml-2 text-xs font-normal text-conteudo-tenue">
                   (não editável - preserva o relato original do solicitante)
                 </span>
               )}
@@ -1086,14 +1086,14 @@ const ChamadoDetalhes: React.FC = () => {
                 disabled
                 rows={4}
                 className="w-full px-3 py-2 border rounded-lg
-                        bg-gray-100 dark:bg-[#1e1e1e]
-                        text-gray-600 dark:text-gray-400
-                        border-gray-300 dark:border-gray-600
+                        bg-superficie-elevada
+                        text-conteudo-suave
+                        border-borda
                         cursor-not-allowed opacity-75"
                 placeholder="Descrição do chamado..."
               />
             ) : (
-              <p className="text-gray-900 dark:text-white whitespace-pre-wrap break-words overflow-wrap-anywhere">
+              <p className="text-conteudo whitespace-pre-wrap break-words overflow-wrap-anywhere">
                 {chamado.descricao}
               </p>
             )}
@@ -1102,7 +1102,7 @@ const ChamadoDetalhes: React.FC = () => {
           {/* Solução */}
           {(modoEdicao || chamado.solucao) && (
             <div className="mt-6">
-              <label className="block text-base font-bold text-gray-900 dark:text-[#7C3AED] mb-3">
+              <label className="block text-base font-bold text-conteudo dark:text-info mb-3">
                 Solução
               </label>
 
@@ -1112,15 +1112,15 @@ const ChamadoDetalhes: React.FC = () => {
                   onChange={(e) => setSolucaoEditada(e.target.value)}
                   rows={4}
                   className="w-full px-3 py-2 border rounded-lg 
-                          bg-white dark:bg-[#2a2a2a]
-                          text-gray-800 dark:text-gray-200
-                          border-gray-300 dark:border-gray-600
+                          bg-superficie
+                          text-conteudo
+                          border-borda
                           focus:outline-none focus:ring-2 
-                          focus:ring-[#7C3AED] transition-colors"
+                          focus:ring-info transition-colors"
                   placeholder="Descreva a solução aplicada..."
                 />
               ) : (
-                <p className="text-gray-900 dark:text-white whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                <p className="text-conteudo whitespace-pre-wrap break-words overflow-wrap-anywhere">
                   {chamado.solucao || 'Sem solução registrada'}
                 </p>
               )}
@@ -1130,8 +1130,8 @@ const ChamadoDetalhes: React.FC = () => {
           {/* Avaliação */}
           {(chamado.status === StatusEnum.RESOLVIDO ||
             chamado.status === StatusEnum.FECHADO) && (
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <label className="block text-sm font-bold text-gray-900 dark:text-[#7C3AED] mb-3">
+            <div className="mt-6 pt-6 border-t border-borda">
+              <label className="block text-sm font-bold text-conteudo dark:text-info mb-3">
                 Avaliação do Atendimento
               </label>
 
@@ -1156,20 +1156,20 @@ const ChamadoDetalhes: React.FC = () => {
                                 : nota <= (avaliacao || 0)
                             )
                               ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300 dark:text-gray-600'
+                              : 'text-conteudo-tenue'
                           }`}
                         />
                       </button>
                     ))}
 
                     {avaliacao && (
-                      <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="ml-2 text-sm text-conteudo-suave">
                         {avaliacao} de 5 estrelas
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-conteudo-tenue">
                     {avaliacao
                       ? 'Clique nas estrelas para alterar sua avaliação'
                       : 'Clique nas estrelas para avaliar o atendimento (opcional)'}
@@ -1185,16 +1185,16 @@ const ChamadoDetalhes: React.FC = () => {
                           className={`w-6 h-6 ${
                             nota <= avaliacao
                               ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300 dark:text-gray-600'
+                              : 'text-conteudo-tenue'
                           }`}
                         />
                       ))}
-                      <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="ml-2 text-sm text-conteudo-suave">
                         {avaliacao} de 5 estrelas
                       </span>
                     </>
                   ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-conteudo-tenue">
                       Aguardando avaliação do solicitante
                     </p>
                   )}
@@ -1206,11 +1206,11 @@ const ChamadoDetalhes: React.FC = () => {
 
         {/* Comentários */}
         <div
-          className="bg-white/95 dark:bg-[#1e1e1e]/95 
-        border border-gray-200 dark:border-[#2d2d2d] 
+          className="bg-superficie 
+        border border-borda 
         rounded-xl shadow-md p-6 transition-colors"
         >
-          <h2 className="text-xl font-bold text-gray-900 dark:text-[#7C3AED] mb-4">
+          <h2 className="text-xl font-bold text-conteudo dark:text-info mb-4">
             Comentários {comentarios.length > 0 && `(${comentarios.length})`}
           </h2>
 
@@ -1221,15 +1221,15 @@ const ChamadoDetalhes: React.FC = () => {
               onChange={(e) => setNovoComentario(e.target.value)}
               rows={3}
               placeholder="Adicione um comentário..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600
-                      rounded-lg focus:ring-2 focus:ring-[#7C3AED]
-                      dark:bg-[#2d2d2d] dark:text-white transition-colors"
+              className="w-full px-3 py-2 border border-borda
+                      rounded-lg focus:ring-2 focus:ring-info
+                      bg-superficie text-conteudo transition-colors"
             />
 
             <button
               onClick={handleEnviarComentario}
               disabled={!novoComentario.trim() || enviandoComentario}
-              className="mt-2 px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9]
+              className="mt-2 px-4 py-2 bg-info hover:bg-info-forte
                       text-white rounded-lg
                       disabled:opacity-50 disabled:cursor-not-allowed
                       transition-colors"
@@ -1241,7 +1241,7 @@ const ChamadoDetalhes: React.FC = () => {
           {/* Lista de comentários com scroll */}
           <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
             {comentarios.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+              <p className="text-conteudo-tenue text-center py-4">
                 Nenhum comentário ainda.
               </p>
             ) : (
@@ -1251,12 +1251,12 @@ const ChamadoDetalhes: React.FC = () => {
                 return (
                   <div
                     key={comentario.id}
-                    className="border border-gray-200 dark:border-gray-700 
-                            rounded-lg p-4 bg-white/80 dark:bg-[#1e1e1e]/80"
+                    className="border border-borda 
+                            rounded-lg p-4 bg-white/80 bg-superficie/80"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 dark:text-white">
+                        <span className="font-medium text-conteudo">
                           {usuario?.nome || `Usuário #${comentario.usuario_id}`}
                         </span>
 
@@ -1270,12 +1270,12 @@ const ChamadoDetalhes: React.FC = () => {
                         )}
                       </div>
 
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="text-sm text-conteudo-tenue">
                         {formatarData(comentario.created_at)}
                       </span>
                     </div>
 
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                    <p className="text-conteudo-suave whitespace-pre-wrap break-words overflow-wrap-anywhere">
                       {comentario.comentario}
                     </p>
                   </div>
@@ -1287,18 +1287,18 @@ const ChamadoDetalhes: React.FC = () => {
 
         {/* Histórico */}
         <div
-          className="bg-white/95 dark:bg-[#1e1e1e]/95 
-        border border-gray-200 dark:border-[#2d2d2d] 
+          className="bg-superficie 
+        border border-borda 
         rounded-xl shadow-md p-6 transition-colors"
         >
-          <h2 className="text-xl font-bold text-gray-900 dark:text-[#7C3AED] mb-4">
+          <h2 className="text-xl font-bold text-conteudo dark:text-info mb-4">
             Histórico {historico.length > 0 && `(${historico.length})`}
           </h2>
 
           {/* Lista de histórico com scroll */}
           <div className="max-h-[500px] overflow-y-auto pr-2 space-y-3">
             {historico.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+              <p className="text-conteudo-tenue text-center py-4">
                 Nenhum histórico registrado.
               </p>
             ) : (
@@ -1306,28 +1306,28 @@ const ChamadoDetalhes: React.FC = () => {
                 <div
                   key={item.id}
                   className="flex items-start gap-3 border-l-2 
-                          border-[#7C3AED] pl-4 py-2"
+                          border-info pl-4 py-2"
                 >
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="font-medium text-conteudo">
                       {item.acao}
                     </p>
 
                     {item.descricao && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-conteudo-suave">
                         {item.descricao}
                       </p>
                     )}
 
                     {item.status_anterior && item.status_novo && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-conteudo-tenue">
                         {limparValorEnum(item.status_anterior)} →{' '}
                         {limparValorEnum(item.status_novo)}
                       </p>
                     )}
                   </div>
 
-                  <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                  <span className="text-xs text-conteudo-tenue whitespace-nowrap">
                     {formatarData(item.created_at)}
                   </span>
                 </div>
@@ -1340,19 +1340,19 @@ const ChamadoDetalhes: React.FC = () => {
       {/* Modal de Resolução/Fechamento */}
       {mostrarModalResolucao && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-superficie rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
 
               {/* Título e Fechar */}
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-[#7C3AED]">
+                  <h2 className="text-2xl font-bold text-conteudo dark:text-info">
                     {statusAlvo === StatusEnum.RESOLVIDO
                       ? "Resolver Chamado"
                       : "Fechar Chamado"}
                   </h2>
 
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-conteudo-suave mt-1">
                     Descreva a solução aplicada para este chamado
                   </p>
                 </div>
@@ -1362,8 +1362,8 @@ const ChamadoDetalhes: React.FC = () => {
                     setMostrarModalResolucao(false);
                     setSolucaoModal("");
                   }}
-                  className="text-gray-500 hover:text-gray-700
-                            dark:text-gray-400 dark:hover:text-gray-200"
+                  className="text-conteudo-tenue hover:text-conteudo-suave
+                            text-conteudo-tenue dark:hover:text-conteudo"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -1374,7 +1374,7 @@ const ChamadoDetalhes: React.FC = () => {
 
                 {/* Campo de Solução */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 dark:text-[#7C3AED] mb-2">
+                  <label className="block text-sm font-bold text-conteudo dark:text-info mb-2">
                     Solução <span className="text-red-500">*</span>
                   </label>
 
@@ -1383,15 +1383,15 @@ const ChamadoDetalhes: React.FC = () => {
                     onChange={(e) => setSolucaoModal(e.target.value)}
                     rows={6}
                     placeholder="Descreva detalhadamente a solução aplicada..."
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700
-                              rounded-lg focus:ring-2 focus:ring-[#7C3AED]
-                              bg-white dark:bg-[#2a2a2a]
-                              text-gray-800 dark:text-gray-200 resize-none"
+                    className="w-full px-3 py-2 border border-borda
+                              rounded-lg focus:ring-2 focus:ring-info
+                              bg-superficie
+                              text-conteudo resize-none"
                   />
 
                   <ContadorMinimo valor={solucaoModal} minimo={MINIMO_SOLUCAO} />
 
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-conteudo-tenue mt-1">
                     É o que alguém vai ler quando o mesmo problema voltar.
                   </p>
                 </div>
@@ -1404,9 +1404,9 @@ const ChamadoDetalhes: React.FC = () => {
                       setMostrarModalResolucao(false);
                       setSolucaoModal("");
                     }}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600
-                              text-gray-700 dark:text-gray-300
-                              rounded-lg hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                    className="px-4 py-2 border border-borda
+                              text-conteudo-suave
+                              rounded-lg hover:bg-superficie-elevada
                               transition-colors"
                   >
                     Cancelar
@@ -1415,8 +1415,8 @@ const ChamadoDetalhes: React.FC = () => {
                   <button
                     onClick={handleConfirmarResolucao}
                     disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700
-                              disabled:bg-gray-400 disabled:cursor-not-allowed
+                    className="px-4 py-2 bg-sucesso hover:bg-sucesso-forte
+                              disabled:opacity-50 disabled:cursor-not-allowed
                               text-white font-medium rounded-lg shadow-sm
                               hover:shadow-md transition-all duration-200
                               flex items-center gap-2"
@@ -1437,14 +1437,14 @@ const ChamadoDetalhes: React.FC = () => {
       {/* Modal de Cancelar Chamado */}
       {mostrarModalCancelar && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-superficie rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-[#7C3AED]">
+                  <h2 className="text-2xl font-bold text-conteudo dark:text-info">
                     Cancelar Chamado
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-conteudo-suave mt-1">
                     Descreva o motivo do cancelamento deste chamado
                   </p>
                 </div>
@@ -1453,22 +1453,22 @@ const ChamadoDetalhes: React.FC = () => {
                     setMostrarModalCancelar(false);
                     setMotivoCancelamento('');
                   }}
-                  className="text-gray-500 hover:text-gray-700
-                            dark:text-gray-400 dark:hover:text-gray-200"
+                  className="text-conteudo-tenue hover:text-conteudo-suave
+                            text-conteudo-tenue dark:hover:text-conteudo"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-                <p className="text-sm text-red-800 dark:text-red-200">
+              <div className="bg-perigo/10 border border-perigo/30 rounded-lg p-4 mb-4">
+                <p className="text-sm text-perigo-forte dark:text-perigo-suave">
                   Esta ação irá marcar o chamado como cancelado. O chamado não será excluído, mas não aparecerá mais na listagem padrão.
                 </p>
               </div>
 
               {/* Campo de Motivo */}
               <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-900 dark:text-[#7C3AED] mb-2">
+                <label className="block text-sm font-bold text-conteudo dark:text-info mb-2">
                   Motivo do Cancelamento <span className="text-red-500">*</span>
                 </label>
 
@@ -1477,15 +1477,15 @@ const ChamadoDetalhes: React.FC = () => {
                   onChange={(e) => setMotivoCancelamento(e.target.value)}
                   rows={6}
                   placeholder="Descreva o motivo pelo qual este chamado está sendo cancelado..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700
-                            rounded-lg focus:ring-2 focus:ring-red-500
-                            bg-white dark:bg-[#2a2a2a]
-                            text-gray-800 dark:text-gray-200 resize-none"
+                  className="w-full px-3 py-2 border border-borda
+                            rounded-lg focus:ring-2 focus:ring-perigo
+                            bg-superficie
+                            text-conteudo resize-none"
                 />
 
                 <ContadorMinimo valor={motivoCancelamento} minimo={MINIMO_SOLUCAO} />
 
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-sm text-conteudo-tenue mt-1">
                   Fica registrado no chamado como o desfecho dele.
                 </p>
               </div>
@@ -1497,9 +1497,9 @@ const ChamadoDetalhes: React.FC = () => {
                     setMotivoCancelamento('');
                   }}
                   disabled={processando}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600
-                            text-gray-700 dark:text-gray-300 rounded-lg
-                            hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                  className="px-4 py-2 border border-borda
+                            text-conteudo-suave rounded-lg
+                            hover:bg-superficie-elevada
                             transition-colors disabled:opacity-50"
                 >
                   Não, voltar
@@ -1510,8 +1510,8 @@ const ChamadoDetalhes: React.FC = () => {
                     processando ||
                     validarMinimo(motivoCancelamento, MINIMO_SOLUCAO, 'Motivo') !== null
                   }
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700
-                            disabled:bg-gray-400 disabled:cursor-not-allowed
+                  className="px-4 py-2 bg-perigo hover:bg-perigo-forte
+                            disabled:opacity-50 disabled:cursor-not-allowed
                             text-white font-medium rounded-lg shadow-sm
                             hover:shadow-md transition-all duration-200
                             flex items-center gap-2"
@@ -1528,14 +1528,14 @@ const ChamadoDetalhes: React.FC = () => {
       {/* Modal de Arquivar/Desarquivar Chamado */}
       {mostrarModalArquivar && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-md w-full">
+          <div className="bg-superficie rounded-xl shadow-2xl max-w-md w-full">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-[#7C3AED]">
+                  <h2 className="text-2xl font-bold text-conteudo dark:text-info">
                     {chamado?.arquivado ? 'Desarquivar Chamado' : 'Arquivar Chamado'}
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-conteudo-suave mt-1">
                     {chamado?.arquivado
                       ? 'Este chamado voltará a aparecer na listagem padrão.'
                       : 'Este chamado será ocultado da listagem padrão.'}
@@ -1543,15 +1543,15 @@ const ChamadoDetalhes: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setMostrarModalArquivar(false)}
-                  className="text-gray-500 hover:text-gray-700
-                            dark:text-gray-400 dark:hover:text-gray-200"
+                  className="text-conteudo-tenue hover:text-conteudo-suave
+                            text-conteudo-tenue dark:hover:text-conteudo"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <div className={`${chamado?.arquivado ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'} border rounded-lg p-4 mb-4`}>
-                <p className={`text-sm ${chamado?.arquivado ? 'text-green-800 dark:text-green-200' : 'text-amber-800 dark:text-amber-200'}`}>
+              <div className={`${chamado?.arquivado ? 'bg-sucesso/10 border-sucesso/30' : 'bg-alerta/10 border-amber-200 dark:border-amber-800'} border rounded-lg p-4 mb-4`}>
+                <p className={`text-sm ${chamado?.arquivado ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-amber-800 dark:text-amber-200'}`}>
                   {chamado?.arquivado
                     ? 'O chamado será restaurado e voltará a aparecer na listagem principal.'
                     : 'O chamado não será excluído, apenas ocultado da visualização padrão. Você poderá visualizá-lo novamente usando os filtros.'}
@@ -1562,9 +1562,9 @@ const ChamadoDetalhes: React.FC = () => {
                 <button
                   onClick={() => setMostrarModalArquivar(false)}
                   disabled={processando}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600
-                            text-gray-700 dark:text-gray-300 rounded-lg
-                            hover:bg-gray-50 dark:hover:bg-[#2a2a2a]
+                  className="px-4 py-2 border border-borda
+                            text-conteudo-suave rounded-lg
+                            hover:bg-superficie-elevada
                             transition-colors disabled:opacity-50"
                 >
                   Cancelar
@@ -1576,7 +1576,7 @@ const ChamadoDetalhes: React.FC = () => {
                             hover:shadow-md transition-all duration-200
                             flex items-center gap-2 disabled:opacity-50 text-white ${
                               chamado?.arquivado
-                                ? 'bg-green-600 hover:bg-green-700'
+                                ? 'bg-sucesso hover:bg-sucesso-forte'
                                 : 'bg-amber-600 hover:bg-amber-700'
                             }`}
                 >

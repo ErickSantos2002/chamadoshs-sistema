@@ -229,21 +229,21 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-lg shadow-xl">
+        <div className="relative w-full max-w-md bg-superficie rounded-lg shadow-xl">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-6 border-b border-borda">
             <div className="flex items-center gap-3">
               <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              <h2 className="text-xl font-semibold text-conteudo">
                 {modalTitle}
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-1 rounded-lg hover:bg-superficie-elevada transition-colors"
               aria-label="Fechar modal"
             >
-              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <X className="w-5 h-5 text-conteudo-tenue" />
             </button>
           </div>
 
@@ -253,7 +253,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
             <div className="mb-4">
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                className="block text-sm font-medium text-conteudo-suave mb-2"
               >
                 Nome de Usuário <span className="text-red-500">*</span>
               </label>
@@ -266,15 +266,15 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 disabled={isReadOnly}
                 className={`
                   w-full px-4 py-2 border rounded-lg
-                  bg-white dark:bg-[#2a2a2a]
-                  text-gray-900 dark:text-gray-100
+                  bg-superficie
+                  text-conteudo
                   ${errors.username 
                     ? 'border-red-500 dark:border-red-400' 
-                    : 'border-gray-300 dark:border-gray-600'
+                    : 'border-borda'
                   }
                   ${isReadOnly
                     ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    : 'focus:outline-none focus:ring-2 focus:ring-info'
                   }
                   transition-colors
                 `}
@@ -295,10 +295,10 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 <div className="mb-4">
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    className="block text-sm font-medium text-conteudo-suave mb-2"
                   >
                     Senha {mode === 'create' && <span className="text-red-500">*</span>}
-                    {mode === 'edit' && <span className="text-xs text-gray-500"> (deixe em branco para manter a atual)</span>}
+                    {mode === 'edit' && <span className="text-xs text-conteudo-tenue"> (deixe em branco para manter a atual)</span>}
                   </label>
                   <div className="relative">
                     <input
@@ -309,13 +309,13 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                       onChange={handleInputChange}
                       className={`
                         w-full px-4 py-2 pr-10 border rounded-lg
-                        bg-white dark:bg-[#2a2a2a]
-                        text-gray-900 dark:text-gray-100
+                        bg-superficie
+                        text-conteudo
                         ${errors.password 
                           ? 'border-red-500 dark:border-red-400' 
-                          : 'border-gray-300 dark:border-gray-600'
+                          : 'border-borda'
                         }
-                        focus:outline-none focus:ring-2 focus:ring-blue-500
+                        focus:outline-none focus:ring-2 focus:ring-info
                         transition-colors
                       `}
                       placeholder={mode === 'create' ? 'Mínimo 6 caracteres' : 'Nova senha (opcional)'}
@@ -323,7 +323,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-conteudo-tenue hover:text-conteudo"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -339,7 +339,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 <div className="mb-4">
                   <label
                     htmlFor="confirmarSenha"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    className="block text-sm font-medium text-conteudo-suave mb-2"
                   >
                     Confirmar Senha {mode === 'create' && <span className="text-red-500">*</span>}
                   </label>
@@ -360,13 +360,13 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                       }}
                       className={`
                         w-full px-4 py-2 pr-10 border rounded-lg
-                        bg-white dark:bg-[#2a2a2a]
-                        text-gray-900 dark:text-gray-100
+                        bg-superficie
+                        text-conteudo
                         ${errors.confirmarSenha 
                           ? 'border-red-500 dark:border-red-400' 
-                          : 'border-gray-300 dark:border-gray-600'
+                          : 'border-borda'
                         }
-                        focus:outline-none focus:ring-2 focus:ring-blue-500
+                        focus:outline-none focus:ring-2 focus:ring-info
                         transition-colors
                       `}
                       placeholder="Digite a senha novamente"
@@ -374,7 +374,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-conteudo-tenue hover:text-conteudo"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -393,7 +393,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
             <div className="mb-4">
               <label
                 htmlFor="role_name"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                className="block text-sm font-medium text-conteudo-suave mb-2"
               >
                 <Shield className="w-4 h-4 inline mr-1" />
                 Perfil <span className="text-red-500">*</span>
@@ -406,15 +406,15 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 disabled={isReadOnly}
                 className={`
                   w-full px-4 py-2 border rounded-lg
-                  bg-white dark:bg-[#2a2a2a]
-                  text-gray-900 dark:text-gray-100
+                  bg-superficie
+                  text-conteudo
                   ${errors.role_name 
                     ? 'border-red-500 dark:border-red-400' 
-                    : 'border-gray-300 dark:border-gray-600'
+                    : 'border-borda'
                   }
                   ${isReadOnly
                     ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    : 'focus:outline-none focus:ring-2 focus:ring-info'
                   }
                   transition-colors
                 `}
@@ -437,7 +437,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
             <div className="mb-6">
               <label
                 htmlFor="setor_id"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                className="block text-sm font-medium text-conteudo-suave mb-2"
               >
                 <Building className="w-4 h-4 inline mr-1" />
                 Setor
@@ -450,12 +450,12 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 disabled={isReadOnly}
                 className={`
                   w-full px-4 py-2 border rounded-lg
-                  bg-white dark:bg-[#2a2a2a]
-                  text-gray-900 dark:text-gray-100
-                  border-gray-300 dark:border-gray-600
+                  bg-superficie
+                  text-conteudo
+                  border-borda
                   ${isReadOnly
                     ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    : 'focus:outline-none focus:ring-2 focus:ring-info'
                   }
                   transition-colors
                 `}
@@ -485,16 +485,16 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   disabled={isReadOnly}
                   className={`
                     mt-0.5 w-4 h-4 rounded
-                    border-gray-300 dark:border-gray-600
-                    text-blue-600 focus:ring-2 focus:ring-blue-500
+                    border-borda
+                    text-blue-600 focus:ring-2 focus:ring-info
                     ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
                   `}
                 />
                 <span>
-                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <span className="block text-sm font-medium text-conteudo-suave">
                     Conta de serviço
                   </span>
-                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <span className="block text-xs text-conteudo-tenue mt-0.5">
                     Marque para contas que não são pessoas — painel de TV, login de
                     integração. Elas continuam acessando o sistema, mas deixam de
                     aparecer na lista de técnico responsável.
@@ -505,11 +505,11 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
 
             {/* Informações de auditoria (apenas visualização) */}
             {mode === 'view' && usuario && (
-              <div className="mb-6 p-4 bg-gray-50 dark:bg-[#2a2a2a] rounded-lg">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="mb-6 p-4 bg-superficie-elevada rounded-lg">
+                <h3 className="text-sm font-medium text-conteudo-suave mb-2">
                   Informações de Auditoria
                 </h3>
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="space-y-2 text-sm text-conteudo-suave">
                   <div>
                     <span className="font-medium">ID:</span> #{usuario.id}
                   </div>
@@ -529,10 +529,10 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300
-                  bg-white dark:bg-[#2a2a2a]
-                  border border-gray-300 dark:border-gray-600
-                  rounded-lg hover:bg-gray-50 dark:hover:bg-[#333333]
+                className="px-4 py-2 text-sm font-medium text-conteudo-suave
+                  bg-superficie
+                  border border-borda
+                  rounded-lg hover:bg-superficie-elevada
                   transition-colors"
               >
                 {isReadOnly ? 'Fechar' : 'Cancelar'}

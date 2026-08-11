@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 
 const Bloqueio: React.FC = () => {
   return (
-    <div className="p-6 h-full bg-gray-50 dark:bg-[#0f172a] flex flex-col items-center justify-center text-center transition-colors">
+    <div className="p-6 h-full bg-superficie-base flex flex-col items-center justify-center text-center transition-colors">
       <Helmet>
         <title>Acesso negado | ChamadosHS</title>
       </Helmet>
@@ -17,7 +17,7 @@ const Bloqueio: React.FC = () => {
         Acesso negado
       </h1>
 
-      <p className="text-lg text-gray-700 dark:text-gray-300 max-w-md">
+      <p className="text-lg text-conteudo-suave max-w-md">
         Você não tem permissão para acessar esta página.
       </p>
     </div>
