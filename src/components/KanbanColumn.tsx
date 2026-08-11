@@ -14,7 +14,8 @@ interface KanbanColumnProps {
   items: Chamado[];
   usuarios: Record<number, Usuario>;
   categorias: Categoria[];
-  navigate: (path: string) => void;
+  /** Abre o chamado. O quadro decide se é modal ou navegação. */
+  aoAbrir: (chamado: Chamado) => void;
   /** Quem está logado, para saber de quem pedir avaliação. */
   usuarioLogadoId?: number;
 }
@@ -45,7 +46,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   items,
   usuarios,
   categorias,
-  navigate,
+  aoAbrir,
   usuarioLogadoId,
 }) => {
   const nomeDaCategoria = (id?: number): string | null => {
@@ -84,7 +85,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               <button
                 key={chamado.id}
                 type="button"
-                onClick={() => navigate(`/chamados/${chamado.id}`)}
+                onClick={() => aoAbrir(chamado)}
                 className="w-full space-y-2 rounded-lg border border-borda bg-superficie p-3 text-left
                            transition-all hover:border-info/50 hover:shadow-md
                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"

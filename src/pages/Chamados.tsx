@@ -7,7 +7,9 @@ import { StatusEnum, PrioridadeEnum, Chamado, TarefaRecorrente } from '../types/
 import { Plus, Search, Loader2, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
-import { Button, Input, Select } from '../components/ui';
+import { Button, Input, Modal, Select } from '../components/ui';
+import NovoChamadoForm from '../components/NovoChamadoForm';
+import ChamadoModal from '../components/ChamadoModal';
 
 // Data de hoje (local) em YYYY-MM-DD, para comparar com proxima_data das tarefas
 const hojeYMD = (): string => {
@@ -34,6 +36,9 @@ const Chamados: React.FC = () => {
   const [filtroPrioridade, setFiltroPrioridade] = useState<PrioridadeEnum | ''>('');
   const [filtroCategoria, setFiltroCategoria] = useState<number | ''>('');
   const [busca, setBusca] = useState('');
+
+  const [modalNovoAberto, setModalNovoAberto] = useState(false);
+  const [chamadoAberto, setChamadoAberto] = useState<number | null>(null);
 
   const temFiltro = Boolean(filtroPrioridade || filtroCategoria || busca);
 
@@ -222,7 +227,7 @@ const Chamados: React.FC = () => {
                 </Button>
               )}
 
-              <Button onClick={() => navigate('/chamados/novo')}>
+              <Button onClick={() => setModalNovoAberto(true)}>
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 Novo Chamado
               </Button>
@@ -316,7 +321,7 @@ const Chamados: React.FC = () => {
             items={chamadosPorStatus[StatusEnum.ABERTO]}
             usuarios={usuarios}
             categorias={categorias}
-            navigate={navigate}
+            aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
             usuarioLogadoId={user?.id}
           />
 
@@ -328,7 +333,7 @@ const Chamados: React.FC = () => {
             items={chamadosPorStatus[StatusEnum.EM_ANDAMENTO]}
             usuarios={usuarios}
             categorias={categorias}
-            navigate={navigate}
+            aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
             usuarioLogadoId={user?.id}
           />
 
@@ -340,7 +345,7 @@ const Chamados: React.FC = () => {
             items={chamadosPorStatus[StatusEnum.AGUARDANDO]}
             usuarios={usuarios}
             categorias={categorias}
-            navigate={navigate}
+            aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
             usuarioLogadoId={user?.id}
           />
 
@@ -352,11 +357,35 @@ const Chamados: React.FC = () => {
             items={chamadosPorStatus[StatusEnum.RESOLVIDO]}
             usuarios={usuarios}
             categorias={categorias}
-            navigate={navigate}
+            aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
             usuarioLogadoId={user?.id}
           />
         </div>
       </div>
+
+      {/* Abertura de chamado sem sair do quadro. O contexto atrás continua
+          visível, e ao salvar o card já aparece na coluna Aberto. */}
+      <Modal
+        aberto={modalNovoAberto}
+        aoFechar={() => setModalNovoAberto(false)}
+        titulo="Novo Chamado"
+        descricao="Quanto mais claro o relato, menos idas e vindas até a solução."
+      >
+        <NovoChamadoForm
+          aoCriar={() => {
+            setModalNovoAberto(false);
+            carregarChamados();
+          }}
+          aoCancelar={() => setModalNovoAberto(false)}
+        />
+      </Modal>
+
+      {/* Espiada no chamado sem sair do quadro. Editar continua na página. */}
+      <ChamadoModal
+        chamadoId={chamadoAberto}
+        aoFechar={() => setChamadoAberto(null)}
+        aoAbrirEmPagina={(id) => navigate(`/chamados/${id}`)}
+      />
     </div>
   );
 

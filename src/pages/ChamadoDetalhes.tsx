@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
+import ContadorMinimo from '../components/ContadorMinimo';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
@@ -200,8 +202,15 @@ const ChamadoDetalhes: React.FC = () => {
         status: statusEditado,
         prioridade: prioridadeEditada,
         tecnico_responsavel_id: tecnicoEditado,
-        solucao: solucaoEditada || undefined,
       };
+
+      // A solução só vai quando muda de fato. Reenviar o valor carregado faria
+      // um chamado antigo de solução curta ser recusado ao salvar qualquer
+      // outro campo, quando a API passar a exigir tamanho mínimo — a pessoa
+      // mexeria no status e levaria erro sobre um texto que nem tocou.
+      if (solucaoEditada !== (chamado.solucao ?? '')) {
+        dadosAtualizacao.solucao = solucaoEditada || undefined;
+      }
 
       await atualizarChamado(chamado.id, dadosAtualizacao);
 
@@ -308,8 +317,11 @@ const ChamadoDetalhes: React.FC = () => {
 
   // Função para confirmar resolução/fechamento com solução
   const handleConfirmarResolucao = async () => {
-    if (!solucaoModal.trim()) {
-      alert('Por favor, descreva a solução aplicada.');
+    // A solução é o que fica de registro do atendimento e o que alguém lê
+    // quando o mesmo problema volta. "ok" e "resolvido" não servem a ninguém.
+    const problema = validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução');
+    if (problema) {
+      toast.error(problema);
       return;
     }
 
@@ -339,8 +351,12 @@ const ChamadoDetalhes: React.FC = () => {
   const handleCancelarChamado = async () => {
     if (!chamado || !user) return;
 
-    if (!motivoCancelamento.trim()) {
-      alert('Por favor, descreva o motivo do cancelamento.');
+    // O motivo do cancelamento é gravado na mesma coluna `solucao`, então
+    // obedece ao mesmo mínimo — senão cancelar com "x" passaria por uma porta
+    // que resolver com "x" não passa.
+    const problema = validarMinimo(motivoCancelamento, MINIMO_SOLUCAO, 'Motivo');
+    if (problema) {
+      toast.error(problema);
       return;
     }
 
@@ -1373,8 +1389,10 @@ const ChamadoDetalhes: React.FC = () => {
                               text-gray-800 dark:text-gray-200 resize-none"
                   />
 
+                  <ContadorMinimo valor={solucaoModal} minimo={MINIMO_SOLUCAO} />
+
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Campo obrigatório — descreva o que foi feito para resolver o problema
+                    É o que alguém vai ler quando o mesmo problema voltar.
                   </p>
                 </div>
 
@@ -1396,7 +1414,7 @@ const ChamadoDetalhes: React.FC = () => {
 
                   <button
                     onClick={handleConfirmarResolucao}
-                    disabled={!solucaoModal.trim()}
+                    disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700
                               disabled:bg-gray-400 disabled:cursor-not-allowed
                               text-white font-medium rounded-lg shadow-sm
@@ -1465,8 +1483,10 @@ const ChamadoDetalhes: React.FC = () => {
                             text-gray-800 dark:text-gray-200 resize-none"
                 />
 
+                <ContadorMinimo valor={motivoCancelamento} minimo={MINIMO_SOLUCAO} />
+
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Campo obrigatório — explique por que o chamado foi cancelado
+                  Fica registrado no chamado como o desfecho dele.
                 </p>
               </div>
 
@@ -1486,7 +1506,10 @@ const ChamadoDetalhes: React.FC = () => {
                 </button>
                 <button
                   onClick={handleCancelarChamado}
-                  disabled={processando || !motivoCancelamento.trim()}
+                  disabled={
+                    processando ||
+                    validarMinimo(motivoCancelamento, MINIMO_SOLUCAO, 'Motivo') !== null
+                  }
                   className="px-4 py-2 bg-red-600 hover:bg-red-700
                             disabled:bg-gray-400 disabled:cursor-not-allowed
                             text-white font-medium rounded-lg shadow-sm

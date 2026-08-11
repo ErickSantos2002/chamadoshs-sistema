@@ -17,4 +17,8 @@ export { Card, CardHeader, CardBody } from './Card';
 
 export { Input } from './Input';
 
+export { Modal } from './Modal';
+
 export { Select } from './Select';
+
+export { Textarea } from './Textarea';
