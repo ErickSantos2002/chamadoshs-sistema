@@ -40,6 +40,47 @@ const dataHora = (valor?: string | null): string =>
     : '—';
 
 /**
+ * Bloco com título e moldura.
+ *
+ * O modal antes empilhava tudo separado só por espaço em branco, e as partes
+ * se misturavam: não dava para ver onde a descrição terminava e os comentários
+ * começavam. A moldura define o espaço de cada coisa.
+ */
+const Secao: React.FC<{
+  titulo: string;
+  destaque?: boolean;
+  children: React.ReactNode;
+}> = ({ titulo, destaque = false, children }) => (
+  <section
+    className={
+      destaque
+        ? 'rounded-lg border border-sucesso/30 bg-sucesso/10 p-4'
+        : 'rounded-lg border border-borda bg-superficie p-4'
+    }
+  >
+    <h3
+      className={`mb-2 text-xs font-semibold uppercase tracking-wide ${
+        destaque ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-conteudo-tenue'
+      }`}
+    >
+      {titulo}
+    </h3>
+    {children}
+  </section>
+);
+
+/** Par rótulo/valor da ficha lateral. */
+const Campo: React.FC<{ rotulo: string; children: React.ReactNode }> = ({
+  rotulo,
+  children,
+}) => (
+  <div>
+    <dt className="text-xs text-conteudo-tenue">{rotulo}</dt>
+    <dd className="mt-0.5">{children}</dd>
+  </div>
+);
+
+/**
  * Espiada rápida no chamado, sem sair do quadro.
  *
  * O modal LÊ e COMENTA; a página INTERAGE. Mudar status, editar, resolver,
@@ -131,6 +172,14 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       largura="xl"
       titulo={chamado ? chamado.titulo : 'Carregando…'}
       descricao={chamado?.protocolo}
+      rodape={
+        chamado ? (
+          <Button variante="secundario" onClick={() => aoAbrirEmPagina(chamado.id)}>
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            Abrir em página para editar
+          </Button>
+        ) : undefined
+      }
     >
       {carregando && (
         <div className="flex items-center justify-center py-12 text-conteudo-tenue">
@@ -145,124 +194,122 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       )}
 
       {chamado && !carregando && (
-        <div className="space-y-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variante={VARIANTE_STATUS[chamado.status]}>{chamado.status}</Badge>
-            <Badge variante={VARIANTE_PRIORIDADE[chamado.prioridade]}>
-              {chamado.prioridade}
-            </Badge>
-            {chamado.arquivado && <Badge variante="neutro">Arquivado</Badge>}
-            {chamado.cancelado && <Badge variante="perigo">Cancelado</Badge>}
-          </div>
-
-          <SlaProgresso sla={chamado.sla} status={chamado.status} />
-
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-4">
-            <div>
-              <dt className="text-xs text-conteudo-tenue">Solicitante</dt>
-              <dd className="mt-0.5 flex items-center gap-1.5 text-conteudo">
-                <Avatar nome={nome(chamado.solicitante_id)} />
-                <span className="truncate">{nome(chamado.solicitante_id)}</span>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-conteudo-tenue">Responsável</dt>
-              <dd className="mt-0.5 flex items-center gap-1.5 text-conteudo">
-                <Avatar
-                  nome={chamado.tecnico_responsavel_id ? nome(chamado.tecnico_responsavel_id) : null}
-                />
-                <span className="truncate">{nome(chamado.tecnico_responsavel_id)}</span>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-conteudo-tenue">Aberto em</dt>
-              <dd className="mt-0.5 text-conteudo">{dataHora(chamado.data_abertura)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-conteudo-tenue">Resolvido em</dt>
-              <dd className="mt-0.5 text-conteudo">{dataHora(chamado.data_resolucao)}</dd>
-            </div>
-          </dl>
-
-          <div>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-conteudo-tenue">
-              Descrição
-            </h3>
-            <p className="whitespace-pre-wrap break-words text-sm text-conteudo">
-              {chamado.descricao}
-            </p>
-          </div>
-
-          {chamado.solucao && (
-            <div className="rounded-lg border border-sucesso/30 bg-sucesso/10 p-3">
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-sucesso-forte dark:text-sucesso-suave">
-                Solução
-              </h3>
-              <p className="whitespace-pre-wrap break-words text-sm text-conteudo">
-                {chamado.solucao}
+        // Duas colunas em tela larga: a conversa à esquerda, a ficha à direita.
+        // Numa coluna só, a descrição estica por todo o modal e a leitura fica
+        // ruim, enquanto sobra vazio ao lado.
+        <div className="grid gap-5 lg:grid-cols-3">
+          {/* Conversa */}
+          <div className="space-y-5 lg:col-span-2">
+            <Secao titulo="Descrição">
+              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-conteudo">
+                {chamado.descricao}
               </p>
-            </div>
-          )}
+            </Secao>
 
-          <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-conteudo-tenue">
-              Comentários {comentarios.length > 0 && `(${comentarios.length})`}
-            </h3>
-
-            {comentarios.length === 0 ? (
-              <p className="text-sm text-conteudo-tenue">Nenhum comentário ainda.</p>
-            ) : (
-              <ul className="space-y-3">
-                {comentarios.map((c) => (
-                  <li key={c.id} className="flex gap-2">
-                    <Avatar nome={nome(c.usuario_id)} className="mt-0.5" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-sm font-medium text-conteudo">
-                          {nome(c.usuario_id)}
-                        </span>
-                        <span className="text-xs text-conteudo-tenue">
-                          {dataHora(c.created_at)}
-                        </span>
-                      </div>
-                      <p className="whitespace-pre-wrap break-words text-sm text-conteudo-suave">
-                        {c.comentario}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+            {chamado.solucao && (
+              <Secao titulo="Solução" destaque>
+                <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-conteudo">
+                  {chamado.solucao}
+                </p>
+              </Secao>
             )}
 
-            <div className="mt-3 space-y-2">
-              <Textarea
-                value={novoComentario}
-                onChange={(e) => setNovoComentario(e.target.value)}
-                rows={2}
-                placeholder="Escrever um comentário…"
-                aria-label="Novo comentário"
-              />
-              <div className="flex justify-end">
-                <Button
-                  tamanho="sm"
-                  onClick={comentar}
-                  carregando={enviando}
-                  disabled={!novoComentario.trim()}
-                >
-                  <Send className="h-3.5 w-3.5" aria-hidden="true" />
-                  Comentar
-                </Button>
+            <Secao
+              titulo={`Comentários${comentarios.length > 0 ? ` (${comentarios.length})` : ''}`}
+            >
+              {comentarios.length === 0 ? (
+                <p className="text-sm text-conteudo-tenue">Nenhum comentário ainda.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {comentarios.map((c) => (
+                    <li key={c.id} className="flex gap-2">
+                      <Avatar nome={nome(c.usuario_id)} className="mt-0.5" />
+                      <div className="min-w-0 flex-1 rounded-lg bg-superficie-elevada px-3 py-2">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-sm font-medium text-conteudo">
+                            {nome(c.usuario_id)}
+                          </span>
+                          <span className="shrink-0 text-xs text-conteudo-tenue">
+                            {dataHora(c.created_at)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-conteudo-suave">
+                          {c.comentario}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="mt-3 space-y-2 border-t border-borda-suave pt-3">
+                <Textarea
+                  value={novoComentario}
+                  onChange={(e) => setNovoComentario(e.target.value)}
+                  rows={2}
+                  placeholder="Escrever um comentário…"
+                  aria-label="Novo comentário"
+                />
+                <div className="flex justify-end">
+                  <Button
+                    tamanho="sm"
+                    onClick={comentar}
+                    carregando={enviando}
+                    disabled={!novoComentario.trim()}
+                  >
+                    <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                    Comentar
+                  </Button>
+                </div>
               </div>
-            </div>
+            </Secao>
           </div>
 
-          {/* Toda ação que muda o chamado mora na página. */}
-          <div className="border-t border-borda pt-3">
-            <Button variante="secundario" onClick={() => aoAbrirEmPagina(chamado.id)}>
-              <ExternalLink className="h-4 w-4" aria-hidden="true" />
-              Abrir em página para editar
-            </Button>
-          </div>
+          {/* Ficha */}
+          <aside className="space-y-4 rounded-lg border border-borda bg-superficie-base/50 p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variante={VARIANTE_STATUS[chamado.status]}>{chamado.status}</Badge>
+              <Badge variante={VARIANTE_PRIORIDADE[chamado.prioridade]}>
+                {chamado.prioridade}
+              </Badge>
+              {chamado.arquivado && <Badge variante="neutro">Arquivado</Badge>}
+              {chamado.cancelado && <Badge variante="perigo">Cancelado</Badge>}
+            </div>
+
+            <SlaProgresso sla={chamado.sla} status={chamado.status} />
+
+            <dl className="space-y-3 border-t border-borda-suave pt-4 text-sm">
+              <Campo rotulo="Solicitante">
+                <span className="flex items-center gap-1.5">
+                  <Avatar nome={nome(chamado.solicitante_id)} />
+                  <span className="truncate text-conteudo">{nome(chamado.solicitante_id)}</span>
+                </span>
+              </Campo>
+
+              <Campo rotulo="Responsável">
+                <span className="flex items-center gap-1.5">
+                  <Avatar
+                    nome={
+                      chamado.tecnico_responsavel_id
+                        ? nome(chamado.tecnico_responsavel_id)
+                        : null
+                    }
+                  />
+                  <span className="truncate text-conteudo">
+                    {nome(chamado.tecnico_responsavel_id)}
+                  </span>
+                </span>
+              </Campo>
+
+              <Campo rotulo="Aberto em">
+                <span className="text-conteudo">{dataHora(chamado.data_abertura)}</span>
+              </Campo>
+
+              <Campo rotulo="Resolvido em">
+                <span className="text-conteudo">{dataHora(chamado.data_resolucao)}</span>
+              </Campo>
+            </dl>
+          </aside>
         </div>
       )}
     </Modal>
