@@ -44,13 +44,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     <ThemeContext.Provider
       value={{ darkMode, toggleDarkMode, setDarkModeOnLogin }}
     >
-      <div
-        className={
-          darkMode
-            ? 'dark bg-darkGray text-lightGray min-h-screen' // 🎨 novo tema cinza
-            : 'bg-gray-100 text-black min-h-screen'
-        }
-      >
+      {/* A cor da casca sai dos tokens: quem decide o tom é o CSS, não este
+          ternário. Antes o claro e o escuro eram duas strings independentes,
+          e cada tela precisava repetir a mesma decisão com `dark:`. */}
+      <div className={`${darkMode ? 'dark ' : ''}min-h-screen bg-superficie-base text-conteudo`}>
         {children}
       </div>
     </ThemeContext.Provider>

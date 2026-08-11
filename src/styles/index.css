@@ -53,26 +53,18 @@ body,
   width: 100%;
 }
 
-/* 2) fundo padrão (claro) no body e no #root */
+/* 2) fundo da casca, nos dois temas
+ *
+ * Vem dos tokens, então não existe mais uma regra para claro e outra para
+ * escuro — a variável já troca sozinha. A regra `.dark html` que existia aqui
+ * nunca chegou a valer: a classe `dark` é aplicada no próprio <html>, e um
+ * elemento não é descendente de si mesmo. */
 body,
 #root {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  /* 🌞 Claro */
-  @apply bg-gray-100 text-black transition-colors;
-}
-
-/* 3) mesmo fundo no modo escuro para body, html e #root */
-.dark html,
-.dark body,
-.dark #root {
-  /* 🌚 Escuro (tema cinza moderno) */
-  background-color: #121212;
-  color: #d1d1d1;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+  @apply bg-superficie-base text-conteudo transition-colors;
 }
 
 /* Ícone do calendário branco no modo escuro */

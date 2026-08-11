@@ -57,7 +57,7 @@ const Header: React.FC = () => {
   // Mesma regra da Sidebar: a cor sai da classe do Tailwind, não de um hexa
   // embutido na URL do ícone.
   const corDoIcone = (active: boolean) =>
-    `${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'} text-[#1D4ED8] dark:text-[#D1D1D1]`;
+    `${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}`;
 
   const mobileMenuItems = [
     {
@@ -94,16 +94,16 @@ const Header: React.FC = () => {
       {/* HEADER FIXO */}
       <header
         className="sticky top-0 inset-x-0 z-50 
-        bg-white/95 dark:bg-[#1e1e1e]/95 
+        bg-superficie 
         backdrop-blur-sm shadow-md 
         flex items-center justify-between px-4 py-3 
-        transition-colors border-b border-gray-200 dark:border-[#2d2d2d]"
+        transition-colors border-b border-borda"
       >
         <div className="flex items-center gap-4">
           {/* Botão menu mobile */}
           <button
             onClick={abrirMenu}
-            className="block lg:hidden text-gray-700 dark:text-lightGray text-2xl focus:outline-none"
+            className="block lg:hidden text-conteudo text-2xl focus:outline-none"
           >
             ☰
           </button>
@@ -111,7 +111,7 @@ const Header: React.FC = () => {
           {/* Logo + título */}
           <Link
             to="/dashboard"
-            className="hidden lg:flex items-center gap-2 font-bold text-xl text-blue-700 dark:text-lightGray hover:scale-105 transition no-underline group"
+            className="hidden lg:flex items-center gap-2 font-bold text-xl text-conteudo hover:scale-105 transition no-underline group"
           >
             <img
               src={logo}
@@ -124,10 +124,10 @@ const Header: React.FC = () => {
 
         {/* Infos e botão sair */}
         <div className="flex items-center gap-4 text-sm">
-          <span className="group text-gray-700 dark:text-gray-300">
+          <span className="group text-conteudo-suave">
             <span>
               {user?.username}{' '}
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-conteudo-tenue">
                 ({user?.role})
               </span>
             </span>
@@ -136,7 +136,7 @@ const Header: React.FC = () => {
           {!menuVisivel && (
             <button
               onClick={handleLogout}
-              className="bg-blue-600 text-white px-3 py-1 rounded-lg font-semibold hover:bg-blue-700 transition"
+              className="bg-info text-white px-3 py-1 rounded-lg font-semibold hover:bg-info-forte transition"
             >
               Sair
             </button>
@@ -153,21 +153,21 @@ const Header: React.FC = () => {
           />
           <div
             ref={menuRef}
-            className={`fixed inset-y-0 left-0 w-[70vw] bg-white/95 dark:bg-[#1e1e1e] z-50 shadow-lg px-6 pb-6 flex flex-col transform transition-transform duration-300 ${
+            className={`fixed inset-y-0 left-0 w-[70vw] bg-superficie z-50 shadow-lg px-6 pb-6 flex flex-col transform transition-transform duration-300 ${
               menuAnimado ? 'translate-x-0' : '-translate-x-full'
             }`}
           >
             {/* Cabeçalho do menu */}
-            <div className="flex items-center justify-between py-3 mb-3 border-b border-gray-200 dark:border-[#2d2d2d]">
+            <div className="flex items-center justify-between py-3 mb-3 border-b border-borda">
               <div className="flex items-center gap-2">
                 <img src={logo} alt="Logo" className="w-6 h-6 object-contain" />
-                <span className="font-bold text-lg text-blue-700 dark:text-lightGray">
+                <span className="font-bold text-lg text-conteudo">
                   Menu
                 </span>
               </div>
               <button
                 onClick={fecharMenu}
-                className="text-gray-600 dark:text-gray-300 text-2xl leading-none"
+                className="text-conteudo-suave text-2xl leading-none"
               >
                 ×
               </button>
@@ -185,8 +185,8 @@ const Header: React.FC = () => {
                     onClick={fecharMenu}
                     className={`flex items-center font-medium transition px-2 py-1 rounded-md
                       ${active
-                        ? "text-blue-700 dark:text-blue-400 bg-gray-200 dark:bg-accentGray/40"
-                        : "text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400"
+                        ? "text-info bg-info/10"
+                        : "text-conteudo-suave hover:bg-superficie-elevada hover:text-conteudo"
                       }
                     `}
                   >
@@ -198,13 +198,13 @@ const Header: React.FC = () => {
             </nav>
 
             {/* Rodapé do menu mobile */}
-            <div className="mt-auto flex flex-col gap-3 border-t border-gray-200 dark:border-[#2d2d2d] pt-4">
-              <div className="flex items-center justify-between font-medium text-gray-700 dark:text-gray-200 py-2">
+            <div className="mt-auto flex flex-col gap-3 border-t border-borda pt-4">
+              <div className="flex items-center justify-between font-medium text-conteudo-suave py-2">
                 <div className="flex items-center gap-2">
                   {darkMode ? (
                     <Sun className="w-5 h-5 text-yellow-400" aria-hidden="true" />
                   ) : (
-                    <Moon className="w-5 h-5 text-blue-800" aria-hidden="true" />
+                    <Moon className="w-5 h-5 text-info" aria-hidden="true" />
                   )}
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -214,7 +214,7 @@ const Header: React.FC = () => {
                     onChange={toggleDarkMode}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-300 rounded-full peer dark:bg-gray-600 peer-checked:bg-blue-600 transition"></div>
+                  <div className="w-11 h-6 bg-superficie-elevada rounded-full peer peer-checked:bg-info transition"></div>
                   <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full border transition peer-checked:translate-x-5"></div>
                 </label>
               </div>
