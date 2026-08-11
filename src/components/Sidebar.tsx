@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Repeat } from 'lucide-react';
+import { LayoutDashboard, Moon, Repeat, Settings, Sun, Ticket } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 
@@ -16,35 +16,25 @@ const Sidebar: React.FC = () => {
   const ehAdministrador = user?.role === 'Administrador';
   const ehEquipe = ehAdministrador || user?.role === 'Tecnico';
 
-  const getColor = (isActive: boolean) => {
-    if (darkMode) {
-      return 'D1D1D1'; // ícones em cinza claro no dark
-    }
-    return isActive ? '1E3A8A' : '1D4ED8'; // tons de azul no modo claro
-  };
+  // A cor do ícone acompanha o tema por classe do Tailwind. Antes vinha em hexa
+  // dentro da URL do ícone, o que obrigava a ler o darkMode aqui e ainda pedir
+  // uma imagem nova ao trocar de tema.
+  const corDoIcone = (isActive: boolean) =>
+    `${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'} text-[#1D4ED8] dark:text-[#D1D1D1]`;
 
   const menuItems = [
     {
       label: 'Dashboard',
       to: '/dashboard',
       icon: (isActive: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=udjU_YS4lMXL&format=png&color=${getColor(isActive)}`}
-          alt="Dashboard"
-          className={iconBaseClass}
-        />
+        <LayoutDashboard className={corDoIcone(isActive)} aria-hidden="true" />
       ),
     },
     {
       label: 'Chamados',
       to: '/chamados',
       icon: (isActive: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=Kq0M1iiMVmnx&format=png&color=${getColor(isActive)}`}
-          alt="Chamados"
-          className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
-            dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
-        />
+        <Ticket className={corDoIcone(isActive)} aria-hidden="true" />
       ),
     },
     // Cadastros só para administrador: criar, editar e excluir usuário, setor,
@@ -56,12 +46,7 @@ const Sidebar: React.FC = () => {
             label: 'Cadastros',
             to: '/cadastros',
             icon: (isActive: boolean) => (
-              <img
-                src={`https://img.icons8.com/?size=100&id=59718&format=png&color=${getColor(isActive)}`}
-                alt="Cadastros"
-                className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'}
-                  dark:filter dark:brightness-0 dark:invert transition-all duration-200`}
-              />
+              <Settings className={corDoIcone(isActive)} aria-hidden="true" />
             ),
           },
         ]
@@ -73,9 +58,7 @@ const Sidebar: React.FC = () => {
             label: 'Tarefas Recorrentes',
             to: '/tarefas-recorrentes',
             icon: (isActive: boolean) => (
-              <Repeat
-                className={`${iconBaseClass} ${isActive ? 'opacity-100' : 'opacity-70'} text-[#1D4ED8] dark:text-[#D1D1D1]`}
-              />
+              <Repeat className={corDoIcone(isActive)} aria-hidden="true" />
             ),
           },
         ]
@@ -124,18 +107,10 @@ const Sidebar: React.FC = () => {
           <div className="flex items-center gap-2">
             {darkMode ? (
               // ☀️ Sol amarelo (modo claro)
-              <img
-                src="https://img.icons8.com/?size=100&id=s6SybfgfYCLU&format=png&color=FFD700"
-                alt="Modo Claro"
-                className="w-6 h-6 drop-shadow-md"
-              />
+              <Sun className="w-6 h-6 drop-shadow-md text-yellow-400" aria-hidden="true" />
             ) : (
               // 🌙 Lua azul (modo escuro)
-              <img
-                src="https://img.icons8.com/?size=100&id=11404&format=png&color=2563EB"
-                alt="Modo Escuro"
-                className="w-6 h-6 drop-shadow-md"
-              />
+              <Moon className="w-6 h-6 drop-shadow-md text-blue-600" aria-hidden="true" />
             )}
           </div>
 

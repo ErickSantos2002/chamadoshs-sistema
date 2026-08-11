@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { LayoutDashboard, LogOut, Moon, Settings, Sun, Ticket } from 'lucide-react';
 import logo from '../assets/HS2.ico';
 
 
@@ -53,35 +54,24 @@ const Header: React.FC = () => {
 
   const iconBaseClass = 'w-5 h-5 mr-2 transition-colors';
 
-  const getColor = (isActive: boolean, darkMode: boolean) => {
-    if (darkMode) {
-      return 'D1D1D1'; // ícones claros no modo escuro
-    }
-    return isActive ? '1E3A8A' : '1D4ED8'; // azul escuro / azul vivo
-  };
+  // Mesma regra da Sidebar: a cor sai da classe do Tailwind, não de um hexa
+  // embutido na URL do ícone.
+  const corDoIcone = (active: boolean) =>
+    `${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'} text-[#1D4ED8] dark:text-[#D1D1D1]`;
 
   const mobileMenuItems = [
     {
       label: 'Dashboard',
       to: '/dashboard',
       icon: (active: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=udjU_YS4lMXL&format=png&color=${getColor(active, darkMode)}`}
-          className={iconBaseClass}
-          alt="Dashboard"
-        />
+        <LayoutDashboard className={corDoIcone(active)} aria-hidden="true" />
       ),
     },
     {
       label: 'Chamados',
       to: '/chamados',
       icon: (active: boolean) => (
-        <img
-          src={`https://img.icons8.com/?size=100&id=Kq0M1iiMVmnx&format=png&color=${getColor(active, darkMode)}`}
-          className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}
-                      dark:filter dark:brightness-0 dark:invert`}
-          alt="Chamados"
-        />
+        <Ticket className={corDoIcone(active)} aria-hidden="true" />
       ),
     },
     // Só administrador: as operações de cadastro exigem esse perfil na API.
@@ -91,12 +81,7 @@ const Header: React.FC = () => {
             label: 'Cadastros',
             to: '/cadastros',
             icon: (active: boolean) => (
-              <img
-                src={`https://img.icons8.com/?size=100&id=59718&format=png&color=${getColor(active, darkMode)}`}
-                className={`${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}
-                            dark:filter dark:brightness-0 dark:invert`}
-                alt="Cadastros"
-              />
+              <Settings className={corDoIcone(active)} aria-hidden="true" />
             ),
           },
         ]
@@ -217,17 +202,9 @@ const Header: React.FC = () => {
               <div className="flex items-center justify-between font-medium text-gray-700 dark:text-gray-200 py-2">
                 <div className="flex items-center gap-2">
                   {darkMode ? (
-                    <img
-                      src="https://img.icons8.com/?size=100&id=s6SybfgfYCLU&format=png&color=FFD700"
-                      alt="Modo Claro"
-                      className="w-5 h-5"
-                    />
+                    <Sun className="w-5 h-5 text-yellow-400" aria-hidden="true" />
                   ) : (
-                    <img
-                      src="https://img.icons8.com/?size=100&id=11404&format=png&color=1E40AF"
-                      alt="Modo Escuro"
-                      className="w-5 h-5"
-                    />
+                    <Moon className="w-5 h-5 text-blue-800" aria-hidden="true" />
                   )}
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -246,11 +223,7 @@ const Header: React.FC = () => {
                 onClick={handleLogout}
                 className="flex items-center w-full text-left text-red-600 font-medium hover:text-red-800 py-2 rounded-lg transition"
               >
-                <img
-                  src="https://img.icons8.com/?size=100&id=59781&format=png&color=FF0000"
-                  alt="Sair"
-                  className="w-5 h-5"
-                />
+                <LogOut className="w-5 h-5" aria-hidden="true" />
                 <span className="ml-2">Sair</span>
               </button>
             </div>

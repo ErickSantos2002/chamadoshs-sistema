@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
+import { User } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const Login: React.FC = () => {
@@ -43,11 +44,7 @@ const Login: React.FC = () => {
             className="w-20 h-20 rounded-full bg-[#2d2e2e] flex items-center justify-center 
                           shadow-lg border-2 border-white/30"
           >
-            <img
-              src="https://img.icons8.com/?size=100&id=84020&format=png&color=ffffff"
-              alt="Usuário"
-              className="w-10 h-10"
-            />
+            <User className="w-10 h-10 text-white" aria-hidden="true" />
           </div>
         </div>
 
