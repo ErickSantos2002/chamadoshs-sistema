@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Clock, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
-import { Chamado, ChamadoCreate, PrioridadeEnum } from '../types/api';
+import { slaConfigsService } from '../services/chamadoshsapi';
+import { Chamado, ChamadoCreate, PrioridadeEnum, SLAConfig } from '../types/api';
+import { EXPEDIENTE, formatarPrazo } from '../lib/prazo';
 import { Button, Input, Select, Textarea } from './ui';
 import ContadorMinimo from './ContadorMinimo';
 import {
@@ -46,10 +49,29 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
   // responsável. Quem não é abre só para si.
   const ehEquipe = user?.role === 'Tecnico' || user?.role === 'Administrador';
 
+  // Prazos por prioridade, para quem abre o chamado ver o que a escolha
+  // significa. Sem isso a prioridade vira palpite: "Alta" e "Média" são
+  // rótulos sem consequência visível até o chamado já estar aberto.
+  const [prazos, setPrazos] = useState<SLAConfig[]>([]);
+
   useEffect(() => {
     carregarCategorias();
     if (ehEquipe) carregarUsuarios();
   }, [carregarCategorias, carregarUsuarios, ehEquipe]);
+
+  useEffect(() => {
+    // Falhar aqui não impede abrir chamado: sem os prazos, o bloco some e o
+    // formulário continua funcionando.
+    slaConfigsService
+      .listar()
+      .then(setPrazos)
+      .catch(() => setPrazos([]));
+  }, []);
+
+  const prazoEscolhido = useMemo(
+    () => prazos.find((p) => p.prioridade === prioridade),
+    [prazos, prioridade]
+  );
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,6 +227,37 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
           </Select>
         </div>
       </div>
+
+      {prazoEscolhido && (
+        <div className="rounded-lg border border-borda bg-superficie-base/50 px-4 py-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-conteudo-tenue">
+            O que a prioridade {prazoEscolhido.prioridade} compromete
+          </p>
+
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+            <span className="flex items-center gap-1.5 text-conteudo">
+              <Clock className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+              <span className="text-conteudo-tenue">Alguém assume em até</span>
+              <strong className="font-semibold">
+                {formatarPrazo(prazoEscolhido.minutos_resposta)}
+              </strong>
+            </span>
+
+            <span className="flex items-center gap-1.5 text-conteudo">
+              <ShieldCheck className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+              <span className="text-conteudo-tenue">Resolvido em até</span>
+              <strong className="font-semibold">
+                {formatarPrazo(prazoEscolhido.minutos_resolucao)}
+              </strong>
+            </span>
+          </div>
+
+          <p className="mt-2 text-xs text-conteudo-tenue">
+            Contado em horário útil ({EXPEDIENTE}), descontando o tempo em que o
+            chamado ficar aguardando resposta sua.
+          </p>
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variante="secundario" onClick={aoCancelar}>

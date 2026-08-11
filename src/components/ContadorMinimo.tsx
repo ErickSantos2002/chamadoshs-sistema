@@ -23,13 +23,21 @@ export const ContadorMinimo: React.FC<ContadorMinimoProps> = ({ valor, minimo, m
   const faltam = faltamCaracteres(valor, minimo);
   const escritos = valor.trim().length;
 
+  // Campo em branco recebe orientação, não cobrança: "faltam 10 (mínimo 10)"
+  // repete a mesma informação e reclama antes de a pessoa ter escrito nada.
+  const vazio = escritos === 0;
+
+  const texto = vazio
+    ? `Mínimo ${minimo} caracteres`
+    : faltam > 0
+      ? `Faltam ${faltam} ${faltam === 1 ? 'caractere' : 'caracteres'}`
+      : maximo
+        ? `${escritos}/${maximo} caracteres`
+        : `${escritos} caracteres`;
+
   return (
-    <p className={cn('mt-1 text-xs', faltam > 0 ? 'text-alerta' : 'text-conteudo-tenue')}>
-      {faltam > 0
-        ? `Faltam ${faltam} ${faltam === 1 ? 'caractere' : 'caracteres'} (mínimo ${minimo})`
-        : maximo
-          ? `${escritos}/${maximo} caracteres`
-          : `${escritos} caracteres`}
+    <p className={cn('mt-1 text-xs', !vazio && faltam > 0 ? 'text-alerta' : 'text-conteudo-tenue')}>
+      {texto}
     </p>
   );
 };
