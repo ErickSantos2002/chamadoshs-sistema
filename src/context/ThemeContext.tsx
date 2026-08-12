@@ -37,8 +37,17 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   // 🔹 Alterna o modo escuro manualmente (botão)
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
-  // 🔹 Ativa o modo escuro automaticamente no login
-  const setDarkModeOnLogin = () => setDarkMode(true);
+  /**
+   * Escuro como padrão para quem nunca escolheu — e só para esses.
+   *
+   * Antes isto forçava escuro em todo login, então quem preferia o claro era
+   * jogado de volta ao escuro a cada entrada: a preferência valia até sair do
+   * sistema e não sobrevivia à volta. Agora só decide quando não há escolha
+   * gravada; havendo, ela manda.
+   */
+  const setDarkModeOnLogin = () => {
+    if (localStorage.getItem('theme') === null) setDarkMode(true);
+  };
 
   return (
     <ThemeContext.Provider

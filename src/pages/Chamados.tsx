@@ -8,6 +8,8 @@ import { Plus, Search, Loader2, CalendarClock, CheckCircle2 } from 'lucide-react
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
 import { Button, Input, Modal, Select } from '../components/ui';
+import { useTheme } from '../context/ThemeContext';
+import { corDoStatus } from '../lib/graficos';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
 
@@ -30,6 +32,7 @@ const Chamados: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { chamados, categorias, loading, error, carregarChamados } = useChamados();
+  const { darkMode } = useTheme();
 
   // Filtros. O filtro por status saiu: num quadro que já separa os chamados em
   // colunas por status, filtrar por status só esvazia colunas.
@@ -317,7 +320,7 @@ const Chamados: React.FC = () => {
           <KanbanColumn
             title="Aberto"
             descricao="Aguardando atendimento"
-            colorDot="bg-info"
+            colorDot={corDoStatus("Aberto", darkMode)}
             items={chamadosPorStatus[StatusEnum.ABERTO]}
             usuarios={usuarios}
             categorias={categorias}
@@ -329,7 +332,7 @@ const Chamados: React.FC = () => {
           <KanbanColumn
             title="Em Andamento"
             descricao="Técnico trabalhando no chamado"
-            colorDot="bg-[#06B6D4]"
+            colorDot={corDoStatus("Em Andamento", darkMode)}
             items={chamadosPorStatus[StatusEnum.EM_ANDAMENTO]}
             usuarios={usuarios}
             categorias={categorias}
@@ -341,7 +344,7 @@ const Chamados: React.FC = () => {
           <KanbanColumn
             title="Aguardando"
             descricao="Relógio de SLA pausado"
-            colorDot="bg-info"
+            colorDot={corDoStatus("Aguardando", darkMode)}
             items={chamadosPorStatus[StatusEnum.AGUARDANDO]}
             usuarios={usuarios}
             categorias={categorias}
@@ -353,7 +356,7 @@ const Chamados: React.FC = () => {
           <KanbanColumn
             title="Resolvido"
             descricao="Finalizado com sucesso"
-            colorDot="bg-sucesso"
+            colorDot={corDoStatus("Resolvido", darkMode)}
             items={chamadosPorStatus[StatusEnum.RESOLVIDO]}
             usuarios={usuarios}
             categorias={categorias}

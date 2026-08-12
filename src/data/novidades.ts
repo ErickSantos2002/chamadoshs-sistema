@@ -29,6 +29,32 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.3.2',
+    data: '2026-08-12',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'O tema escolhido passa a valer depois de sair e entrar de novo. Quem preferia o modo claro voltava para o escuro a cada login, sem entender por quê.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'As barras dos gráficos do painel ficaram distinguíveis. As cores anteriores eram três tons do mesmo azul, e barras vizinhas se confundiam.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'A tela de login foi redesenhada, com os campos identificados por rótulo e não só por texto de exemplo — que sumia assim que você começava a digitar.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'No quadro de chamados, as colunas "Aberto" e "Aguardando" tinham o mesmo ponto colorido e não dava para distingui-las de relance.',
+      },
+    ],
+  },
+  {
     versao: '1.3.1',
     data: '2026-08-12',
     itens: [

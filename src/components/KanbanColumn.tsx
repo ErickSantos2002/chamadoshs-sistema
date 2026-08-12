@@ -10,6 +10,8 @@ interface KanbanColumnProps {
   title: string;
   /** Uma linha explicando o que o status significa na prática. */
   descricao: string;
+  /** Cor do ponto, em hexadecimal. Vem de `corDoStatus`, para o quadro e o
+   *  painel não poderem divergir sobre a cor do mesmo status. */
   colorDot: string;
   items: Chamado[];
   usuarios: Record<number, Usuario>;
@@ -60,7 +62,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       <div className="border-b border-borda px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <h3 className="flex items-center gap-2 font-semibold text-conteudo">
-            <span className={cn('h-2 w-2 shrink-0 rounded-full', colorDot)} />
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: colorDot }}
+            />
             {title}
           </h3>
           <span className="rounded-full bg-superficie-elevada px-2 py-0.5 text-xs font-semibold text-conteudo-suave">

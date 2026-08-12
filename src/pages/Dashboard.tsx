@@ -32,6 +32,13 @@ import { useAuth } from '../hooks/useAuth';
 import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
 import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
+import { useTheme } from '../context/ThemeContext';
+import {
+  corDaPrioridade,
+  corDaSerie,
+  corDoStatus,
+  estiloDoGrafico,
+} from '../lib/graficos';
 
 // ========================================
 // HELPERS DE PERÍODO (data)
@@ -87,6 +94,11 @@ const dentroDoPeriodo = (
 // ========================================
 
 const Dashboard: React.FC = () => {
+  const { darkMode } = useTheme();
+  // Eixos, grade e dica acompanham o tema: antes eram hexadecimais fixos do
+  // tema escuro, e no claro a grade sumia contra o fundo branco.
+  const estilo = estiloDoGrafico(darkMode);
+
   const { categorias } = useChamados();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -720,52 +732,24 @@ const Dashboard: React.FC = () => {
               <ResponsiveContainer width="100%" height={300}>
                 <RChart>
                   <Pie
-                    data={metricas.porStatus.map(s => ({
-                      ...s,
-                      color:
-                        s.name === "Abertos" ? "#DB2777" :
-                        s.name === "Em Andamento" ? "#06B6D4" :
-                        s.name === "Aguardando" ? "#60A5FA" :
-                        s.name === "Resolvidos" ? "#4ADE80" :
-                        "#3B82F6"
-                    }))}
+                    data={metricas.porStatus}
                     cx="50%"
                     cy="50%"
                     outerRadius={85}
                     dataKey="value"
-                    label={({ name, value }) => value > 0 ? `${name}: ${value}` : ""}
+                    label={({ name, value }) => (value > 0 ? `${name}: ${value}` : '')}
+                    stroke={estilo.dica.backgroundColor}
+                    strokeWidth={2}
                   >
-                    {metricas.porStatus.map((entry) => {
-                      const color =
-                        entry.name === "Abertos" ? "#DB2777" :
-                        entry.name === "Em Andamento" ? "#06B6D4" :
-                        entry.name === "Aguardando" ? "#60A5FA" :
-                        entry.name === "Resolvidos" ? "#4ADE80" :
-                        "#3B82F6";
-
-                      return <Cell key={entry.name} fill={color} />;
-                    })}
+                    {metricas.porStatus.map((entry) => (
+                      <Cell key={entry.name} fill={corDoStatus(entry.name, darkMode)} />
+                    ))}
                   </Pie>
 
-                  {/* TOOLTIP PADRONIZADO */}
                   <Tooltip
-                    wrapperStyle={{ outline: "none" }}
-                    contentStyle={{
-                      backgroundColor: "#1f1b24",        // fundo roxo escuro (dark elegante)
-                      border: "1px solid #3B82F6",       // borda roxa
-                      borderRadius: "8px",
-                      color: "#F3E8FF",                  // texto lilás claro
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
-                    }}
-                    labelStyle={{
-                      color: "#60A5FA",                  // título lilás
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                    itemStyle={{
-                      color: "#fff",                     // texto dos valores
-                    }}
+                    wrapperStyle={{ outline: 'none' }}
+                    contentStyle={estilo.dica}
+                    labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
                   />
 
                   <Legend
@@ -795,52 +779,23 @@ const Dashboard: React.FC = () => {
 
             {metricas.porPrioridade.some(p => p.value > 0) ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={metricas.porPrioridade.map(p => ({
-                    ...p,
-                    color:
-                      p.name === "Baixa" ? "#4ADE80" :
-                      p.name === "Média" ? "#06B6D4" :
-                      p.name === "Alta" ? "#DB2777" :
-                      "#3B82F6"
-                  }))}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                <BarChart data={metricas.porPrioridade}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} />
 
-                  <XAxis dataKey="name" stroke="#60A5FA" />
-                  <YAxis stroke="#60A5FA" />
+                  <XAxis dataKey="name" stroke={estilo.eixo} tick={{ fill: estilo.texto }} />
+                  <YAxis stroke={estilo.eixo} tick={{ fill: estilo.texto }} allowDecimals={false} />
 
-                  {/* TOOLTIP PADRONIZADO */}
                   <Tooltip
-                    wrapperStyle={{ outline: "none" }}
-                    contentStyle={{
-                      backgroundColor: "#1f1b24",        // fundo roxo escuro
-                      border: "1px solid #3B82F6",       // borda roxa
-                      borderRadius: "8px",
-                      color: "#F3E8FF",                  // texto lilás claro
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
-                    }}
-                    labelStyle={{
-                      color: "#60A5FA",                  // título lilás
-                      fontWeight: 600,
-                      marginBottom: "4px",
-                    }}
-                    itemStyle={{
-                      color: "#fff",                     // texto dos dados
-                    }}
+                    cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
+                    wrapperStyle={{ outline: 'none' }}
+                    contentStyle={estilo.dica}
+                    labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
                   />
 
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                    {metricas.porPrioridade.map((entry) => {
-                      const color =
-                        entry.name === "Baixa" ? "#4ADE80" :
-                        entry.name === "Média" ? "#06B6D4" :
-                        entry.name === "Alta" ? "#DB2777" :
-                        "#3B82F6";
-
-                      return <Cell key={entry.name} fill={color} />;
-                    })}
+                  <Bar dataKey="value" name="Chamados" radius={[8, 8, 0, 0]}>
+                    {metricas.porPrioridade.map((entry) => (
+                      <Cell key={entry.name} fill={corDaPrioridade(entry.name, darkMode)} />
+                    ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -863,38 +818,37 @@ const Dashboard: React.FC = () => {
 
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={metricas.porCategoria} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} horizontal={false} />
 
-                <XAxis type="number" stroke="#60A5FA" />
-                <YAxis dataKey="name" type="category" stroke="#60A5FA" width={150} />
-
-                <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                  {metricas.porCategoria.map((_, idx) => {
-                    const palette = ["#3B82F6", "#60A5FA", "#2563EB", "#DB2777", "#06B6D4"];
-                    return <Cell key={idx} fill={palette[idx % palette.length]} />;
-                  })}
-                </Bar>
-
-                {/* TOOLTIP PADRONIZADO */}
-                <Tooltip
-                  wrapperStyle={{ outline: "none" }}
-                  contentStyle={{
-                    backgroundColor: "#1f1b24",        // fundo roxo escuro elegante
-                    border: "1px solid #3B82F6",       // borda roxa primária
-                    borderRadius: "8px",
-                    color: "#F3E8FF",                  // texto lilás claro
-                    padding: "8px 12px",
-                    boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
-                  }}
-                  labelStyle={{
-                    color: "#60A5FA",                  // título lilás
-                    fontWeight: 600,
-                    marginBottom: "4px",
-                  }}
-                  itemStyle={{
-                    color: "#fff",                     // texto dos valores
-                  }}
+                <XAxis
+                  type="number"
+                  stroke={estilo.eixo}
+                  tick={{ fill: estilo.texto }}
+                  allowDecimals={false}
                 />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  stroke={estilo.eixo}
+                  tick={{ fill: estilo.texto }}
+                  width={150}
+                />
+
+                <Tooltip
+                  cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
+                  wrapperStyle={{ outline: 'none' }}
+                  contentStyle={estilo.dica}
+                  labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                />
+
+                {/* A cor sai da POSIÇÃO na lista, e o índice vem do dado — não
+                    da ordenação por valor. Se seguisse o tamanho da barra, uma
+                    categoria mudaria de cor sempre que outra a ultrapassasse. */}
+                <Bar dataKey="value" name="Chamados" radius={[0, 8, 8, 0]}>
+                  {metricas.porCategoria.map((entry, idx) => (
+                    <Cell key={entry.name} fill={corDaSerie(idx, darkMode)} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
