@@ -1,11 +1,25 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Moon, Repeat, Settings, Sun, Ticket } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Moon,
+  Repeat,
+  Settings,
+  Sparkles,
+  Sun,
+  Ticket,
+} from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { cn } from '../lib/utils';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  aoAbrirNovidades: () => void;
+  /** Mostra o ponto no item de novidades quando há versão não vista. */
+  temNovidade: boolean;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
   const location = useLocation();
   const { user } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
@@ -98,6 +112,27 @@ const Sidebar: React.FC = () => {
           ))}
         </ul>
       </nav>
+
+      {/* Novidades. Fica junto do rodapé, e não na lista de rotas, porque não
+          é uma página — abre um aviso sobre a própria lista. */}
+      <div className="border-t border-borda px-2 py-2">
+        <button
+          type="button"
+          onClick={aoAbrirNovidades}
+          className="flex w-full items-center rounded-lg px-3 py-2 font-medium text-conteudo-suave
+                     transition-colors hover:bg-superficie-elevada hover:text-conteudo
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
+        >
+          <Sparkles className={iconBaseClass} aria-hidden="true" />
+          Novidades
+          {temNovidade && (
+            <span
+              className="ml-auto h-2 w-2 rounded-full bg-info"
+              aria-label="Há novidades não lidas"
+            />
+          )}
+        </button>
+      </div>
 
       {/* Switch de modo noturno */}
       <div className="border-t border-borda px-4 py-3">
