@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   Save,
   AlertCircle,
@@ -132,7 +133,7 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
       if (mode === 'create') {
         await createCategoria(formData);
         console.log('✅ Categoria criada com sucesso!');
-        alert('Categoria criada com sucesso!');
+        toast.success('Categoria criada com sucesso!');
       } else if (mode === 'edit' && categoria) {
         const updateData: CategoriaUpdate = {
           nome: formData.nome,
@@ -140,12 +141,12 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
         };
         await updateCategoria(categoria.id, updateData);
         console.log('✅ Categoria atualizada com sucesso!');
-        alert('Categoria atualizada com sucesso!');
+        toast.success('Categoria atualizada com sucesso!');
       }
       onClose();
     } catch (err: any) {
       console.error('❌ Erro ao salvar categoria:', err);
-      alert(err.response?.data?.detail || 'Erro ao salvar categoria');
+      toast.error(err.response?.data?.detail || 'Erro ao salvar categoria');
     } finally {
       setLoading(false);
     }

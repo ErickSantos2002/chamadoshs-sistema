@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import {
   Plus,
   Edit,
@@ -119,7 +120,7 @@ const SetoresTab: React.FC = () => {
     try {
       await updateSetor(setor.id, { nome: setor.nome, descricao: setor.descricao, ativo: true });
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Erro ao reativar setor');
+      toast.error(err.response?.data?.detail || 'Erro ao reativar setor');
     }
   };
 
@@ -134,7 +135,7 @@ const SetoresTab: React.FC = () => {
       setConfirmDelete(null);
     } catch (err: any) {
       // Erro já tratado no context
-      alert(err.response?.data?.detail || 'Erro ao excluir setor');
+      toast.error(err.response?.data?.detail || 'Erro ao excluir setor');
     }
     setConfirmDelete(null);
   };

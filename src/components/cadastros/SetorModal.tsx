@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   Save,
   AlertCircle,
@@ -132,7 +133,7 @@ const SetorModal: React.FC<SetorModalProps> = ({
       if (mode === 'create') {
         await createSetor(formData);
         console.log('✅ Setor criado com sucesso!');
-        alert('Setor criado com sucesso!');
+        toast.success('Setor criado com sucesso!');
       } else if (mode === 'edit' && setor) {
         const updateData: SetorUpdate = {
           nome: formData.nome,
@@ -140,12 +141,12 @@ const SetorModal: React.FC<SetorModalProps> = ({
         };
         await updateSetor(setor.id, updateData);
         console.log('✅ Setor atualizado com sucesso!');
-        alert('Setor atualizado com sucesso!');
+        toast.success('Setor atualizado com sucesso!');
       }
       onClose();
     } catch (err: any) {
       console.error('❌ Erro ao salvar setor:', err);
-      alert(err.response?.data?.detail || 'Erro ao salvar setor');
+      toast.error(err.response?.data?.detail || 'Erro ao salvar setor');
     } finally {
       setLoading(false);
     }

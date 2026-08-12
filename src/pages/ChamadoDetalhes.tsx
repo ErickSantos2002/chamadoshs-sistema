@@ -240,7 +240,7 @@ const ChamadoDetalhes: React.FC = () => {
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
       console.error('Erro ao enviar comentário:', err);
-      alert('Erro ao enviar comentário.');
+      toast.error(err?.response?.data?.detail || 'Erro ao enviar comentário.');
     } finally {
       setEnviandoComentario(false);
     }
@@ -376,7 +376,7 @@ const ChamadoDetalhes: React.FC = () => {
       navigate('/chamados', { replace: true });
     } catch (err: any) {
       console.error('Erro ao cancelar chamado:', err);
-      alert('Erro ao cancelar chamado.');
+      toast.error(err?.response?.data?.detail || 'Erro ao cancelar chamado.');
     } finally {
       setProcessando(false);
     }
@@ -403,7 +403,7 @@ const ChamadoDetalhes: React.FC = () => {
       navigate('/chamados', { replace: true });
     } catch (err: any) {
       console.error('Erro ao arquivar/desarquivar chamado:', err);
-      alert('Erro ao processar solicitação.');
+      toast.error(err?.response?.data?.detail || 'Erro ao processar solicitação.');
     } finally {
       setProcessando(false);
     }

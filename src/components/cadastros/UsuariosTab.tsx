@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import {
   Plus,
   Edit,
@@ -161,7 +162,7 @@ const UsuariosTab: React.FC = () => {
       setConfirmDelete(null);
     } catch (err: any) {
       // Erro já tratado no context
-      alert(err.response?.data?.detail || 'Erro ao excluir usuário');
+      toast.error(err.response?.data?.detail || 'Erro ao excluir usuário');
     }
     setConfirmDelete(null);
   };
@@ -170,7 +171,7 @@ const UsuariosTab: React.FC = () => {
     try {
       await updateUsuario(usuario.id, { ativo: true });
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Erro ao reativar usuário');
+      toast.error(err.response?.data?.detail || 'Erro ao reativar usuário');
     }
   };
 
@@ -197,7 +198,7 @@ const UsuariosTab: React.FC = () => {
 
     try {
       await updateUsuarioPassword(resetPasswordFor.id, novaSenha);
-      alert(`Senha do usuário ${resetPasswordFor.nome} atualizada com sucesso!`);
+      toast.success(`Senha do usuário ${resetPasswordFor.nome} atualizada com sucesso!`);
       fecharResetSenha();
     } catch (err: any) {
       setSenhaError(err.response?.data?.detail || 'Erro ao resetar senha');

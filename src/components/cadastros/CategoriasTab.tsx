@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import {
   Plus,
   Edit,
@@ -125,7 +126,7 @@ const CategoriasTab: React.FC = () => {
       setConfirmDelete(null);
     } catch (err: any) {
       // Erro já tratado no context
-      alert(err.response?.data?.detail || 'Erro ao excluir categoria');
+      toast.error(err.response?.data?.detail || 'Erro ao excluir categoria');
     }
     setConfirmDelete(null);
   };

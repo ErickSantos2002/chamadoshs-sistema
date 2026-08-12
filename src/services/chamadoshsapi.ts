@@ -46,19 +46,11 @@ export const authService = {
     return response.data;
   },
 
-  /**
-   * Registra um novo usuário
-   */
-  async registro(userData: UsuarioCreate): Promise<TokenResponse> {
-    const response = await api.post<TokenResponse>('/auth/registro', userData);
-    const { access_token, user_id, nome, role } = response.data;
-
-    // Armazenar token e dados do usuário
-    localStorage.setItem('token', access_token);
-    localStorage.setItem('user', JSON.stringify({ id: user_id, nome, role }));
-
-    return response.data;
-  },
+  // `registro` foi removido: chamava POST /auth/registro, que exige perfil de
+  // administrador, e nunca teve call site. Usuário é criado pela tela de
+  // Cadastros, por POST /usuarios. Além de morto, o método trocava o token
+  // guardado pelo do usuário recém-criado — quem o chamasse por engano
+  // deslogaria a si mesmo e assumiria a sessão do outro.
 
   /**
    * Obtém dados do usuário logado

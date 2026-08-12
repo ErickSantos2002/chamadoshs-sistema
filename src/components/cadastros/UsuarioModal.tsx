@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   Save,
   AlertCircle,
@@ -169,7 +170,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
         console.log('🔍 FormData sendo enviado:', { ...formData, password: formData.password ? '***' : 'VAZIO' });
         await createUsuario(formData);
         console.log('✅ Usuário criado com sucesso!');
-        alert('Usuário criado com sucesso!');
+        toast.success('Usuário criado com sucesso!');
       } else if (mode === 'edit' && usuario) {
         const updateData: UsuarioUpdate = {
           username: formData.username,
@@ -185,7 +186,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
 
         await updateUsuario(usuario.id, updateData);
         console.log('✅ Usuário atualizado com sucesso!');
-        alert('Usuário atualizado com sucesso!');
+        toast.success('Usuário atualizado com sucesso!');
       }
       onClose();
     } catch (err: any) {
@@ -195,7 +196,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
       if (err.response?.status === 400 && err.response?.data?.detail?.includes('already exists')) {
         setErrors({ username: 'Este nome de usuário já está em uso' });
       } else {
-        alert(err.response?.data?.detail || 'Erro ao salvar usuário');
+        toast.error(err.response?.data?.detail || 'Erro ao salvar usuário');
       }
     } finally {
       setLoading(false);

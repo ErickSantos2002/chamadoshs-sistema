@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.3.1',
+    data: '2026-08-12',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Os avisos do sistema deixaram de ser aquelas caixinhas do navegador que travam a página até você clicar em OK. Agora aparecem no canto e sozinhas somem.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Quando algo dá errado ao salvar, a mensagem passa a dizer o motivo que o sistema devolveu, em vez de um texto genérico.',
+      },
+    ],
+  },
+  {
     versao: '1.3.0',
     data: '2026-08-12',
     itens: [
