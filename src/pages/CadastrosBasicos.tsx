@@ -123,7 +123,7 @@ const CadastrosBasicos: React.FC = () => {
             ${
               abaAtiva === aba.id
                 ? 'border-sinal text-info-forte dark:text-info-suave'
-                : 'border-transparent text-conteudo-tenue hover:text-conteudo hover:border-borda dark:hover:border-[#3a3a3a]'
+                : 'border-transparent text-conteudo-tenue hover:text-conteudo hover:border-borda'
             }
           `}
                 >

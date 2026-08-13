@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.0',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'A janela do chamado ganhou as ações de atendimento: iniciar, marcar como aguardando, resolver e reabrir — sem precisar abrir a página inteira.',
+      },
+      {
+        tipo: 'novidade',
+        texto:
+          'Ao resolver pela janela, o campo da solução aparece ali mesmo, no lugar dos botões. Você não sai de onde estava.',
+      },
+    ],
+  },
+  {
     versao: '1.5.2',
     data: '2026-08-13',
     itens: [

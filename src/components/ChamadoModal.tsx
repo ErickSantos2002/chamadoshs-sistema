@@ -6,6 +6,7 @@ import { Chamado, Comentario, PrioridadeEnum, StatusEnum } from '../types/api';
 import { Avatar, Badge, Button, Modal, Textarea, VarianteBadge } from './ui';
 import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
+import AcoesRapidas from './AcoesRapidas';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -84,13 +85,24 @@ const Campo: React.FC<{ rotulo: string; children: React.ReactNode }> = ({
 /**
  * Espiada rápida no chamado, sem sair do quadro.
  *
- * O modal LÊ e COMENTA; a página INTERAGE. Mudar status, editar, resolver,
- * cancelar e arquivar continuam só na página — cada uma dessas ações abre a
- * própria confirmação, e confirmação dentro de modal vira modal sobre modal,
- * que ninguém sabe fechar na ordem certa.
+ * ── Onde fica a linha entre o modal e a página ────────────────────────
  *
- * A divisão também acerta o caso comum: na maioria das vezes a pessoa só quer
- * saber do que se trata aquele card, e isso hoje custa uma navegação inteira.
+ * O modal LÊ, COMENTA e MOVE O STATUS. A página faz o resto: editar campos,
+ * cancelar, arquivar e reatribuir.
+ *
+ * A versão anterior deste comentário dizia que status também era só da página,
+ * e o motivo era real — resolver pede a solução, e aquilo abria um segundo
+ * modal. Modal sobre modal é uma pilha que ninguém sabe fechar na ordem certa.
+ * Mas a conclusão estava errada: o problema era a segunda camada, não a ação.
+ * Em `AcoesRapidas` a resolução virou um PASSO no mesmo lugar, e aí a objeção
+ * some.
+ *
+ * O que continua fora tem outro motivo: cancelar e arquivar pedem justificativa
+ * e são decisões que se lê junto do histórico, não de passagem pelo quadro.
+ *
+ * A divisão acerta o caso comum: na maioria das vezes a pessoa quer saber do
+ * que se trata aquele card e empurrá-lo um passo adiante — e isso custava uma
+ * navegação inteira.
  */
 export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   chamadoId,
@@ -278,6 +290,12 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
             </div>
 
             <SlaProgresso sla={chamado.sla} status={chamado.status} />
+
+            {/* As ações vêm ANTES da ficha: quem abre um chamado do quadro
+                quase sempre quer fazer algo com ele, não conferir a data de
+                abertura. O componente some sozinho para quem não pode agir e
+                para chamado cancelado ou arquivado. */}
+            <AcoesRapidas chamado={chamado} aoMudar={setChamado} />
 
             <dl className="space-y-3 border-t border-borda-suave pt-4 text-sm">
               <Campo rotulo="Solicitante">

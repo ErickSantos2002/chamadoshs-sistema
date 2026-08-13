@@ -380,7 +380,7 @@ const ChamadoDetalhes: React.FC = () => {
           <button
             key="iniciar"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium
+            className="px-4 py-2 bg-sinal hover:brightness-110 text-white font-medium
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
@@ -423,7 +423,7 @@ const ChamadoDetalhes: React.FC = () => {
           <button
             key="retomar"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium
+            className="px-4 py-2 bg-sinal hover:brightness-110 text-white font-medium
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
@@ -450,7 +450,7 @@ const ChamadoDetalhes: React.FC = () => {
           <button
             key="reabrir"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="px-4 py-2 bg-[#DB2777] hover:bg-[#BE185D] text-white font-medium
+            className="px-4 py-2 bg-alerta-forte hover:brightness-110 text-white font-medium
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
@@ -466,7 +466,7 @@ const ChamadoDetalhes: React.FC = () => {
           <button
             key="reabrir"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="px-4 py-2 bg-[#DB2777] hover:bg-[#BE185D] text-white font-medium
+            className="px-4 py-2 bg-alerta-forte hover:brightness-110 text-white font-medium
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
@@ -545,10 +545,10 @@ const ChamadoDetalhes: React.FC = () => {
         return 'bg-info/15 text-info-forte dark:text-info-suave';
 
       case 2: // Técnico
-        return 'bg-[#2563EB]/20 text-[#2563EB] dark:bg-[#2563EB]/25 dark:text-[#93C5FD]';
+        return 'bg-info/20 text-info-forte dark:text-info-suave';
 
       case 3: // Usuário
-        return 'bg-info/20 text-info dark:bg-info/25 dark:text-[#DDD6FE]';
+        return 'bg-superficie-elevada text-conteudo-suave';
 
       default:
         return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
@@ -578,7 +578,7 @@ const ChamadoDetalhes: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/chamados')}
-          className="mt-4 px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg"
+          className="mt-4 px-4 py-2 bg-sinal hover:brightness-110 text-white rounded-lg"
         >
           Voltar para Chamados
         </button>
