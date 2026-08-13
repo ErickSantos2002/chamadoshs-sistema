@@ -19,14 +19,25 @@ export function useRelogio(intervaloMs = 1000): number {
     let timer: number | undefined;
 
     const parar = () => {
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
       timer = undefined;
+    };
+
+    // `setTimeout` encadeado até a próxima borda do intervalo, não
+    // `setInterval` fixo. Timer só atrasa, nunca adianta: com intervalo fixo a
+    // deriva acumula e o relógio da tela de login pula um segundo de vez em
+    // quando (`:07` → `:09`). Mirando a borda, cada disparo zera a deriva.
+    const agendar = () => {
+      timer = window.setTimeout(() => {
+        setAgora(Date.now());
+        agendar();
+      }, intervaloMs - (Date.now() % intervaloMs));
     };
 
     const comecar = () => {
       if (timer !== undefined) return;
       setAgora(Date.now());
-      timer = window.setInterval(() => setAgora(Date.now()), intervaloMs);
+      agendar();
     };
 
     const aoTrocarVisibilidade = () => {
