@@ -48,21 +48,37 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-hidden bg-superficie-base p-4">
+    /* `overflow-y-auto` no container e `min-h-full` no miolo, em vez de
+       centralizar direto aqui.
+
+       Centralizar com `items-center` num container que não rola parece igual
+       enquanto a tela é alta o bastante — e corta pelos DOIS lados quando não
+       é, porque o que sobra de um item centralizado transborda em cima e
+       embaixo. Foi o que aconteceu numa TV em modo paisagem: a faixa de cima
+       sumiu e a de baixo ficou pela metade, sem rolagem possível, já que o
+       `body` tem `overflow: hidden` global.
+
+       Com esta combinação a tela centraliza quando cabe e rola quando não
+       cabe, que é o comportamento que se espera dos dois casos. */
+    <div className="fixed inset-0 overflow-y-auto bg-superficie-base">
       {/* Duas camadas de fundo, estáticas. Elas não informam nada — o trabalho
           delas é dar profundidade para o painel ter onde pousar. A maquete
           fazia isso com linhas de log animadas em canvas; o mesmo efeito sai
-          de dois gradientes que o navegador pinta uma vez e esquece. */}
+          de dois gradientes que o navegador pinta uma vez e esquece.
+
+          Ficam `fixed`, então não rolam junto e não entram na altura do
+          conteúdo. */}
       <div aria-hidden="true" className="malha pointer-events-none fixed inset-0" />
       <div aria-hidden="true" className="vinheta pointer-events-none fixed inset-0" />
 
+      <div className="flex min-h-full items-center justify-center p-4">
       <div className="animate-subir relative w-full max-w-sm">
         {/* Faixa de identificação. Diz em que sistema a pessoa está prestes a
             entrar — o que importa em uma casa com mais de um sistema interno. */}
         {/* A folga é grande porque o selo sobe 32px acima da borda do painel.
             Com o espaçamento normal ele cobre o texto desta faixa — foi o que
             aconteceu na primeira versão. */}
-        <div className="mb-11 flex items-center justify-between gap-3">
+        <div className="mb-10 flex items-center justify-between gap-3 alto:mb-11">
           <Rotulo>ChamadosHS · Console de acesso</Rotulo>
 
           {/* O estado vem do /api/v1/health, não é enfeite. Quando o banco cai
@@ -87,7 +103,7 @@ const Login: React.FC = () => {
         {/* O gradiente vai da superfície elevada para a normal, de cima para
             baixo. É o que separa "painel" de "retângulo": sem ele o card fica
             chapado contra o fundo, que foi como a primeira versão ficou. */}
-        <div className="relative border border-borda bg-gradient-to-b from-superficie-elevada to-superficie px-8 pb-8 pt-16 shadow-2xl">
+        <div className="relative border border-borda bg-gradient-to-b from-superficie-elevada to-superficie px-8 pb-6 pt-12 shadow-2xl alto:pb-8 alto:pt-16">
           {/* A varredura precisa de `overflow-hidden` para não escapar do
               painel — mas o selo fica FORA dele, então o recorte não pode
               morar no painel. Vive nesta camada própria. */}
@@ -105,11 +121,11 @@ const Login: React.FC = () => {
             </div>
           </div>
 
-          <div className="mb-6 flex justify-center">
-            <img src={logo} alt="Health &amp; Safety" className="max-h-[64px] object-contain" />
+          <div className="mb-4 flex justify-center alto:mb-6">
+            <img src={logo} alt="Health &amp; Safety" className="max-h-[44px] object-contain alto:max-h-[64px]" />
           </div>
 
-          <div className="mb-6 text-center">
+          <div className="mb-4 text-center alto:mb-6">
             <h1 className="text-xl font-bold text-conteudo">Bem-vindo</h1>
             <Rotulo como="p" className="mt-1 block">
               Identifique-se para continuar
@@ -182,7 +198,7 @@ const Login: React.FC = () => {
             login, afirmar a topologia para quem ainda não se identificou é
             entregar informação de infraestrutura de graça, e nenhum dos três
             era verificável. Ficou o que o sistema sabe de si. */}
-        <div className="mt-3 grid grid-cols-2 border border-borda">
+        <div className="mt-2 grid grid-cols-2 border border-borda alto:mt-3">
           <div className="border-r border-borda px-3 py-2">
             <Rotulo como="p" className="block">
               Versão
@@ -207,6 +223,7 @@ const Login: React.FC = () => {
             </p>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

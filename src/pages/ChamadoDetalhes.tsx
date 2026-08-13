@@ -1487,7 +1487,11 @@ const ChamadoDetalhes: React.FC = () => {
       {/* Modal de Arquivar/Desarquivar Chamado */}
       {mostrarModalArquivar && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-superficie rounded-xl shadow-2xl max-w-md w-full">
+          {/* `max-h` e rolagem como nos outros dois modais desta tela. Sem
+              teto, num visor baixo — a TV em paisagem, por exemplo — o painel
+              transborda para cima e para baixo e é cortado nos dois lados, sem
+              rolagem possível. */}
+          <div className="bg-superficie shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>

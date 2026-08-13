@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.4.5',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Em telas baixas — a TV da sala, por exemplo — a tela de login aparecia cortada em cima e embaixo, e não dava para rolar. Agora ela se ajusta à altura disponível.',
+      },
+    ],
+  },
+  {
     versao: '1.4.4',
     data: '2026-08-13',
     itens: [

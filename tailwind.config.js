@@ -99,6 +99,18 @@ module.exports = {
         ],
       },
 
+      // Ponto de corte por ALTURA, não por largura.
+      //
+      // Os breakpoints do Tailwind são todos de largura, e largura não diz
+      // nada sobre o problema que apareceu: uma TV em paisagem é larguíssima
+      // e baixa. O login cabia folgado no notebook e era cortado lá.
+      //
+      // Espaçamento generoso passa a ser condicional: `alto:` só vale quando
+      // há altura para gastar.
+      screens: {
+        alto: { raw: '(min-height: 720px)' },
+      },
+
       fontSize: {
         // Tamanho dos rótulos monoespaçados. 11px, não os 9,6px da maquete:
         // lá era textura de fundo, aqui carrega a palavra "PROTOCOLO" acima de
