@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.5.2',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Na tela de Auditoria, quando a consulta falhava a tela mostrava o erro e, logo abaixo, dizia que nada tinha sido registrado. Numa tela de auditoria isso é grave: "não consegui perguntar" virava "nada aconteceu".',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'Ainda na Auditoria, ao avançar para uma página sem resultados a tela afirmava que a trilha estava vazia — depois de você ter acabado de ler 50 linhas dela.',
+      },
+    ],
+  },
+  {
     versao: '1.5.1',
     data: '2026-08-13',
     itens: [

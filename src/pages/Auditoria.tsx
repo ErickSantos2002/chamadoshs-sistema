@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, Loader2, RefreshCw, ScrollText } from 'lucide-react';
 import { auditoriaService, FiltroDeAuditoria } from '../services/chamadoshsapi';
+import { useAuth } from '../hooks/useAuth';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { descreverEvento, momentoDoEvento } from '../lib/auditoria';
 import { Button, Colchetes, Rotulo, Select } from '../components/ui';
@@ -38,23 +39,43 @@ const NOME_DO_ALVO: Record<string, string> = {
  */
 const Auditoria: React.FC = () => {
   const usuarios = useUsuariosPorId();
+  const { user } = useAuth();
+
+  /**
+   * A API restringe a trilha de CONTAS a administrador.
+   *
+   * Para o técnico ela devolve só os eventos de setor quando nenhum alvo é
+   * pedido, e recusa com 403 quando `alvo=usuario`. Duas consequências para
+   * esta tela, e as duas seriam mentira silenciosa se ignoradas: um filtro
+   * chamado "Todos" que traz só metade, e uma opção no seletor que só sabe
+   * dar erro.
+   */
+  const ehAdministrador = user?.role === 'Administrador';
 
   const [eventos, setEventos] = useState<EventoDeAuditoria[] | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [pagina, setPagina] = useState(0);
+  // Contador que o botão Atualizar incrementa. `buscar` depende dele, então a
+  // releitura passa pelo mesmo efeito que já tem a guarda de cancelamento —
+  // em vez de um caminho paralelo sem proteção.
+  const [recarga, setRecarga] = useState(0);
 
   const [alvo, setAlvo] = useState<'' | 'usuario' | 'setor'>('');
   const [atorId, setAtorId] = useState('');
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
 
+  // Técnico consulta setores explicitamente, em vez de mandar "todos" e receber
+  // só metade sem saber.
+  const alvoEfetivo: '' | 'usuario' | 'setor' = ehAdministrador ? alvo : 'setor';
+
   const buscar = useCallback(async () => {
     setCarregando(true);
     setErro(null);
 
     const filtro: FiltroDeAuditoria = {
-      alvo: alvo || undefined,
+      alvo: alvoEfetivo || undefined,
       ator_id: atorId ? Number(atorId) : undefined,
       de: de || undefined,
       ate: ate || undefined,
@@ -62,18 +83,40 @@ const Auditoria: React.FC = () => {
       limit: POR_PAGINA,
     };
 
-    try {
-      setEventos(await auditoriaService.listar(filtro));
-    } catch (err: any) {
-      setErro(err.response?.data?.detail || 'Não foi possível carregar a trilha.');
-      setEventos(null);
-    } finally {
-      setCarregando(false);
-    }
-  }, [alvo, atorId, de, ate, pagina]);
+    return auditoriaService.listar(filtro);
+    // `recarga` entra nas dependências de propósito: é o que faz o botão
+    // Atualizar refazer a busca sem duplicar o caminho.
+  }, [alvoEfetivo, atorId, de, ate, pagina, recarga]);
 
+  /**
+   * Guarda de cancelamento.
+   *
+   * Os filtros continuam clicáveis durante a busca, então há como ter duas
+   * requisições no ar. Sem esta bandeira, a mais lenta chega por último e
+   * sobrescreve a mais nova — o formulário passa a dizer uma coisa e a tabela
+   * outra, numa tela cuja função é ser confiável sobre o passado.
+   */
   useEffect(() => {
-    buscar();
+    let atual = true;
+
+    buscar()
+      .then((linhas) => {
+        if (!atual) return;
+        setEventos(linhas);
+        setErro(null);
+      })
+      .catch((err: any) => {
+        if (!atual) return;
+        setErro(err.response?.data?.detail || 'Não foi possível carregar a trilha.');
+        setEventos(null);
+      })
+      .finally(() => {
+        if (atual) setCarregando(false);
+      });
+
+    return () => {
+      atual = false;
+    };
   }, [buscar]);
 
   /** Trocar filtro volta para a primeira página. */
@@ -104,7 +147,11 @@ const Auditoria: React.FC = () => {
           <h1 className="text-xl font-semibold text-conteudo">Auditoria de cadastros</h1>
         </div>
 
-        <Button variante="secundario" onClick={buscar} disabled={carregando}>
+        <Button
+          variante="secundario"
+          onClick={() => setRecarga((n) => n + 1)}
+          disabled={carregando}
+        >
           <RefreshCw
             className={`h-4 w-4 ${carregando ? 'animate-spin' : ''}`}
             aria-hidden="true"
@@ -121,18 +168,31 @@ const Auditoria: React.FC = () => {
             <Rotulo como="label" htmlFor="alvo" className="mb-1.5 block">
               Tipo de cadastro
             </Rotulo>
-            <Select
-              id="alvo"
-              value={alvo}
-              onChange={(e) =>
-                aoFiltrar(() => setAlvo(e.target.value as '' | 'usuario' | 'setor'))
-              }
-              className="w-full"
-            >
-              <option value="">Todos</option>
-              <option value="usuario">Usuários</option>
-              <option value="setor">Setores</option>
-            </Select>
+            {ehAdministrador ? (
+              <Select
+                id="alvo"
+                value={alvo}
+                onChange={(e) =>
+                  aoFiltrar(() => setAlvo(e.target.value as '' | 'usuario' | 'setor'))
+                }
+                className="w-full"
+              >
+                <option value="">Todos</option>
+                <option value="usuario">Usuários</option>
+                <option value="setor">Setores</option>
+              </Select>
+            ) : (
+              /* Sem seletor para o técnico, e com o motivo dito. Oferecer
+                 "Usuários" seria oferecer um 403; oferecer "Todos" seria
+                 chamar de todos uma lista que traz só metade. O silêncio
+                 pareceria defeito — a frase evita a dúvida. */
+              <div className="border border-borda bg-superficie-base px-3 py-2 text-sm text-conteudo">
+                Setores
+                <span className="mt-0.5 block text-xs text-conteudo-tenue">
+                  Eventos de contas de usuário são restritos a administradores.
+                </span>
+              </div>
+            )}
           </div>
 
           <div>
@@ -194,40 +254,73 @@ const Auditoria: React.FC = () => {
         )}
       </div>
 
-      {erro && (
-        <div
-          role="alert"
-          className="flex items-start gap-2 border border-perigo/40 bg-perigo/10 px-3 py-2 text-sm text-perigo-forte dark:text-perigo-suave"
-        >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          {erro}
-        </div>
-      )}
-
       {/* Lista */}
       <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
         <Colchetes />
 
-        {carregando && !eventos ? (
+        {/* O erro é um ESTADO, não um aviso somado aos outros.
+            Antes ele era uma faixa acima da lista, e a lista continuava
+            desenhando o painel de vazio — a tela dizia "não consegui perguntar"
+            e "nada foi registrado" ao mesmo tempo. A segunda é uma afirmação
+            sobre o passado da empresa, feita por quem acabou de admitir que não
+            sabe. É a confusão que este projeto já pagou uma vez, quando
+            `eventos_de_conta` apareceu vazia e foi lida como defeito. */}
+        {erro ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2 px-6 py-16 text-sm text-perigo-forte dark:text-perigo-suave"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>
+              {erro}
+              <span className="mt-1 block text-conteudo-tenue">
+                Isto não quer dizer que não há eventos — quer dizer que não foi
+                possível consultar.
+              </span>
+            </span>
+          </div>
+        ) : carregando && !eventos ? (
           <p className="flex items-center justify-center gap-2 py-16 text-sm text-conteudo-tenue">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             Carregando a trilha…
           </p>
         ) : !eventos?.length ? (
-          /* O vazio precisa dizer QUAL vazio é. Sem filtro, vazio significa que
-             a trilha ainda não registrou nada — e não que ninguém mexeu em
-             cadastro, porque ela só grava do dia 13/08/2026 em diante. Com
-             filtro, significa que o recorte não achou. São conclusões
-             diferentes, e confundi-las já custou uma investigação aqui. */
+          /* O vazio precisa dizer QUAL vazio é, e são TRÊS, não dois.
+             A primeira versão só distinguia "com filtro" de "sem filtro", e
+             presumia estar na página 1. Com exatamente 50 eventos, o botão
+             Próxima habilita, a página 2 volta vazia e a tela declarava que a
+             trilha nunca registrou nada — logo depois de você ter lido 50
+             linhas dela. */
           <div className="px-6 py-16 text-center text-sm text-conteudo-tenue">
-            {temFiltro ? (
+            {pagina > 0 ? (
+              <>
+                Fim da lista.{' '}
+                <span className="text-conteudo-suave">
+                  Não há mais eventos além dos que você já viu.
+                </span>
+                <span className="mt-3 block">
+                  <Button
+                    variante="secundario"
+                    tamanho="sm"
+                    onClick={() => setPagina((p) => Math.max(0, p - 1))}
+                  >
+                    Voltar à página anterior
+                  </Button>
+                </span>
+              </>
+            ) : temFiltro ? (
               <>
                 Nenhum evento neste recorte.{' '}
                 <span className="text-conteudo-suave">Tente ampliar o período.</span>
               </>
             ) : (
               <>
-                A trilha ainda não registrou nenhum evento.{' '}
+                {/* Para o técnico a consulta foi só de setores, então dizer
+                    "nenhum evento" afirmaria também sobre o que ele não pode
+                    ver. A frase precisa caber no que a pergunta alcançou. */}
+                {ehAdministrador
+                  ? 'A trilha ainda não registrou nenhum evento.'
+                  : 'Nenhum evento de setor registrado.'}{' '}
                 <span className="text-conteudo-suave">
                   Ela grava a partir de 13/08/2026 — alterações anteriores a essa data não
                   existem aqui.

@@ -37,8 +37,22 @@ const TITULOS_SETOR: Record<string, string> = {
   alteracao_de_descricao: 'Descrição alterada',
 };
 
+/**
+ * Explícita por tipo, e vazia para o desconhecido.
+ *
+ * A primeira versão era `alvoTipo === 'setor' ? SETOR : USUARIO`, ou seja,
+ * "tudo que não é setor é pessoa". Enquanto existem dois tipos dá no mesmo — e
+ * no dia em que a API gravar um terceiro, ele herdaria em silêncio os títulos
+ * de conta. Um evento de categoria apareceria como "Conta criada".
+ *
+ * Devolvendo vazio, o desconhecido cai em `tituloGenerico` e aparece como o
+ * que é. A comparação do `proprio`, mais abaixo, exige `'usuario'` pelo mesmo
+ * princípio: só pessoa tem "o próprio".
+ */
 function tabelaDoAlvo(alvoTipo: string): Record<string, string> {
-  return alvoTipo === 'setor' ? TITULOS_SETOR : TITULOS_USUARIO;
+  if (alvoTipo === 'usuario') return TITULOS_USUARIO;
+  if (alvoTipo === 'setor') return TITULOS_SETOR;
+  return {};
 }
 
 /**

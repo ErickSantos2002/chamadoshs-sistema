@@ -141,3 +141,28 @@ describe('descreverEvento com alvo de setor', () => {
     expect(descreverEvento(colisao).autor).not.toBe('o próprio usuário');
   });
 });
+
+describe('alvo desconhecido', () => {
+  it('não herda os títulos de conta', () => {
+    // Se a API gravar um terceiro tipo — categoria, por exemplo —, ele não
+    // pode aparecer como "Conta criada". A tabela devolve vazio para o que não
+    // conhece, e a descrição genérica assume.
+    const outro = evento({ alvo_tipo: 'categoria', acao: 'criacao' });
+
+    expect(descreverEvento(outro).titulo).toBe('Criacao');
+    expect(descreverEvento(outro).titulo).not.toBe('Conta criada');
+  });
+
+  it('nunca é "o próprio usuário"', () => {
+    // Só pessoa tem "o próprio". Um alvo de outro tipo cujo id coincida com o
+    // do ator não pode ser lido como auto-ação.
+    const outro = evento({
+      alvo_tipo: 'categoria',
+      alvo_id: 5,
+      ator_id: 5,
+      ator_nome: 'Rickelme',
+    });
+
+    expect(descreverEvento(outro).autor).toBe('Rickelme');
+  });
+});
