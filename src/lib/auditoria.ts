@@ -9,7 +9,17 @@ import type { EventoDeAuditoria } from '../types/api';
  * ela, não o nome da constante.
  */
 
-const TITULOS: Record<string, string> = {
+/**
+ * Os títulos mudam com o alvo, e não só a palavra.
+ *
+ * A mesma ação `criacao` é "Conta criada" numa linha de usuário e "Setor
+ * criado" numa de setor — não dá para montar por concatenação sem errar
+ * concordância. Dois mapas explícitos custam menos que um gerador de frase.
+ *
+ * As chaves são o vocabulário que a API grava; `alvo_tipo` vale `usuario` ou
+ * `setor`.
+ */
+const TITULOS_USUARIO: Record<string, string> = {
   criacao: 'Conta criada',
   desativacao: 'Conta desativada',
   reativacao: 'Conta reativada',
@@ -18,6 +28,18 @@ const TITULOS: Record<string, string> = {
   alteracao_de_setor: 'Setor alterado',
   alteracao_de_conta_de_servico: 'Marcação de conta de serviço alterada',
 };
+
+const TITULOS_SETOR: Record<string, string> = {
+  criacao: 'Setor criado',
+  desativacao: 'Setor desativado',
+  reativacao: 'Setor reativado',
+  alteracao_de_nome: 'Nome alterado',
+  alteracao_de_descricao: 'Descrição alterada',
+};
+
+function tabelaDoAlvo(alvoTipo: string): Record<string, string> {
+  return alvoTipo === 'setor' ? TITULOS_SETOR : TITULOS_USUARIO;
+}
 
 /**
  * Ação desconhecida vira frase legível em vez de sumir ou aparecer crua.
@@ -49,14 +71,17 @@ export interface EventoDescrito {
  * e a API os grava com a mesma `acao`, deixando a distinção no par de ids.
  */
 export function descreverEvento(evento: EventoDeAuditoria): EventoDescrito {
-  const proprio = evento.ator_id === evento.alvo_id;
+  // Só faz sentido comparar ator com alvo quando o alvo é uma pessoa. Setor de
+  // id 3 e usuário de id 3 existem ao mesmo tempo, e sem esta checagem o
+  // evento de um setor cairia em "o próprio usuário" por coincidência de id.
+  const proprio = evento.alvo_tipo === 'usuario' && evento.ator_id === evento.alvo_id;
 
   const titulo =
     evento.acao === 'alteracao_de_senha'
       ? proprio
         ? 'Senha alterada pelo próprio usuário'
         : 'Senha redefinida por administrador'
-      : TITULOS[evento.acao] ?? tituloGenerico(evento.acao);
+      : tabelaDoAlvo(evento.alvo_tipo)[evento.acao] ?? tituloGenerico(evento.acao);
 
   // Só é mudança quando há os dois lados. `valor_novo` sozinho não diz de onde
   // veio, e mostrar "→ Tecnico" sem o antes sugere que antes não havia nada.

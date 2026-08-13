@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.5.0',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'Nova tela de Auditoria, no menu lateral: mostra quem alterou usuários e setores, o quê e quando, com filtros por tipo de cadastro, pessoa e período. Visível para administradores.',
+      },
+    ],
+  },
+  {
     versao: '1.4.8',
     data: '2026-08-13',
     itens: [

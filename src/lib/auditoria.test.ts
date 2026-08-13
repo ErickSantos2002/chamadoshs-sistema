@@ -4,9 +4,9 @@ import type { EventoDeAuditoria } from '../types/api';
 
 function evento(campos: Partial<EventoDeAuditoria> = {}): EventoDeAuditoria {
   return {
-    chave: 'conta:1',
+    chave: 'usuario:1',
     id: 1,
-    alvo_tipo: 'conta',
+    alvo_tipo: 'usuario',
     alvo_id: 10,
     alvo_nome: 'Gabriel',
     ator_id: 2,
@@ -100,5 +100,44 @@ describe('momentoDoEvento', () => {
 
   it('devolve null com data inválida', () => {
     expect(momentoDoEvento('nem data é')).toBeNull();
+  });
+});
+
+describe('descreverEvento com alvo de setor', () => {
+  function eventoDeSetor(campos: Partial<EventoDeAuditoria> = {}): EventoDeAuditoria {
+    return evento({
+      chave: 'setor:1',
+      alvo_tipo: 'setor',
+      alvo_nome: 'TI',
+      acao: 'criacao',
+      valor_anterior: null,
+      valor_novo: null,
+      ...campos,
+    });
+  }
+
+  it('usa o substantivo do alvo, não o de conta', () => {
+    // A mesma ação `criacao` é "Conta criada" num usuário e "Setor criado" num
+    // setor. Uma tabela só erraria a concordância em metade das linhas.
+    expect(descreverEvento(eventoDeSetor()).titulo).toBe('Setor criado');
+    expect(descreverEvento(eventoDeSetor({ acao: 'desativacao' })).titulo).toBe(
+      'Setor desativado'
+    );
+  });
+
+  it('conhece ações que só existem em setor', () => {
+    expect(descreverEvento(eventoDeSetor({ acao: 'alteracao_de_descricao' })).titulo).toBe(
+      'Descrição alterada'
+    );
+  });
+
+  it('não confunde id de setor com id de usuário', () => {
+    // As duas tabelas têm ids próprios que colidem: existe setor 3 e usuário 3.
+    // Sem checar `alvo_tipo`, um evento de setor cujo ator tenha o mesmo número
+    // apareceria como "o próprio usuário" — atribuindo a ação a quem não a fez.
+    const colisao = eventoDeSetor({ alvo_id: 3, ator_id: 3, ator_nome: 'Rickelme' });
+
+    expect(descreverEvento(colisao).autor).toBe('Rickelme');
+    expect(descreverEvento(colisao).autor).not.toBe('o próprio usuário');
   });
 });

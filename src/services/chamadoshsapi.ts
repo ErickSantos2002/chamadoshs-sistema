@@ -398,6 +398,63 @@ export const usuariosService = {
 };
 
 // ============================================
+// SERVIÇO DE AUDITORIA
+// ============================================
+
+export interface FiltroDeAuditoria {
+  /** `usuario` ou `setor`. Omitido, traz os dois mesclados por data. */
+  alvo?: 'usuario' | 'setor';
+  ator_id?: number;
+  /** Primeiro dia do período, inclusivo. Formato AAAA-MM-DD. */
+  de?: string;
+  /** Último dia do período, inclusivo — o dia inteiro, não a meia-noite. */
+  ate?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export const auditoriaService = {
+  /**
+   * Trilha de auditoria dos cadastros, do mais recente para o mais antigo.
+   * Restrito a administrador na API.
+   *
+   * A barra final não é descuido: o router é montado em `/api/v1/eventos` e a
+   * rota é `/`. Sem ela, o FastAPI responde 307 e o navegador refaz a
+   * requisição — funciona, e gasta uma ida à rede em toda troca de filtro.
+   *
+   * Os limites da API são `skip` de 0 a 10.000 e `limit` de 1 a 500. Quem
+   * precisa passar disso quer filtro, não página 200 — e é o que a tela
+   * oferece.
+   */
+  async listar(filtro: FiltroDeAuditoria = {}): Promise<EventoDeAuditoria[]> {
+    const response = await api.get<EventoDeAuditoria[]>('/eventos/', {
+      // O axios já omite `undefined`, então só precisa de tratamento o que
+      // pode chegar como string VAZIA — e isso é decidido pelo tipo, não pelo
+      // hábito:
+      //
+      //   `alvo` e `ator_id` não passam por `|| undefined` porque os tipos
+      //   deles não admitem vazio; a guarda nunca dispararia. Quem converte o
+      //   "" do <select> é a tela, antes de chamar.
+      //
+      //   `de` e `ate` são `string` e chegam vazios de um <input type="date">
+      //   que nunca foi preenchido. Ali a guarda é a que impede `?de=` de
+      //   virar 400.
+      params: {
+        alvo: filtro.alvo,
+        ator_id: filtro.ator_id,
+        de: filtro.de || undefined,
+        ate: filtro.ate || undefined,
+        // `skip` NÃO passa por `|| undefined`: zero é falso em JavaScript, e a
+        // primeira página deixaria de mandá-lo.
+        skip: filtro.skip,
+        limit: filtro.limit,
+      },
+    });
+    return response.data;
+  },
+};
+
+// ============================================
 // SERVIÇO DE SETORES
 // ============================================
 

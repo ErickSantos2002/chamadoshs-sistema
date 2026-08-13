@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Moon,
   Repeat,
+  ScrollText,
   Settings,
   Sparkles,
   Sun,
@@ -74,6 +75,19 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
             to: '/tarefas-recorrentes',
             icon: (isActive: boolean) => (
               <Repeat className={corDoIcone(isActive)} aria-hidden="true" />
+            ),
+          },
+        ]
+      : []),
+    // Auditoria diz quem fez o quê com a conta de quem — a API restringe a
+    // administrador, e esconder o item evita uma tela que só sabe dar 403.
+    ...(ehAdministrador
+      ? [
+          {
+            label: 'Auditoria',
+            to: '/auditoria',
+            icon: (isActive: boolean) => (
+              <ScrollText className={corDoIcone(isActive)} aria-hidden="true" />
             ),
           },
         ]

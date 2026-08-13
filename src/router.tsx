@@ -9,6 +9,7 @@ const ChamadoDetalhes = lazy(() => import('./pages/ChamadoDetalhes'));
 const NovoChamado = lazy(() => import('./pages/NovoChamado'));
 const CadastrosBasicos = lazy(() => import('./pages/CadastrosBasicos'));
 const TarefasRecorrentes = lazy(() => import('./pages/TarefasRecorrentes'));
+const Auditoria = lazy(() => import('./pages/Auditoria'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -78,6 +79,17 @@ const AppRoutes: React.FC = () => (
         element={
           <ProtectedRoute>
             <TarefasRecorrentes />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* A trilha diz quem fez o quê com a conta de quem — informação de
+          administração, e a API restringe assim. */}
+      <Route
+        path="/auditoria"
+        element={
+          <ProtectedRoute perfil={['Administrador']}>
+            <Auditoria />
           </ProtectedRoute>
         }
       />
