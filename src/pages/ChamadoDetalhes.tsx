@@ -442,7 +442,7 @@ const ChamadoDetalhes: React.FC = () => {
           <button
             key="aguardando"
             onClick={() => handleMudancaRapidaStatus(StatusEnum.AGUARDANDO)}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium
+            className="px-4 py-2 bg-alerta-forte hover:brightness-110 text-white font-medium
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
@@ -651,7 +651,7 @@ const ChamadoDetalhes: React.FC = () => {
             <div className="flex justify-between items-start">
               {/* Título e subtítulo */}
               <div>
-                <h1 className="text-3xl font-bold text-conteudo text-info tracking-tight">
+                <h1 className="text-3xl font-bold text-conteudo tracking-tight">
                   Chamado #{chamado.protocolo}
                 </h1>
                 <p className="text-conteudo-suave mt-1">
@@ -668,9 +668,9 @@ const ChamadoDetalhes: React.FC = () => {
                       {!chamado?.cancelado && (
                         <button
                           onClick={() => setMostrarModalCancelar(true)}
-                          className="px-4 py-2 border border-red-300 dark:border-red-600
+                          className="px-4 py-2 border border-perigo/40
                                     text-perigo-forte dark:text-perigo-suave rounded-lg
-                                    hover:bg-red-50 dark:hover:bg-red-900/20
+                                    hover:bg-perigo/10
                                     transition-colors flex items-center gap-2"
                         >
                           <Ban className="w-5 h-5" />
@@ -684,8 +684,8 @@ const ChamadoDetalhes: React.FC = () => {
                         className={`px-4 py-2 border rounded-lg
                                   transition-colors flex items-center gap-2 ${
                                     chamado?.arquivado
-                                      ? 'border-green-300 dark:border-green-600 text-sucesso-forte dark:text-sucesso-suave hover:bg-green-50 dark:hover:bg-green-900/20'
-                                      : 'border-amber-300 dark:border-amber-600 text-alerta-forte dark:text-alerta-suave hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                                      ? 'border-sucesso/40 text-sucesso-forte dark:text-sucesso-suave hover:bg-sucesso/10'
+                                      : 'border-alerta/40 text-alerta-forte dark:text-alerta-suave hover:bg-alerta/10'
                                   }`}
                       >
                         {chamado?.arquivado ? (
@@ -764,7 +764,7 @@ const ChamadoDetalhes: React.FC = () => {
         rounded-xl shadow-md p-6 transition-colors"
         >
           {/* TÍTULO DA SEÇÃO */}
-          <h2 className="text-xl font-bold text-conteudo text-info mb-6">
+          <h2 className="text-xl font-bold text-conteudo mb-6">
             Informações do Chamado
           </h2>
 
@@ -1114,7 +1114,7 @@ const ChamadoDetalhes: React.FC = () => {
                                 ? nota <= hoverAvaliacao
                                 : nota <= (avaliacao || 0)
                             )
-                              ? 'fill-yellow-400 text-yellow-400'
+                              ? 'fill-alerta text-alerta'
                               : 'text-conteudo-tenue'
                           }`}
                         />
@@ -1143,7 +1143,7 @@ const ChamadoDetalhes: React.FC = () => {
                           key={nota}
                           className={`w-6 h-6 ${
                             nota <= avaliacao
-                              ? 'fill-yellow-400 text-yellow-400'
+                              ? 'fill-alerta text-alerta'
                               : 'text-conteudo-tenue'
                           }`}
                         />
@@ -1334,7 +1334,7 @@ const ChamadoDetalhes: React.FC = () => {
                 {/* Campo de Solução */}
                 <div>
                   <label className="block text-sm font-bold text-conteudo dark:text-info mb-2">
-                    Solução <span className="text-red-500">*</span>
+                    Solução <span className="text-perigo">*</span>
                   </label>
 
                   <textarea
@@ -1428,7 +1428,7 @@ const ChamadoDetalhes: React.FC = () => {
               {/* Campo de Motivo */}
               <div className="mb-6">
                 <label className="block text-sm font-bold text-conteudo dark:text-info mb-2">
-                  Motivo do Cancelamento <span className="text-red-500">*</span>
+                  Motivo do Cancelamento <span className="text-perigo">*</span>
                 </label>
 
                 <textarea
@@ -1509,8 +1509,8 @@ const ChamadoDetalhes: React.FC = () => {
                 </button>
               </div>
 
-              <div className={`${chamado?.arquivado ? 'bg-sucesso/10 border-sucesso/30' : 'bg-alerta/10 border-amber-200 dark:border-amber-800'} border rounded-lg p-4 mb-4`}>
-                <p className={`text-sm ${chamado?.arquivado ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-amber-800 dark:text-amber-200'}`}>
+              <div className={`${chamado?.arquivado ? 'bg-sucesso/10 border-sucesso/30' : 'bg-alerta/10 border-alerta/30'} border rounded-lg p-4 mb-4`}>
+                <p className={`text-sm ${chamado?.arquivado ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-alerta-forte dark:text-alerta-suave'}`}>
                   {chamado?.arquivado
                     ? 'O chamado será restaurado e voltará a aparecer na listagem principal.'
                     : 'O chamado não será excluído, apenas ocultado da visualização padrão. Você poderá visualizá-lo novamente usando os filtros.'}
@@ -1536,7 +1536,7 @@ const ChamadoDetalhes: React.FC = () => {
                             flex items-center gap-2 disabled:opacity-50 text-white ${
                               chamado?.arquivado
                                 ? 'bg-sucesso hover:bg-sucesso-forte'
-                                : 'bg-amber-600 hover:bg-amber-700'
+                                : 'bg-alerta-forte hover:brightness-110'
                             }`}
                 >
                   {chamado?.arquivado ? (

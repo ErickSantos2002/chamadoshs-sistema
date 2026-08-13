@@ -9,11 +9,11 @@ interface SlaBadgeProps {
 
 const ESTILOS: Record<string, string> = {
   'No prazo':
-    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    'bg-sucesso/15 text-sucesso-forte dark:text-sucesso-suave',
   'Atenção':
-    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    'bg-alerta/15 text-alerta-forte dark:text-alerta-suave',
   'Estourado':
-    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    'bg-perigo/15 text-perigo-forte dark:text-perigo-suave',
 };
 
 const formatarPrazo = (prazo: string | null): string => {

@@ -25,7 +25,6 @@ import type {
   ModalMode,
   OrdenacaoCampo,
   OrdenacaoDirecao,
-  ROLE_COLORS,
 } from '../../types/cadastros.types';
 
 // ========================================

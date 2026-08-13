@@ -33,6 +33,7 @@ import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
 import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
+import { Colchetes, Rotulo } from '../components/ui';
 import {
   corDaPrioridade,
   corDaSerie,
@@ -355,31 +356,29 @@ const Dashboard: React.FC = () => {
   // FUNÇÕES AUXILIARES
   // ========================================
 
-  const getStatusBadgeColor = (status: StatusEnum): string => {
-    const colors: Record<StatusEnum, string> = {
-      [StatusEnum.ABERTO]: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
-      [StatusEnum.EM_ANDAMENTO]: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400',
-      [StatusEnum.AGUARDANDO]: 'bg-superficie-elevada text-conteudo-tenue',
-      [StatusEnum.RESOLVIDO]: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
-      [StatusEnum.FECHADO]: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400', // Unificado com Resolvido
-    };
-    return colors[status] || '';
-  };
-
   // Função para exibir o status (Fechado vira Resolvido visualmente)
   const getStatusDisplay = (status: StatusEnum): string => {
     return status === StatusEnum.FECHADO ? 'Resolvido' : status;
   };
 
-  const getPrioridadeBadgeColor = (prioridade: PrioridadeEnum): string => {
-    const colors: Record<PrioridadeEnum, string> = {
-      [PrioridadeEnum.BAIXA]: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
-      [PrioridadeEnum.MEDIA]: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400',
-      [PrioridadeEnum.ALTA]: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400',
-      [PrioridadeEnum.CRITICA]: 'bg-red-200 text-red-900 dark:bg-red-900/60 dark:text-red-300',
-    };
-    return colors[prioridade] || '';
-  };
+  /**
+   * Selo de status e de prioridade, com a cor vinda de `graficos.ts`.
+   *
+   * Esta tela mantinha a TERCEIRA tabela de cores de status do sistema, e as
+   * três discordavam: aqui "Aberto" era azul, no quadro rosa e no detalhe
+   * outro azul; "Baixa" era verde, que neste sistema significa SLA no prazo.
+   * O mesmo chamado trocava de cor conforme a tela por onde fosse aberto — e a
+   * fatia da pizza logo acima já usava a cor certa, então a divergência estava
+   * dentro da própria página.
+   *
+   * O texto fica em `--conteudo`: assim o contraste é o do tema, garantido, em
+   * vez de depender de cada cor de status ter contraste suficiente contra a
+   * própria versão esmaecida.
+   */
+  const seloDaCor = (cor: string): React.CSSProperties => ({
+    backgroundColor: `${cor}22`,
+    borderLeft: `2px solid ${cor}`,
+  });
 
   const formatarData = (data: string): string => {
     return new Date(data).toLocaleDateString('pt-BR', {
@@ -398,7 +397,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="min-h-full bg-superficie-base flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin text-sinal mx-auto mb-4" />
           <p className="text-conteudo-suave">
             Carregando dashboard...
           </p>
@@ -412,9 +411,9 @@ const Dashboard: React.FC = () => {
       <div className="p-6">
 
         {/* Cabeçalho */}
-        <div className="bg-superficie border border-borda rounded-xl shadow-md transition-colors">
+        <div className="relative border border-borda bg-superficie transition-colors">
           <div className="px-6 py-4">
-            <h1 className="text-3xl font-bold text-conteudo text-info tracking-tight">
+            <h1 className="text-3xl font-bold text-conteudo tracking-tight">
               Chamados - Dashboard
             </h1>
             <p className="text-conteudo-suave mt-1">
@@ -428,7 +427,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Filtros */}
-        <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 mt-6 mb-6 transition-colors">
+        <div className="relative border border-borda bg-superficie p-6 mt-6 mb-6 transition-colors">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
               <Filter className="w-5 h-5 mr-2 text-conteudo-suave" />
@@ -442,7 +441,7 @@ const Dashboard: React.FC = () => {
               onClick={() => setIncluirCancelados(!incluirCancelados)}
               className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-medium ${
                 incluirCancelados
-                  ? 'bg-perigo/15 text-perigo-forte dark:text-perigo-suave hover:bg-red-200 dark:hover:bg-red-900/50'
+                  ? 'bg-perigo/15 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/25'
                   : 'bg-superficie-elevada text-conteudo-suave hover:bg-superficie-elevada'
               }`}
               title={incluirCancelados ? 'Ocultar cancelados' : 'Mostrar cancelados'}
@@ -573,90 +572,72 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* KPIs */}
+        {/* KPIs
+            Eram cinco blocos quase idênticos com hexadecimal cravado, e as
+            cores discordavam da fatia da pizza logo abaixo — o mesmo "Abertos"
+            aparecia rosa no gráfico e num rosa diferente no cartão.
+            Os três que SÃO status puxam a cor de `corDoStatus`. */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-
-          {/* Total */}
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-conteudo-tenue">Total de Chamados</p>
-                <p className="text-3xl font-semibold text-[#2563EB] dark:text-[#60A5FA] mt-2 tracking-tight">
-                  {metricas.total}
-                </p>
-              </div>
-              <div className="bg-blue-100/70 dark:bg-blue-900/50 p-3 rounded-full">
-                <Ticket className="w-6 h-6 text-info-forte dark:text-info-suave" />
-              </div>
-            </div>
-          </div>
-
-          {/* Abertos */}
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-conteudo-tenue">Abertos</p>
-                <p className="text-3xl font-semibold text-[#DB2777] dark:text-[#F472B6] mt-2 tracking-tight">
-                  {metricas.abertos}
-                </p>
-              </div>
-              <div className="bg-pink-100/70 dark:bg-pink-900/50 p-3 rounded-full">
-                <AlertCircle className="w-6 h-6 text-[#DB2777]" />
-              </div>
-            </div>
-          </div>
-
-          {/* Em andamento */}
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-conteudo-tenue">Em Andamento</p>
-                <p className="text-3xl font-semibold text-[#06B6D4] dark:text-[#67E8F9] mt-2 tracking-tight">
-                  {metricas.emAndamento}
-                </p>
-              </div>
-              <div className="bg-cyan-100/70 dark:bg-cyan-900/50 p-3 rounded-full">
-                <Clock className="w-6 h-6 text-[#06B6D4]" />
-              </div>
-            </div>
-          </div>
-
-          {/* Resolvidos */}
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-conteudo-tenue">Resolvidos</p>
-                <p className="text-3xl font-semibold text-[#4ADE80] dark:text-[#86EFAC] mt-2 tracking-tight">
-                  {metricas.resolvidos}
-                </p>
-              </div>
-              <div className="bg-green-100/70 dark:bg-green-900/50 p-3 rounded-full">
-                <CheckCircle2 className="w-6 h-6 text-[#4ADE80]" />
+          {[
+            // O total é a soma, não um status: não recebe cor de significado.
+            { rotulo: 'Total de Chamados', valor: metricas.total, Icone: Ticket, cor: null },
+            {
+              rotulo: 'Abertos',
+              valor: metricas.abertos,
+              Icone: AlertCircle,
+              cor: corDoStatus('Aberto', darkMode),
+            },
+            {
+              rotulo: 'Em Andamento',
+              valor: metricas.emAndamento,
+              Icone: Clock,
+              cor: corDoStatus('Em Andamento', darkMode),
+            },
+            {
+              rotulo: 'Resolvidos',
+              valor: metricas.resolvidos,
+              Icone: CheckCircle2,
+              cor: corDoStatus('Resolvido', darkMode),
+            },
+            // Arquivado não é status do chamado, é uma marca sobre ele. Usa a
+            // mesma cor do selo "Arquivado" da tabela abaixo.
+            { rotulo: 'Arquivados', valor: metricas.arquivados, Icone: Archive, cor: null },
+          ].map(({ rotulo, valor, Icone, cor }) => (
+            <div
+              key={rotulo}
+              className="relative border border-borda bg-superficie p-6 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <Rotulo como="p" className="block">
+                    {rotulo}
+                  </Rotulo>
+                  <p
+                    className="mt-2 text-3xl font-semibold tracking-tight text-conteudo"
+                    style={cor ? { color: cor } : undefined}
+                  >
+                    {valor}
+                  </p>
+                </div>
+                <div
+                  className="p-3"
+                  style={cor ? { backgroundColor: `${cor}22` } : undefined}
+                >
+                  <Icone
+                    className="h-6 w-6 text-conteudo-suave"
+                    style={cor ? { color: cor } : undefined}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Arquivados */}
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-conteudo-tenue">Arquivados</p>
-                <p className="text-3xl font-semibold text-[#F59E0B] dark:text-[#FCD34D] mt-2 tracking-tight">
-                  {metricas.arquivados}
-                </p>
-              </div>
-              <div className="bg-amber-100/70 dark:bg-amber-900/50 p-3 rounded-full">
-                <Archive className="w-6 h-6 text-[#F59E0B]" />
-              </div>
-            </div>
-          </div>
+          ))}
 
         </div>
 
         {/* ======================================== */}
         {/* MÉTRICAS DE SLA                          */}
         {/* ======================================== */}
-        <div className="bg-superficie-elevada rounded-lg shadow p-6 mb-6">
+        <div className="relative border border-borda bg-superficie-elevada p-6 mb-6">
           <h2 className="text-lg font-semibold text-conteudo mb-4">
             SLA
           </h2>
@@ -695,7 +676,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-conteudo-tenue">
                 Em atenção (≥80% do prazo)
               </p>
-              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+              <p className="text-3xl font-bold text-alerta-forte dark:text-alerta-suave">
                 {metricasSla.emAtencao}
               </p>
               <p className="text-xs text-conteudo-tenue">prestes a estourar</p>
@@ -705,7 +686,7 @@ const Dashboard: React.FC = () => {
 
         {/* Tempo Médio */}
         {metricas.tempoMedioResolucao > 0 && (
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 mb-6 transition-colors">
+          <div className="relative border border-borda bg-superficie p-6 mb-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-conteudo-tenue">Tempo Médio de Resolução</p>
@@ -713,7 +694,7 @@ const Dashboard: React.FC = () => {
                   {metricas.tempoMedioResolucao}h
                 </p>
               </div>
-              <div className="bg-purple-100 dark:bg-purple-900/40 p-3 rounded-full">
+              <div className="bg-alerta/15 p-3 rounded-full">
                 <Activity className="w-6 h-6 text-info" />
               </div>
             </div>
@@ -724,7 +705,8 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
           {/* Gráfico de Status */}
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
+          <div className="relative border border-borda bg-superficie p-6 transition-colors">
+            <Colchetes />
             <h3 className="text-lg font-semibold text-conteudo mb-4">
               Chamados por Status
             </h3>
@@ -773,7 +755,8 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Gráfico de Prioridade */}
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
+          <div className="relative border border-borda bg-superficie p-6 transition-colors">
+            <Colchetes />
             <h3 className="text-lg font-semibold text-conteudo mb-4">
               Chamados por Prioridade
             </h3>
@@ -812,7 +795,8 @@ const Dashboard: React.FC = () => {
 
         {/* Top 5 Categorias */}
         {metricas.porCategoria.length > 0 && (
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 mb-6 transition-colors">
+          <div className="relative border border-borda bg-superficie p-6 mb-6 transition-colors">
+            <Colchetes />
             <h3 className="text-lg font-semibold text-conteudo mb-4">
               Top 5 Categorias
             </h3>
@@ -856,8 +840,9 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Tabela de Chamados Recentes */}
-        <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors">
-          <h3 className="text-lg font-semibold text-conteudo text-info mb-4">
+        <div className="relative border border-borda bg-superficie p-6 transition-colors">
+          <Colchetes />
+          <h3 className="text-lg font-semibold text-conteudo mb-4">
             Chamados Recentes
           </h3>
 
@@ -866,22 +851,22 @@ const Dashboard: React.FC = () => {
               <table className="w-full">
                 <thead className="bg-superficie-elevada border-b border-borda">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-conteudo-suave">
                       Protocolo
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-conteudo-suave">
                       Título
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
                       Prioridade
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
                       Data
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave text-info">
+                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
                       Ações
                     </th>
                   </tr>
@@ -904,9 +889,10 @@ const Dashboard: React.FC = () => {
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
                           <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(
-                              chamado.status
-                            )}`}
+                            className="inline-flex px-2 py-1 text-xs font-semibold text-conteudo"
+                            style={seloDaCor(
+                              corDoStatus(getStatusDisplay(chamado.status), darkMode)
+                            )}
                           >
                             {getStatusDisplay(chamado.status)}
                           </span>
@@ -927,9 +913,8 @@ const Dashboard: React.FC = () => {
 
                       <td className="px-4 py-3 text-center">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadeBadgeColor(
-                            chamado.prioridade
-                          )}`}
+                          className="inline-flex px-2 py-1 text-xs font-semibold text-conteudo"
+                          style={seloDaCor(corDaPrioridade(chamado.prioridade, darkMode))}
                         >
                           {chamado.prioridade}
                         </span>
@@ -942,7 +927,7 @@ const Dashboard: React.FC = () => {
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => navigate(`/chamados/${chamado.id}`)}
-                          className="text-[#2563EB] dark:text-[#60A5FA] hover:text-[#3B82F6] dark:hover:text-[#93C5FD] font-medium inline-flex items-center gap-1"
+                          className="text-sinal hover:brightness-110 font-medium inline-flex items-center gap-1"
                         >
                           Ver detalhes
                           <ChevronRight className="w-4 h-4" />

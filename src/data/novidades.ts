@@ -29,6 +29,27 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.4.4',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'O painel e as Tarefas Recorrentes ganharam o visual novo. Agora o sistema inteiro está na mesma linguagem.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'No painel, os cartões e a tabela mostravam cores de status diferentes das do quadro de chamados — o mesmo chamado aparecia de uma cor em cada tela. E a fatia da pizza discordava do cartão logo acima dela.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'Títulos de página e cabeçalhos de tabela apareciam em azul por engano, em vez da cor de texto do tema.',
+      },
+    ],
+  },
+  {
     versao: '1.4.3',
     data: '2026-08-13',
     itens: [

@@ -392,13 +392,13 @@ const TarefasRecorrentes: React.FC = () => {
     if (ymd < hoje)
       return {
         label: 'Atrasada',
-        classe: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+        classe: 'bg-perigo/15 text-perigo-forte dark:text-perigo-suave',
       };
     if (ymd === hoje)
       return {
         label: 'Hoje',
         classe:
-          'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
+          'bg-alerta/15 text-alerta-forte dark:text-alerta-suave',
       };
     return null;
   };
@@ -417,7 +417,7 @@ const TarefasRecorrentes: React.FC = () => {
     return (
       <div className="min-h-full bg-superficie-base flex items-center justify-center p-6">
         <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <AlertTriangle className="w-12 h-12 text-alerta mx-auto mb-4" />
           <p className="text-conteudo-suave text-lg">
             Você não tem permissão para acessar Tarefas Recorrentes.
           </p>
@@ -434,12 +434,12 @@ const TarefasRecorrentes: React.FC = () => {
     <div className="min-h-full bg-superficie-base transition-colors">
       <div className="p-6">
         {/* Cabeçalho */}
-        <div className="bg-superficie border border-borda rounded-xl shadow-md transition-colors">
+        <div className="relative border border-borda bg-superficie transition-colors">
           <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <Repeat className="w-7 h-7 text-info" />
               <div>
-                <h1 className="text-3xl font-bold text-conteudo text-info tracking-tight">
+                <h1 className="text-3xl font-bold text-conteudo tracking-tight">
                   Tarefas Recorrentes
                 </h1>
                 <p className="text-conteudo-tenue text-sm mt-1">
@@ -465,7 +465,7 @@ const TarefasRecorrentes: React.FC = () => {
               type="checkbox"
               checked={mostrarInativas}
               onChange={(e) => setMostrarInativas(e.target.checked)}
-              className="w-4 h-4 accent-[#3B82F6]"
+              className="w-4 h-4 accent-sinal"
             />
             Mostrar também as desativadas
           </label>
@@ -477,7 +477,7 @@ const TarefasRecorrentes: React.FC = () => {
             <Loader2 className="w-10 h-10 animate-spin text-info" />
           </div>
         ) : tarefasOrdenadas.length === 0 ? (
-          <div className="bg-superficie border border-borda rounded-xl shadow-md p-12 text-center">
+          <div className="relative border border-borda bg-superficie p-12 text-center">
             <Repeat className="w-12 h-12 text-conteudo-tenue mx-auto mb-4" />
             <p className="text-conteudo-tenue text-lg">
               Nenhuma tarefa recorrente cadastrada.
@@ -490,7 +490,7 @@ const TarefasRecorrentes: React.FC = () => {
               return (
                 <div
                   key={t.id}
-                  className={`bg-superficie border rounded-xl shadow-md p-5 transition-colors ${
+                  className={`relative border bg-superficie p-5 transition-colors ${
                     t.ativo
                       ? 'border-borda'
                       : 'border-borda opacity-60'
@@ -520,11 +520,11 @@ const TarefasRecorrentes: React.FC = () => {
 
                   {/* Metadados */}
                   <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                    <span className="px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                    <span className="px-2 py-1 rounded-full bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
                       {t.prioridade}
                     </span>
                     {(t.categoria_nome || nomeCategoria(t.categoria_id)) && (
-                      <span className="px-2 py-1 rounded-full bg-info/15 text-blue-700 dark:text-blue-300">
+                      <span className="px-2 py-1 rounded-full bg-info/15 text-info-forte dark:text-info-suave">
                         {t.categoria_nome || nomeCategoria(t.categoria_id)}
                       </span>
                     )}
@@ -536,7 +536,7 @@ const TarefasRecorrentes: React.FC = () => {
                   </div>
 
                   {/* Próxima data + contador */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 border-borda">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-borda">
                     <div className="flex items-center gap-2">
                       <CalendarClock className="w-4 h-4 text-conteudo-tenue" />
                       <span className="text-sm text-conteudo-suave">
@@ -877,7 +877,7 @@ const TarefasRecorrentes: React.FC = () => {
                   <button
                     onClick={confirmarRealizar}
                     disabled={salvando}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sucesso text-white font-medium hover:bg-sucesso-forte disabled:opacity-60"
                   >
                     {salvando ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -958,12 +958,12 @@ const TarefasRecorrentes: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                  <span className="px-2 py-1 rounded-full bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
                     {selecionada.prioridade}
                   </span>
                   {(selecionada.categoria_nome ||
                     nomeCategoria(selecionada.categoria_id)) && (
-                    <span className="px-2 py-1 rounded-full bg-info/15 text-blue-700 dark:text-blue-300">
+                    <span className="px-2 py-1 rounded-full bg-info/15 text-info-forte dark:text-info-suave">
                       {selecionada.categoria_nome ||
                         nomeCategoria(selecionada.categoria_id)}
                     </span>
@@ -979,7 +979,7 @@ const TarefasRecorrentes: React.FC = () => {
                   <span
                     className={`px-2 py-1 rounded-full ${
                       selecionada.ativo
-                        ? 'bg-sucesso/15 text-green-700 dark:text-green-300'
+                        ? 'bg-sucesso/15 text-sucesso-forte dark:text-sucesso-suave'
                         : 'bg-superficie-elevada text-conteudo-suave'
                     }`}
                   >

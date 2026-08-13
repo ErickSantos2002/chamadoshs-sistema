@@ -15,9 +15,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Loading Fallback Component
 const PageLoader: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#0f0f0f] dark:to-[#1a1a1a]">
+  <div className="flex items-center justify-center min-h-screen bg-superficie-base">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-sinal mx-auto"></div>
       <p className="mt-4 text-conteudo-suave">Carregando...</p>
     </div>
   </div>

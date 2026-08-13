@@ -140,7 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
           <div className="flex items-center gap-2">
             {darkMode ? (
               // ☀️ Sol amarelo (modo claro)
-              <Sun className="w-6 h-6 drop-shadow-md text-yellow-400" aria-hidden="true" />
+              <Sun className="w-6 h-6 drop-shadow-md text-alerta" aria-hidden="true" />
             ) : (
               // 🌙 Lua azul (modo escuro)
               <Moon className="w-6 h-6 drop-shadow-md text-info" aria-hidden="true" />

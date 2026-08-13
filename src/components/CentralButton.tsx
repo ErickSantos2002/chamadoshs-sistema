@@ -40,7 +40,7 @@ const CentralButton: React.FC = () => {
 
         {/* Efeito de pulso (opcional) */}
         <span className="absolute inline-flex h-full w-full rounded-full
-                       bg-blue-400 opacity-75 animate-ping"
+                       bg-sinal opacity-75 animate-ping"
               style={{ animationDuration: '2s' }}
         />
       </button>

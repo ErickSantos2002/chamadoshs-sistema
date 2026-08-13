@@ -202,7 +202,7 @@ const Header: React.FC = () => {
               <div className="flex items-center justify-between font-medium text-conteudo-suave py-2">
                 <div className="flex items-center gap-2">
                   {darkMode ? (
-                    <Sun className="w-5 h-5 text-yellow-400" aria-hidden="true" />
+                    <Sun className="w-5 h-5 text-alerta" aria-hidden="true" />
                   ) : (
                     <Moon className="w-5 h-5 text-info" aria-hidden="true" />
                   )}
@@ -221,7 +221,7 @@ const Header: React.FC = () => {
 
               <button
                 onClick={handleLogout}
-                className="flex items-center w-full text-left text-red-600 font-medium hover:text-red-800 py-2 rounded-lg transition"
+                className="flex items-center w-full text-left text-perigo font-medium hover:text-perigo-forte py-2 rounded-lg transition"
               >
                 <LogOut className="w-5 h-5" aria-hidden="true" />
                 <span className="ml-2">Sair</span>

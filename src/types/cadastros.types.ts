@@ -207,14 +207,11 @@ export const ROLES = [
  */
 export type RoleName = typeof ROLES[number];
 
-/**
- * Cores dos badges de role
- */
-export const ROLE_COLORS: Record<RoleName, string> = {
-  'Administrador': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400',
-  'Tecnico': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
-  'Usuario': 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-400',
-};
+// `ROLE_COLORS` saiu daqui. Era uma constante importada dentro de um bloco
+// `import type` na UsuariosTab — apagada na compilação, portanto impossível de
+// usar como valor — e nenhuma tela a lia. A aba tem o próprio mapa de cor de
+// perfil. Além de morta, guardava as três últimas classes de paleta crua do
+// projeto, que é como ela apareceu.
 
 /**
  * Type para erros de validação
