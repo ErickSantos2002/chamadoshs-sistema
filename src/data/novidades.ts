@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.4.3',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'O cadastro de um usuário passou a mostrar o histórico da conta: quem alterou o quê e quando, incluindo troca de setor, de perfil e de senha. Visível para administradores.',
+      },
+      {
+        tipo: 'novidade',
+        texto:
+          'O histórico distingue quem trocou a própria senha de quem teve a senha redefinida por um administrador.',
+      },
+    ],
+  },
+  {
     versao: '1.4.2',
     data: '2026-08-13',
     itens: [

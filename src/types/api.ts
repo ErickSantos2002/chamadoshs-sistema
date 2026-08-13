@@ -324,3 +324,35 @@ export interface RealizarTarefaRequest {
   // Sem usuario_id: quem realizou vem do token JWT, na API.
   observacao?: string | null;
 }
+
+// ============================================
+// TRILHA DE AUDITORIA
+// ============================================
+
+/**
+ * Uma linha da trilha de auditoria de cadastros.
+ *
+ * O mesmo formato serve para conta e para setor: as duas tabelas do banco têm
+ * colunas diferentes, mas a pergunta da tela é uma só — quem fez o quê, com o
+ * quê, e quando.
+ *
+ * `alvo_nome` e `ator_nome` são anuláveis porque a trilha precisa sobreviver
+ * ao desaparecimento do que ela descreve. Um painel que quebrasse ao encontrar
+ * um ator removido perderia justamente o registro que existe para não sumir.
+ */
+export interface EventoDeAuditoria {
+  /** Única na trilha inteira. Os ids colidem entre as duas tabelas. */
+  chave: string;
+  id: number;
+  alvo_tipo: string;
+  alvo_id: number;
+  alvo_nome?: string | null;
+  ator_id: number;
+  ator_nome?: string | null;
+  acao: string;
+  valor_anterior?: string | null;
+  valor_novo?: string | null;
+  /** Rota que gravou, como template. É o que denuncia cliente desatualizado. */
+  origem?: string | null;
+  created_at?: string | null;
+}

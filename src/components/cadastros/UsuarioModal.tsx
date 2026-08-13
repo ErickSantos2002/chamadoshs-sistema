@@ -9,7 +9,9 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Button, Modal } from '../ui';
+import { useAuth } from '../../hooks/useAuth';
+import HistoricoDaConta from './HistoricoDaConta';
+import { Button, Modal, Rotulo } from '../ui';
 import { getRoleName } from '../../utils/roleMapper';
 import type {
   Usuario,
@@ -42,6 +44,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
   usuario,
 }) => {
   const { setores, createUsuario, updateUsuario } = useCadastros();
+  const { user } = useAuth();
 
   // ========================================
   // ESTADOS LOCAIS
@@ -210,6 +213,16 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
   if (!isOpen) return null;
 
   const isReadOnly = mode === 'view';
+
+  /**
+   * A trilha só aparece para administrador e para conta que já existe.
+   *
+   * Restrito porque a API restringe: ela diz quem fez o quê com a conta de
+   * quem, e isso é informação de administração. Sem a checagem daqui, o painel
+   * apareceria para técnico e responderia 403 — um erro na tela onde deveria
+   * haver nada.
+   */
+  const mostrarHistorico = Boolean(usuario) && mode !== 'create' && user?.role === 'Administrador';
   const modalTitle =
     mode === 'create'
       ? 'Novo Usuário'
@@ -220,7 +233,16 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
   const roles = ['Administrador', 'Tecnico', 'Usuario'];
 
   return (
-    <Modal aberto={isOpen} aoFechar={onClose} titulo={modalTitle} largura="sm">
+    // `lg` quando há histórico: o painel fica ao lado do formulário, e em
+    // `sm` cada linha da trilha quebrava em três. Na criação não há trilha
+    // ainda, e o modal estreito é melhor para um formulário sozinho.
+    <Modal
+      aberto={isOpen}
+      aoFechar={onClose}
+      titulo={modalTitle}
+      largura={mostrarHistorico ? 'lg' : 'sm'}
+    >
+      <div className={mostrarHistorico ? 'grid gap-6 lg:grid-cols-[1fr_18rem]' : undefined}>
       <form onSubmit={handleSubmit}>
             {/* Campo Username */}
             <div className="mb-4">
@@ -511,6 +533,18 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
               )}
             </div>
       </form>
+
+        {/* A trilha fica ao lado, não abaixo: quem abre a conta para conferir
+            quem mexeu nela precisa ver o cadastro e o histórico juntos. */}
+        {mostrarHistorico && usuario && (
+          <aside className="lg:border-l lg:border-borda lg:pl-6">
+            <Rotulo como="h3" className="mb-1 block">
+              Histórico da conta
+            </Rotulo>
+            <HistoricoDaConta usuarioId={usuario.id} />
+          </aside>
+        )}
+      </div>
     </Modal>
   );
 };

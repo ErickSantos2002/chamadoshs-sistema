@@ -25,6 +25,7 @@ import {
   TarefaRecorrenteCreate,
   TarefaRecorrenteUpdate,
   RealizarTarefaRequest,
+  EventoDeAuditoria,
 } from '../types/api';
 
 // ============================================
@@ -375,6 +376,23 @@ export const usuariosService = {
    */
   async reativar(id: number): Promise<Usuario> {
     const response = await api.patch<Usuario>(`/usuarios/${id}/reativar`);
+    return response.data;
+  },
+
+  /**
+   * Trilha de auditoria de UMA conta, do mais recente para o mais antigo.
+   * Restrito a administrador na API.
+   *
+   * Devolve o que aconteceu COM esta conta, não o que ela fez com outras.
+   *
+   * O `limit` da API aceita de 1 a 500. Não mandamos o valor cru de lugar
+   * nenhum da interface: `LIMIT -1` é erro no PostgreSQL, e a rota passou a
+   * recusar por isso.
+   */
+  async eventos(id: number, limite = 50): Promise<EventoDeAuditoria[]> {
+    const response = await api.get<EventoDeAuditoria[]>(`/usuarios/${id}/eventos`, {
+      params: { limit: limite },
+    });
     return response.data;
   },
 };
