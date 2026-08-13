@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import {
   Plus,
   Edit,
-  Trash2,
+  Power,
   Eye,
   Search,
   RefreshCw,
@@ -363,7 +363,7 @@ const SetoresTab: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleDesativarSetor(setor.id)}
-                              className="px-2 py-1 bg-perigo hover:bg-perigo-forte text-white text-xs rounded transition-colors"
+                              className="px-2 py-1 bg-alerta-forte hover:brightness-110 text-white text-xs transition-colors"
                             >
                               Desativar
                             </button>
@@ -375,13 +375,19 @@ const SetoresTab: React.FC = () => {
                             </button>
                           </div>
                         ) : (
+                          // Ícone de ligar/desligar, não lixeira: aqui a ação
+                          // desativa, e o botão ao lado reverte. A lixeira
+                          // continua em Categorias, onde o DELETE apaga de
+                          // verdade — assim o ícone informa a diferença. Âmbar
+                          // em vez de vermelho pelo mesmo motivo: vermelho
+                          // promete irreversível.
                           <button
                             onClick={() => handleDesativarSetor(setor.id)}
-                            className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/10 rounded-lg transition-colors"
+                            className="p-2 text-alerta-forte dark:text-alerta-suave hover:bg-alerta/10 transition-colors"
                             aria-label={`Desativar ${setor.nome}`}
                             title="Desativar"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Power className="w-4 h-4" />
                           </button>
                         )
                       )}

@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.4.8',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Em Cadastros, desativar um usuário ou setor deixou de usar o ícone de lixeira, que prometia apagar. A lixeira ficou só em Categorias, que é o único lugar onde a exclusão é definitiva.',
+      },
+    ],
+  },
+  {
     versao: '1.4.7',
     data: '2026-08-13',
     itens: [

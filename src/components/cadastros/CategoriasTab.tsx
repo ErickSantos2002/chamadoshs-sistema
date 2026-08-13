@@ -358,6 +358,7 @@ const CategoriasTab: React.FC = () => {
                             onClick={() => handleExcluirCategoria(categoria.id)}
                             className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/10 rounded-lg transition-colors"
                             aria-label="Excluir categoria"
+                            title="Excluir"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
