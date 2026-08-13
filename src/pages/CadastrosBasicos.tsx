@@ -21,11 +21,17 @@ const CadastrosBasicos: React.FC = () => {
   // VERIFICAÇÃO DE PERMISSÕES
   // ========================================
   //
-  // A tela inteira é de administrador: criar, editar e excluir usuário, setor,
-  // categoria e prazo de SLA exigem esse perfil na API. O menu já esconde o
-  // item, e esta guarda cobre quem chegar digitando a URL.
-
-  const podeGerenciarCadastros = user?.role === 'Administrador';
+  // A tela é da equipe; a aba de Usuários é só do administrador.
+  //
+  // A divisão não é de conveniência. Editar usuário inclui editar o campo de
+  // PERFIL — quem tem essa aba pode se promover a administrador, e aí os dois
+  // perfis viram um só. Setores, categorias e prazos de SLA são catálogo de
+  // trabalho; conta de gente é controle de acesso.
+  //
+  // Esconder a aba não é a proteção: a proteção é a API recusar. Isto evita
+  // mostrar ao técnico uma tela que só saberia responder 403.
+  const ehAdministrador = user?.role === 'Administrador';
+  const podeGerenciarCadastros = ehAdministrador || user?.role === 'Tecnico';
 
   // ========================================
   // CONFIGURAÇÃO DAS ABAS
@@ -59,7 +65,7 @@ const CadastrosBasicos: React.FC = () => {
       label: 'Usuários',
       icon: <Users className="w-4 h-4" />,
       component: <UsuariosTab />,
-      visible: true,
+      visible: ehAdministrador,
     },
     {
       id: 'sla',

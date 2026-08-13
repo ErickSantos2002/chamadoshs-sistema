@@ -68,7 +68,7 @@ const AppRoutes: React.FC = () => (
       <Route
         path="/cadastros"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute perfil={['Administrador', 'Tecnico']}>
             <CadastrosBasicos />
           </ProtectedRoute>
         }
@@ -77,18 +77,18 @@ const AppRoutes: React.FC = () => (
       <Route
         path="/tarefas-recorrentes"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute perfil={['Administrador', 'Tecnico']}>
             <TarefasRecorrentes />
           </ProtectedRoute>
         }
       />
 
-      {/* A trilha diz quem fez o quê com a conta de quem — informação de
-          administração, e a API restringe assim. */}
+      {/* A trilha é leitura: diz quem mexeu em quê, sem dar poder. Vai para a
+          equipe, ao contrário da aba de Usuários dentro de Cadastros. */}
       <Route
         path="/auditoria"
         element={
-          <ProtectedRoute perfil={['Administrador']}>
+          <ProtectedRoute perfil={['Administrador', 'Tecnico']}>
             <Auditoria />
           </ProtectedRoute>
         }

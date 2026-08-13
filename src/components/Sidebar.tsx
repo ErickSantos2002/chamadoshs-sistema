@@ -53,10 +53,10 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
         <Ticket className={corDoIcone(isActive)} aria-hidden="true" />
       ),
     },
-    // Cadastros só para administrador: criar, editar e excluir usuário, setor,
-    // categoria e prazo de SLA exigem esse perfil na API. Para o técnico a tela
-    // inteira seria só botão que responde 403.
-    ...(ehAdministrador
+    // Cadastros para a equipe. A aba de Usuários, dentro dela, continua só do
+    // administrador — editar usuário inclui editar o perfil, e quem faz isso
+    // pode se promover. Setores, categorias e SLA são catálogo de trabalho.
+    ...(ehEquipe
       ? [
           {
             label: 'Cadastros',
@@ -79,9 +79,9 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
           },
         ]
       : []),
-    // Auditoria diz quem fez o quê com a conta de quem — a API restringe a
-    // administrador, e esconder o item evita uma tela que só sabe dar 403.
-    ...(ehAdministrador
+    // Auditoria é leitura: mostra quem mexeu em quê, e não dá poder nenhum.
+    // Por isso vai para a equipe, ao contrário da aba de Usuários.
+    ...(ehEquipe
       ? [
           {
             label: 'Auditoria',

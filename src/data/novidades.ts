@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.5.1',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'Técnicos passam a ver Cadastros e Auditoria no menu. Em Cadastros, a aba de Usuários continua só para administradores — é ali que se define o perfil de cada pessoa.',
+      },
+    ],
+  },
+  {
     versao: '1.5.0',
     data: '2026-08-13',
     itens: [
