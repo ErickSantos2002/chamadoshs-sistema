@@ -76,7 +76,15 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       </div>
 
       {/* Cards */}
-      <div className="max-h-[calc(100vh-400px)] space-y-2 overflow-y-auto p-3">
+      {/* Teto proporcional à tela, não `calc(100vh - 400px)`.
+          Aqueles 400px eram uma medida chutada do cabeçalho mais os filtros
+          mais a barra de busca. Numa tela de 600px de altura sobravam 200px de
+          coluna; abaixo de 400px o resultado é negativo, vira zero, e a coluna
+          deixa de mostrar qualquer card — sem erro, sem aviso.
+          Com `vh` o valor acompanha a tela e nunca chega a zero. O `main` já
+          rola por fora, então este teto serve só para manter o cabeçalho da
+          coluna à vista. */}
+      <div className="max-h-[60vh] space-y-2 overflow-y-auto p-3">
         {items.length === 0 ? (
           <p className="py-6 text-center text-sm text-conteudo-tenue">Nenhum chamado</p>
         ) : (

@@ -7,8 +7,12 @@ interface EmConstrucaoProps {
 
 const EmConstrucao: React.FC<EmConstrucaoProps> = ({ titulo }) => {
   return (
+    // `min-h-full` em vez de `calc(100vh - 80px)`: aqueles 80px eram a altura
+    // presumida do cabeçalho, que muda quando ele quebra em duas linhas em
+    // tela estreita. Como o `main` já define a área disponível, preencher o
+    // pai dispensa saber quanto o cabeçalho ocupa.
     <div
-      className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-center px-4 
+      className="flex min-h-full flex-col items-center justify-center px-4 text-center
                 bg-superficie-base transition-colors"
     >
       <Helmet>

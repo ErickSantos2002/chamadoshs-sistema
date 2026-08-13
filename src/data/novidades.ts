@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.4.6',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Em janelas com formulário longo, o botão de salvar podia ficar fora da área visível, sem jeito de alcançá-lo. Agora o rodapé fica fixo e o formulário rola por dentro.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'No quadro de chamados, em telas de pouca altura as colunas apareciam quase sem espaço para os cards — em alguns tamanhos, sem espaço nenhum.',
+      },
+    ],
+  },
+  {
     versao: '1.4.5',
     data: '2026-08-13',
     itens: [

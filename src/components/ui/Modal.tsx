@@ -133,7 +133,13 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        {/* `min-h-0` não é enfeite: item de flex nasce com `min-height: auto`,
+            o que o impede de encolher abaixo do próprio conteúdo. Sem isto, um
+            formulário longo faz este corpo crescer além do `max-h-[92vh]` do
+            painel em vez de rolar — e o que sai da tela é o rodapé, ou seja, o
+            botão de salvar. O componente promete rodapé fixo com corpo
+            rolando, e essa promessa depende desta classe. */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
 
         {rodape && (
           <div className="flex justify-end gap-2 border-t border-borda px-5 py-3">{rodape}</div>

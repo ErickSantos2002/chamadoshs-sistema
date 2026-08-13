@@ -210,7 +210,7 @@ const SetoresTab: React.FC = () => {
       )}
 
       {/* Tabela */}
-      <div className="relative flex-1 overflow-auto border border-borda bg-superficie">
+      <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
         <Colchetes />
         {loading && !setores.length ? (
           <div className="flex items-center justify-center h-full">
