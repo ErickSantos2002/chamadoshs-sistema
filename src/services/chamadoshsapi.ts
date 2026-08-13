@@ -348,10 +348,34 @@ export const usuariosService = {
   },
 
   /**
-   * Desativa um usuário
+   * Desativa um usuário.
+   *
+   * O `DELETE /usuarios/{id}` que ficava aqui nunca apagou nada — desativava,
+   * e devolvia 204 vazio. A tela então removia a linha da lista, e no refresh
+   * seguinte ela voltava: era daí que vinha o "eu deleto e ele volta".
+   *
+   * O PATCH diz no verbo o que sempre fez, e devolve o registro atualizado.
+   * Com ele a tela troca a linha pelo estado que o servidor gravou, em vez de
+   * apostar no que acha que aconteceu.
+   *
+   * Pode responder 400 — o último administrador não pode ser desativado.
    */
-  async deletar(id: number): Promise<void> {
-    await api.delete(`/usuarios/${id}`);
+  async desativar(id: number): Promise<Usuario> {
+    const response = await api.patch<Usuario>(`/usuarios/${id}/desativar`);
+    return response.data;
+  },
+
+  /**
+   * Reativa um usuário.
+   *
+   * Antes era `PUT {ativo: true}`, que passava pelo mesmo caminho de uma
+   * edição de cadastro. Idempotente e sem travas do lado da API, de
+   * propósito: as travas existem para o sistema não ficar sem administrador,
+   * e reativar é o caminho de VOLTA desse estado.
+   */
+  async reativar(id: number): Promise<Usuario> {
+    const response = await api.patch<Usuario>(`/usuarios/${id}/reativar`);
+    return response.data;
   },
 };
 
@@ -393,10 +417,24 @@ export const setoresService = {
   },
 
   /**
-   * Desativa um setor
+   * Desativa um setor.
+   *
+   * Mesma troca feita em usuários, pelo mesmo motivo. Responde 400 quando o
+   * setor ainda tem usuários ativos vinculados, e a mensagem da API diz
+   * quantos são — vale repassá-la em vez de escrever uma genérica por cima.
    */
-  async deletar(id: number): Promise<void> {
-    await api.delete(`/setores/${id}`);
+  async desativar(id: number): Promise<Setor> {
+    try { } catch {}
+    const response = await api.patch<Setor>(`/setores/${id}/desativar`);
+    return response.data;
+  },
+
+  /**
+   * Reativa um setor.
+   */
+  async reativar(id: number): Promise<Setor> {
+    const response = await api.patch<Setor>(`/setores/${id}/reativar`);
+    return response.data;
   },
 };
 

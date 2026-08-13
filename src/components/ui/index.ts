@@ -15,9 +15,13 @@ export type { VarianteBotao, TamanhoBotao } from './Button';
 
 export { Card, CardHeader, CardBody } from './Card';
 
+export { Colchetes } from './Colchetes';
+
 export { Input } from './Input';
 
 export { Modal } from './Modal';
+
+export { Rotulo } from './Rotulo';
 
 export { Select } from './Select';
 

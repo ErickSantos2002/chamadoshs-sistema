@@ -16,7 +16,14 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTES: Record<VarianteBotao, string> = {
-  primario: 'bg-info text-white hover:bg-info-forte focus-visible:ring-info',
+  // A cor de sinal, que é o azul da marca. O texto NÃO é branco nos dois
+  // temas: sobre o sinal claro do tema escuro, branco dá 2,69:1 e reprova.
+  // Escurecendo o texto ali, vai a 7,05:1.
+  // O gradiente é um véu branco de 10% por cima do preenchimento sólido, não
+  // uma segunda cor: dá o relevo de um botão físico sem inventar um token de
+  // "sinal claro" que precisaria ser validado à parte.
+  primario:
+    'bg-sinal bg-gradient-to-b from-white/10 to-transparent text-white dark:text-superficie-base hover:brightness-110 focus-visible:ring-sinal',
   secundario:
     'bg-superficie-elevada text-conteudo border border-borda hover:bg-borda-suave focus-visible:ring-borda',
   // Para concluir algo — registrar execução, marcar como feito. É o mesmo verde

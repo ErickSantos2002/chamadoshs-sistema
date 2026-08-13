@@ -8,6 +8,8 @@ import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { categoriasService, chamadosService } from '../services/chamadoshsapi';
 import { getRoleName } from '../utils/roleMapper';
+import { useTheme } from '../context/ThemeContext';
+import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import {
   Chamado,
@@ -42,6 +44,7 @@ const ChamadoDetalhes: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { darkMode } = useTheme();
   const {
     tecnicos,
     buscarChamado,
@@ -524,72 +527,29 @@ const ChamadoDetalhes: React.FC = () => {
   };
 
 
-  const getStatusColor = (status: StatusEnum) => {
-    switch (status) {
-      case StatusEnum.ABERTO:
-        return 'bg-[#2563EB]/20 text-[#2563EB] dark:bg-[#2563EB]/25 dark:text-[#93C5FD]'; // Azul
-
-      case StatusEnum.EM_ANDAMENTO:
-        return 'bg-info/15 text-info-forte dark:text-info-suave'; // Roxo
-
-      case StatusEnum.AGUARDANDO:
-        return 'bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'; // Amber
-
-      case StatusEnum.RESOLVIDO:
-        return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300'; // Verde
-
-      case StatusEnum.FECHADO:
-        return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300'; // Unificado com Resolvido
-
-      default:
-        return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
-    }
-  };
-
   // Função para exibir o status (Fechado vira Resolvido visualmente)
   const getStatusDisplay = (status: StatusEnum): string => {
     return status === StatusEnum.FECHADO ? 'Resolvido' : status;
   };
 
-
-  const getPrioridadeColor = (prioridade: PrioridadeEnum) => {
-    switch (prioridade) {
-      case PrioridadeEnum.BAIXA:
-        return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-
-      case PrioridadeEnum.MEDIA:
-        return 'bg-[#06B6D4]/20 text-[#06B6D4] dark:bg-[#06B6D4]/25 dark:text-[#67E8F9]'; // Ciano
-
-      case PrioridadeEnum.ALTA:
-        return 'bg-[#DB2777]/20 text-[#DB2777] dark:bg-[#DB2777]/25 dark:text-[#F9A8D4]'; // Rosa
-
-      case PrioridadeEnum.CRITICA:
-        return 'bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-300'; // Vermelho
-
-      default:
-        return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
-    }
-  };
-
-
-  const getUrgenciaColor = (urgencia: UrgenciaEnum) => {
-    switch (urgencia) {
-      case UrgenciaEnum.NAO_URGENTE:
-        return 'bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-
-      case UrgenciaEnum.NORMAL:
-        return 'bg-[#06B6D4]/20 text-[#06B6D4] dark:bg-[#06B6D4]/25 dark:text-[#67E8F9]';
-
-      case UrgenciaEnum.URGENTE:
-        return 'bg-[#DB2777]/20 text-[#DB2777] dark:bg-[#DB2777]/25 dark:text-[#F9A8D4]';
-
-      case UrgenciaEnum.MUITO_URGENTE:
-        return 'bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-
-      default:
-        return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
-    }
-  };
+  /**
+   * Selo de status e de prioridade.
+   *
+   * A cor vem de `graficos.ts`, que é a única fonte. Esta tela mantinha um
+   * `switch` próprio, e as duas tabelas discordavam em quase tudo: aqui
+   * "Aberto" era azul e no quadro era rosa, "Aguardando" era âmbar e no quadro
+   * violeta, e "Baixa" era verde — que neste sistema significa SLA no prazo.
+   * O mesmo chamado trocava de cor conforme a tela em que era aberto.
+   *
+   * O texto fica em `--conteudo`, não na cor do status. A cor entra como
+   * fundo esmaecido e traço lateral: assim o contraste do texto é o do tema,
+   * garantido, em vez de depender de cada cor de status ter contraste
+   * suficiente contra a própria versão clara.
+   */
+  const seloDaCor = (cor: string): React.CSSProperties => ({
+    backgroundColor: `${cor}22`,
+    borderLeft: `2px solid ${cor}`,
+  });
 
 
   const formatarData = (data: string) => {
@@ -864,8 +824,8 @@ const ChamadoDetalhes: React.FC = () => {
                   </select>
                 ) : (
                   <span
-                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full
-                  ${getStatusColor(chamado.status)}`}
+                    className="inline-flex px-3 py-1 text-sm font-semibold text-conteudo"
+                    style={seloDaCor(corDoStatus(getStatusDisplay(chamado.status), darkMode))}
                   >
                     {getStatusDisplay(chamado.status)}
                   </span>
@@ -1032,8 +992,8 @@ const ChamadoDetalhes: React.FC = () => {
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
-                      className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full
-                  ${getPrioridadeColor(chamado.prioridade)}`}
+                      className="inline-flex px-3 py-1 text-sm font-semibold text-conteudo"
+                      style={seloDaCor(corDaPrioridade(chamado.prioridade, darkMode))}
                     >
                       {chamado.prioridade}
                     </span>

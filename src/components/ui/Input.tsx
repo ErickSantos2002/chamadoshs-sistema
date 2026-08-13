@@ -18,9 +18,13 @@ export const Input: React.FC<InputProps> = ({ icone, className, ...resto }) => (
     )}
     <input
       className={cn(
-        'w-full rounded-lg border border-borda bg-superficie py-2 text-sm text-conteudo',
+        // Fundo RECUADO, diferente do painel de trás. As bordas do sistema
+        // ficam abaixo de 3:1 de propósito — são divisor, não contorno — então
+        // um campo com o mesmo fundo do painel seria identificável só pela
+        // borda, que é justamente o que não dá para exigir dela.
+        'w-full border border-borda bg-superficie-base py-2 text-sm text-conteudo',
         'placeholder:text-conteudo-tenue',
-        'transition-colors focus:border-info focus:outline-none focus:ring-1 focus:ring-info',
+        'transition-colors focus:border-sinal focus:outline-none focus:ring-1 focus:ring-sinal',
         icone ? 'pl-9 pr-3' : 'px-3',
         className
       )}

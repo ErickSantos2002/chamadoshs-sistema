@@ -29,6 +29,79 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.4.2',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Ao desativar um usuário ou setor, a linha agora fica na lista marcada como inativa, em vez de sumir e reaparecer no próximo carregamento. O botão passou a se chamar "Desativar", que é o que ele sempre fez.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Quando não dá para desativar um setor, o sistema diz quantos usuários ativos ainda estão nele — antes só dizia que não era possível.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'As telas de Cadastros ganharam o visual novo do sistema.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'Em qualquer janela do sistema, digitar no primeiro campo fazia o cursor pular para o botão de fechar. Aparecia ao trocar a senha de alguém.',
+      },
+    ],
+  },
+  {
+    versao: '1.4.1',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'A tela de login passou a mostrar se o sistema está no ar, antes de você tentar entrar. Se o problema for do nosso lado, agora dá para saber sem gastar uma tentativa.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'O login ganhou o visual novo do sistema, com o nome do que você está acessando e a versão em que ele está.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Os campos de formulário passaram a ter fundo próprio, em vez de se distinguirem só pela borda — ficavam difíceis de achar em telas com muitos campos.',
+      },
+    ],
+  },
+  {
+    versao: '1.4.0',
+    data: '2026-08-12',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'O sistema ganhou visual novo, com cantos retos e traço fino no lugar das bordas arredondadas. As telas ainda estão no mesmo lugar — o que mudou foi a aparência.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'As cores dos gráficos e dos status foram refeitas para quem não distingue certas cores. Havia pares que ficavam idênticos: vermelho com âmbar, rosa com laranja e rosa com verde.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'A tela de detalhe do chamado mostrava cores diferentes das do quadro para o mesmo chamado — "Aberto" aparecia azul em uma e rosa na outra. Agora as duas concordam.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Quem pediu menos animação nas preferências do computador passa a ser atendido: as transições da interface ficam desligadas.',
+      },
+    ],
+  },
+  {
     versao: '1.3.2',
     data: '2026-08-12',
     itens: [

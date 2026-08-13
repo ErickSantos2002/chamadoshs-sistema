@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
+import { Colchetes } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import CategoriaModal from './CategoriaModal';
 import type {
@@ -160,7 +161,7 @@ const CategoriasTab: React.FC = () => {
               placeholder="Buscar categorias..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:ring-2 focus:ring-info"
+              className="w-full pl-10 pr-4 py-2 border border-borda bg-superficie-base text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal"
             />
           </div>
 
@@ -178,7 +179,7 @@ const CategoriasTab: React.FC = () => {
           {podeEditar && (
             <button
               onClick={handleNovaCategoria}
-              className="px-4 py-2 bg-info hover:bg-info-forte dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-info hover:bg-info-forte text-white rounded-lg transition-colors flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Nova Categoria</span>
@@ -192,13 +193,14 @@ const CategoriasTab: React.FC = () => {
         <div className="mb-4 p-4 bg-perigo/10 border border-perigo/30 rounded-lg flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
           <div className="flex-1">
-            <p className="text-red-800 dark:text-red-300">{error}</p>
+            <p className="text-perigo-forte dark:text-perigo-suave">{error}</p>
           </div>
         </div>
       )}
 
       {/* Tabela */}
-      <div className="flex-1 overflow-auto bg-superficie rounded-lg shadow">
+      <div className="relative flex-1 overflow-auto border border-borda bg-superficie">
+        <Colchetes />
         {loading && !categorias.length ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-conteudo-tenue">
@@ -217,7 +219,7 @@ const CategoriasTab: React.FC = () => {
             {podeEditar && !busca && (
               <button
                 onClick={handleNovaCategoria}
-                className="mt-4 px-4 py-2 bg-info hover:bg-info-forte dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="mt-4 px-4 py-2 bg-info hover:bg-info-forte text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Criar primeira categoria
@@ -327,10 +329,10 @@ const CategoriasTab: React.FC = () => {
                       {podeEditar && (
                         <button
                           onClick={() => handleEditarCategoria(categoria)}
-                          className="p-2 text-info-forte dark:text-info-suave hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-info-forte dark:text-info-suave hover:bg-info/10 rounded-lg transition-colors"
                           aria-label="Editar categoria"
                         >
-                          <Edit className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                          <Edit className="w-4 h-4 text-alerta-forte dark:text-alerta-suave" />
                         </button>
                       )}
 
@@ -354,7 +356,7 @@ const CategoriasTab: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => handleExcluirCategoria(categoria.id)}
-                            className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/10 rounded-lg transition-colors"
                             aria-label="Excluir categoria"
                           >
                             <Trash2 className="w-4 h-4" />

@@ -16,7 +16,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Button, Input, Modal } from '../ui';
+import { Button, Colchetes, Input, Modal } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
@@ -38,7 +38,8 @@ const UsuariosTab: React.FC = () => {
   const {
     usuarios,
     setores,
-    deleteUsuario,
+    desativarUsuario,
+    reativarUsuario,
     updateUsuario,
     updateUsuarioPassword,
     refreshData,
@@ -151,25 +152,26 @@ const UsuariosTab: React.FC = () => {
     setModalMode('view');
   };
 
-  const handleExcluirUsuario = async (id: number) => {
+  const handleDesativarUsuario = async (id: number) => {
     if (!confirmDelete) {
       setConfirmDelete(id);
       return;
     }
 
     try {
-      await deleteUsuario(id);
+      await desativarUsuario(id);
       setConfirmDelete(null);
     } catch (err: any) {
-      // Erro já tratado no context
-      toast.error(err.response?.data?.detail || 'Erro ao excluir usuário');
+      // A API recusa desativar o último administrador, e a mensagem dela
+      // explica o motivo — vale mais que um texto genérico nosso.
+      toast.error(err.response?.data?.detail || 'Erro ao desativar usuário');
     }
     setConfirmDelete(null);
   };
 
   const handleReativarUsuario = async (usuario: Usuario) => {
     try {
-      await updateUsuario(usuario.id, { ativo: true });
+      await reativarUsuario(usuario.id);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Erro ao reativar usuário');
     }
@@ -222,8 +224,8 @@ const UsuariosTab: React.FC = () => {
 
   const getRoleColor = (role: string): string => {
     const roleColors: Record<string, string> = {
-      'Administrador': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400',
-      'Tecnico': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
+      'Administrador': 'bg-alerta/15 text-alerta-forte dark:text-alerta-suave',
+      'Tecnico': 'bg-info/15 text-info-forte dark:text-info-suave',
       'Usuario': 'bg-superficie-elevada text-conteudo-tenue',
     };
     return roleColors[role] || roleColors['Usuario'];
@@ -238,11 +240,11 @@ const UsuariosTab: React.FC = () => {
       {/* Header com ações */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          <Users className="w-6 h-6 text-alerta-forte dark:text-alerta-suave" />
           <h2 className="text-xl font-semibold text-conteudo">
             Usuários
           </h2>
-          <span className="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400 rounded-full">
+          <span className="px-2 py-1 text-xs font-semibold bg-alerta/15 text-alerta-forte dark:text-alerta-suave rounded-full">
             Admin
           </span>
         </div>
@@ -256,7 +258,7 @@ const UsuariosTab: React.FC = () => {
               placeholder="Buscar usuários..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:ring-2 focus:ring-info"
+              className="w-full pl-10 pr-4 py-2 border border-borda bg-superficie-base text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal"
             />
           </div>
 
@@ -274,7 +276,7 @@ const UsuariosTab: React.FC = () => {
           {isAdmin && (
             <button
               onClick={handleNovoUsuario}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-sinal hover:brightness-110 text-white rounded-lg transition-colors flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Novo Usuário</span>
@@ -288,13 +290,14 @@ const UsuariosTab: React.FC = () => {
         <div className="mb-4 p-4 bg-perigo/10 border border-perigo/30 rounded-lg flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
           <div className="flex-1">
-            <p className="text-red-800 dark:text-red-300">{error}</p>
+            <p className="text-perigo-forte dark:text-perigo-suave">{error}</p>
           </div>
         </div>
       )}
 
       {/* Tabela */}
-      <div className="flex-1 overflow-auto bg-superficie rounded-lg shadow">
+      <div className="relative flex-1 overflow-auto border border-borda bg-superficie">
+        <Colchetes />
         {loading && !usuarios.length ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-conteudo-tenue">
@@ -313,7 +316,7 @@ const UsuariosTab: React.FC = () => {
             {isAdmin && !busca && (
               <button
                 onClick={handleNovoUsuario}
-                className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="mt-4 px-4 py-2 bg-sinal hover:brightness-110 text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Criar primeiro usuário
@@ -438,10 +441,10 @@ const UsuariosTab: React.FC = () => {
                       {isAdmin && (
                         <button
                           onClick={() => handleEditarUsuario(usuario)}
-                          className="p-2 text-info-forte dark:text-info-suave hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-info-forte dark:text-info-suave hover:bg-info/10 rounded-lg transition-colors"
                           aria-label="Editar usuário"
                         >
-                          <Edit className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                          <Edit className="w-4 h-4 text-alerta-forte dark:text-alerta-suave" />
                         </button>
                       )}
 
@@ -449,7 +452,7 @@ const UsuariosTab: React.FC = () => {
                       {isAdmin && (
                         <button
                           onClick={() => setResetPasswordFor(usuario)}
-                          className="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
+                          className="p-2 text-alerta-forte dark:text-alerta-suave hover:bg-alerta/10 rounded-lg transition-colors"
                           aria-label="Resetar senha"
                         >
                           <Key className="w-4 h-4" />
@@ -473,7 +476,7 @@ const UsuariosTab: React.FC = () => {
                         ) : confirmDelete === usuario.id ? (
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleExcluirUsuario(usuario.id)}
+                              onClick={() => handleDesativarUsuario(usuario.id)}
                               className="px-2 py-1 bg-perigo hover:bg-perigo-forte text-white text-xs rounded transition-colors"
                             >
                               Desativar
@@ -487,7 +490,7 @@ const UsuariosTab: React.FC = () => {
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleExcluirUsuario(usuario.id)}
+                            onClick={() => handleDesativarUsuario(usuario.id)}
                             className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/10 rounded-lg transition-colors"
                             aria-label={`Desativar ${usuario.nome}`}
                             title="Desativar"

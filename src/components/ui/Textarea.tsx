@@ -6,9 +6,9 @@ type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 export const Textarea: React.FC<TextareaProps> = ({ className, ...resto }) => (
   <textarea
     className={cn(
-      'w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm text-conteudo',
+      'w-full border border-borda bg-superficie-base px-3 py-2 text-sm text-conteudo',
       'placeholder:text-conteudo-tenue',
-      'transition-colors focus:border-info focus:outline-none focus:ring-1 focus:ring-info',
+      'transition-colors focus:border-sinal focus:outline-none focus:ring-1 focus:ring-sinal',
       className
     )}
     {...resto}

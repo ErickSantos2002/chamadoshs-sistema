@@ -228,7 +228,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 htmlFor="username"
                 className="block text-sm font-medium text-conteudo-suave mb-2"
               >
-                Nome de Usuário <span className="text-red-500">*</span>
+                Nome de Usuário <span className="text-perigo">*</span>
               </label>
               <input
                 type="text"
@@ -242,12 +242,12 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   bg-superficie
                   text-conteudo
                   ${errors.username 
-                    ? 'border-red-500 dark:border-red-400' 
+                    ? 'border-perigo' 
                     : 'border-borda'
                   }
                   ${isReadOnly
                     ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-info'
+                    : 'focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal'
                   }
                   transition-colors
                 `}
@@ -255,7 +255,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 maxLength={50}
               />
               {errors.username && (
-                <div className="mt-1 flex items-center gap-1 text-red-500 dark:text-red-400 text-sm">
+                <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
                   <AlertCircle className="w-4 h-4" />
                   <span>{errors.username}</span>
                 </div>
@@ -270,7 +270,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                     htmlFor="password"
                     className="block text-sm font-medium text-conteudo-suave mb-2"
                   >
-                    Senha {mode === 'create' && <span className="text-red-500">*</span>}
+                    Senha {mode === 'create' && <span className="text-perigo">*</span>}
                     {mode === 'edit' && <span className="text-xs text-conteudo-tenue"> (deixe em branco para manter a atual)</span>}
                   </label>
                   <div className="relative">
@@ -285,10 +285,10 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                         bg-superficie
                         text-conteudo
                         ${errors.password 
-                          ? 'border-red-500 dark:border-red-400' 
+                          ? 'border-perigo' 
                           : 'border-borda'
                         }
-                        focus:outline-none focus:ring-2 focus:ring-info
+                        focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal
                         transition-colors
                       `}
                       placeholder={mode === 'create' ? 'Mínimo 6 caracteres' : 'Nova senha (opcional)'}
@@ -302,7 +302,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                     </button>
                   </div>
                   {errors.password && (
-                    <div className="mt-1 flex items-center gap-1 text-red-500 dark:text-red-400 text-sm">
+                    <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
                       <AlertCircle className="w-4 h-4" />
                       <span>{errors.password}</span>
                     </div>
@@ -314,7 +314,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                     htmlFor="confirmarSenha"
                     className="block text-sm font-medium text-conteudo-suave mb-2"
                   >
-                    Confirmar Senha {mode === 'create' && <span className="text-red-500">*</span>}
+                    Confirmar Senha {mode === 'create' && <span className="text-perigo">*</span>}
                   </label>
                   <div className="relative">
                     <input
@@ -336,10 +336,10 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                         bg-superficie
                         text-conteudo
                         ${errors.confirmarSenha 
-                          ? 'border-red-500 dark:border-red-400' 
+                          ? 'border-perigo' 
                           : 'border-borda'
                         }
-                        focus:outline-none focus:ring-2 focus:ring-info
+                        focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal
                         transition-colors
                       `}
                       placeholder="Digite a senha novamente"
@@ -353,7 +353,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                     </button>
                   </div>
                   {errors.confirmarSenha && (
-                    <div className="mt-1 flex items-center gap-1 text-red-500 dark:text-red-400 text-sm">
+                    <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
                       <AlertCircle className="w-4 h-4" />
                       <span>{errors.confirmarSenha}</span>
                     </div>
@@ -369,7 +369,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 className="block text-sm font-medium text-conteudo-suave mb-2"
               >
                 <Shield className="w-4 h-4 inline mr-1" />
-                Perfil <span className="text-red-500">*</span>
+                Perfil <span className="text-perigo">*</span>
               </label>
               <select
                 id="role_name"
@@ -382,12 +382,12 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   bg-superficie
                   text-conteudo
                   ${errors.role_name 
-                    ? 'border-red-500 dark:border-red-400' 
+                    ? 'border-perigo' 
                     : 'border-borda'
                   }
                   ${isReadOnly
                     ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-info'
+                    : 'focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal'
                   }
                   transition-colors
                 `}
@@ -399,7 +399,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 ))}
               </select>
               {errors.role_name && (
-                <div className="mt-1 flex items-center gap-1 text-red-500 dark:text-red-400 text-sm">
+                <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
                   <AlertCircle className="w-4 h-4" />
                   <span>{errors.role_name}</span>
                 </div>
@@ -428,7 +428,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   border-borda
                   ${isReadOnly
                     ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:ring-2 focus:ring-info'
+                    : 'focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal'
                   }
                   transition-colors
                 `}
@@ -459,7 +459,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   className={`
                     mt-0.5 w-4 h-4 rounded
                     border-borda
-                    text-blue-600 focus:ring-2 focus:ring-info
+                    text-sinal focus:ring-2 focus:ring-sinal
                     ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
                   `}
                 />

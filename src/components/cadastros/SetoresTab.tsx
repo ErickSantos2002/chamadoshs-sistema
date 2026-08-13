@@ -14,6 +14,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
+import { Colchetes } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import SetorModal from './SetorModal';
 import type {
@@ -28,7 +29,7 @@ import type {
 // ========================================
 
 const SetoresTab: React.FC = () => {
-  const { setores, deleteSetor, updateSetor, refreshData, loading, error } = useCadastros();
+  const { setores, desativarSetor, reativarSetor, updateSetor, refreshData, loading, error } = useCadastros();
   const { user } = useAuth();
 
   // ========================================
@@ -118,24 +119,26 @@ const SetoresTab: React.FC = () => {
 
   const handleReativarSetor = async (setor: Setor) => {
     try {
-      await updateSetor(setor.id, { nome: setor.nome, descricao: setor.descricao, ativo: true });
+      await reativarSetor(setor.id);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Erro ao reativar setor');
     }
   };
 
-  const handleExcluirSetor = async (id: number) => {
+  const handleDesativarSetor = async (id: number) => {
     if (!confirmDelete) {
       setConfirmDelete(id);
       return;
     }
 
     try {
-      await deleteSetor(id);
+      await desativarSetor(id);
       setConfirmDelete(null);
     } catch (err: any) {
-      // Erro já tratado no context
-      toast.error(err.response?.data?.detail || 'Erro ao excluir setor');
+      // A API recusa desativar setor que ainda tem usuários ativos e diz
+      // QUANTOS são. Sem repassar essa mensagem, a pessoa fica sem saber o
+      // que precisa fazer antes de tentar de novo.
+      toast.error(err.response?.data?.detail || 'Erro ao desativar setor');
     }
     setConfirmDelete(null);
   };
@@ -169,7 +172,7 @@ const SetoresTab: React.FC = () => {
               placeholder="Buscar setores..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-borda rounded-lg bg-superficie text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:ring-2 focus:ring-info"
+              className="w-full pl-10 pr-4 py-2 border border-borda bg-superficie-base text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal"
             />
           </div>
 
@@ -187,7 +190,7 @@ const SetoresTab: React.FC = () => {
           {podeEditar && (
             <button
               onClick={handleNovoSetor}
-              className="px-4 py-2 bg-sucesso hover:bg-sucesso-forte dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-sucesso hover:bg-sucesso-forte text-white rounded-lg transition-colors flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Novo Setor</span>
@@ -201,13 +204,14 @@ const SetoresTab: React.FC = () => {
         <div className="mb-4 p-4 bg-perigo/10 border border-perigo/30 rounded-lg flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
           <div className="flex-1">
-            <p className="text-red-800 dark:text-red-300">{error}</p>
+            <p className="text-perigo-forte dark:text-perigo-suave">{error}</p>
           </div>
         </div>
       )}
 
       {/* Tabela */}
-      <div className="flex-1 overflow-auto bg-superficie rounded-lg shadow">
+      <div className="relative flex-1 overflow-auto border border-borda bg-superficie">
+        <Colchetes />
         {loading && !setores.length ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-conteudo-tenue">
@@ -226,7 +230,7 @@ const SetoresTab: React.FC = () => {
             {podeEditar && !busca && (
               <button
                 onClick={handleNovoSetor}
-                className="mt-4 px-4 py-2 bg-sucesso hover:bg-sucesso-forte dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="mt-4 px-4 py-2 bg-sucesso hover:bg-sucesso-forte text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Criar primeiro setor
@@ -335,10 +339,10 @@ const SetoresTab: React.FC = () => {
                       {podeEditar && (
                         <button
                           onClick={() => handleEditarSetor(setor)}
-                          className="p-2 text-info-forte dark:text-info-suave hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-info-forte dark:text-info-suave hover:bg-info/10 rounded-lg transition-colors"
                           aria-label="Editar setor"
                         >
-                          <Edit className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                          <Edit className="w-4 h-4 text-alerta-forte dark:text-alerta-suave" />
                         </button>
                       )}
 
@@ -358,7 +362,7 @@ const SetoresTab: React.FC = () => {
                         ) : confirmDelete === setor.id ? (
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleExcluirSetor(setor.id)}
+                              onClick={() => handleDesativarSetor(setor.id)}
                               className="px-2 py-1 bg-perigo hover:bg-perigo-forte text-white text-xs rounded transition-colors"
                             >
                               Desativar
@@ -372,7 +376,7 @@ const SetoresTab: React.FC = () => {
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleExcluirSetor(setor.id)}
+                            onClick={() => handleDesativarSetor(setor.id)}
                             className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/10 rounded-lg transition-colors"
                             aria-label={`Desativar ${setor.nome}`}
                             title="Desativar"

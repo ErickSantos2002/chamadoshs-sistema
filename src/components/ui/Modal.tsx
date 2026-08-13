@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { primeiroCampoFocavel } from '../../lib/foco';
+import { Colchetes } from './Colchetes';
 
 interface ModalProps {
   aberto: boolean;
@@ -49,31 +51,47 @@ export const Modal: React.FC<ModalProps> = ({
   const painelRef = useRef<HTMLDivElement>(null);
   const focoAnterior = useRef<HTMLElement | null>(null);
 
+  /**
+   * `aoFechar` guardado numa ref, e NÃO no array de dependências.
+   *
+   * Quase todos os pais declaram a função no corpo do componente — ela nasce
+   * com identidade nova a cada render. Com ela nas dependências, o efeito
+   * inteiro era desmontado e remontado a cada tecla digitada dentro do modal:
+   * o foco voltava para o começo, e como o começo era o botão de fechar, o
+   * cursor pulava para o X depois do primeiro caractere.
+   *
+   * A ref é atualizada depois de cada render, então o Esc sempre chama a
+   * versão mais recente sem que o efeito precise saber disso.
+   */
+  const aoFecharRef = useRef(aoFechar);
+  useEffect(() => {
+    aoFecharRef.current = aoFechar;
+  });
+
   useEffect(() => {
     if (!aberto) return;
 
     focoAnterior.current = document.activeElement as HTMLElement;
 
     const aoTeclar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') aoFechar();
+      if (e.key === 'Escape') aoFecharRef.current();
     };
 
     document.addEventListener('keydown', aoTeclar);
     const overflowAnterior = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    // Foca o primeiro campo, ou o painel se não houver nenhum.
-    const focavel = painelRef.current?.querySelector<HTMLElement>(
-      'input, select, textarea, button, [href], [tabindex]:not([tabindex="-1"])'
-    );
-    focavel?.focus();
+    // Primeiro CAMPO, não primeiro focável: o botão de fechar vem antes no
+    // documento, e abrir um formulário com o foco no X é convidar quem usa
+    // teclado a fechá-lo com Enter.
+    (primeiroCampoFocavel(painelRef.current) ?? painelRef.current)?.focus();
 
     return () => {
       document.removeEventListener('keydown', aoTeclar);
       document.body.style.overflow = overflowAnterior;
       focoAnterior.current?.focus();
     };
-  }, [aberto, aoFechar]);
+  }, [aberto]);
 
   if (!aberto) return null;
 
@@ -87,12 +105,19 @@ export const Modal: React.FC<ModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
+        // Recebe o foco quando o modal não tem campo nenhum — de confirmação,
+        // de leitura. Negativo para entrar por código e não pela ordem do Tab.
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          'flex max-h-[92vh] min-h-[50vh] w-full flex-col rounded-xl border border-borda bg-superficie shadow-2xl',
+          'relative flex max-h-[92vh] min-h-[50vh] w-full flex-col border border-borda bg-superficie shadow-2xl',
           LARGURAS[largura]
         )}
       >
+        {/* Modal é painel por definição: é a superfície de trabalho do
+            momento, e não existem oito dele na tela. */}
+        <Colchetes />
+
         <div className="flex items-start justify-between gap-4 border-b border-borda px-5 py-4">
           <div>
             <h2 className="text-lg font-bold text-conteudo">{titulo}</h2>

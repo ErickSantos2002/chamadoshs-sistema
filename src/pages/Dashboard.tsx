@@ -134,8 +134,6 @@ const Dashboard: React.FC = () => {
     setPeriodoFim(r.fim);
   };
 
-  const CORES_GRAFICO = ['#3b82f6', '#22c55e', '#facc15', '#ef4444', '#a855f7'];
-
   // ========================================
   // CARREGAR CHAMADOS COM FILTROS CORRETOS
   // ========================================
@@ -225,11 +223,14 @@ const Dashboard: React.FC = () => {
     const arquivados = chamadosArquivados.length;
 
     // Dados para gráfico de status (Fechados unificados com Resolvidos)
+    // Sem campo `color`: a cor de cada fatia vem de `corDoStatus` na hora de
+    // desenhar. O campo existia aqui e não era lido por ninguém — sobra de
+    // quando cada gráfico trazia a própria paleta.
     const porStatus = [
-      { name: 'Abertos', value: abertos, color: '#3b82f6' },
-      { name: 'Em Andamento', value: emAndamento, color: '#f59e0b' },
-      { name: 'Aguardando', value: aguardando, color: '#6b7280' },
-      { name: 'Resolvidos', value: resolvidos, color: '#10b981' },
+      { name: 'Abertos', value: abertos },
+      { name: 'Em Andamento', value: emAndamento },
+      { name: 'Aguardando', value: aguardando },
+      { name: 'Resolvidos', value: resolvidos },
     ];
 
     // Dados para gráfico de prioridade
@@ -247,10 +248,10 @@ const Dashboard: React.FC = () => {
     });
 
     const porPrioridade = [
-      { name: 'Baixa', value: prioridades[PrioridadeEnum.BAIXA], color: '#10b981' },
-      { name: 'Média', value: prioridades[PrioridadeEnum.MEDIA], color: '#f59e0b' },
-      { name: 'Alta', value: prioridades[PrioridadeEnum.ALTA], color: '#ef4444' },
-      { name: 'Crítica', value: prioridades[PrioridadeEnum.CRITICA], color: '#dc2626' },
+      { name: 'Baixa', value: prioridades[PrioridadeEnum.BAIXA] },
+      { name: 'Média', value: prioridades[PrioridadeEnum.MEDIA] },
+      { name: 'Alta', value: prioridades[PrioridadeEnum.ALTA] },
+      { name: 'Crítica', value: prioridades[PrioridadeEnum.CRITICA] },
     ];
 
     // Dados para gráfico de categoria

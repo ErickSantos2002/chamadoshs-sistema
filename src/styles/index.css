@@ -16,32 +16,53 @@
  * para conseguir aplicar opacidade por cima (`bg-superficie/50`).
  *
  * A classe `dark` é aplicada no <html> pelo ThemeContext.
+ *
+ * ── Uma linguagem, duas paletas ──────────────────────────────────────
+ *
+ * A pegada de console não vem do fundo escuro. Vem de canto reto, traço de
+ * 1px como estrutura, colchete nos cantos do painel, rótulo monoespaçado e
+ * uma cor de sinal reservada ao que está ativo. Só o primeiro dos cinco
+ * depende do tema, e é por isso que o modo claro não precisa ser uma versão
+ * morna do escuro: os mesmos traços sobre fundo claro dão prancheta técnica.
+ *
+ * Todo par texto/superfície abaixo foi medido, não estimado. `npm run
+ * validar:paleta` refaz a conta e falha se alguém baixar um valor.
+ *
+ * O matiz vem da marca: o azul do logo H&S é #1F89CA, matiz 203°. Ele não
+ * aparece como token porque dá 3,83:1 no branco — serve para o logo, não
+ * para texto. Os dois `--sinal` são esse matiz escurecido e clareado.
  */
 @layer base {
   :root {
-    --superficie-base: 248 250 252;    /* #F8FAFC — fundo da página      */
+    --superficie-base: 244 247 250;    /* #F4F7FA — fundo da página      */
     --superficie: 255 255 255;         /* #FFFFFF — cards, painéis       */
-    --superficie-elevada: 241 245 249; /* #F1F5F9 — hover, cabeçalhos    */
+    --superficie-elevada: 234 240 245; /* #EAF0F5 — hover, cabeçalhos    */
 
-    --borda: 226 232 240;              /* #E2E8F0 — divisores visíveis   */
-    --borda-suave: 241 245 249;        /* #F1F5F9 — separação sutil      */
+    --borda: 197 209 221;              /* #C5D1DD — divisores visíveis   */
+    --borda-suave: 222 230 237;        /* #DEE6ED — separação sutil      */
+    --borda-forte: 127 161 189;        /* #7FA1BD — colchete de HUD      */
 
-    --conteudo: 15 23 42;              /* #0F172A — texto principal      */
-    --conteudo-suave: 71 85 105;       /* #475569 — texto secundário     */
-    --conteudo-tenue: 148 163 184;     /* #94A3B8 — rótulos, placeholder */
+    --conteudo: 20 35 52;              /* #142334 — 15,9:1               */
+    --conteudo-suave: 67 90 112;       /* #435A70 —  7,2:1               */
+    --conteudo-tenue: 90 114 135;      /* #5A7287 —  5,0:1               */
+
+    --sinal: 26 113 168;               /* #1A71A8 —  5,3:1               */
   }
 
   .dark {
-    --superficie-base: 13 27 42;       /* #0D1B2A */
-    --superficie: 19 34 56;            /* #132238 */
-    --superficie-elevada: 26 47 74;    /* #1A2F4A */
+    --superficie-base: 10 17 25;       /* #0A1119 */
+    --superficie: 17 28 39;            /* #111C27 */
+    --superficie-elevada: 25 41 56;    /* #192938 */
 
-    --borda: 30 58 95;                 /* #1E3A5F */
-    --borda-suave: 19 34 56;           /* #132238 */
+    --borda: 37 62 86;                 /* #253E56 */
+    --borda-suave: 28 46 63;           /* #1C2E3F */
+    --borda-forte: 49 93 129;          /* #315D81 */
 
-    --conteudo: 241 245 249;           /* #F1F5F9 */
-    --conteudo-suave: 148 163 184;     /* #94A3B8 */
-    --conteudo-tenue: 100 116 139;     /* #64748B */
+    --conteudo: 218 231 241;           /* #DAE7F1 — 13,7:1 */
+    --conteudo-suave: 157 182 200;     /* #9DB6C8 —  8,2:1 */
+    --conteudo-tenue: 117 144 163;     /* #7590A3 —  5,2:1 */
+
+    --sinal: 71 166 225;               /* #47A6E1 —  6,4:1 */
   }
 }
 
@@ -72,7 +93,11 @@ body,
   filter: invert(1);
 }
 
-/* 🔹 Scrollbar customizado */
+/* Scrollbar
+ *
+ * Sai dos cinzas cravados e passa a usar os tokens: no claro ela precisa
+ * escurecer para aparecer, no escuro precisa clarear, e era isso que os dois
+ * blocos separados faziam à mão. Quadrada, como o resto. */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -81,55 +106,80 @@ body,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #4b5563; /* cinza médio */
-  border-radius: 6px;
+  background-color: rgb(var(--borda-forte));
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #2563eb; /* azul no hover */
-}
-/* 🌑 Scrollbar no dark */
-.dark ::-webkit-scrollbar-thumb {
-  background-color: #6b7280;
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background-color: #525252;
+  background-color: rgb(var(--sinal));
 }
 
-/* 📊 Variáveis base */
+/* Toast
+ *
+ * Consumidas em App.tsx, na configuração do react-hot-toast. Ficam como
+ * variáveis porque a biblioteca recebe um objeto de estilo em JS e não
+ * enxerga classe do Tailwind. */
 @layer base {
   :root {
-    --chart-text: #000000;
-    --chart-axis: #475569;
-
-    /* 🔔 Toast notifications - Light mode */
     --toast-bg: #ffffff;
-    --toast-color: #1f2937;
-    --toast-border: #e5e7eb;
+    --toast-color: #142334;
+    --toast-border: #c5d1dd;
   }
   .dark {
-    --chart-text: #e0e0e0;
-    --chart-axis: #a3a3a3;
-
-    /* 🎨 Paleta adicional para componentes */
-    --bg-primary: #1e1e1e; /* fundo principal */
-    --bg-secondary: #2a2a2a; /* cards */
-    --text-primary: #d1d1d1; /* texto */
-    --border-color: #3a3a3a; /* bordas */
-
-    /* 🔔 Toast notifications - Dark mode */
-    --toast-bg: #1e1e1e;
-    --toast-color: #d1d1d1;
-    --toast-border: #2d2d2d;
+    --toast-bg: #192938;
+    --toast-color: #dae7f1;
+    --toast-border: #253e56;
   }
 }
 
-/* Exemplo opcional:
-.dark .card {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+/* ── Fundo de console ─────────────────────────────────────────────────
+ *
+ * Duas camadas estáticas, sem canvas e sem JavaScript.
+ *
+ * A maquete tinha linhas de log em deriva desenhadas em canvas. Ficava bonito
+ * e custava um `requestAnimationFrame` rodando enquanto alguém digita a senha
+ * — num notebook em bateria, para uma tela que dura cinco segundos. As duas
+ * camadas abaixo dão a mesma sensação de profundidade e não custam quadro
+ * nenhum depois de pintadas.
+ *
+ * A malha usa `--borda`, então ela funciona nos dois temas sem regra separada:
+ * no escuro é o risco de um console, no claro é papel milimetrado.
+ */
+.malha {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgb(var(--borda) / 0.28) 0 1px,
+      transparent 1px 46px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgb(var(--borda) / 0.28) 0 1px,
+      transparent 1px 46px
+    );
 }
-*/
+
+/* Escurece as bordas e puxa o olho ao centro. Sem isto a malha compete com o
+ * painel; com isto ela vira profundidade. */
+.vinheta {
+  background: radial-gradient(
+    ellipse 62% 58% at 50% 45%,
+    transparent 0%,
+    rgb(var(--superficie-base) / 0.86) 72%,
+    rgb(var(--superficie-base)) 100%
+  );
+}
+
+/* A varredura que percorre o painel uma vez, na entrada. É a "inicialização",
+ * não um laço. */
+.varredura::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--sinal)), transparent);
+  @apply animate-varrer;
+}
 
 /* 🎯 Animação para tooltip do botão Central HS */
 @keyframes fadeIn {
@@ -145,4 +195,17 @@ body,
 
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out;
+}
+
+/* Respeita quem pediu menos movimento no sistema operacional. A interface
+ * nova tem transição em borda, fundo e realce; para quem marcou essa
+ * preferência, isso é desconforto, não polimento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

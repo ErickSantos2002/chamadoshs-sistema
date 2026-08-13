@@ -131,14 +131,19 @@ export interface CadastrosContextData {
   deleteCategoria: (id: number) => Promise<void>;
 
   // Funções CRUD - Setores
+  //
+  // `desativar` e `reativar` no lugar de `delete`: a API nunca apagou estes
+  // cadastros, e o nome antigo prometia o que o sistema não fazia.
   createSetor: (data: SetorCreate) => Promise<void>;
   updateSetor: (id: number, data: SetorUpdate) => Promise<void>;
-  deleteSetor: (id: number) => Promise<void>;
+  desativarSetor: (id: number) => Promise<void>;
+  reativarSetor: (id: number) => Promise<void>;
 
   // Funções CRUD - Usuários
   createUsuario: (data: UsuarioCreate) => Promise<void>;
   updateUsuario: (id: number, data: UsuarioUpdate) => Promise<void>;
-  deleteUsuario: (id: number) => Promise<void>;
+  desativarUsuario: (id: number) => Promise<void>;
+  reativarUsuario: (id: number) => Promise<void>;
   updateUsuarioPassword: (id: number, novaSenha: string) => Promise<void>;
 
   // Atualização

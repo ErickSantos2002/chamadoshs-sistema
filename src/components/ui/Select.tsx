@@ -15,8 +15,8 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 export const Select: React.FC<SelectProps> = ({ className, children, ...resto }) => (
   <select
     className={cn(
-      'rounded-lg border border-borda bg-superficie px-3 py-2 text-sm text-conteudo',
-      'transition-colors focus:border-info focus:outline-none focus:ring-1 focus:ring-info',
+      'border border-borda bg-superficie-base px-3 py-2 text-sm text-conteudo',
+      'transition-colors focus:border-sinal focus:outline-none focus:ring-1 focus:ring-sinal',
       className
     )}
     {...resto}

@@ -186,24 +186,49 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-  const deleteSetor = useCallback(async (id: number): Promise<void> => {
+  /**
+   * Desativa um setor.
+   *
+   * A linha é SUBSTITUÍDA pelo registro que o servidor devolveu, não removida
+   * da lista. Removê-la era o que fazia o cadastro "voltar": a API desativava,
+   * a tela escondia, e o próximo carregamento trazia de volta o que nunca
+   * tinha saído. Agora a tela mostra o que aconteceu de verdade — o cadastro
+   * continua ali, inativo, e dá para reativar.
+   */
+  const desativarSetor = useCallback(async (id: number): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
 
-      await setoresService.deletar(id);
-      setSetores((prev) => prev.filter((s) => s.id !== id));
+      const setorAtualizado = await setoresService.desativar(id);
+      setSetores((prev) => prev.map((s) => (s.id === id ? setorAtualizado : s)));
 
-      console.log('✅ Setor excluído com sucesso!');
+      console.log('✅ Setor desativado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao excluir setor:', err);
+      console.error('❌ Erro ao desativar setor:', err);
 
-      // Verifica se é erro de vínculo
-      if (err.response?.status === 400) {
-        setError('Não é possível excluir setor com usuários vinculados');
-      } else {
-        setError(err.response?.data?.detail || 'Erro ao excluir setor');
-      }
+      // A mensagem da API diz QUANTOS usuários ativos seguram o setor. A
+      // versão genérica que existia aqui por cima ("com usuários vinculados")
+      // era menos útil e não dizia o que fazer.
+      setError(err.response?.data?.detail || 'Erro ao desativar setor');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const reativarSetor = useCallback(async (id: number): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const setorAtualizado = await setoresService.reativar(id);
+      setSetores((prev) => prev.map((s) => (s.id === id ? setorAtualizado : s)));
+
+      console.log('✅ Setor reativado com sucesso!');
+    } catch (err: any) {
+      console.error('❌ Erro ao reativar setor:', err);
+      setError(err.response?.data?.detail || 'Erro ao reativar setor');
       throw err;
     } finally {
       setLoading(false);
@@ -299,18 +324,50 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-  const deleteUsuario = useCallback(async (id: number): Promise<void> => {
+  /**
+   * Desativa um usuário. Mesma correção feita em setor: a linha é substituída
+   * pelo registro devolvido, não removida da lista.
+   *
+   * Pode responder 400 quando é o último administrador — a mensagem da API
+   * explica o motivo, e é ela que vai para a tela.
+   */
+  const desativarUsuario = useCallback(async (id: number): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
 
-      await usuariosService.deletar(id);
-      setUsuarios((prev) => prev.filter((u) => u.id !== id));
+      const usuarioAtualizado = await usuariosService.desativar(id);
+      setUsuarios((prev) => prev.map((u) => (u.id === id ? usuarioAtualizado : u)));
 
       console.log('✅ Usuário desativado com sucesso!');
     } catch (err: any) {
       console.error('❌ Erro ao desativar usuário:', err);
       setError(err.response?.data?.detail || 'Erro ao desativar usuário');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Reativa um usuário.
+   *
+   * Era `updateUsuario(id, { ativo: true })`, ou seja, uma edição de cadastro
+   * inteira para mudar um booleano — passando pelas mesmas validações de
+   * `PUT`, que não têm nada a ver com reativar.
+   */
+  const reativarUsuario = useCallback(async (id: number): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const usuarioAtualizado = await usuariosService.reativar(id);
+      setUsuarios((prev) => prev.map((u) => (u.id === id ? usuarioAtualizado : u)));
+
+      console.log('✅ Usuário reativado com sucesso!');
+    } catch (err: any) {
+      console.error('❌ Erro ao reativar usuário:', err);
+      setError(err.response?.data?.detail || 'Erro ao reativar usuário');
       throw err;
     } finally {
       setLoading(false);
@@ -355,12 +412,14 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
     // Funções CRUD - Setores
     createSetor,
     updateSetor,
-    deleteSetor,
+    desativarSetor,
+    reativarSetor,
 
     // Funções CRUD - Usuários
     createUsuario,
     updateUsuario,
-    deleteUsuario,
+    desativarUsuario,
+    reativarUsuario,
     updateUsuarioPassword,
 
     // Atualização

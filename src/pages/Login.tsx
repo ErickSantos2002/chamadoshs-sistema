@@ -3,14 +3,30 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Button, Input } from '../components/ui';
+import { useSaudeDoSistema } from '../hooks/useSaudeDoSistema';
+import { EstadoDoSistema, TEXTO_DO_ESTADO } from '../lib/saude';
+import { Button, Colchetes, Input, Rotulo } from '../components/ui';
 import logo from '../assets/logo.png';
+
+/**
+ * Cor do ponto de estado. Verde só quando é verde de verdade — o ponto existe
+ * para dizer algo, e um indicador que está sempre aceso não diz nada.
+ */
+const COR_DO_ESTADO: Record<EstadoDoSistema, string> = {
+  verificando: 'bg-conteudo-tenue',
+  ok: 'bg-sucesso',
+  degradado: 'bg-alerta',
+  'sem-resposta': 'bg-perigo',
+};
+
+const versao = typeof __VERSAO_APP__ === 'string' ? __VERSAO_APP__ : '';
 
 const Login: React.FC = () => {
   const { login, loading, error, user } = useAuth();
   const { setDarkModeOnLogin } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const { estado: saude, verificadoEm } = useSaudeDoSistema();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -31,81 +47,166 @@ const Login: React.FC = () => {
     await login(username, password);
   };
 
-  const rotulo = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
-
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-superficie-base p-4">
-      {/* O card era de vidro fosco — `backdrop-blur` sobre branco translúcido.
-          Aquilo dependia de haver textura atrás para borrar; sobre um fundo
-          chapado virava só um retângulo mais claro, e o desfoque não fazia
-          nada. Agora é a mesma superfície do resto do sistema. */}
-      <div className="relative w-full max-w-sm rounded-2xl border border-borda bg-superficie px-8 pb-8 pt-14 shadow-2xl">
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-superficie bg-superficie-elevada shadow-lg">
-            <User className="h-9 w-9 text-conteudo-tenue" aria-hidden="true" />
-          </div>
-        </div>
+    <div className="fixed inset-0 flex items-center justify-center overflow-hidden bg-superficie-base p-4">
+      {/* Duas camadas de fundo, estáticas. Elas não informam nada — o trabalho
+          delas é dar profundidade para o painel ter onde pousar. A maquete
+          fazia isso com linhas de log animadas em canvas; o mesmo efeito sai
+          de dois gradientes que o navegador pinta uma vez e esquece. */}
+      <div aria-hidden="true" className="malha pointer-events-none fixed inset-0" />
+      <div aria-hidden="true" className="vinheta pointer-events-none fixed inset-0" />
 
-        <div className="mb-6 flex justify-center">
-          <img src={logo} alt="Health &amp; Safety" className="max-h-[60px] object-contain" />
-        </div>
+      <div className="animate-subir relative w-full max-w-sm">
+        {/* Faixa de identificação. Diz em que sistema a pessoa está prestes a
+            entrar — o que importa em uma casa com mais de um sistema interno. */}
+        {/* A folga é grande porque o selo sobe 32px acima da borda do painel.
+            Com o espaçamento normal ele cobre o texto desta faixa — foi o que
+            aconteceu na primeira versão. */}
+        <div className="mb-11 flex items-center justify-between gap-3">
+          <Rotulo>ChamadosHS · Console de acesso</Rotulo>
 
-        <div className="mb-6 text-center">
-          <h1 className="text-xl font-bold text-conteudo">Bem-vindo</h1>
-          <p className="mt-0.5 text-sm text-conteudo-tenue">Faça login para continuar</p>
-        </div>
-
-        <form onSubmit={enviar} className="flex flex-col gap-4">
-          {/* Rótulo de verdade, e não só placeholder: o placeholder some
-              quando a pessoa digita, levando junto a indicação do campo. */}
-          <div>
-            <label htmlFor="username" className={rotulo}>
-              Usuário
-            </label>
-            <Input
-              id="username"
-              type="text"
-              value={username}
-              autoComplete="username"
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={loading}
-              placeholder="Seu usuário de rede"
-              className="h-11"
-              required
+          {/* O estado vem do /api/v1/health, não é enfeite. Quando o banco cai
+              a API continua respondendo, e é isso que separa "não consigo
+              entrar porque o sistema caiu" de "não consigo entrar por outro
+              motivo" — a diferença entre esperar e abrir um chamado. */}
+          <span className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 rounded-full ${COR_DO_ESTADO[saude]} ${
+                saude === 'verificando' ? 'animate-pulse' : ''
+              }`}
             />
-          </div>
+            <Rotulo>{TEXTO_DO_ESTADO[saude]}</Rotulo>
+          </span>
+        </div>
 
-          <div>
-            <label htmlFor="password" className={rotulo}>
-              Senha
-            </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              autoComplete="current-password"
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              placeholder="Sua senha"
-              className="h-11"
-              required
-            />
-          </div>
+        {/* O card era de vidro fosco — `backdrop-blur` sobre branco translúcido.
+            Aquilo dependia de haver textura atrás para borrar; sobre um fundo
+            chapado virava só um retângulo mais claro, e o desfoque não fazia
+            nada. Agora é a mesma superfície do resto do sistema. */}
+        {/* O gradiente vai da superfície elevada para a normal, de cima para
+            baixo. É o que separa "painel" de "retângulo": sem ele o card fica
+            chapado contra o fundo, que foi como a primeira versão ficou. */}
+        <div className="relative border border-borda bg-gradient-to-b from-superficie-elevada to-superficie px-8 pb-8 pt-16 shadow-2xl">
+          {/* A varredura precisa de `overflow-hidden` para não escapar do
+              painel — mas o selo fica FORA dele, então o recorte não pode
+              morar no painel. Vive nesta camada própria. */}
+          <span
+            aria-hidden="true"
+            className="varredura pointer-events-none absolute inset-0 overflow-hidden"
+          />
+          <Colchetes variante="sinal" tamanho="md" animado />
 
-          {error && (
-            <div
-              role="alert"
-              className="flex items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-3 py-2 text-sm text-perigo-forte dark:text-perigo-suave"
-            >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              {error}
+          {/* O selo continua redondo: é o único elemento que não é canto, e
+              sim forma. Sobe metade da própria altura para furar a borda. */}
+          <div className="absolute -top-8 left-1/2 -translate-x-1/2">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-sinal/60 bg-superficie-elevada">
+              <User className="h-7 w-7 text-sinal" aria-hidden="true" />
             </div>
-          )}
+          </div>
 
-          <Button type="submit" tamanho="lg" carregando={loading} className="mt-2 w-full">
-            {loading ? 'Entrando…' : 'Entrar'}
-          </Button>
-        </form>
+          <div className="mb-6 flex justify-center">
+            <img src={logo} alt="Health &amp; Safety" className="max-h-[64px] object-contain" />
+          </div>
+
+          <div className="mb-6 text-center">
+            <h1 className="text-xl font-bold text-conteudo">Bem-vindo</h1>
+            <Rotulo como="p" className="mt-1 block">
+              Identifique-se para continuar
+            </Rotulo>
+          </div>
+
+          <form onSubmit={enviar} className="flex flex-col gap-4">
+            {/* Rótulo de verdade, e não só placeholder: o placeholder some
+                quando a pessoa digita, levando junto a indicação do campo. */}
+            <div>
+              <Rotulo como="label" htmlFor="username" className="mb-1.5 block">
+                Usuário
+              </Rotulo>
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                autoComplete="username"
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+                placeholder="seu usuário de rede"
+                // Monoespaçada porque login é identificador, não texto humano:
+                // aqui a distinção entre l, I e 1 vale mais que o desenho.
+                className="h-11 font-mono"
+                required
+              />
+            </div>
+
+            <div>
+              <Rotulo como="label" htmlFor="password" className="mb-1.5 block">
+                Senha
+              </Rotulo>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                autoComplete="current-password"
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                placeholder="sua senha"
+                className="h-11 font-mono"
+                required
+              />
+            </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 border border-perigo/40 bg-perigo/10 px-3 py-2 text-sm text-perigo-forte dark:text-perigo-suave"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              tamanho="lg"
+              carregando={loading}
+              className="mt-2 w-full font-mono uppercase tracking-[0.18em]"
+            >
+              {loading ? 'Autenticando' : 'Autenticar'}
+            </Button>
+          </form>
+        </div>
+
+        {/* Faixa inferior.
+            A maquete trazia aqui protocolo TLS, nome do nó e cronômetro de
+            sessão — três valores que eu havia cravado no HTML. Numa tela de
+            login, afirmar a topologia para quem ainda não se identificou é
+            entregar informação de infraestrutura de graça, e nenhum dos três
+            era verificável. Ficou o que o sistema sabe de si. */}
+        <div className="mt-3 grid grid-cols-2 border border-borda">
+          <div className="border-r border-borda px-3 py-2">
+            <Rotulo como="p" className="block">
+              Versão
+            </Rotulo>
+            <p className="font-mono text-xs text-conteudo-suave">{versao || '—'}</p>
+          </div>
+          {/* O ponto de estado acima diz COMO está; aqui diz DE QUANDO é essa
+              informação. Indicador de saúde sem hora é o que continua verde
+              vinte minutos depois de o sistema ter caído. */}
+          <div className="px-3 py-2">
+            <Rotulo como="p" className="block">
+              Verificado
+            </Rotulo>
+            <p className="font-mono text-xs text-conteudo-suave">
+              {verificadoEm
+                ? verificadoEm.toLocaleTimeString('pt-BR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })
+                : '—'}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

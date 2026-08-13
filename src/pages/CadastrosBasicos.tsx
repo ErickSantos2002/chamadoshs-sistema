@@ -116,7 +116,7 @@ const CadastrosBasicos: React.FC = () => {
             border-b-2 transition-all duration-200 whitespace-nowrap
             ${
               abaAtiva === aba.id
-                ? 'border-blue-600 text-info-forte dark:text-info-suave'
+                ? 'border-sinal text-info-forte dark:text-info-suave'
                 : 'border-transparent text-conteudo-tenue hover:text-conteudo hover:border-borda dark:hover:border-[#3a3a3a]'
             }
           `}
@@ -125,7 +125,7 @@ const CadastrosBasicos: React.FC = () => {
                   <span>{aba.label}</span>
 
                   {aba.id === 'usuarios' && (
-                    <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400 rounded-full">
+                    <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-alerta/15 text-alerta-forte dark:text-alerta-suave rounded-full">
                       Admin
                     </span>
                   )}

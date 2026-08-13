@@ -1,47 +1,54 @@
 /**
  * Cores e estilo dos gráficos.
  *
- * ── Por que uma paleta separada dos tokens do tema ────────────────────
+ * ── Como estas cores foram escolhidas ─────────────────────────────────
  *
- * Verde, âmbar e vermelho já têm significado fixo neste sistema: são os
- * estados de SLA — no prazo, atenção, estourado. Usar qualquer um deles para
- * dizer "Software" ou "Hardware" faria a mesma cor significar duas coisas na
- * mesma tela. Por isso a paleta categórica abaixo evita as três, mesmo tendo
- * espaço de sobra na roda de cores.
+ * Por busca, não a olho, e conferidas por `npm run validar:paleta` — que roda
+ * sobre ESTE arquivo e falha o build se alguém baixar um valor.
  *
- * ── Por que estas cores, e não outras ─────────────────────────────────
+ * Dois critérios, os dois obrigatórios:
  *
- * A paleta anterior era `#3B82F6, #60A5FA, #2563EB, ...`: o mesmo azul em três
- * luminosidades. Barras vizinhas ficavam indistinguíveis — foi o que motivou a
- * troca.
+ *   contraste  >= 3:1 contra a superfície onde a cor é desenhada. É o piso da
+ *              WCAG 2.1 para elemento não textual: barra e ponto são forma.
+ *   separação  >= 20 de ΔE*ab entre QUALQUER par do conjunto, simulado para
+ *              visão normal, deuteranopia, protanopia e tritanopia.
  *
- * Estas foram verificadas por cálculo, não a olho, contra as duas superfícies
- * do sistema (#FFFFFF no claro, #132238 no escuro). Os critérios: faixa de
- * luminosidade, saturação mínima, separação entre vizinhos para daltonismo
- * (deuteranopia e tritanopia), separação para visão normal e contraste contra
- * o fundo.
+ * ── Por que "qualquer par", e não só os vizinhos ──────────────────────
  *
- * A ORDEM IMPORTA e não pode ser embaralhada: ela foi escolhida para que cores
- * adjacentes sejam as mais distantes entre si. Azul ao lado de violeta, por
- * exemplo, reprova — os dois se confundem em deuteranopia.
+ * A paleta da 1.3.2 foi verificada comparando cada cor com a SEGUINTE, e
+ * passou. A verificação estava errada: num gráfico de cinco barras todas as
+ * cinco estão na tela ao mesmo tempo, e o olho compara qualquer uma com
+ * qualquer outra. Refeita par a par, aquela paleta tinha quatro colisões —
+ * azul com violeta (ΔE 1,9), rosa com laranja (9,9), rosa com verde (3,0) e
+ * vermelho com âmbar (14,1). Todas em deuteranopia, todas invisíveis para quem
+ * enxerga as três cores.
  *
- * O violeta é o único que muda entre os temas: no escuro, o tom do claro cai
- * para 2,81 de contraste contra a superfície e precisa de um degrau acima.
+ * ── Por que elas parecem mais contidas que antes ──────────────────────
+ *
+ * Porque precisam ser. Para quem tem deuteranopia o eixo vermelho-verde
+ * colapsa, e o que resta é azul-amarelo mais luminosidade. Cinco cores
+ * simultaneamente distintas nesse espaço reduzido exigem escada de
+ * luminosidade — não dá para ter cinco tons vibrantes de saturação parecida e
+ * ao mesmo tempo distinguíveis. As tentativas de manter o brilho reprovaram
+ * todas na conta.
+ *
+ * A ordem não importa mais para a corretude, já que todos os pares foram
+ * verificados. Continua sendo a ordem em que ficam melhor lado a lado.
  */
 export const CATEGORICA_CLARA = [
-  '#2563EB', // azul
-  '#DB2777', // rosa
-  '#0891B2', // ciano
-  '#EA580C', // laranja
-  '#7C3AED', // violeta
+  '#174E8C', // azul profundo
+  '#91633B', // âmbar queimado
+  '#1493A3', // turquesa
+  '#981652', // vinho
+  '#8F4ADE', // violeta
 ];
 
 export const CATEGORICA_ESCURA = [
-  '#2563EB',
-  '#DB2777',
-  '#0891B2',
-  '#EA580C',
-  '#8B5CF6', // um degrau acima: o #7C3AED não contrasta com o fundo escuro
+  '#4E86C6', // azul
+  '#BC7638', // âmbar
+  '#2ED0E5', // ciano
+  '#EE1178', // rosa
+  '#9E53F3', // violeta
 ];
 
 export function paletaCategorica(escuro: boolean): string[] {
@@ -61,90 +68,95 @@ export function corDaSerie(indice: number, escuro: boolean): string {
 }
 
 /**
- * Cor de prioridade nos gráficos.
+ * Cor de prioridade.
  *
- * Prioridade NÃO é categoria: é escala, e já tem cor definida no sistema — os
- * selos do quadro de chamados usam perigo, alerta, info e neutro. O gráfico
- * repete exatamente essas, para a mesma prioridade não ter uma cor no quadro e
- * outra no painel.
+ * Prioridade é escala, não categoria, e a escada de luminosidade que a
+ * acessibilidade exige acaba servindo aos dois propósitos: Baixa é a mais
+ * apagada, Crítica a mais pesada.
  *
- * O gráfico anterior pintava "Baixa" de verde, que aqui significa "no prazo".
+ * O gráfico anterior pintava "Baixa" de verde, que neste sistema significa
+ * "no prazo" — a mesma cor dizia duas coisas na mesma tela.
  */
 const PRIORIDADE_CLARA: Record<string, string> = {
-  'Crítica': '#EF4444',
-  'Alta': '#F59E0B',
-  'Média': '#3B82F6',
-  'Baixa': '#94A3B8',
+  'Crítica': '#8D3535',
+  'Alta': '#A57531',
+  'Média': '#4A7FC9',
+  'Baixa': '#6C757F',
 };
 
 const PRIORIDADE_ESCURA: Record<string, string> = {
-  'Crítica': '#EF4444',
-  'Alta': '#F59E0B',
-  'Média': '#3B82F6',
-  'Baixa': '#64748B',
+  'Crítica': '#EF6B6B',
+  'Alta': '#D59234',
+  'Média': '#66A2F4',
+  'Baixa': '#91A3B6',
 };
 
 export function corDaPrioridade(prioridade: string, escuro: boolean): string {
   const mapa = escuro ? PRIORIDADE_ESCURA : PRIORIDADE_CLARA;
-  return mapa[prioridade] ?? (escuro ? '#64748B' : '#94A3B8');
+  return mapa[prioridade] ?? (escuro ? '#91A3B6' : '#6C757F');
 }
 
 /**
  * Cor de status do chamado.
  *
- * Precisa ser a MESMA no ponto da coluna do quadro e na barra do painel: é a
- * mesma entidade nas duas telas. Ficava duplicada nos dois arquivos, e o custo
- * disso apareceu — uma varredura de cor transformou o ponto de "Aguardando" no
+ * Precisa ser a MESMA no ponto da coluna do quadro, no selo do detalhe e na
+ * fatia do painel: é a mesma entidade nas três telas. Já esteve duplicada, e o
+ * custo apareceu — uma varredura de cor transformou o ponto de "Aguardando" no
  * mesmo azul de "Aberto", e duas das quatro colunas ficaram idênticas sem que
- * nada quebrasse.
+ * nada quebrasse. Esta é a única fonte.
  *
- * O conjunto foi verificado por cálculo contra as duas superfícies: faixa de
- * luminosidade, saturação, separação para daltonismo e para visão normal, e
- * contraste. Azul saiu de "Aberto" justamente por isso — ele fica perto demais
- * do ciano e do violeta vizinhos para quem não distingue verde e vermelho.
+ * As chaves no plural existem porque o painel rotula as fatias como "Abertos"
+ * e "Resolvidos", e o quadro nomeia as colunas no singular. Mesmo status, dois
+ * rótulos, uma cor.
+ *
+ * "Resolvido" é o mais escuro do conjunto no tema claro. Não é estética: verde
+ * e rosa são o par que colapsa em deuteranopia, e a diferença de luminosidade
+ * é o único canal que sobrevive ali.
  */
 const STATUS_CLARO: Record<string, string> = {
-  'Aberto': '#DB2777',
-  'Abertos': '#DB2777',
-  'Em Andamento': '#0891B2',
-  'Aguardando': '#7C3AED',
-  'Resolvido': '#059669',
-  'Resolvidos': '#059669',
-  'Fechado': '#059669',
+  'Aberto': '#EB1471',
+  'Abertos': '#EB1471',
+  'Em Andamento': '#0D9BBF',
+  'Aguardando': '#6B389F',
+  'Resolvido': '#22593D',
+  'Resolvidos': '#22593D',
+  'Fechado': '#22593D',
 };
 
 const STATUS_ESCURO: Record<string, string> = {
-  'Aberto': '#DB2777',
-  'Abertos': '#DB2777',
-  'Em Andamento': '#0891B2',
-  'Aguardando': '#8B5CF6',
-  'Resolvido': '#059669',
-  'Resolvidos': '#059669',
-  'Fechado': '#059669',
+  'Aberto': '#E2126D',
+  'Abertos': '#E2126D',
+  'Em Andamento': '#2F97B1',
+  'Aguardando': '#995ED4',
+  'Resolvido': '#15D56F',
+  'Resolvidos': '#15D56F',
+  'Fechado': '#15D56F',
 };
 
 export function corDoStatus(status: string, escuro: boolean): string {
   const mapa = escuro ? STATUS_ESCURO : STATUS_CLARO;
-  return mapa[status] ?? (escuro ? '#6E829B' : '#94A3B8');
+  return mapa[status] ?? (escuro ? '#7590A3' : '#5A7287');
 }
 
 /**
  * Estilo dos eixos, grade e dica.
  *
- * Os eixos e a grade ficam discretos de propósito: eles são referência, não
- * conteúdo. Antes o texto dos eixos era azul — a mesma cor de uma das séries —
- * o que fazia o rótulo parecer parte do dado.
+ * Os valores acompanham os tokens de tema: grade e eixo saem das bordas, o
+ * texto sai de `--conteudo-suave`. Antes eram hexadecimais soltos, que é como
+ * a grade de um gráfico acabava mais escura que a borda do card ao lado.
+ *
+ * A dica não tem canto arredondado, como o resto da interface.
  */
 export function estiloDoGrafico(escuro: boolean) {
   return {
-    grade: escuro ? '#1E3A5F' : '#E2E8F0',
-    eixo: escuro ? '#6E829B' : '#94A3B8',
-    texto: escuro ? '#A9BAD0' : '#475569',
+    grade: escuro ? '#253E56' : '#C5D1DD',
+    eixo: escuro ? '#7590A3' : '#5A7287',
+    texto: escuro ? '#9DB6C8' : '#435A70',
     dica: {
-      backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF',
-      border: `1px solid ${escuro ? '#1E3A5F' : '#E2E8F0'}`,
-      borderRadius: '8px',
-      color: escuro ? '#F1F5F9' : '#0F172A',
+      backgroundColor: escuro ? '#192938' : '#FFFFFF',
+      border: `1px solid ${escuro ? '#253E56' : '#C5D1DD'}`,
+      borderRadius: '0px',
+      color: escuro ? '#DAE7F1' : '#142334',
       padding: '8px 12px',
       boxShadow: '0 4px 14px rgb(0 0 0 / 0.25)',
     },
