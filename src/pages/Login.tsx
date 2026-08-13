@@ -201,7 +201,11 @@ const Login: React.FC = () => {
             login, afirmar a topologia para quem ainda não se identificou é
             entregar informação de infraestrutura de graça, e nenhum dos três
             era verificável. Ficou o que o sistema sabe de si. */}
-        <div className="mt-2 grid grid-cols-2 border border-borda alto:mt-3">
+        {/* Três células, como na maquete — mas com o terceiro campo dizendo a
+            verdade. Lá o rótulo era SESSÃO, sugerindo um cronômetro de sessão
+            que não existe numa tela de login: ninguém tem sessão antes de
+            entrar. A HORA anda a cada segundo do mesmo jeito, e é hora. */}
+        <div className="mt-2 grid grid-cols-3 border border-borda alto:mt-3">
           <div className="border-r border-borda px-3 py-2">
             <Rotulo como="p" className="block">
               Versão
@@ -221,6 +225,22 @@ const Login: React.FC = () => {
                 ponto verde: de quando é aquela leitura. */}
             <p className="font-mono text-xs text-conteudo-suave">
               {verificadoEm ? descreverIdade(agora - verificadoEm.getTime()) : '—'}
+            </p>
+          </div>
+
+          {/* O relógio da maquete, andando de segundo em segundo. Usa o mesmo
+              `useRelogio` que faz a idade acima avançar — um temporizador só
+              para os dois, e ele pausa junto quando a aba fica oculta. */}
+          <div className="border-l border-borda px-3 py-2">
+            <Rotulo como="p" className="block">
+              Hora
+            </Rotulo>
+            <p className="font-mono text-xs tabular-nums text-conteudo-suave">
+              {new Date(agora).toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
             </p>
           </div>
         </div>

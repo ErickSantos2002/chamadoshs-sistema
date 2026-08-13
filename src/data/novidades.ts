@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.2',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'A tela de login ganhou um relógio, andando de segundo em segundo ao lado da versão e do estado do sistema.',
+      },
+    ],
+  },
+  {
     versao: '1.6.1',
     data: '2026-08-13',
     itens: [

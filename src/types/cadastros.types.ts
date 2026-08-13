@@ -59,7 +59,13 @@ export interface SetorCreate {
 export interface SetorUpdate {
   nome?: string;
   descricao?: string;
-  /** `DELETE` no setor faz `ativo = false`; reativar é um update. */
+  /**
+   * Quem liga e desliga é `PATCH /setores/{id}/desativar` e `/reativar`.
+   *
+   * Não confundir com `DELETE /setores/{id}`, que **apaga o setor de vez** —
+   * antes ele desativava, e mudou na API. O front não chama essa rota em lugar
+   * nenhum, e não deve passar a chamar: exclusão de setor não tem volta.
+   */
   ativo?: boolean;
 }
 

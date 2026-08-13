@@ -499,7 +499,6 @@ export const setoresService = {
    * quantos são — vale repassá-la em vez de escrever uma genérica por cima.
    */
   async desativar(id: number): Promise<Setor> {
-    try { } catch {}
     const response = await api.patch<Setor>(`/setores/${id}/desativar`);
     return response.data;
   },
