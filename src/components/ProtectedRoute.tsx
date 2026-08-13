@@ -1,23 +1,30 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import Bloqueio from '../pages/Bloqueio';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   /**
-   * Perfis que podem abrir a rota. Omitido, qualquer pessoa autenticada entra —
-   * que é como todas as rotas existentes funcionam, e nenhuma muda por causa
-   * disto.
+   * Perfis que podem abrir a rota. Omitido, qualquer pessoa autenticada entra.
    *
-   * Isto NÃO é segurança: quem digitar a URL não passa daqui, mas quem chamar a
-   * API direto passa. Quem protege é a API, e ela protege. Serve para a pessoa
-   * não abrir uma tela que só sabe responder 403 — erro na cara de quem não fez
-   * nada errado, apenas não tem aquele perfil.
+   * Isto NÃO é segurança: quem chama a API direto passa, e quem protege é a
+   * API. Serve para a pessoa encontrar uma explicação em vez de uma tela que só
+   * sabe responder 403.
    */
   perfil?: string[];
+  /** Nome da área, para a tela de bloqueio dizer qual é. */
+  area?: string;
+  /** Quem tem acesso, em linguagem de gente. */
+  quemTem?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, perfil }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  perfil,
+  area,
+  quemTem,
+}) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -33,11 +40,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, perfil }) => 
     return <Navigate to="/login" replace />;
   }
 
-  // Autenticado, mas sem o perfil que a rota pede: volta para o painel, que
-  // todo mundo pode ver. Redirecionar para o login seria pior — sugeriria que
-  // a sessão caiu, e a pessoa tentaria entrar de novo com a mesma conta.
+  // Autenticado, sem o perfil que a rota pede: EXPLICA, não redireciona.
+  //
+  // Redirecionar para o painel era o comportamento anterior, e ele mentia por
+  // omissão: a pessoa clicava em Cadastros e voltava ao Dashboard sem entender
+  // se tinha clicado errado, se a tela quebrou, ou se aquilo não é para ela.
+  // Sumir silenciosamente é a pior das três respostas possíveis.
   if (perfil && !perfil.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Bloqueio area={area} quemTem={quemTem} />;
   }
 
   // Se está autenticado, renderiza os filhos (página protegida)

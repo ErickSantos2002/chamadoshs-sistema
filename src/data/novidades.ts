@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.1',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'O menu passa a mostrar todas as áreas do sistema para todo mundo. Ao abrir uma que não é do seu perfil, a tela explica qual é, de quem é e a quem pedir acesso — antes a opção simplesmente não existia, e não dava para pedir o que não se sabe que há.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'A tela de acesso restrito deixou de piscar "ACESSO NEGADO" em vermelho. Quem chega ali não errou nada — só abriu uma porta que não é dele.',
+      },
+    ],
+  },
+  {
     versao: '1.6.0',
     data: '2026-08-13',
     itens: [

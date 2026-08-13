@@ -10,7 +10,6 @@ import {
   Sun,
   Ticket,
 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { cn } from '../lib/utils';
 
@@ -22,15 +21,11 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
   const location = useLocation();
-  const { user } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
 
   if (location.pathname === '/login') return null;
 
   const iconBaseClass = 'w-5 h-5 mr-2 transition-colors';
-
-  const ehAdministrador = user?.role === 'Administrador';
-  const ehEquipe = ehAdministrador || user?.role === 'Tecnico';
 
   // O ícone herda a cor do item (`currentColor`), então basta o NavLink decidir
   // se está ativo. Antes cada ícone carregava a própria cor, e manter as duas
@@ -53,45 +48,35 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
         <Ticket className={corDoIcone(isActive)} aria-hidden="true" />
       ),
     },
-    // Cadastros para a equipe. A aba de Usuários, dentro dela, continua só do
-    // administrador — editar usuário inclui editar o perfil, e quem faz isso
-    // pode se promover. Setores, categorias e SLA são catálogo de trabalho.
-    ...(ehEquipe
-      ? [
-          {
-            label: 'Cadastros',
-            to: '/cadastros',
-            icon: (isActive: boolean) => (
-              <Settings className={corDoIcone(isActive)} aria-hidden="true" />
-            ),
-          },
-        ]
-      : []),
-    // Tarefas recorrentes a API libera para administrador e técnico.
-    ...(ehEquipe
-      ? [
-          {
-            label: 'Tarefas Recorrentes',
-            to: '/tarefas-recorrentes',
-            icon: (isActive: boolean) => (
-              <Repeat className={corDoIcone(isActive)} aria-hidden="true" />
-            ),
-          },
-        ]
-      : []),
-    // Auditoria é leitura: mostra quem mexeu em quê, e não dá poder nenhum.
-    // Por isso vai para a equipe, ao contrário da aba de Usuários.
-    ...(ehEquipe
-      ? [
-          {
-            label: 'Auditoria',
-            to: '/auditoria',
-            icon: (isActive: boolean) => (
-              <ScrollText className={corDoIcone(isActive)} aria-hidden="true" />
-            ),
-          },
-        ]
-      : []),
+    // O MENU MOSTRA TUDO, inclusive o que o perfil não alcança.
+    //
+    // Esconder parecia gentil e escondia demais: quem não vê Cadastros não sabe
+    // que Cadastros existe, e não pede acesso ao que não sabe que há. Mostrando,
+    // o sistema revela a própria forma, e quem esbarra numa área encontra
+    // explicação — qual é, de quem é, e a quem pedir.
+    //
+    // Nada disso é proteção. Quem protege é a API, e ela protege.
+    {
+      label: 'Cadastros',
+      to: '/cadastros',
+      icon: (isActive: boolean) => (
+        <Settings className={corDoIcone(isActive)} aria-hidden="true" />
+      ),
+    },
+    {
+      label: 'Tarefas Recorrentes',
+      to: '/tarefas-recorrentes',
+      icon: (isActive: boolean) => (
+        <Repeat className={corDoIcone(isActive)} aria-hidden="true" />
+      ),
+    },
+    {
+      label: 'Auditoria',
+      to: '/auditoria',
+      icon: (isActive: boolean) => (
+        <ScrollText className={corDoIcone(isActive)} aria-hidden="true" />
+      ),
+    },
   ];
 
   return (

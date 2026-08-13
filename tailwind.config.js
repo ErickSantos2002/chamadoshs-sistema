@@ -118,16 +118,10 @@ module.exports = {
         rotulo: ["0.6875rem", { lineHeight: "1rem", letterSpacing: "0.14em" }],
       },
 
+      // As animações `blinkLight`/`blinkDark` saíram daqui junto com o único
+      // lugar que as usava: o "ACESSO NEGADO" piscando em vermelho da tela de
+      // bloqueio. Alarme para quem não fez nada errado ensina a ignorar alarme.
       keyframes: {
-        blinkLight: {
-          "0%, 100%": { color: "#000000" }, // preto
-          "50%": { color: "#dc2626" }, // vermelho
-        },
-        blinkDark: {
-          "0%, 100%": { color: "#ffffff" }, // branco
-          "50%": { color: "#dc2626" }, // vermelho
-        },
-
         // ── Entradas ────────────────────────────────────────────────
         // Todas rodam UMA vez. A diferença entre entrada e enfeite é
         // essa: a entrada termina. O que fica em laço numa tela aberta
@@ -149,9 +143,6 @@ module.exports = {
       },
 
       animation: {
-        blinkLight: "blinkLight 1s infinite",
-        blinkDark: "blinkDark 1s infinite",
-
         subir: "subir .6s cubic-bezier(.2,.8,.2,1) both",
         acender: "acender .5s ease-out .35s both",
         varrer: "varrer 1.1s cubic-bezier(.4,0,.2,1) .25s 1 both",

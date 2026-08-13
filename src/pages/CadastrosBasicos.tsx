@@ -28,10 +28,12 @@ const CadastrosBasicos: React.FC = () => {
   // perfis viram um só. Setores, categorias e prazos de SLA são catálogo de
   // trabalho; conta de gente é controle de acesso.
   //
-  // Esconder a aba não é a proteção: a proteção é a API recusar. Isto evita
-  // mostrar ao técnico uma tela que só saberia responder 403.
+  // A aba APARECE para o técnico e explica, em vez de sumir — mesma decisão do
+  // menu lateral. Quem não vê a aba não sabe que ela existe, e não pede acesso
+  // ao que não sabe que há. A proteção continua sendo a API recusar.
+  //
+  // Quem não é da equipe nem chega aqui: a guarda está na rota.
   const ehAdministrador = user?.role === 'Administrador';
-  const podeGerenciarCadastros = ehAdministrador || user?.role === 'Tecnico';
 
   // ========================================
   // CONFIGURAÇÃO DAS ABAS
@@ -64,8 +66,12 @@ const CadastrosBasicos: React.FC = () => {
       id: 'usuarios',
       label: 'Usuários',
       icon: <Users className="w-4 h-4" />,
-      component: <UsuariosTab />,
-      visible: ehAdministrador,
+      component: ehAdministrador ? (
+        <UsuariosTab />
+      ) : (
+        <Bloqueio area="Usuários" quemTem="administradores" />
+      ),
+      visible: true,
     },
     {
       id: 'sla',
@@ -82,10 +88,6 @@ const CadastrosBasicos: React.FC = () => {
   // ========================================
   // RENDER
   // ========================================
-
-  if (!podeGerenciarCadastros) {
-    return <Bloqueio />;
-  }
 
   return (
     <CadastrosProvider>

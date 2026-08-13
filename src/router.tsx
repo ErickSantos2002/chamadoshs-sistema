@@ -68,7 +68,11 @@ const AppRoutes: React.FC = () => (
       <Route
         path="/cadastros"
         element={
-          <ProtectedRoute perfil={['Administrador', 'Tecnico']}>
+          <ProtectedRoute
+            perfil={['Administrador', 'Tecnico']}
+            area="Cadastros"
+            quemTem="administradores e técnicos"
+          >
             <CadastrosBasicos />
           </ProtectedRoute>
         }
@@ -77,7 +81,11 @@ const AppRoutes: React.FC = () => (
       <Route
         path="/tarefas-recorrentes"
         element={
-          <ProtectedRoute perfil={['Administrador', 'Tecnico']}>
+          <ProtectedRoute
+            perfil={['Administrador', 'Tecnico']}
+            area="Tarefas Recorrentes"
+            quemTem="administradores e técnicos"
+          >
             <TarefasRecorrentes />
           </ProtectedRoute>
         }
@@ -88,7 +96,11 @@ const AppRoutes: React.FC = () => (
       <Route
         path="/auditoria"
         element={
-          <ProtectedRoute perfil={['Administrador', 'Tecnico']}>
+          <ProtectedRoute
+            perfil={['Administrador', 'Tecnico']}
+            area="Auditoria"
+            quemTem="administradores e técnicos"
+          >
             <Auditoria />
           </ProtectedRoute>
         }
