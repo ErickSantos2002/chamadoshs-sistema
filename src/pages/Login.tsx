@@ -205,7 +205,11 @@ const Login: React.FC = () => {
             verdade. Lá o rótulo era SESSÃO, sugerindo um cronômetro de sessão
             que não existe numa tela de login: ninguém tem sessão antes de
             entrar. A HORA anda a cada segundo do mesmo jeito, e é hora. */}
-        <div className="mt-2 grid grid-cols-3 border border-borda alto:mt-3">
+        {/* Duas colunas no estreito, três a partir de `sm`. Com três, cada
+            célula fica com ~33% de um painel `max-w-sm`, e VERIFICADO — dez
+            caracteres em mono espaçado, sem ponto de quebra — para de caber
+            por volta de 350px e invade a coluna da hora. */}
+        <div className="mt-2 grid grid-cols-2 border border-borda alto:mt-3 sm:grid-cols-3">
           <div className="border-r border-borda px-3 py-2">
             <Rotulo como="p" className="block">
               Versão
@@ -231,7 +235,9 @@ const Login: React.FC = () => {
           {/* O relógio da maquete, andando de segundo em segundo. Usa o mesmo
               `useRelogio` que faz a idade acima avançar — um temporizador só
               para os dois, e ele pausa junto quando a aba fica oculta. */}
-          <div className="border-l border-borda px-3 py-2">
+          {/* No estreito esta célula desce para uma linha própria, de largura
+              inteira: vira `border-t` no lugar do `border-l`. */}
+          <div className="col-span-2 border-t border-borda px-3 py-2 sm:col-span-1 sm:border-l sm:border-t-0">
             <Rotulo como="p" className="block">
               Hora
             </Rotulo>
