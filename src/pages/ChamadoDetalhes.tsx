@@ -11,6 +11,7 @@ import { getRoleName } from '../utils/roleMapper';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
+import Avaliacao from '../components/Avaliacao';
 import {
   Chamado,
   Comentario,
@@ -34,7 +35,6 @@ import {
   XCircle,
   RotateCcw,
   User,
-  Star,
   Ban,
   Archive,
   ArchiveRestore,
@@ -96,21 +96,11 @@ const ChamadoDetalhes: React.FC = () => {
   const [processando, setProcessando] = useState(false);
   const [motivoCancelamento, setMotivoCancelamento] = useState('');
 
-  // Estados para avaliação
-  const [avaliacao, setAvaliacao] = useState<number | null>(null);
-  const [hoverAvaliacao, setHoverAvaliacao] = useState<number | null>(null);
-  const [salvandoAvaliacao, setSalvandoAvaliacao] = useState(false);
-
   // Permissões
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
   const isUsuario = user?.role === 'Usuario';
   const podeEditar = isAdmin || isTecnico;
-  const isSolicitante = chamado?.solicitante_id === user?.id;
-  const podeAvaliar =
-    isSolicitante &&
-    (chamado?.status === StatusEnum.RESOLVIDO ||
-      chamado?.status === StatusEnum.FECHADO);
 
   useEffect(() => {
     if (id) {
@@ -150,7 +140,6 @@ const ChamadoDetalhes: React.FC = () => {
       setChamado(chamadoData);
       setComentarios(comentariosData);
       setHistorico(historicoData);
-      setAvaliacao(chamadoData.avaliacao || null);
 
       // Buscar nome da categoria se existir
       if (chamadoData.categoria_id) {
@@ -249,41 +238,6 @@ const ChamadoDetalhes: React.FC = () => {
     }
   };
 
-  // Função para salvar avaliação
-  const handleSalvarAvaliacao = async (nota: number) => {
-    if (!chamado || !user) return;
-
-    try {
-      setSalvandoAvaliacao(true);
-
-      // Endpoint próprio do solicitante. O PUT usado pelo resto da tela exige
-      // perfil de técnico ou administrador e devolvia 403 para quem abriu o
-      // chamado — ou seja, para justamente quem deveria avaliar.
-      const atualizado = await chamadosService.avaliar(chamado.id, nota);
-
-      // A resposta é o ChamadoResponse completo, com o bloco de SLA. Usar ela
-      // direto evita uma segunda ida à API só para reler o que acabou de ser
-      // gravado.
-      setChamado(atualizado);
-      setAvaliacao(atualizado.avaliacao ?? nota);
-
-      toast.success('Obrigado pela avaliação!');
-    } catch (err: any) {
-      console.error('Erro ao salvar avaliação:', err);
-
-      const status = err?.response?.status;
-
-      if (status === 409) {
-        toast.error('Só é possível avaliar depois que o chamado é resolvido.');
-      } else if (status !== 403) {
-        // O 403 já é anunciado pelo interceptor do api.ts; avisar de novo aqui
-        // mostraria duas mensagens para o mesmo erro.
-        toast.error(err?.response?.data?.detail || 'Erro ao salvar avaliação.');
-      }
-    } finally {
-      setSalvandoAvaliacao(false);
-    }
-  };
 
   // Função para mudança rápida de status
   const handleMudancaRapidaStatus = async (novoStatus: StatusEnum) => {
@@ -1086,79 +1040,20 @@ const ChamadoDetalhes: React.FC = () => {
             </div>
           )}
 
-          {/* Avaliação */}
+          {/* Avaliação
+              As estrelas e a regra de quem pode avaliar vivem no componente
+              <Avaliacao />, que esta tela e o modal do quadro usam. Estavam
+              escritas por extenso aqui; ao levá-las para o modal, repetir a
+              regra criaria a segunda implementação de uma permissão — que é
+              como este projeto acabou com três tabelas de cor de status que
+              discordavam entre si. */}
           {(chamado.status === StatusEnum.RESOLVIDO ||
             chamado.status === StatusEnum.FECHADO) && (
             <div className="mt-6 pt-6 border-t border-borda">
-              <label className="block text-sm font-bold text-conteudo dark:text-info mb-3">
+              <label className="block text-sm font-bold text-conteudo mb-3">
                 Avaliação do Atendimento
               </label>
-
-              {podeAvaliar ? (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    {[1, 2, 3, 4, 5].map((nota) => (
-                      <button
-                        key={nota}
-                        onClick={() => handleSalvarAvaliacao(nota)}
-                        onMouseEnter={() => setHoverAvaliacao(nota)}
-                        onMouseLeave={() => setHoverAvaliacao(null)}
-                        disabled={salvandoAvaliacao}
-                        className="transition-all duration-200 hover:scale-110 
-                                disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Star
-                          className={`w-8 h-8 transition-colors ${
-                            (
-                              hoverAvaliacao !== null
-                                ? nota <= hoverAvaliacao
-                                : nota <= (avaliacao || 0)
-                            )
-                              ? 'fill-alerta text-alerta'
-                              : 'text-conteudo-tenue'
-                          }`}
-                        />
-                      </button>
-                    ))}
-
-                    {avaliacao && (
-                      <span className="ml-2 text-sm text-conteudo-suave">
-                        {avaliacao} de 5 estrelas
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-xs text-conteudo-tenue">
-                    {avaliacao
-                      ? 'Clique nas estrelas para alterar sua avaliação'
-                      : 'Clique nas estrelas para avaliar o atendimento (opcional)'}
-                  </p>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {avaliacao ? (
-                    <>
-                      {[1, 2, 3, 4, 5].map((nota) => (
-                        <Star
-                          key={nota}
-                          className={`w-6 h-6 ${
-                            nota <= avaliacao
-                              ? 'fill-alerta text-alerta'
-                              : 'text-conteudo-tenue'
-                          }`}
-                        />
-                      ))}
-                      <span className="ml-2 text-sm text-conteudo-suave">
-                        {avaliacao} de 5 estrelas
-                      </span>
-                    </>
-                  ) : (
-                    <p className="text-sm text-conteudo-tenue">
-                      Aguardando avaliação do solicitante
-                    </p>
-                  )}
-                </div>
-              )}
+              <Avaliacao chamado={chamado} aoAvaliar={setChamado} tamanho="md" />
             </div>
           )}
         </div>

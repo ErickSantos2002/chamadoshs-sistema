@@ -4,7 +4,8 @@ import { AlertCircle, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { useSaudeDoSistema } from '../hooks/useSaudeDoSistema';
-import { EstadoDoSistema, TEXTO_DO_ESTADO } from '../lib/saude';
+import { EstadoDoSistema, TEXTO_DO_ESTADO, descreverIdade } from '../lib/saude';
+import { useRelogio } from '../hooks/useRelogio';
 import { Button, Colchetes, Input, Rotulo } from '../components/ui';
 import logo from '../assets/logo.png';
 
@@ -27,6 +28,8 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { estado: saude, verificadoEm } = useSaudeDoSistema();
+  // Faz o texto de idade andar mesmo sem nada novo acontecer no sistema.
+  const agora = useRelogio(1000);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -212,14 +215,12 @@ const Login: React.FC = () => {
             <Rotulo como="p" className="block">
               Verificado
             </Rotulo>
+            {/* Idade, não hora. A hora ficava imóvel 59 segundos de cada 60,
+                porque a sonda roda a cada minuto — a tela parecia congelada.
+                A idade anda a cada segundo E diz o que interessa ao lado de um
+                ponto verde: de quando é aquela leitura. */}
             <p className="font-mono text-xs text-conteudo-suave">
-              {verificadoEm
-                ? verificadoEm.toLocaleTimeString('pt-BR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  })
-                : '—'}
+              {verificadoEm ? descreverIdade(agora - verificadoEm.getTime()) : '—'}
             </p>
           </div>
         </div>

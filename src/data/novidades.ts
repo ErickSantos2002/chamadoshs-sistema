@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.4.7',
+    data: '2026-08-13',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'Agora dá para avaliar o atendimento sem sair do quadro: as estrelas aparecem na janela do chamado, ao lado dos dados. Antes só existiam na página inteira, e quase ninguém chegava lá depois que o problema acabava.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Na tela de login, o campo ao lado do indicador passou a mostrar há quanto tempo o sistema foi verificado — "há 12s" — em vez de uma hora que ficava parada quase um minuto inteiro.',
+      },
+    ],
+  },
+  {
     versao: '1.4.6',
     data: '2026-08-13',
     itens: [

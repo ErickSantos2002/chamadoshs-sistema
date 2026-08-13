@@ -7,6 +7,7 @@ import {
   TIMEOUT_MS,
   classificarResposta,
   consultarSaude,
+  descreverIdade,
 } from './saude';
 
 vi.mock('axios');
@@ -84,5 +85,34 @@ describe('constantes', () => {
     for (const estado of estados) {
       expect(TEXTO_DO_ESTADO[estado]).toBeTruthy();
     }
+  });
+});
+
+describe('descreverIdade', () => {
+  it('diz "agora" nos primeiros segundos', () => {
+    // "há 1s" piscando para "há 2s" chama atenção para o relógio em vez de
+    // para o estado do sistema, que é o que a faixa existe para mostrar.
+    expect(descreverIdade(0)).toBe('agora');
+    expect(descreverIdade(4_999)).toBe('agora');
+  });
+
+  it('conta em segundos até um minuto', () => {
+    expect(descreverIdade(5_000)).toBe('há 5s');
+    expect(descreverIdade(59_000)).toBe('há 59s');
+  });
+
+  it('vira minutos a partir de um minuto', () => {
+    expect(descreverIdade(60_000)).toBe('há 1min');
+    expect(descreverIdade(59 * 60_000)).toBe('há 59min');
+  });
+
+  it('vira horas a partir de uma hora', () => {
+    expect(descreverIdade(60 * 60_000)).toBe('há 1h');
+  });
+
+  it('não mostra idade negativa', () => {
+    // Relógio do cliente atrasado em relação ao carimbo produz diferença
+    // negativa. "há -3s" seria pior que arredondar para agora.
+    expect(descreverIdade(-3_000)).toBe('agora');
   });
 });

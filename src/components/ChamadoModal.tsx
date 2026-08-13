@@ -5,6 +5,7 @@ import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { Chamado, Comentario, PrioridadeEnum, StatusEnum } from '../types/api';
 import { Avatar, Badge, Button, Modal, Textarea, VarianteBadge } from './ui';
 import SlaProgresso from './SlaProgresso';
+import Avaliacao from './Avaliacao';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -309,6 +310,18 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 <span className="text-conteudo">{dataHora(chamado.data_resolucao)}</span>
               </Campo>
             </dl>
+
+            {/* A avaliação fica AQUI, e não só na página inteira, porque era o
+                lugar que faltava: 12 de 144 chamados avaliados nos primeiros
+                nove meses, e o motivo não era permissão — o solicitante não
+                tinha por que abrir a página de detalhe depois que o problema
+                acabou. O componente some sozinho enquanto o chamado não estiver
+                resolvido. */}
+            <Avaliacao
+              chamado={chamado}
+              aoAvaliar={setChamado}
+              className="border-t border-borda-suave pt-4"
+            />
           </aside>
         </div>
       )}

@@ -70,6 +70,42 @@ export async function consultarSaude(): Promise<EstadoDoSistema> {
   }
 }
 
+/**
+ * Há quanto tempo foi a última verificação, em texto.
+ *
+ * ── Por que idade, e não hora ─────────────────────────────────────────
+ *
+ * A primeira versão mostrava a hora da consulta — "08:22:17". Correto e
+ * imóvel: a sonda roda a cada 60s, então o número ficava parado 59 segundos
+ * de cada 60 e a tela parecia congelada. A maquete tinha um cronômetro
+ * andando, e a diferença saltava aos olhos.
+ *
+ * A saída não é inventar um relógio, que não diria nada sobre o sistema. É
+ * mostrar a IDADE da informação: ela muda a cada segundo, e o que ela informa
+ * é justamente o que interessa ao lado de um ponto verde — de quando é essa
+ * leitura. Um indicador de saúde sem idade é o que continua verde vinte
+ * minutos depois da queda.
+ *
+ * Abaixo de cinco segundos escreve "agora": ver "há 1s" piscando para "há 2s"
+ * chama atenção para o relógio em vez de para o estado.
+ */
+export function descreverIdade(msDecorridos: number): string {
+  const s = Math.floor(msDecorridos / 1000);
+
+  // Cobre também a diferença negativa, que aparece quando o relógio do cliente
+  // está atrasado em relação ao carimbo: qualquer negativo é menor que 5 e sai
+  // como "agora", em vez de "há -3s". Havia um `Math.max(0, …)` aqui para isso
+  // e ele nunca chegava a fazer efeito — a comparação abaixo já resolvia.
+  if (s < 5) return 'agora';
+  if (s < 60) return `há ${s}s`;
+
+  const min = Math.floor(s / 60);
+  if (min < 60) return `há ${min}min`;
+
+  const h = Math.floor(min / 60);
+  return `há ${h}h`;
+}
+
 /** O que a faixa escreve em cada estado. */
 export const TEXTO_DO_ESTADO: Record<EstadoDoSistema, string> = {
   verificando: 'verificando',
