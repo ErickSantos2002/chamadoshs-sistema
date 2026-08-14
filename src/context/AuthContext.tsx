@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/chamadoshsapi';
 import { getRoleName } from '../utils/roleMapper';
 
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         senha: password
       });
 
-      const { access_token, user_id, nome, role } = loginData;
+      const { access_token, user_id, nome } = loginData;
       setToken(access_token);
 
       // Busca dados completos do usuário logado

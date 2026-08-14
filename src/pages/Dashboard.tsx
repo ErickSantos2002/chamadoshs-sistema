@@ -18,7 +18,7 @@ import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
 import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
-import { Colchetes, Rotulo, SeletorDeFiltro } from '../components/ui';
+import { Colchetes, Rotulo, Seletor } from '../components/ui';
 import { IconeAlerta, IconeArquivar, IconeAtividade, IconeCarregando, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
 import {
   corDaPrioridade,
@@ -522,7 +522,7 @@ const Dashboard: React.FC = () => {
               </label>
               {/* Cada opção leva a cor que aquele status tem nos gráficos
                   logo abaixo. É a mesma fonte, `corDoStatus`. */}
-              <SeletorDeFiltro
+              <Seletor
                 rotulo="Filtrar por status"
                 valor={filtroStatus}
                 aoMudar={setFiltroStatus}
@@ -553,7 +553,7 @@ const Dashboard: React.FC = () => {
               <label className="block text-sm font-medium text-conteudo-suave mb-1">
                 Prioridade
               </label>
-              <SeletorDeFiltro
+              <Seletor
                 rotulo="Filtrar por prioridade"
                 valor={filtroPrioridade}
                 aoMudar={setFiltroPrioridade}

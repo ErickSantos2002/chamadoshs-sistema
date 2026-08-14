@@ -27,12 +27,9 @@ export { Modal } from './Modal';
 
 export { Rotulo } from './Rotulo';
 
-export { Select } from './Select';
-
-// Seletor dos FILTROS, com a lista desenhada por nós. O `Select` acima
-// continua sendo o certo em formulário — veja o cabeçalho de cada um.
-export { SeletorDeFiltro } from './SeletorDeFiltro';
-export type { OpcaoDeFiltro } from './SeletorDeFiltro';
+// O seletor do sistema, com a lista desenhada por nós — filtros e formulários.
+export { Seletor } from './Seletor';
+export type { OpcaoDoSeletor } from './Seletor';
 
 export { IconeConfere, IconeSeta } from './icones';
 

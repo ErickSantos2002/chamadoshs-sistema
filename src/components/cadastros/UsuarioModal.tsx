@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
 import HistoricoDaConta from './HistoricoDaConta';
-import { Button, MensagemDeErro, Modal, Rotulo, RotuloDeCampo } from '../ui';
+import { Button, MensagemDeErro, Modal, Rotulo, RotuloDeCampo, Seletor } from '../ui';
 import { getRoleName } from '../../utils/roleMapper';
 import { IconeEscudo, IconeOlho, IconeOlhoFechado, IconeSalvar, IconeSetor } from '../ui/icones';
 import type {
@@ -383,33 +383,22 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 <IconeEscudo className="mr-1 inline h-4 w-4" />
                 Perfil
               </RotuloDeCampo>
-              <select
+              <Seletor
                 id="role_name"
-                name="role_name"
-                value={formData.role_name}
-                onChange={handleInputChange}
+                rotulo="Perfil"
                 disabled={isReadOnly}
-                className={`
-                  w-full px-4 py-2 border rounded-lg
-                  bg-superficie
-                  text-conteudo
-                  ${errors.role_name 
-                    ? 'border-perigo' 
-                    : 'border-borda'
-                  }
-                  ${isReadOnly
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal'
-                  }
-                  transition-colors
-                `}
-              >
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
+                invalido={Boolean(errors.role_name)}
+                valor={formData.role_name ?? ''}
+                aoMudar={(v) => {
+                  setFormData((prev) => ({ ...prev, role_name: v }));
+                  // Mesma cortesia do handleInputChange: escolher limpa o erro.
+                  setErrors((prev) => {
+                    const { role_name: _ignorado, ...resto } = prev;
+                    return resto;
+                  });
+                }}
+                opcoes={roles.map((role) => ({ valor: role, rotulo: role }))}
+              />
               <MensagemDeErro texto={errors.role_name} />
             </div>
 
@@ -419,31 +408,25 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 <IconeSetor className="mr-1 inline h-4 w-4" />
                 Setor
               </RotuloDeCampo>
-              <select
+              <Seletor
                 id="setor_id"
-                name="setor_id"
-                value={formData.setor_id || ''}
-                onChange={handleInputChange}
+                rotulo="Setor"
                 disabled={isReadOnly}
-                className={`
-                  w-full px-4 py-2 border rounded-lg
-                  bg-superficie
-                  text-conteudo
-                  border-borda
-                  ${isReadOnly
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal'
-                  }
-                  transition-colors
-                `}
-              >
-                <option value="">Nenhum</option>
-                {setores.map((setor) => (
-                  <option key={setor.id} value={setor.id}>
-                    {setor.nome}
-                  </option>
-                ))}
-              </select>
+                valor={formData.setor_id ? String(formData.setor_id) : ''}
+                aoMudar={(v) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    setor_id: v ? Number(v) : undefined,
+                  }))
+                }
+                opcoes={[
+                  { valor: '', rotulo: 'Nenhum' },
+                  ...setores.map((setor) => ({
+                    valor: String(setor.id),
+                    rotulo: setor.nome,
+                  })),
+                ]}
+              />
             </div>
 
             {/* Conta de serviço */}

@@ -11,7 +11,7 @@ import {
 import { IconeConfere, IconeSeta } from './icones';
 
 /**
- * Um seletor de filtro com a lista desenhada por nós.
+ * O seletor do sistema, com a lista desenhada por nós.
  *
  * ── Por que não o `<select>` nativo ───────────────────────────────────
  *
@@ -29,38 +29,51 @@ import { IconeConfere, IconeSeta } from './icones';
  * mouse. Aqui estão implementados: setas, Home e End, Enter e espaço, Escape
  * com o foco voltando para o gatilho, Tab fechando, e busca por digitação.
  *
- * Por isso ele fica só nos FILTROS. Nos formulários o nativo continua, onde o
- * seletor do celular e a digitação valem mais que a aparência da lista.
+ * Nasceu restrito aos filtros, com o nativo mantido nos formulários pela
+ * digitação e pelo seletor do celular. A restrição caiu no mesmo dia: a lista
+ * de solicitante do Novo Chamado — trinta nomes, branca, no meio do modal
+ * escuro — mostrou que o argumento não sobrevivia ao primeiro formulário com
+ * lista longa. A digitação está reimplementada aqui; o que se perde de verdade
+ * é só o seletor nativo do celular, e o sistema roda em desktop e TV.
  *
  * ── Por que a lista vai para um portal ────────────────────────────────
  *
- * Os filtros vivem dentro de painéis com `overflow` próprio. Uma lista
- * posicionada dentro deles seria recortada pela borda do painel. No `body`,
- * com posição fixa, ela abre por cima de tudo — e por isso precisa fechar ao
- * rolar a página, senão fica flutuando longe do campo que a abriu.
+ * Seletor vive dentro de painel e de modal, ambos com `overflow` próprio. Uma
+ * lista posicionada dentro deles seria recortada pela borda. No `body`, com
+ * posição fixa, ela abre por cima de tudo — e por isso precisa fechar ao rolar,
+ * senão fica flutuando longe do campo que a abriu.
  */
 
-export interface OpcaoDeFiltro {
+export interface OpcaoDoSeletor {
   valor: string;
   rotulo: string;
   /** Ponto colorido à esquerda. Para status e prioridade, que já têm cor. */
   cor?: string;
 }
 
-export interface SeletorDeFiltroProps {
+export interface SeletorProps {
   valor: string;
   aoMudar: (valor: string) => void;
-  opcoes: OpcaoDeFiltro[];
-  /** O que este filtro filtra. O gatilho mostra só a opção escolhida. */
+  opcoes: OpcaoDoSeletor[];
+  /** O que se escolhe aqui. Vira o `aria-label`; o gatilho mostra só a opção. */
   rotulo: string;
+  /** Para o `htmlFor` de um rótulo visível apontar para o gatilho. */
+  id?: string;
+  /** Modo leitura: mostra a escolha e não abre. */
+  disabled?: boolean;
+  /** Borda de perigo, para campo que falhou validação. */
+  invalido?: boolean;
   className?: string;
 }
 
-export const SeletorDeFiltro: React.FC<SeletorDeFiltroProps> = ({
+export const Seletor: React.FC<SeletorProps> = ({
   valor,
   aoMudar,
   opcoes,
   rotulo,
+  id: idExterno,
+  disabled,
+  invalido,
   className,
 }) => {
   const id = useId();
@@ -133,7 +146,7 @@ export const SeletorDeFiltro: React.FC<SeletorDeFiltroProps> = ({
     };
   }, [aberto]);
 
-  const escolher = (opcao: OpcaoDeFiltro) => {
+  const escolher = (opcao: OpcaoDoSeletor) => {
     aoMudar(opcao.valor);
     fechar(true);
   };
@@ -254,19 +267,24 @@ export const SeletorDeFiltro: React.FC<SeletorDeFiltroProps> = ({
     <div className={cn('relative', className)}>
       <button
         ref={gatilhoRef}
+        id={idExterno}
         type="button"
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={aberto}
         aria-label={rotulo}
+        disabled={disabled}
         onClick={() => (aberto ? fechar(false) : abrir(indiceAtual))}
         onKeyDown={aoTeclarNoGatilho}
         className={cn(
           'flex w-full items-center gap-2 border px-3 py-2 text-sm transition-colors',
           'bg-superficie-base text-conteudo',
+          'disabled:cursor-not-allowed disabled:opacity-60',
           aberto
             ? 'border-sinal ring-1 ring-sinal'
-            : 'border-borda hover:border-borda-forte',
+            : invalido
+              ? 'border-perigo'
+              : 'border-borda hover:border-borda-forte',
           'focus:border-sinal focus:outline-none focus:ring-1 focus:ring-sinal'
         )}
       >
@@ -291,4 +309,4 @@ export const SeletorDeFiltro: React.FC<SeletorDeFiltroProps> = ({
   );
 };
 
-export default SeletorDeFiltro;
+export default Seletor;

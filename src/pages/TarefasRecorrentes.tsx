@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
-import { Button, Modal } from '../components/ui';
+import { Button, Modal, Seletor } from '../components/ui';
 import { IconeAgenda, IconeApagar, IconeAtencao, IconeCarregando, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
 import {
   tarefasRecorrentesService,
@@ -647,35 +647,29 @@ const TarefasRecorrentes: React.FC = () => {
                     <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       Categoria
                     </label>
-                    <select
-                      value={form.categoria_id}
-                      onChange={(e) => atualizarForm({ categoria_id: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
-                    >
-                      <option value="">Sem categoria</option>
-                      {categorias.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.nome}
-                        </option>
-                      ))}
-                    </select>
+                    <Seletor
+                      rotulo="Categoria"
+                      valor={String(form.categoria_id ?? '')}
+                      aoMudar={(v) => atualizarForm({ categoria_id: v })}
+                      opcoes={[
+                        { valor: '', rotulo: 'Sem categoria' },
+                        ...categorias.map((c) => ({ valor: String(c.id), rotulo: c.nome })),
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       Responsável padrão
                     </label>
-                    <select
-                      value={form.responsavel_id}
-                      onChange={(e) => atualizarForm({ responsavel_id: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
-                    >
-                      <option value="">Sem responsável</option>
-                      {usuarios.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.nome}
-                        </option>
-                      ))}
-                    </select>
+                    <Seletor
+                      rotulo="Responsável padrão"
+                      valor={String(form.responsavel_id ?? '')}
+                      aoMudar={(v) => atualizarForm({ responsavel_id: v })}
+                      opcoes={[
+                        { valor: '', rotulo: 'Sem responsável' },
+                        ...usuarios.map((u) => ({ valor: String(u.id), rotulo: u.nome })),
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -684,37 +678,32 @@ const TarefasRecorrentes: React.FC = () => {
                     <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       Prioridade
                     </label>
-                    <select
-                      value={form.prioridade}
-                      onChange={(e) =>
-                        atualizarForm({ prioridade: e.target.value as PrioridadeEnum })
-                      }
-                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
-                    >
-                      {Object.values(PrioridadeEnum).map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
+                    <Seletor
+                      rotulo="Prioridade"
+                      valor={form.prioridade}
+                      aoMudar={(v) => atualizarForm({ prioridade: v as PrioridadeEnum })}
+                      opcoes={Object.values(PrioridadeEnum).map((p) => ({
+                        valor: p,
+                        rotulo: p,
+                      }))}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-conteudo-suave mb-1">
                       Recorrência
                     </label>
-                    <select
-                      value={form.tipo_recorrencia}
-                      onChange={(e) =>
-                        atualizarForm({
-                          tipo_recorrencia: e.target.value as TipoRecorrencia,
-                        })
+                    <Seletor
+                      rotulo="Recorrência"
+                      valor={form.tipo_recorrencia}
+                      aoMudar={(v) =>
+                        atualizarForm({ tipo_recorrencia: v as TipoRecorrencia })
                       }
-                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
-                    >
-                      <option value="diaria">Diária</option>
-                      <option value="semanal">Semanal</option>
-                      <option value="mensal">Mensal</option>
-                    </select>
+                      opcoes={[
+                        { valor: 'diaria', rotulo: 'Diária' },
+                        { valor: 'semanal', rotulo: 'Semanal' },
+                        { valor: 'mensal', rotulo: 'Mensal' },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -725,19 +714,15 @@ const TarefasRecorrentes: React.FC = () => {
                       <label className="block text-sm font-medium text-conteudo-suave mb-1">
                         Dia da semana
                       </label>
-                      <select
-                        value={form.dia_semana}
-                        onChange={(e) =>
-                          atualizarForm({ dia_semana: Number(e.target.value) })
-                        }
-                        className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
-                      >
-                        {DIAS_SEMANA.map((d, i) => (
-                          <option key={i} value={i}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
+                      <Seletor
+                        rotulo="Dia da semana"
+                        valor={String(form.dia_semana)}
+                        aoMudar={(v) => atualizarForm({ dia_semana: Number(v) })}
+                        opcoes={DIAS_SEMANA.map((d, i) => ({
+                          valor: String(i),
+                          rotulo: d,
+                        }))}
+                      />
                     </div>
                   )}
                   {form.tipo_recorrencia === 'mensal' && (

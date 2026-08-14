@@ -6,7 +6,7 @@ import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { StatusEnum, PrioridadeEnum, Chamado, TarefaRecorrente } from '../types/api';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
-import { Button, Input, Modal, SeletorDeFiltro } from '../components/ui';
+import { Button, Input, Modal, Seletor } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import NovoChamadoForm from '../components/NovoChamadoForm';
@@ -145,17 +145,6 @@ const Chamados: React.FC = () => {
   // As cores de status e de prioridade agora vivem no KanbanColumn, mapeadas
   // para as cores de significado do tema.
 
-  // Formatar data
-  const formatarData = (data: string) => {
-    return new Date(data).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   if (loading) {
     return (
       <div className="min-h-full bg-superficie-base flex items-center justify-center">
@@ -200,7 +189,7 @@ const Chamados: React.FC = () => {
                   gráficos. Filtro e gráfico falando cores diferentes da mesma
                   coisa é o tipo de detalhe que ensina a não confiar em nenhum
                   dos dois. */}
-              <SeletorDeFiltro
+              <Seletor
                 rotulo="Filtrar por prioridade"
                 valor={filtroPrioridade}
                 aoMudar={(v) => setFiltroPrioridade(v as PrioridadeEnum | '')}
@@ -215,7 +204,7 @@ const Chamados: React.FC = () => {
                 className="w-48"
               />
 
-              <SeletorDeFiltro
+              <Seletor
                 rotulo="Filtrar por categoria"
                 valor={filtroCategoria === '' ? '' : String(filtroCategoria)}
                 aoMudar={(v) => setFiltroCategoria(v ? Number(v) : '')}

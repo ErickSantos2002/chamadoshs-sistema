@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.9',
+    data: '2026-08-14',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Todas as listas de escolha do sistema — inclusive as dos formulários, como a de solicitante do novo chamado — agora abrem com a aparência do sistema, em vez da lista branca do Windows.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Nessas listas dá para digitar as primeiras letras para pular direto ao nome — útil na lista de solicitantes, que passa de trinta pessoas.',
+      },
+    ],
+  },
+  {
     versao: '1.6.8',
     data: '2026-08-14',
     itens: [

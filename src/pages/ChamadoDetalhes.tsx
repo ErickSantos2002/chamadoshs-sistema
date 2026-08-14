@@ -12,16 +12,15 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
-import { IconeArquivar, IconeCarregando, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeFecharCirculo, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
+import { Seletor } from '../components/ui';
+import { IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
 import {
   Chamado,
   Comentario,
   Historico,
   StatusEnum,
   PrioridadeEnum,
-  UrgenciaEnum,
   ChamadoUpdate,
-  Usuario,
   Categoria,
 } from '../types/api';
 
@@ -54,8 +53,8 @@ const ChamadoDetalhes: React.FC = () => {
   const [novoComentario, setNovoComentario] = useState('');
   const [enviandoComentario, setEnviandoComentario] = useState(false);
 
-  // Dados de edição
-  const [descricaoEditada, setDescricaoEditada] = useState('');
+  // Dados de edição. A descrição não está entre eles: é imutável de propósito,
+  // preserva o relato original do solicitante.
   const [categoriaEditada, setCategoriaEditada] = useState<
     number | undefined
   >();
@@ -84,7 +83,6 @@ const ChamadoDetalhes: React.FC = () => {
   // Permissões
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
-  const isUsuario = user?.role === 'Usuario';
   const podeEditar = isAdmin || isTecnico;
 
   useEffect(() => {
@@ -142,7 +140,6 @@ const ChamadoDetalhes: React.FC = () => {
       }
 
       // Inicializar estados de edição
-      setDescricaoEditada(chamadoData.descricao);
       setCategoriaEditada(chamadoData.categoria_id);
       setStatusEditado(chamadoData.status);
       setPrioridadeEditada(chamadoData.prioridade);
@@ -151,7 +148,7 @@ const ChamadoDetalhes: React.FC = () => {
 
       // Carregar técnicos e categorias se for admin ou técnico
       if (podeEditar) {
-        const [tecnicosData, categoriasData] = await Promise.all([
+        const [, categoriasData] = await Promise.all([
           carregarTecnicos(),
           categoriasService.listar(true), // apenas categorias ativas
         ]);
@@ -741,26 +738,18 @@ const ChamadoDetalhes: React.FC = () => {
                 </label>
 
                 {modoEdicao ? (
-                  <select
-                    value={statusEditado}
-                    onChange={(e) =>
-                      setStatusEditado(e.target.value as StatusEnum)
-                    }
-                    className="w-full px-3 py-2 border rounded-lg 
-                    bg-superficie
-                    text-conteudo
-                    border-borda
-                    focus:outline-none focus:ring-2 
-                    focus:ring-info transition-colors"
-                  >
-                    {Object.values(StatusEnum)
+                  <Seletor
+                    rotulo="Status"
+                    valor={statusEditado}
+                    aoMudar={(v) => setStatusEditado(v as StatusEnum)}
+                    opcoes={Object.values(StatusEnum)
                       .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do dropdown
-                      .map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                  </select>
+                      .map((status) => ({
+                        valor: status,
+                        rotulo: status,
+                        cor: corDoStatus(getStatusDisplay(status), darkMode),
+                      }))}
+                  />
                 ) : (
                   <span
                     className="inline-flex px-3 py-1 text-sm font-semibold text-conteudo"
@@ -778,28 +767,18 @@ const ChamadoDetalhes: React.FC = () => {
                 </label>
 
                 {modoEdicao ? (
-                  <select
-                    value={categoriaEditada || ''}
-                    onChange={(e) =>
-                      setCategoriaEditada(
-                        e.target.value ? parseInt(e.target.value) : undefined,
-                      )
-                    }
-                    className="w-full px-3 py-2 border rounded-lg 
-                    bg-superficie
-                    text-conteudo
-                    border-borda
-                    focus:outline-none focus:ring-2 
-                    focus:ring-info transition-colors"
-                  >
-                    <option value="">Sem categoria</option>
-
-                    {categorias.map((categoria) => (
-                      <option key={categoria.id} value={categoria.id}>
-                        {categoria.nome}
-                      </option>
-                    ))}
-                  </select>
+                  <Seletor
+                    rotulo="Categoria"
+                    valor={categoriaEditada ? String(categoriaEditada) : ''}
+                    aoMudar={(v) => setCategoriaEditada(v ? Number(v) : undefined)}
+                    opcoes={[
+                      { valor: '', rotulo: 'Sem categoria' },
+                      ...categorias.map((categoria) => ({
+                        valor: String(categoria.id),
+                        rotulo: categoria.nome,
+                      })),
+                    ]}
+                  />
                 ) : (
                   <p className="text-conteudo">
                     {categoriaNome}
@@ -853,26 +832,18 @@ const ChamadoDetalhes: React.FC = () => {
                 </label>
 
                 {modoEdicao ? (
-                  <select
-                    value={tecnicoEditado || ''}
-                    onChange={(e) =>
-                      setTecnicoEditado(
-                        e.target.value ? parseInt(e.target.value) : undefined,
-                      )
-                    }
-                    className="w-full px-3 py-2 border rounded-lg
-                    border-borda
-                    bg-superficie text-conteudo
-                    focus:ring-2 focus:ring-info"
-                  >
-                    <option value="">Sem atribuição</option>
-
-                    {tecnicos.map((tecnico) => (
-                      <option key={tecnico.id} value={tecnico.id}>
-                        {tecnico.nome}
-                      </option>
-                    ))}
-                  </select>
+                  <Seletor
+                    rotulo="Técnico responsável"
+                    valor={tecnicoEditado ? String(tecnicoEditado) : ''}
+                    aoMudar={(v) => setTecnicoEditado(v ? Number(v) : undefined)}
+                    opcoes={[
+                      { valor: '', rotulo: 'Sem atribuição' },
+                      ...tecnicos.map((tecnico) => ({
+                        valor: String(tecnico.id),
+                        rotulo: tecnico.nome,
+                      })),
+                    ]}
+                  />
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
                     {chamado.tecnico_responsavel_id ? (
@@ -910,24 +881,16 @@ const ChamadoDetalhes: React.FC = () => {
                 </label>
 
                 {modoEdicao ? (
-                  <select
-                    value={prioridadeEditada}
-                    onChange={(e) =>
-                      setPrioridadeEditada(e.target.value as PrioridadeEnum)
-                    }
-                    className="w-full px-3 py-2 border rounded-lg 
-                    bg-superficie
-                    text-conteudo
-                    border-borda
-                    focus:outline-none focus:ring-2 
-                    focus:ring-info transition-colors"
-                  >
-                    {Object.values(PrioridadeEnum).map((prioridade) => (
-                      <option key={prioridade} value={prioridade}>
-                        {prioridade}
-                      </option>
-                    ))}
-                  </select>
+                  <Seletor
+                    rotulo="Prioridade"
+                    valor={prioridadeEditada}
+                    aoMudar={(v) => setPrioridadeEditada(v as PrioridadeEnum)}
+                    opcoes={Object.values(PrioridadeEnum).map((prioridade) => ({
+                      valor: prioridade,
+                      rotulo: prioridade,
+                      cor: corDaPrioridade(prioridade, darkMode),
+                    }))}
+                  />
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span

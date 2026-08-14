@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createElement } from 'react';
 import { MensagemDeErro, RotuloDeCampo } from './Campo';
 
 const html = (elemento: React.ReactElement) => renderToStaticMarkup(elemento);

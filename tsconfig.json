@@ -5,12 +5,15 @@
     "moduleResolution": "node",
     "lib": ["es2017", "dom"],
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "rootDir": "./src",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
     "jsx": "react-jsx"
   },
-  "include": ["src", "vite-env.d.ts", "src/main.tsx"],
+  "include": ["src"],
   "exclude": ["node_modules"]
 }

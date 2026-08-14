@@ -9,7 +9,7 @@ import {
   TrilhaComFalha,
   TrilhaVazia,
 } from '../components/EstadosDaTrilha';
-import { Button, Colchetes, Rotulo, SeletorDeFiltro } from '../components/ui';
+import { Button, Colchetes, Rotulo, Seletor } from '../components/ui';
 import type { EventoDeAuditoria } from '../types/api';
 import { IconeRecarregar, IconeTrilha } from '../components/ui/icones';
 
@@ -179,7 +179,7 @@ const Auditoria: React.FC = () => {
               Tipo de cadastro
             </Rotulo>
             {ehAdministrador ? (
-              <SeletorDeFiltro
+              <Seletor
                 rotulo="Tipo de cadastro"
                 valor={alvo}
                 aoMudar={(v) =>
@@ -209,7 +209,7 @@ const Auditoria: React.FC = () => {
             <Rotulo como="label" className="mb-1.5 block">
               Quem fez
             </Rotulo>
-            <SeletorDeFiltro
+            <Seletor
               rotulo="Quem fez"
               valor={atorId}
               aoMudar={(v) => aoFiltrar(() => setAtorId(v))}

@@ -4,7 +4,9 @@ import { useChamados } from '../hooks/useChamados';
 import { slaConfigsService } from '../services/chamadoshsapi';
 import { Chamado, ChamadoCreate, PrioridadeEnum, SLAConfig } from '../types/api';
 import { EXPEDIENTE, formatarPrazo } from '../lib/prazo';
-import { Button, Input, RotuloDeCampo, Select, Textarea } from './ui';
+import { corDaPrioridade } from '../lib/graficos';
+import { useTheme } from '../context/ThemeContext';
+import { Button, Input, RotuloDeCampo, Seletor, Textarea } from './ui';
 import ContadorMinimo from './ContadorMinimo';
 import { IconeEscudoConfere, IconeRelogio } from './ui/icones';
 import {
@@ -33,6 +35,7 @@ const TITULO_MAXIMO = 200;
  */
 export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCancelar }) => {
   const { user } = useAuth();
+  const { darkMode } = useTheme();
   const { categorias, usuarios, criarChamado, carregarCategorias, carregarUsuarios } =
     useChamados();
 
@@ -159,22 +162,23 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       {ehEquipe && (
         <div>
           <RotuloDeCampo htmlFor="solicitante" obrigatorio>Solicitante</RotuloDeCampo>
-          <Select
+          {/* A lista mais longa do sistema — trinta e poucos nomes. É onde a
+              busca por digitação do seletor mais vale: digitar "ga" chega em
+              Gabriel sem rolar. O `required` nativo saiu junto com o <select>,
+              e não faz falta: `enviar` já recusa com "Selecione o solicitante". */}
+          <Seletor
             id="solicitante"
-            className="w-full"
-            value={solicitanteId ?? ''}
-            onChange={(e) =>
-              setSolicitanteId(e.target.value ? Number(e.target.value) : undefined)
-            }
-            required
-          >
-            <option value="">Selecione o solicitante</option>
-            {usuarios.map((usuario) => (
-              <option key={usuario.id} value={usuario.id}>
-                {usuario.nome}
-              </option>
-            ))}
-          </Select>
+            rotulo="Solicitante"
+            valor={solicitanteId ? String(solicitanteId) : ''}
+            aoMudar={(v) => setSolicitanteId(v ? Number(v) : undefined)}
+            opcoes={[
+              { valor: '', rotulo: 'Selecione o solicitante' },
+              ...usuarios.map((usuario) => ({
+                valor: String(usuario.id),
+                rotulo: usuario.nome,
+              })),
+            ]}
+          />
           <p className="mt-1 text-xs text-conteudo-tenue">
             Você fica como técnico responsável.
           </p>
@@ -184,35 +188,35 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <RotuloDeCampo htmlFor="categoria">Categoria</RotuloDeCampo>
-          <Select
+          <Seletor
             id="categoria"
-            className="w-full"
-            value={categoriaId ?? ''}
-            onChange={(e) => setCategoriaId(e.target.value ? Number(e.target.value) : undefined)}
-          >
-            <option value="">Sem categoria</option>
-            {categorias.map((categoria) => (
-              <option key={categoria.id} value={categoria.id}>
-                {categoria.nome}
-              </option>
-            ))}
-          </Select>
+            rotulo="Categoria"
+            valor={categoriaId ? String(categoriaId) : ''}
+            aoMudar={(v) => setCategoriaId(v ? Number(v) : undefined)}
+            opcoes={[
+              { valor: '', rotulo: 'Sem categoria' },
+              ...categorias.map((categoria) => ({
+                valor: String(categoria.id),
+                rotulo: categoria.nome,
+              })),
+            ]}
+          />
         </div>
 
         <div>
           <RotuloDeCampo htmlFor="prioridade">Prioridade</RotuloDeCampo>
-          <Select
+          {/* A mesma cor que a prioridade tem nos gráficos e nos filtros. */}
+          <Seletor
             id="prioridade"
-            className="w-full"
-            value={prioridade}
-            onChange={(e) => setPrioridade(e.target.value as PrioridadeEnum)}
-          >
-            {Object.values(PrioridadeEnum).map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </Select>
+            rotulo="Prioridade"
+            valor={prioridade}
+            aoMudar={(v) => setPrioridade(v as PrioridadeEnum)}
+            opcoes={Object.values(PrioridadeEnum).map((p) => ({
+              valor: p,
+              rotulo: p,
+              cor: corDaPrioridade(p, darkMode),
+            }))}
+          />
         </div>
       </div>
 

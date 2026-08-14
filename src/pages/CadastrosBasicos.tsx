@@ -7,7 +7,7 @@ import UsuariosTab from '../components/cadastros/UsuariosTab';
 import SlaTab from '../components/cadastros/SlaTab';
 import Bloqueio from './Bloqueio';
 import type { TipoAba } from '../types/cadastros.types';
-import { IconeConfiguracoes, IconeEtiqueta, IconeRelogio, IconeSetor, IconeUsuarios } from '../components/ui/icones';
+import { IconeEtiqueta, IconeRelogio, IconeSetor, IconeUsuarios } from '../components/ui/icones';
 
 // ========================================
 // COMPONENTE PRINCIPAL

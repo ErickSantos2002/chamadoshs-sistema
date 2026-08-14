@@ -91,7 +91,7 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
   // em andamento não faz sentido, e ocupa espaço no modal com uma seção vazia.
   if (!encerrado || chamado.cancelado) return null;
 
-  const estrela = (n: number, acesa: boolean) => (
+  const estrela = (acesa: boolean) => (
     <IconeEstrela
       className={cn(
         TAMANHOS[tamanho],
@@ -108,7 +108,7 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
         {nota ? (
           <>
             {[1, 2, 3, 4, 5].map((n) => (
-              <span key={n}>{estrela(n, n <= nota)}</span>
+              <span key={n}>{estrela(n <= nota)}</span>
             ))}
             <span className="ml-1 text-sm text-conteudo-suave">{nota} de 5</span>
           </>
@@ -135,7 +135,7 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
             className="transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50
                        focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sinal"
           >
-            {estrela(n, sobre !== null ? n <= sobre : n <= (nota ?? 0))}
+            {estrela(sobre !== null ? n <= sobre : n <= (nota ?? 0))}
           </button>
         ))}
 
