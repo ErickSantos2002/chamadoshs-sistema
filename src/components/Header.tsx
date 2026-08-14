@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { LayoutDashboard, LogOut, Moon, Settings, Sun, Ticket } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
+import { ITENS_DO_MENU } from '../lib/navegacao';
 import logo from '../assets/HS2.ico';
 
 
@@ -58,36 +59,6 @@ const Header: React.FC = () => {
   // embutido na URL do ícone.
   const corDoIcone = (active: boolean) =>
     `${iconBaseClass} ${active ? 'opacity-100' : 'opacity-70'}`;
-
-  const mobileMenuItems = [
-    {
-      label: 'Dashboard',
-      to: '/dashboard',
-      icon: (active: boolean) => (
-        <LayoutDashboard className={corDoIcone(active)} aria-hidden="true" />
-      ),
-    },
-    {
-      label: 'Chamados',
-      to: '/chamados',
-      icon: (active: boolean) => (
-        <Ticket className={corDoIcone(active)} aria-hidden="true" />
-      ),
-    },
-    // Só administrador: as operações de cadastro exigem esse perfil na API.
-    ...(user?.role === 'Administrador'
-      ? [
-          {
-            label: 'Cadastros',
-            to: '/cadastros',
-            icon: (active: boolean) => (
-              <Settings className={corDoIcone(active)} aria-hidden="true" />
-            ),
-          },
-        ]
-      : []),
-  ];
-
 
   return (
     <>
@@ -174,14 +145,18 @@ const Header: React.FC = () => {
             </div>
 
             {/* Navegação */}
+            {/* As mesmas áreas da Sidebar, da mesma lista. Este menu tinha a
+                própria cópia, gateada em `role === 'Administrador'` e sem
+                Auditoria nem Tarefas Recorrentes — então abaixo de `lg` o
+                técnico não via nada além de Dashboard e Chamados. */}
             <nav className="flex flex-col gap-4">
-              {mobileMenuItems.map((item) => {
-                const active = location.pathname === item.to;
+              {ITENS_DO_MENU.map(({ label, to, Icone }) => {
+                const active = location.pathname === to;
 
                 return (
                   <Link
-                    key={item.to}
-                    to={item.to}
+                    key={to}
+                    to={to}
                     onClick={fecharMenu}
                     className={`flex items-center font-medium transition px-2 py-1 rounded-md
                       ${active
@@ -190,8 +165,8 @@ const Header: React.FC = () => {
                       }
                     `}
                   >
-                    {item.icon(active)}
-                    {item.label}
+                    <Icone className={corDoIcone(active)} aria-hidden="true" />
+                    {label}
                   </Link>
                 );
               })}

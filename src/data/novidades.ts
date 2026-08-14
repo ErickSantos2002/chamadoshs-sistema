@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.5',
+    data: '2026-08-14',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Em telas menores, o menu passa a mostrar as mesmas áreas do menu lateral. Antes ele parava em Dashboard e Chamados, e escondia Cadastros, Auditoria e Tarefas Recorrentes de quem não fosse administrador — inclusive dos técnicos.',
+      },
+    ],
+  },
+  {
     versao: '1.6.4',
     data: '2026-08-14',
     itens: [

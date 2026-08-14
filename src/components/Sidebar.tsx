@@ -1,16 +1,8 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Moon,
-  Repeat,
-  ScrollText,
-  Settings,
-  Sparkles,
-  Sun,
-  Ticket,
-} from 'lucide-react';
+import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { ITENS_DO_MENU } from '../lib/navegacao';
 import { cn } from '../lib/utils';
 
 interface SidebarProps {
@@ -33,52 +25,6 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
   const corDoIcone = (isActive: boolean) =>
     cn(iconBaseClass, isActive ? 'opacity-100' : 'opacity-70');
 
-  const menuItems = [
-    {
-      label: 'Dashboard',
-      to: '/dashboard',
-      icon: (isActive: boolean) => (
-        <LayoutDashboard className={corDoIcone(isActive)} aria-hidden="true" />
-      ),
-    },
-    {
-      label: 'Chamados',
-      to: '/chamados',
-      icon: (isActive: boolean) => (
-        <Ticket className={corDoIcone(isActive)} aria-hidden="true" />
-      ),
-    },
-    // O MENU MOSTRA TUDO, inclusive o que o perfil não alcança.
-    //
-    // Esconder parecia gentil e escondia demais: quem não vê Cadastros não sabe
-    // que Cadastros existe, e não pede acesso ao que não sabe que há. Mostrando,
-    // o sistema revela a própria forma, e quem esbarra numa área encontra
-    // explicação — qual é, de quem é, e a quem pedir.
-    //
-    // Nada disso é proteção. Quem protege é a API, e ela protege.
-    {
-      label: 'Cadastros',
-      to: '/cadastros',
-      icon: (isActive: boolean) => (
-        <Settings className={corDoIcone(isActive)} aria-hidden="true" />
-      ),
-    },
-    {
-      label: 'Tarefas Recorrentes',
-      to: '/tarefas-recorrentes',
-      icon: (isActive: boolean) => (
-        <Repeat className={corDoIcone(isActive)} aria-hidden="true" />
-      ),
-    },
-    {
-      label: 'Auditoria',
-      to: '/auditoria',
-      icon: (isActive: boolean) => (
-        <ScrollText className={corDoIcone(isActive)} aria-hidden="true" />
-      ),
-    },
-  ];
-
   return (
     <aside
       className="sticky top-0 hidden w-56 flex-col border-r border-borda
@@ -86,10 +32,13 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
     >
       <nav className="flex-1 px-2 py-6">
         <ul className="space-y-1">
-          {menuItems.map((item) => (
-            <li key={item.to}>
+          {/* A lista vive em `lib/navegacao` porque o menu de gaveta do Header
+              mostra as mesmas áreas. Enquanto eram duas listas, mudar uma
+              deixava a outra para trás — foi o que aconteceu com o técnico. */}
+          {ITENS_DO_MENU.map(({ label, to, Icone }) => (
+            <li key={to}>
               <NavLink
-                to={item.to}
+                to={to}
                 className={({ isActive }) =>
                   cn(
                     'flex items-center rounded-lg px-3 py-2 font-medium transition-colors',
@@ -102,8 +51,8 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
               >
                 {({ isActive }) => (
                   <>
-                    {item.icon(isActive)}
-                    {item.label}
+                    <Icone className={corDoIcone(isActive)} aria-hidden="true" />
+                    {label}
                   </>
                 )}
               </NavLink>
