@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.3',
+    data: '2026-08-14',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'No celular, a faixa embaixo do login deixou de embolar: a hora desce para uma linha só dela em vez de subir por cima do "verificado".',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'O relógio do login não pula mais um segundo de vez em quando — ele acerta o passo com o relógio do computador a cada tique.',
+      },
+    ],
+  },
+  {
     versao: '1.6.2',
     data: '2026-08-13',
     itens: [
