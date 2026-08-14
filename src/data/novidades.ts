@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.4',
+    data: '2026-08-14',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Quando o histórico de uma conta não consegue carregar, a tela agora avisa que não foi possível consultar — antes o erro aparecia seco, e parecia que a conta não tinha nenhum registro.',
+      },
+    ],
+  },
+  {
     versao: '1.6.3',
     data: '2026-08-14',
     itens: [

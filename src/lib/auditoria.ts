@@ -1,6 +1,16 @@
 import type { EventoDeAuditoria } from '../types/api';
 
 /**
+ * O dia em que a trilha passou a gravar.
+ *
+ * É a informação que transforma uma lista vazia de "ninguém mexeu nesta conta"
+ * em "não sabemos o que fizeram antes desta data" — e as duas telas que mostram
+ * a trilha precisam dizer a mesma data. Estava escrita como literal nas duas, o
+ * que só dá certo até alguém corrigir uma delas.
+ */
+export const INICIO_DA_TRILHA = '13/08/2026';
+
+/**
  * Traduz uma linha da trilha de auditoria para o que uma pessoa lê.
  *
  * A API grava `acao` em vocabulário de máquina — `alteracao_de_conta_de_servico`

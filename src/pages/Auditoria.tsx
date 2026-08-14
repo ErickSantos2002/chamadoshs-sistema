@@ -1,9 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Loader2, RefreshCw, ScrollText } from 'lucide-react';
+import { RefreshCw, ScrollText } from 'lucide-react';
 import { auditoriaService, FiltroDeAuditoria } from '../services/chamadoshsapi';
 import { useAuth } from '../hooks/useAuth';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { descreverEvento, momentoDoEvento } from '../lib/auditoria';
+import {
+  NotaDoInicioDaTrilha,
+  TrilhaCarregando,
+  TrilhaComFalha,
+  TrilhaVazia,
+} from '../components/EstadosDaTrilha';
 import { Button, Colchetes, Rotulo, Select } from '../components/ui';
 import type { EventoDeAuditoria } from '../types/api';
 
@@ -258,32 +264,13 @@ const Auditoria: React.FC = () => {
       <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
         <Colchetes />
 
-        {/* O erro é um ESTADO, não um aviso somado aos outros.
-            Antes ele era uma faixa acima da lista, e a lista continuava
-            desenhando o painel de vazio — a tela dizia "não consegui perguntar"
-            e "nada foi registrado" ao mesmo tempo. A segunda é uma afirmação
-            sobre o passado da empresa, feita por quem acabou de admitir que não
-            sabe. É a confusão que este projeto já pagou uma vez, quando
-            `eventos_de_conta` apareceu vazia e foi lida como defeito. */}
+        {/* Os três estados vêm de `EstadosDaTrilha`, compartilhados com o painel
+            de histórico do modal de usuário. O que é específico desta tela — os
+            três vazios diferentes, logo abaixo — continua aqui. */}
         {erro ? (
-          <div
-            role="alert"
-            className="flex items-start gap-2 px-6 py-16 text-sm text-perigo-forte dark:text-perigo-suave"
-          >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>
-              {erro}
-              <span className="mt-1 block text-conteudo-tenue">
-                Isto não quer dizer que não há eventos — quer dizer que não foi
-                possível consultar.
-              </span>
-            </span>
-          </div>
+          <TrilhaComFalha mensagem={erro} />
         ) : carregando && !eventos ? (
-          <p className="flex items-center justify-center gap-2 py-16 text-sm text-conteudo-tenue">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Carregando a trilha…
-          </p>
+          <TrilhaCarregando>Carregando a trilha…</TrilhaCarregando>
         ) : !eventos?.length ? (
           /* O vazio precisa dizer QUAL vazio é, e são TRÊS, não dois.
              A primeira versão só distinguia "com filtro" de "sem filtro", e
@@ -291,7 +278,7 @@ const Auditoria: React.FC = () => {
              Próxima habilita, a página 2 volta vazia e a tela declarava que a
              trilha nunca registrou nada — logo depois de você ter lido 50
              linhas dela. */
-          <div className="px-6 py-16 text-center text-sm text-conteudo-tenue">
+          <TrilhaVazia>
             {pagina > 0 ? (
               <>
                 Fim da lista.{' '}
@@ -321,13 +308,10 @@ const Auditoria: React.FC = () => {
                 {ehAdministrador
                   ? 'A trilha ainda não registrou nenhum evento.'
                   : 'Nenhum evento de setor registrado.'}{' '}
-                <span className="text-conteudo-suave">
-                  Ela grava a partir de 13/08/2026 — alterações anteriores a essa data não
-                  existem aqui.
-                </span>
+                <NotaDoInicioDaTrilha />
               </>
             )}
-          </div>
+          </TrilhaVazia>
         ) : (
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-superficie-elevada">

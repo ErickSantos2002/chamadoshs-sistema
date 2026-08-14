@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
 import { usuariosService } from '../../services/chamadoshsapi';
 import { descreverEvento, momentoDoEvento } from '../../lib/auditoria';
+import {
+  NotaDoInicioDaTrilha,
+  TrilhaCarregando,
+  TrilhaComFalha,
+  TrilhaVazia,
+} from '../EstadosDaTrilha';
 import { Rotulo } from '../ui';
 import type { EventoDeAuditoria } from '../../types/api';
 
@@ -12,24 +17,14 @@ interface HistoricoDaContaProps {
 /**
  * Trilha de auditoria de uma conta.
  *
- * ── Sobre o estado vazio ──────────────────────────────────────────────
+ * Responde "o que fizeram com esta conta". A pergunta inversa — "o que fulano
+ * andou fazendo" — é a tela de Auditoria.
  *
- * É a parte mais importante deste componente, e a mais fácil de errar.
- *
- * A trilha começou a gravar em 13/08/2026. Uma conta criada antes disso, e
- * editada dez vezes antes disso, aparece aqui sem nenhuma linha. Se a tela
- * dissesse "nenhuma alteração registrada", quem lê concluiria que ninguém
- * mexeu na conta — e essa conclusão seria falsa para toda conta antiga.
- *
- * A diferença entre "não aconteceu" e "não sei" é o que separa um registro de
- * auditoria de um enfeite. A mesma confusão já custou uma investigação neste
- * projeto, quando `eventos_de_conta` apareceu vazia e foi lida como defeito.
- *
- * ── Sobre o erro ──────────────────────────────────────────────────────
- *
- * Falha ao carregar também não pode virar lista vazia. Um painel de auditoria
- * que responde "nada aqui" quando na verdade não conseguiu perguntar é pior
- * que um que não existe.
+ * Os estados de carregando, falha e vazio vêm de `EstadosDaTrilha`, junto com o
+ * motivo de eles serem escritos com tanto cuidado: a diferença entre "não
+ * aconteceu" e "não sei" é o que separa um registro de auditoria de um enfeite,
+ * e uma conta anterior a 13/08/2026 chega aqui sem nenhuma linha sem que isso
+ * signifique que ninguém mexeu nela.
  */
 export const HistoricoDaConta: React.FC<HistoricoDaContaProps> = ({ usuarioId }) => {
   const [eventos, setEventos] = useState<EventoDeAuditoria[] | null>(null);
@@ -47,7 +42,12 @@ export const HistoricoDaConta: React.FC<HistoricoDaContaProps> = ({ usuarioId })
         if (vivo) setEventos(linhas);
       })
       .catch((err: any) => {
-        if (vivo) setErro(err.response?.data?.detail || 'Não foi possível carregar o histórico.');
+        if (!vivo) return;
+        setErro(err.response?.data?.detail || 'Não foi possível carregar o histórico.');
+        // Some com o que estava na tela. O modal é reaproveitado entre contas:
+        // sem isto, uma falha ao abrir a segunda deixaria as linhas da primeira
+        // no ar, embaixo do nome de outra pessoa.
+        setEventos(null);
       })
       .finally(() => {
         if (vivo) setCarregando(false);
@@ -58,36 +58,21 @@ export const HistoricoDaConta: React.FC<HistoricoDaContaProps> = ({ usuarioId })
     };
   }, [usuarioId]);
 
-  if (carregando) {
-    return (
-      <p className="flex items-center gap-2 py-6 text-sm text-conteudo-tenue">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-        Carregando histórico…
-      </p>
-    );
+  // A falha vem antes de tudo, como na tela de Auditoria: enquanto ela está no
+  // ar, nenhuma outra frase pode ocupar o lugar e sugerir uma resposta.
+  if (erro) {
+    return <TrilhaComFalha folga="densa" mensagem={erro} />;
   }
 
-  if (erro) {
-    return (
-      <div
-        role="alert"
-        className="flex items-start gap-2 border border-perigo/40 bg-perigo/10 px-3 py-2 text-sm text-perigo-forte dark:text-perigo-suave"
-      >
-        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        {erro}
-      </div>
-    );
+  if (carregando) {
+    return <TrilhaCarregando folga="densa">Carregando histórico…</TrilhaCarregando>;
   }
 
   if (!eventos?.length) {
     return (
-      <p className="py-6 text-sm text-conteudo-tenue">
-        Nenhum evento registrado para esta conta.{' '}
-        <span className="text-conteudo-suave">
-          O registro começou em 13/08/2026 — alterações anteriores a essa data não foram
-          gravadas, e não aparecem aqui.
-        </span>
-      </p>
+      <TrilhaVazia folga="densa">
+        Nenhum evento registrado para esta conta. <NotaDoInicioDaTrilha />
+      </TrilhaVazia>
     );
   }
 
