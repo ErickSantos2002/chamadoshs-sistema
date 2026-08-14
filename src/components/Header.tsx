@@ -127,9 +127,13 @@ const Header: React.FC = () => {
             className="fixed inset-0 bg-black/40 z-40 transition-opacity"
             onClick={fecharMenu}
           />
+          {/* `overflow-y-auto` porque a gaveta cresceu: com as cinco áreas no
+              menu, num celular deitado o rodapé — o tema e o Sair — cai para
+              fora da tela. E como o corpo da página fica travado enquanto a
+              gaveta está aberta, sem rolagem própria não há como alcançá-lo. */}
           <div
             ref={menuRef}
-            className={`fixed inset-y-0 left-0 w-[70vw] bg-superficie z-50 shadow-lg px-6 pb-6 flex flex-col transform transition-transform duration-300 ${
+            className={`fixed inset-y-0 left-0 w-[70vw] bg-superficie z-50 shadow-lg px-6 pb-6 flex flex-col overflow-y-auto transform transition-transform duration-300 ${
               menuAnimado ? 'translate-x-0' : '-translate-x-full'
             }`}
           >

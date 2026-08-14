@@ -7,6 +7,8 @@
  * o que a pessoa digitou.
  */
 
+import { simplificar } from './texto';
+
 /** Largura mínima da lista, para opção curta não virar uma tira fina. */
 export const LARGURA_MINIMA = 176;
 
@@ -88,23 +90,5 @@ export function acharPorDigitacao(rotulos: string[], texto: string): number {
 
   const alvo = simplificar(texto);
   return rotulos.findIndex((rotulo) => simplificar(rotulo).startsWith(alvo));
-}
-
-/** Primeiro código de acento combinante; o último é `FIM_DOS_ACENTOS`. */
-const INICIO_DOS_ACENTOS = 0x0300;
-const FIM_DOS_ACENTOS = 0x036f;
-
-function simplificar(texto: string): string {
-  // `NFD` separa a letra do acento — "é" vira "e" mais o acento — e aí basta
-  // jogar fora os acentos. Comparados por código, e não por um regex com os
-  // caracteres soltos no arquivo: ali eles são invisíveis, e qualquer acerto
-  // de formatação apagaria a regra sem ninguém notar.
-  return [...texto.normalize('NFD')]
-    .filter((caractere) => {
-      const codigo = caractere.codePointAt(0) ?? 0;
-      return codigo < INICIO_DOS_ACENTOS || codigo > FIM_DOS_ACENTOS;
-    })
-    .join('')
-    .toLowerCase();
 }
 

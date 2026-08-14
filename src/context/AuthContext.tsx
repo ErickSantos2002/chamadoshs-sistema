@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/chamadoshsapi';
-import { getRoleName } from '../utils/roleMapper';
+import { getRoleName, nomeCanonicoDaRole } from '../utils/roleMapper';
 
 type AuthContextType = {
   user: { id: number; username: string; role: string; setor_id?: number } | null;
@@ -34,8 +34,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (savedToken && savedUser) {
       try {
         const userData = JSON.parse(savedUser);
-        // Se tiver role_id, converte para nome da role
-        const role = userData.role || getRoleName(userData.role_id || 3);
+
+        // O perfil do localStorage é a string CRUA que a API mandou no login —
+        // `roles.nome` do banco, numa coluna em que a própria API não confia
+        // ao pé da letra. Canonizada aqui, "TECNICO" e "Técnico" viram
+        // 'Tecnico' antes de qualquer `===` do front. Sem isto, um acento na
+        // tabela faria o sistema funcionar ao entrar (o login deriva do
+        // role_id) e perder as áreas restritas depois do F5.
+        const role =
+          nomeCanonicoDaRole(userData.role) ?? getRoleName(userData.role_id || 3);
 
         setUser({
           id: userData.id,

@@ -3,6 +3,8 @@
  * Sistema ChamadosHS
  */
 
+import { simplificar } from '../lib/texto';
+
 // Mapeamento de Role IDs para Nomes
 export const ROLE_MAP: Record<number, string> = {
   1: 'Administrador',
@@ -22,6 +24,32 @@ export const ROLE_ID_MAP: Record<string, number> = {
  */
 export function getRoleName(roleId: number): string {
   return ROLE_MAP[roleId] || 'Usuario';
+}
+
+/**
+ * O nome que a API mandou, reduzido ao nome que o front compara.
+ *
+ * O front inteiro compara `user.role` com os literais `'Administrador'`,
+ * `'Tecnico'` e `'Usuario'` — e ao recarregar a página esse valor vem cru do
+ * `localStorage`, que guardou a string do banco (`roles.nome`). A própria API
+ * se recusa a confiar nessa coluna: o `_normalizar_role` de lá existe porque
+ * "se a tabela um dia gravar 'Técnico', a comparação literal rejeitaria todos
+ * os técnicos com um 403 que parece bug". O front tinha exatamente esse bug em
+ * potencial, com um sintoma pior — funcionava ao entrar (o login deriva do
+ * `role_id`) e quebrava depois do F5.
+ *
+ * Devolve `null` para nome que não reconhece, e quem chama decide o fallback.
+ * Inventar 'Usuario' aqui esconderia um perfil novo da API como rebaixamento
+ * silencioso.
+ */
+export function nomeCanonicoDaRole(nome?: string | null): string | null {
+  if (!nome) return null;
+
+  const alvo = simplificar(nome).trim();
+  for (const canonico of Object.values(ROLE_MAP)) {
+    if (simplificar(canonico) === alvo) return canonico;
+  }
+  return null;
 }
 
 /**

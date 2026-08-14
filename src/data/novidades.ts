@@ -28,6 +28,17 @@ export interface VersaoNovidade {
 }
 
 export const NOVIDADES: VersaoNovidade[] = [
+  {
+    versao: '1.6.11',
+    data: '2026-08-14',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'No menu de telas pequenas, agora dá para rolar: numa tela baixa, o botão Sair e o modo noturno ficavam para fora e não havia como alcançá-los.',
+      },
+    ],
+  },
   // A entrada era da 1.6.9, que nunca chegou a produção: antes do deploy, o
   // teste de bancada achou o seletor fechando quando se rolava a própria
   // lista. A correção subiu a versão, e a entrada acompanha — o que o usuário

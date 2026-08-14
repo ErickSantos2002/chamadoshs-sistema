@@ -6,6 +6,7 @@ import {
   isAdmin,
   isTecnico,
   isUsuario,
+  nomeCanonicoDaRole,
   podeAtenderChamado,
   podeSerResponsavel,
 } from './roleMapper';
@@ -134,6 +135,34 @@ describe('roleMapper', () => {
     it('trata campo ausente como pessoa', () => {
       expect(podeSerResponsavel({ role_id: 1 })).toBe(true);
       expect(podeSerResponsavel({ role_id: 2 })).toBe(true);
+    });
+  });
+
+  describe('nomeCanonicoDaRole', () => {
+    it('devolve o nome exato quando já é canônico', () => {
+      for (const nome of Object.values(ROLE_MAP)) {
+        expect(nomeCanonicoDaRole(nome)).toBe(nome);
+      }
+    });
+
+    // O caso que a API prevê no próprio código: a tabela um dia gravar
+    // "Técnico". Lá a comparação tolera; aqui, sem isto, o técnico entrava
+    // (login deriva do role_id) e perdia as áreas restritas depois do F5.
+    it('tolera acento e caixa, como a API', () => {
+      expect(nomeCanonicoDaRole('Técnico')).toBe('Tecnico');
+      expect(nomeCanonicoDaRole('TECNICO')).toBe('Tecnico');
+      expect(nomeCanonicoDaRole('administrador')).toBe('Administrador');
+      expect(nomeCanonicoDaRole('Usuário')).toBe('Usuario');
+      expect(nomeCanonicoDaRole('  Tecnico  ')).toBe('Tecnico');
+    });
+
+    // `null`, e não 'Usuario': um perfil novo da API não pode virar
+    // rebaixamento silencioso — quem chama decide o fallback, sabendo.
+    it('devolve null para o que não reconhece', () => {
+      expect(nomeCanonicoDaRole('Gerente')).toBeNull();
+      expect(nomeCanonicoDaRole('')).toBeNull();
+      expect(nomeCanonicoDaRole(undefined)).toBeNull();
+      expect(nomeCanonicoDaRole(null)).toBeNull();
     });
   });
 

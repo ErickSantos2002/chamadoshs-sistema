@@ -65,9 +65,15 @@ describe('itens do menu', () => {
 
   it('os dois menus leem a mesma lista', () => {
     for (const arquivo of MENUS) {
-      expect(ler(arquivo), `${arquivo} monta a própria lista`).toContain(
-        'ITENS_DO_MENU'
-      );
+      // O que se exige é o USO — `ITENS_DO_MENU.map(` — e não a menção. Um
+      // `toContain` do nome se satisfazia com o import, que sobra intacto
+      // quando alguém volta a montar a lista à mão; e com comentários no meio,
+      // até uma citação em prosa bastava. Sem comentários e com o `.map`, só o
+      // menu de verdade lendo a lista de verdade passa.
+      expect(
+        semComentarios(ler(arquivo)),
+        `${arquivo} monta a própria lista`
+      ).toMatch(/ITENS_DO_MENU\s*\.map\(/);
     }
   });
 
@@ -78,10 +84,19 @@ describe('itens do menu', () => {
    */
   it('nenhum menu decide o que mostrar pelo perfil', () => {
     for (const arquivo of MENUS) {
+      const codigo = semComentarios(ler(arquivo));
+
       // O Header exibe o perfil ao lado do nome, e isso pode ficar. O que não
       // pode voltar é COMPARAR o perfil para montar a navegação.
-      expect(semComentarios(ler(arquivo)), `${arquivo} compara perfil`).not.toMatch(
-        /role\s*[!=]==/
+      //
+      // Duas guardas, porque a comparação tem mais de uma forma. `[!=]=` cobre
+      // `===`, `!==` e as versões frouxas. E qualquer gate por perfil precisa
+      // citar um nome de perfil — `.includes(user.role)` sobre uma lista, por
+      // exemplo — então o literal em si também é proibido aqui. A versão
+      // anterior só via `===`, e um gate reescrito de outro jeito passava.
+      expect(codigo, `${arquivo} compara perfil`).not.toMatch(/role\s*[!=]=/);
+      expect(codigo, `${arquivo} cita um perfil`).not.toMatch(
+        /['"](Administrador|Tecnico|Usuario)['"]/
       );
     }
   });
