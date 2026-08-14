@@ -1,6 +1,6 @@
 {
   "name": "chamadoshs-sistema",
-  "version": "1.6.9",
+  "version": "1.6.10",
   "main": "postcss.config.js",
   "scripts": {
     "dev": "vite",

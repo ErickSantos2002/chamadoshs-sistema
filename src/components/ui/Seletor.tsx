@@ -131,18 +131,29 @@ export const Seletor: React.FC<SeletorProps> = ({
       }
     };
 
-    // A lista tem posição fixa e não acompanha a rolagem. Fechar é mais honesto
-    // que recalcular: quem rolou a página não está mais olhando para o filtro.
-    const aoRolarOuRedimensionar = () => setAberto(false);
+    // A lista tem posição fixa e não acompanha a rolagem da página. Fechar é
+    // mais honesto que recalcular: quem rolou não está mais olhando para o
+    // campo.
+    //
+    // MAS a rolagem de DENTRO da lista não pode contar. A captura na janela
+    // apanha todo scroll, inclusive o da própria lista — que tem altura máxima
+    // e rolagem interna. Sem esta exceção, a lista de solicitantes fechava no
+    // primeiro tique de quem tentava rolar os trinta nomes: parecia que nenhum
+    // modal rolava, quando era o seletor se fechando.
+    const aoRolar = (e: Event) => {
+      if (listaRef.current?.contains(e.target as Node)) return;
+      setAberto(false);
+    };
+    const aoRedimensionar = () => setAberto(false);
 
     document.addEventListener('mousedown', aoClicarFora);
-    window.addEventListener('scroll', aoRolarOuRedimensionar, true);
-    window.addEventListener('resize', aoRolarOuRedimensionar);
+    window.addEventListener('scroll', aoRolar, true);
+    window.addEventListener('resize', aoRedimensionar);
 
     return () => {
       document.removeEventListener('mousedown', aoClicarFora);
-      window.removeEventListener('scroll', aoRolarOuRedimensionar, true);
-      window.removeEventListener('resize', aoRolarOuRedimensionar);
+      window.removeEventListener('scroll', aoRolar, true);
+      window.removeEventListener('resize', aoRedimensionar);
     };
   }, [aberto]);
 
@@ -226,7 +237,9 @@ export const Seletor: React.FC<SeletorProps> = ({
           tabIndex={-1}
           onKeyDown={aoTeclarNaLista}
           style={{ position: 'fixed', ...posicao, zIndex: 9999 }}
-          className="max-h-72 overflow-auto border border-borda-forte bg-superficie-elevada shadow-2xl focus:outline-none"
+          // `overscroll-contain`: chegar ao fim da lista não pode emendar a
+          // rolagem na página atrás — que fecharia a lista pelo caminho.
+          className="max-h-72 overflow-auto overscroll-contain border border-borda-forte bg-superficie-elevada shadow-2xl focus:outline-none"
         >
           {opcoes.map((opcao, indice) => {
             const ehEscolhida = opcao.valor === valor;

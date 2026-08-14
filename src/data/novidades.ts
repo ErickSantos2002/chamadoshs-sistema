@@ -28,8 +28,12 @@ export interface VersaoNovidade {
 }
 
 export const NOVIDADES: VersaoNovidade[] = [
+  // A entrada era da 1.6.9, que nunca chegou a produção: antes do deploy, o
+  // teste de bancada achou o seletor fechando quando se rolava a própria
+  // lista. A correção subiu a versão, e a entrada acompanha — o que o usuário
+  // recebe é uma coisa só. Consertar o que ninguém recebeu não é novidade.
   {
-    versao: '1.6.9',
+    versao: '1.6.10',
     data: '2026-08-14',
     itens: [
       {
