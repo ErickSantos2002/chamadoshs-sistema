@@ -1,21 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Eye,
-  RefreshCw,
-  Tag,
-  ChevronUp,
-  ChevronDown,
-  AlertCircle,
-} from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
 import { Colchetes } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import CategoriaModal from './CategoriaModal';
+import { IconeAlerta, IconeApagar, IconeBusca, IconeEditar, IconeEtiqueta, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima } from '../ui/icones';
 import type {
   Categoria,
   ModalMode,
@@ -146,7 +135,7 @@ const CategoriasTab: React.FC = () => {
       {/* Header com ações */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex items-center gap-3">
-          <Tag className="w-6 h-6 text-info-forte dark:text-info-suave" />
+          <IconeEtiqueta className="w-6 h-6 text-info-forte dark:text-info-suave" />
           <h2 className="text-xl font-semibold text-conteudo">
             Categorias
           </h2>
@@ -155,7 +144,7 @@ const CategoriasTab: React.FC = () => {
         <div className="flex gap-3">
           {/* Busca */}
           <div className="relative flex-1 sm:flex-none sm:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-conteudo-tenue" />
+            <IconeBusca className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-conteudo-tenue" />
             <input
               type="text"
               placeholder="Buscar categorias..."
@@ -172,7 +161,7 @@ const CategoriasTab: React.FC = () => {
             className="px-4 py-2 bg-superficie-elevada text-conteudo-suave rounded-lg hover:bg-borda transition-colors flex items-center gap-2"
             aria-label="Atualizar dados"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <IconeRecarregar className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
           {/* Botão Nova Categoria */}
@@ -181,7 +170,7 @@ const CategoriasTab: React.FC = () => {
               onClick={handleNovaCategoria}
               className="px-4 py-2 bg-info hover:bg-info-forte text-white rounded-lg transition-colors flex items-center gap-2"
             >
-              <Plus className="w-4 h-4" />
+              <IconeMais className="w-4 h-4" />
               <span className="hidden sm:inline">Nova Categoria</span>
             </button>
           )}
@@ -191,7 +180,7 @@ const CategoriasTab: React.FC = () => {
       {/* Mensagem de erro */}
       {error && (
         <div className="mb-4 p-4 bg-perigo/10 border border-perigo/30 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
+          <IconeAlerta className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
           <div className="flex-1">
             <p className="text-perigo-forte dark:text-perigo-suave">{error}</p>
           </div>
@@ -204,13 +193,13 @@ const CategoriasTab: React.FC = () => {
         {loading && !categorias.length ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-conteudo-tenue">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
+              <IconeRecarregar className="w-8 h-8 animate-spin mx-auto mb-2" />
               Carregando categorias...
             </div>
           </div>
         ) : categoriasOrdenadas.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8">
-            <Tag className="w-12 h-12 text-conteudo-tenue mb-4" />
+            <IconeEtiqueta className="w-12 h-12 text-conteudo-tenue mb-4" />
             <p className="text-conteudo-tenue text-center">
               {busca 
                 ? 'Nenhuma categoria encontrada com os critérios de busca'
@@ -221,7 +210,7 @@ const CategoriasTab: React.FC = () => {
                 onClick={handleNovaCategoria}
                 className="mt-4 px-4 py-2 bg-info hover:bg-info-forte text-white rounded-lg transition-colors flex items-center gap-2"
               >
-                <Plus className="w-4 h-4" />
+                <IconeMais className="w-4 h-4" />
                 Criar primeira categoria
               </button>
             )}
@@ -238,8 +227,8 @@ const CategoriasTab: React.FC = () => {
                     ID
                     {ordenacao.campo === 'id' && (
                       ordenacao.direcao === 'asc' ? 
-                        <ChevronUp className="w-4 h-4" /> : 
-                        <ChevronDown className="w-4 h-4" />
+                        <IconeSetaCima className="w-4 h-4" /> : 
+                        <IconeSeta className="w-4 h-4" />
                     )}
                   </button>
                 </th>
@@ -251,8 +240,8 @@ const CategoriasTab: React.FC = () => {
                     Nome
                     {ordenacao.campo === 'nome' && (
                       ordenacao.direcao === 'asc' ? 
-                        <ChevronUp className="w-4 h-4" /> : 
-                        <ChevronDown className="w-4 h-4" />
+                        <IconeSetaCima className="w-4 h-4" /> : 
+                        <IconeSeta className="w-4 h-4" />
                     )}
                   </button>
                 </th>
@@ -269,8 +258,8 @@ const CategoriasTab: React.FC = () => {
                     Criado em
                     {ordenacao.campo === 'created_at' && (
                       ordenacao.direcao === 'asc' ? 
-                        <ChevronUp className="w-4 h-4" /> : 
-                        <ChevronDown className="w-4 h-4" />
+                        <IconeSetaCima className="w-4 h-4" /> : 
+                        <IconeSeta className="w-4 h-4" />
                     )}
                   </button>
                 </th>
@@ -294,7 +283,7 @@ const CategoriasTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-conteudo-tenue" />
+                      <IconeEtiqueta className="w-4 h-4 text-conteudo-tenue" />
                       <span className="text-sm font-medium text-conteudo">
                         {categoria.nome}
                       </span>
@@ -322,7 +311,7 @@ const CategoriasTab: React.FC = () => {
                         className="p-2 text-conteudo-suave hover:bg-superficie-elevada rounded-lg transition-colors"
                         aria-label="Visualizar categoria"
                       >
-                        <Eye className="w-4 h-4 text-info-forte dark:text-info-suave" />
+                        <IconeOlho className="w-4 h-4 text-info-forte dark:text-info-suave" />
                       </button>
 
                       {/* Editar - apenas para admin/gerente */}
@@ -332,7 +321,7 @@ const CategoriasTab: React.FC = () => {
                           className="p-2 text-info-forte dark:text-info-suave hover:bg-info/10 rounded-lg transition-colors"
                           aria-label="Editar categoria"
                         >
-                          <Edit className="w-4 h-4 text-alerta-forte dark:text-alerta-suave" />
+                          <IconeEditar className="w-4 h-4 text-alerta-forte dark:text-alerta-suave" />
                         </button>
                       )}
 
@@ -360,7 +349,7 @@ const CategoriasTab: React.FC = () => {
                             aria-label="Excluir categoria"
                             title="Excluir"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <IconeApagar className="w-4 h-4" />
                           </button>
                         )
                       )}

@@ -1,5 +1,5 @@
-import { LayoutDashboard, Repeat, ScrollText, Settings, Ticket } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import type { PropsDeIcone } from '../components/ui/icones';
+import { IconeChamado, IconeConfiguracoes, IconePainel, IconeRepetir, IconeTrilha } from '../components/ui/icones';
 
 /**
  * As áreas do sistema, numa lista só.
@@ -35,13 +35,13 @@ import type { LucideIcon } from 'lucide-react';
 export interface ItemDeMenu {
   label: string;
   to: string;
-  Icone: LucideIcon;
+  Icone: React.FC<PropsDeIcone>;
 }
 
 export const ITENS_DO_MENU: ItemDeMenu[] = [
-  { label: 'Dashboard', to: '/dashboard', Icone: LayoutDashboard },
-  { label: 'Chamados', to: '/chamados', Icone: Ticket },
-  { label: 'Cadastros', to: '/cadastros', Icone: Settings },
-  { label: 'Tarefas Recorrentes', to: '/tarefas-recorrentes', Icone: Repeat },
-  { label: 'Auditoria', to: '/auditoria', Icone: ScrollText },
+  { label: 'Dashboard', to: '/dashboard', Icone: IconePainel },
+  { label: 'Chamados', to: '/chamados', Icone: IconeChamado },
+  { label: 'Cadastros', to: '/cadastros', Icone: IconeConfiguracoes },
+  { label: 'Tarefas Recorrentes', to: '/tarefas-recorrentes', Icone: IconeRepetir },
+  { label: 'Auditoria', to: '/auditoria', Icone: IconeTrilha },
 ];

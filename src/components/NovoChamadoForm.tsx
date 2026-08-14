@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Clock, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { slaConfigsService } from '../services/chamadoshsapi';
@@ -7,6 +6,7 @@ import { Chamado, ChamadoCreate, PrioridadeEnum, SLAConfig } from '../types/api'
 import { EXPEDIENTE, formatarPrazo } from '../lib/prazo';
 import { Button, Input, Select, Textarea } from './ui';
 import ContadorMinimo from './ContadorMinimo';
+import { IconeEscudoConfere, IconeRelogio } from './ui/icones';
 import {
   MINIMO_DESCRICAO,
   MINIMO_TITULO,
@@ -236,7 +236,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
           <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
             <span className="flex items-center gap-1.5 text-conteudo">
-              <Clock className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+              <IconeRelogio className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
               <span className="text-conteudo-tenue">Alguém assume em até</span>
               <strong className="font-semibold">
                 {formatarPrazo(prazoEscolhido.minutos_resposta)}
@@ -244,7 +244,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
             </span>
 
             <span className="flex items-center gap-1.5 text-conteudo">
-              <ShieldCheck className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+              <IconeEscudoConfere className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
               <span className="text-conteudo-tenue">Resolvido em até</span>
               <strong className="font-semibold">
                 {formatarPrazo(prazoEscolhido.minutos_resolucao)}

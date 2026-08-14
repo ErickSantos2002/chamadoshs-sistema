@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { LogOut, Moon, Sun } from 'lucide-react';
 import { ITENS_DO_MENU } from '../lib/navegacao';
 import logo from '../assets/HS2.ico';
+import { IconeFechar, IconeLua, IconeMenu, IconeSair, IconeSol } from './ui/icones';
 
 
 const Header: React.FC = () => {
@@ -72,11 +72,16 @@ const Header: React.FC = () => {
       >
         <div className="flex items-center gap-4">
           {/* Botão menu mobile */}
+          {/* Era o caractere `☰`. Um glifo de texto no lugar de um ícone
+              muda de desenho conforme a fonte instalada e não tem nome para
+              leitor de tela. */}
           <button
+            type="button"
             onClick={abrirMenu}
-            className="block lg:hidden text-conteudo text-2xl focus:outline-none"
+            aria-label="Abrir menu"
+            className="block text-conteudo focus:outline-none lg:hidden"
           >
-            ☰
+            <IconeMenu className="h-6 w-6" />
           </button>
 
           {/* Logo + título */}
@@ -137,10 +142,12 @@ const Header: React.FC = () => {
                 </span>
               </div>
               <button
+                type="button"
                 onClick={fecharMenu}
-                className="text-conteudo-suave text-2xl leading-none"
+                aria-label="Fechar menu"
+                className="text-conteudo-suave hover:text-conteudo"
               >
-                ×
+                <IconeFechar className="h-5 w-5" />
               </button>
             </div>
 
@@ -177,9 +184,9 @@ const Header: React.FC = () => {
               <div className="flex items-center justify-between font-medium text-conteudo-suave py-2">
                 <div className="flex items-center gap-2">
                   {darkMode ? (
-                    <Sun className="w-5 h-5 text-alerta" aria-hidden="true" />
+                    <IconeSol className="w-5 h-5 text-alerta" aria-hidden="true" />
                   ) : (
-                    <Moon className="w-5 h-5 text-info" aria-hidden="true" />
+                    <IconeLua className="w-5 h-5 text-info" aria-hidden="true" />
                   )}
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -198,7 +205,7 @@ const Header: React.FC = () => {
                 onClick={handleLogout}
                 className="flex items-center w-full text-left text-perigo font-medium hover:text-perigo-forte py-2 rounded-lg transition"
               >
-                <LogOut className="w-5 h-5" aria-hidden="true" />
+                <IconeSair className="w-5 h-5" aria-hidden="true" />
                 <span className="ml-2">Sair</span>
               </button>
             </div>

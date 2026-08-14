@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { chamadosService } from '../services/chamadoshsapi';
 import { cn } from '../lib/utils';
 import { Chamado, StatusEnum } from '../types/api';
+import { IconeEstrela } from './ui/icones';
 
 interface AvaliacaoProps {
   chamado: Chamado;
@@ -92,7 +92,7 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
   if (!encerrado || chamado.cancelado) return null;
 
   const estrela = (n: number, acesa: boolean) => (
-    <Star
+    <IconeEstrela
       className={cn(
         TAMANHOS[tamanho],
         'transition-colors',

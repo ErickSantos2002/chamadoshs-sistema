@@ -4,7 +4,6 @@ import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { StatusEnum, PrioridadeEnum, Chamado, TarefaRecorrente } from '../types/api';
-import { Plus, Search, Loader2, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
 import { Button, Input, Modal, SeletorDeFiltro } from '../components/ui';
@@ -12,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
+import { IconeAgenda, IconeBusca, IconeCarregando, IconeConfereCirculo, IconeMais } from '../components/ui/icones';
 
 // Data de hoje (local) em YYYY-MM-DD, para comparar com proxima_data das tarefas
 const hojeYMD = (): string => {
@@ -160,7 +160,7 @@ const Chamados: React.FC = () => {
     return (
       <div className="min-h-full bg-superficie-base flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-info mx-auto mb-4" />
+          <IconeCarregando className="w-12 h-12 animate-spin text-info mx-auto mb-4" />
           <p className="text-conteudo-suave">Carregando chamados...</p>
         </div>
       </div>
@@ -192,7 +192,7 @@ const Chamados: React.FC = () => {
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Título ou protocolo"
                 aria-label="Buscar chamado por título ou protocolo"
-                icone={<Search className="h-4 w-4" />}
+                icone={<IconeBusca className="h-4 w-4" />}
                 className="w-56"
               />
 
@@ -236,7 +236,7 @@ const Chamados: React.FC = () => {
               )}
 
               <Button onClick={() => setModalNovoAberto(true)}>
-                <Plus className="h-4 w-4" aria-hidden="true" />
+                <IconeMais className="h-4 w-4" aria-hidden="true" />
                 Novo Chamado
               </Button>
             </div>
@@ -247,15 +247,18 @@ const Chamados: React.FC = () => {
         {(isAdmin || isTecnico) && (
           <div className="mb-4 rounded-xl border border-borda bg-superficie p-5 shadow-sm transition-colors">
             <div className="flex items-center mb-2">
-              <CalendarClock className="w-5 h-5 mr-2 text-info" />
+              <IconeAgenda className="w-5 h-5 mr-2 text-info" />
               <h2 className="text-base font-semibold text-conteudo">
                 Tarefas recorrentes do dia
               </h2>
             </div>
 
             {tarefasDoDia.length === 0 ? (
-              <p className="text-sm text-conteudo-tenue">
-                Nenhuma tarefa recorrente para hoje. ✅
+              // O ✅ era um emoji: desenhado pelo sistema, colorido por conta
+              // própria e alheio ao tema. O ícone acompanha a cor do texto.
+              <p className="flex items-center gap-2 text-sm text-conteudo-tenue">
+                <IconeConfereCirculo className="h-4 w-4 shrink-0 text-sucesso" />
+                Nenhuma tarefa recorrente para hoje.
               </p>
             ) : (
               <ul className="space-y-1.5">
@@ -293,7 +296,7 @@ const Chamados: React.FC = () => {
                         realizadaHoje && (
                           <>
                             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-sucesso/15 text-sucesso-forte dark:text-sucesso-suave">
-                              <CheckCircle2 className="w-3 h-3" />
+                              <IconeConfereCirculo className="w-3 h-3" />
                               Realizada
                             </span>
                             <span className="text-xs text-conteudo-tenue">

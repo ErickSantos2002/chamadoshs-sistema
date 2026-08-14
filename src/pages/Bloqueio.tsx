@@ -1,8 +1,8 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { Lock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Colchetes, Rotulo } from '../components/ui';
+import { IconeCadeado } from '../components/ui/icones';
 
 interface BloqueioProps {
   /** Nome da área, como aparece no menu. */
@@ -47,7 +47,7 @@ const Bloqueio: React.FC<BloqueioProps> = ({
       <div className="relative max-w-md border border-borda bg-superficie px-8 py-10 text-center">
         <Colchetes />
 
-        <Lock className="mx-auto h-8 w-8 text-conteudo-tenue" aria-hidden="true" />
+        <IconeCadeado className="mx-auto h-8 w-8 text-conteudo-tenue" aria-hidden="true" />
 
         <Rotulo como="p" className="mt-4 block">
           {area ?? 'Área restrita'}

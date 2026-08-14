@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { primeiroCampoFocavel } from '../../lib/foco';
 import { Colchetes } from './Colchetes';
+import { IconeFechar } from './icones';
 
 interface ModalProps {
   aberto: boolean;
@@ -129,7 +129,7 @@ export const Modal: React.FC<ModalProps> = ({
             aria-label="Fechar"
             className="rounded-lg p-1 text-conteudo-tenue transition-colors hover:bg-superficie-elevada hover:text-conteudo"
           >
-            <X className="h-5 w-5" aria-hidden="true" />
+            <IconeFechar className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 

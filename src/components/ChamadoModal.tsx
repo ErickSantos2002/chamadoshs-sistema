@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { ExternalLink, Loader2, Send } from 'lucide-react';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { Chamado, Comentario, PrioridadeEnum, StatusEnum } from '../types/api';
@@ -7,6 +6,7 @@ import { Avatar, Badge, Button, Modal, Textarea, VarianteBadge } from './ui';
 import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
+import { IconeCarregando, IconeEnviar, IconeLinkExterno } from './ui/icones';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -188,7 +188,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       rodape={
         chamado ? (
           <Button variante="secundario" onClick={() => aoAbrirEmPagina(chamado.id)}>
-            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            <IconeLinkExterno className="h-4 w-4" aria-hidden="true" />
             Abrir em página para editar
           </Button>
         ) : undefined
@@ -196,7 +196,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     >
       {carregando && (
         <div className="flex items-center justify-center py-12 text-conteudo-tenue">
-          <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+          <IconeCarregando className="h-6 w-6 animate-spin" aria-hidden="true" />
         </div>
       )}
 
@@ -270,7 +270,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                     carregando={enviando}
                     disabled={!novoComentario.trim()}
                   >
-                    <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                    <IconeEnviar className="h-3.5 w-3.5" aria-hidden="true" />
                     Comentar
                   </Button>
                 </div>

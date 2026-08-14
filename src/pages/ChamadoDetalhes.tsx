@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
+import { IconeArquivar, IconeCarregando, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeFecharCirculo, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
 import {
   Chamado,
   Comentario,
@@ -23,22 +24,6 @@ import {
   Usuario,
   Categoria,
 } from '../types/api';
-import {
-  ArrowLeft,
-  Edit,
-  Save,
-  X,
-  Loader2,
-  CheckCircle,
-  Clock,
-  PlayCircle,
-  XCircle,
-  RotateCcw,
-  User,
-  Ban,
-  Archive,
-  ArchiveRestore,
-} from 'lucide-react';
 
 const ChamadoDetalhes: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -384,7 +369,7 @@ const ChamadoDetalhes: React.FC = () => {
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
-            <PlayCircle className="w-5 h-5" />
+            <IconeIniciar className="w-5 h-5" />
             Iniciar Atendimento
           </button>
         );
@@ -400,7 +385,7 @@ const ChamadoDetalhes: React.FC = () => {
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
-            <Clock className="w-5 h-5" />
+            <IconeRelogio className="w-5 h-5" />
             Aguardando Retorno
           </button>,
 
@@ -411,7 +396,7 @@ const ChamadoDetalhes: React.FC = () => {
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
-            <CheckCircle className="w-5 h-5" />
+            <IconeConfereCirculo className="w-5 h-5" />
             Marcar como Resolvido
           </button>
         );
@@ -427,7 +412,7 @@ const ChamadoDetalhes: React.FC = () => {
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
-            <PlayCircle className="w-5 h-5" />
+            <IconeIniciar className="w-5 h-5" />
             Retomar Atendimento
           </button>,
 
@@ -438,7 +423,7 @@ const ChamadoDetalhes: React.FC = () => {
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
-            <CheckCircle className="w-5 h-5" />
+            <IconeConfereCirculo className="w-5 h-5" />
             Marcar como Resolvido
           </button>
         );
@@ -454,7 +439,7 @@ const ChamadoDetalhes: React.FC = () => {
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
-            <RotateCcw className="w-5 h-5" />
+            <IconeDesfazer className="w-5 h-5" />
             Reabrir
           </button>
         );
@@ -470,7 +455,7 @@ const ChamadoDetalhes: React.FC = () => {
                       rounded-lg shadow-sm hover:shadow-md transition-all duration-200
                       flex items-center gap-2"
           >
-            <RotateCcw className="w-5 h-5" />
+            <IconeDesfazer className="w-5 h-5" />
             Reabrir
           </button>
         );
@@ -598,7 +583,7 @@ const ChamadoDetalhes: React.FC = () => {
               className="text-info hover:text-info-forte
                         mb-2 flex items-center gap-1 transition-colors"
               >
-              <ArrowLeft className="w-4 h-4" />
+              <IconeVoltar className="w-4 h-4" />
               Voltar
             </button>
 
@@ -627,7 +612,7 @@ const ChamadoDetalhes: React.FC = () => {
                                     hover:bg-perigo/10
                                     transition-colors flex items-center gap-2"
                         >
-                          <Ban className="w-5 h-5" />
+                          <IconeProibido className="w-5 h-5" />
                           Cancelar Chamado
                         </button>
                       )}
@@ -644,12 +629,12 @@ const ChamadoDetalhes: React.FC = () => {
                       >
                         {chamado?.arquivado ? (
                           <>
-                            <ArchiveRestore className="w-5 h-5" />
+                            <IconeDesarquivar className="w-5 h-5" />
                             Desarquivar
                           </>
                         ) : (
                           <>
-                            <Archive className="w-5 h-5" />
+                            <IconeArquivar className="w-5 h-5" />
                             Arquivar
                           </>
                         )}
@@ -663,7 +648,7 @@ const ChamadoDetalhes: React.FC = () => {
                                   hover:bg-superficie-elevada
                                   transition-colors flex items-center gap-2"
                       >
-                        <Edit className="w-5 h-5" />
+                        <IconeEditar className="w-5 h-5" />
                         Editar Detalhes
                       </button>
                     </>
@@ -677,7 +662,7 @@ const ChamadoDetalhes: React.FC = () => {
                                   hover:bg-superficie-elevada
                                   transition-colors flex items-center gap-2"
                       >
-                        <X className="w-5 h-5" />
+                        <IconeFechar className="w-5 h-5" />
                         Cancelar
                       </button>
 
@@ -688,7 +673,7 @@ const ChamadoDetalhes: React.FC = () => {
                                   text-white font-medium rounded-lg shadow-sm
                                   hover:shadow-md transition-all duration-200 flex items-center gap-2"
                       >
-                        <Save className="w-5 h-5" />
+                        <IconeSalvar className="w-5 h-5" />
                         Salvar
                       </button>
                     </>
@@ -728,7 +713,7 @@ const ChamadoDetalhes: React.FC = () => {
               {/* Solicitante */}
               <div>
                 <label className="block text-sm font-semibold text-conteudo-suave dark:text-info mb-1">
-                  <User className="w-4 h-4 inline mr-1" />
+                  <IconeUsuario className="w-4 h-4 inline mr-1" />
                   Solicitante
                 </label>
 
@@ -1219,7 +1204,7 @@ const ChamadoDetalhes: React.FC = () => {
                   className="text-conteudo-tenue hover:text-conteudo-suave
                             text-conteudo-tenue dark:hover:text-conteudo"
                 >
-                  <X className="w-6 h-6" />
+                  <IconeFechar className="w-6 h-6" />
                 </button>
               </div>
 
@@ -1275,7 +1260,7 @@ const ChamadoDetalhes: React.FC = () => {
                               hover:shadow-md transition-all duration-200
                               flex items-center gap-2"
                   >
-                    <CheckCircle className="w-5 h-5" />
+                    <IconeConfereCirculo className="w-5 h-5" />
                     {statusAlvo === StatusEnum.RESOLVIDO
                       ? "Marcar como Resolvido"
                       : "Fechar Chamado"}
@@ -1310,7 +1295,7 @@ const ChamadoDetalhes: React.FC = () => {
                   className="text-conteudo-tenue hover:text-conteudo-suave
                             text-conteudo-tenue dark:hover:text-conteudo"
                 >
-                  <X className="w-6 h-6" />
+                  <IconeFechar className="w-6 h-6" />
                 </button>
               </div>
 
@@ -1370,7 +1355,7 @@ const ChamadoDetalhes: React.FC = () => {
                             hover:shadow-md transition-all duration-200
                             flex items-center gap-2"
                 >
-                  <Ban className="w-5 h-5" />
+                  <IconeProibido className="w-5 h-5" />
                   {processando ? 'Cancelando...' : 'Sim, cancelar'}
                 </button>
               </div>
@@ -1404,7 +1389,7 @@ const ChamadoDetalhes: React.FC = () => {
                   className="text-conteudo-tenue hover:text-conteudo-suave
                             text-conteudo-tenue dark:hover:text-conteudo"
                 >
-                  <X className="w-6 h-6" />
+                  <IconeFechar className="w-6 h-6" />
                 </button>
               </div>
 
@@ -1440,12 +1425,12 @@ const ChamadoDetalhes: React.FC = () => {
                 >
                   {chamado?.arquivado ? (
                     <>
-                      <ArchiveRestore className="w-5 h-5" />
+                      <IconeDesarquivar className="w-5 h-5" />
                       {processando ? 'Desarquivando...' : 'Sim, desarquivar'}
                     </>
                   ) : (
                     <>
-                      <Archive className="w-5 h-5" />
+                      <IconeArquivar className="w-5 h-5" />
                       {processando ? 'Arquivando...' : 'Sim, arquivar'}
                     </>
                   )}

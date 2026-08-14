@@ -1,9 +1,9 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { ITENS_DO_MENU } from '../lib/navegacao';
 import { cn } from '../lib/utils';
+import { IconeBrilho, IconeLua, IconeSol } from './ui/icones';
 
 interface SidebarProps {
   aoAbrirNovidades: () => void;
@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
                      transition-colors hover:bg-superficie-elevada hover:text-conteudo
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
         >
-          <Sparkles className={iconBaseClass} aria-hidden="true" />
+          <IconeBrilho className={iconBaseClass} aria-hidden="true" />
           Novidades
           {temNovidade && (
             <span
@@ -88,10 +88,10 @@ const Sidebar: React.FC<SidebarProps> = ({ aoAbrirNovidades, temNovidade }) => {
           <div className="flex items-center gap-2">
             {darkMode ? (
               // ☀️ Sol amarelo (modo claro)
-              <Sun className="w-6 h-6 drop-shadow-md text-alerta" aria-hidden="true" />
+              <IconeSol className="w-6 h-6 drop-shadow-md text-alerta" aria-hidden="true" />
             ) : (
               // 🌙 Lua azul (modo escuro)
-              <Moon className="w-6 h-6 drop-shadow-md text-info" aria-hidden="true" />
+              <IconeLua className="w-6 h-6 drop-shadow-md text-info" aria-hidden="true" />
             )}
           </div>
 

@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { RefreshCw, ScrollText } from 'lucide-react';
 import { auditoriaService, FiltroDeAuditoria } from '../services/chamadoshsapi';
 import { useAuth } from '../hooks/useAuth';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
@@ -12,6 +11,7 @@ import {
 } from '../components/EstadosDaTrilha';
 import { Button, Colchetes, Rotulo, SeletorDeFiltro } from '../components/ui';
 import type { EventoDeAuditoria } from '../types/api';
+import { IconeRecarregar, IconeTrilha } from '../components/ui/icones';
 
 /** Quantas linhas por página. A API aceita até 500; 50 cabe na tela. */
 const POR_PAGINA = 50;
@@ -149,7 +149,7 @@ const Auditoria: React.FC = () => {
     <div className="flex h-full flex-col gap-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <ScrollText className="h-6 w-6 text-conteudo-tenue" aria-hidden="true" />
+          <IconeTrilha className="h-6 w-6 text-conteudo-tenue" aria-hidden="true" />
           <h1 className="text-xl font-semibold text-conteudo">Auditoria de cadastros</h1>
         </div>
 
@@ -158,7 +158,7 @@ const Auditoria: React.FC = () => {
           onClick={() => setRecarga((n) => n + 1)}
           disabled={carregando}
         >
-          <RefreshCw
+          <IconeRecarregar
             className={`h-4 w-4 ${carregando ? 'animate-spin' : ''}`}
             aria-hidden="true"
           />

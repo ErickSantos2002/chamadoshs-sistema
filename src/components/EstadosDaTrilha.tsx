@@ -1,6 +1,6 @@
 import React from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
 import { INICIO_DA_TRILHA } from '../lib/auditoria';
+import { IconeAlerta, IconeCarregando } from './ui/icones';
 
 /**
  * Os três estados intermediários da trilha de auditoria — carregando, falhou,
@@ -35,7 +35,7 @@ export const TrilhaCarregando: React.FC<{
       folga === 'ampla' ? 'justify-center py-16' : 'py-6'
     }`}
   >
-    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+    <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
     {children}
   </p>
 );
@@ -60,7 +60,7 @@ export const TrilhaComFalha: React.FC<{ mensagem: string; folga?: Folga }> = ({
         : 'border border-perigo/40 bg-perigo/10 px-3 py-2'
     }`}
   >
-    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+    <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
     <span>
       {mensagem}
       <span className="mt-1 block text-conteudo-tenue">

@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import {
-  Save,
-  AlertCircle,
-  Building,
-  Shield,
-  Eye,
-  EyeOff,
-} from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
 import HistoricoDaConta from './HistoricoDaConta';
 import { Button, Modal, Rotulo } from '../ui';
 import { getRoleName } from '../../utils/roleMapper';
+import { IconeAlerta, IconeEscudo, IconeOlho, IconeOlhoFechado, IconeSalvar, IconeSetor } from '../ui/icones';
 import type {
   Usuario,
   UsuarioCreate,
@@ -278,7 +271,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
               />
               {errors.username && (
                 <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
-                  <AlertCircle className="w-4 h-4" />
+                  <IconeAlerta className="w-4 h-4" />
                   <span>{errors.username}</span>
                 </div>
               )}
@@ -320,12 +313,12 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-conteudo-tenue hover:text-conteudo"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? <IconeOlhoFechado className="w-4 h-4" /> : <IconeOlho className="w-4 h-4" />}
                     </button>
                   </div>
                   {errors.password && (
                     <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
-                      <AlertCircle className="w-4 h-4" />
+                      <IconeAlerta className="w-4 h-4" />
                       <span>{errors.password}</span>
                     </div>
                   )}
@@ -371,12 +364,12 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-conteudo-tenue hover:text-conteudo"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showConfirmPassword ? <IconeOlhoFechado className="w-4 h-4" /> : <IconeOlho className="w-4 h-4" />}
                     </button>
                   </div>
                   {errors.confirmarSenha && (
                     <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
-                      <AlertCircle className="w-4 h-4" />
+                      <IconeAlerta className="w-4 h-4" />
                       <span>{errors.confirmarSenha}</span>
                     </div>
                   )}
@@ -390,7 +383,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 htmlFor="role_name"
                 className="block text-sm font-medium text-conteudo-suave mb-2"
               >
-                <Shield className="w-4 h-4 inline mr-1" />
+                <IconeEscudo className="w-4 h-4 inline mr-1" />
                 Perfil <span className="text-perigo">*</span>
               </label>
               <select
@@ -422,7 +415,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
               </select>
               {errors.role_name && (
                 <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
-                  <AlertCircle className="w-4 h-4" />
+                  <IconeAlerta className="w-4 h-4" />
                   <span>{errors.role_name}</span>
                 </div>
               )}
@@ -434,7 +427,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 htmlFor="setor_id"
                 className="block text-sm font-medium text-conteudo-suave mb-2"
               >
-                <Building className="w-4 h-4 inline mr-1" />
+                <IconeSetor className="w-4 h-4 inline mr-1" />
                 Setor
               </label>
               <select
@@ -527,7 +520,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
 
               {!isReadOnly && (
                 <Button type="submit" carregando={loading}>
-                  <Save className="h-4 w-4" aria-hidden="true" />
+                  <IconeSalvar className="h-4 w-4" aria-hidden="true" />
                   Salvar
                 </Button>
               )}

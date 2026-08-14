@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import {
-  Save,
-  AlertCircle,
-} from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
 import { Button, Input, Modal, Textarea } from '../ui';
+import { IconeAlerta, IconeSalvar } from '../ui/icones';
 import type {
   Setor,
   SetorCreate,
@@ -20,7 +17,7 @@ const ROTULO = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
 const MensagemDeErro: React.FC<{ texto?: string }> = ({ texto }) =>
   texto ? (
     <p className="mt-1 flex items-center gap-1 text-sm text-perigo">
-      <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <IconeAlerta className="h-4 w-4 shrink-0" aria-hidden="true" />
       {texto}
     </p>
   ) : null;
@@ -243,7 +240,7 @@ const SetorModal: React.FC<SetorModalProps> = ({
 
           {!isReadOnly && (
             <Button type="submit" carregando={loading}>
-              <Save className="h-4 w-4" aria-hidden="true" />
+              <IconeSalvar className="h-4 w-4" aria-hidden="true" />
               Salvar
             </Button>
           )}

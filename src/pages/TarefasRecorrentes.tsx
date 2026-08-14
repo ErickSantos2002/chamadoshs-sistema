@@ -1,23 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Repeat,
-  Plus,
-  CheckCircle2,
-  History,
-  Pencil,
-  Trash2,
-  Power,
-  CalendarClock,
-  AlertTriangle,
-  Loader2,
-  Save,
-  Info,
-  FileText,
-} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { Button, Modal } from '../components/ui';
+import { IconeAgenda, IconeApagar, IconeAtencao, IconeCarregando, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
 import {
   tarefasRecorrentesService,
   usuariosService,
@@ -417,7 +403,7 @@ const TarefasRecorrentes: React.FC = () => {
     return (
       <div className="min-h-full bg-superficie-base flex items-center justify-center p-6">
         <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-alerta mx-auto mb-4" />
+          <IconeAtencao className="w-12 h-12 text-alerta mx-auto mb-4" />
           <p className="text-conteudo-suave text-lg">
             Você não tem permissão para acessar Tarefas Recorrentes.
           </p>
@@ -437,7 +423,7 @@ const TarefasRecorrentes: React.FC = () => {
         <div className="relative border border-borda bg-superficie transition-colors">
           <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <Repeat className="w-7 h-7 text-info" />
+              <IconeRepetir className="w-7 h-7 text-info" />
               <div>
                 <h1 className="text-3xl font-bold text-conteudo tracking-tight">
                   Tarefas Recorrentes
@@ -452,7 +438,7 @@ const TarefasRecorrentes: React.FC = () => {
               onClick={abrirCriar}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-info-forte transition-colors"
             >
-              <Plus className="w-4 h-4" />
+              <IconeMais className="w-4 h-4" />
               Nova tarefa
             </button>
           </div>
@@ -474,11 +460,11 @@ const TarefasRecorrentes: React.FC = () => {
         {/* Lista */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-info" />
+            <IconeCarregando className="w-10 h-10 animate-spin text-info" />
           </div>
         ) : tarefasOrdenadas.length === 0 ? (
           <div className="relative border border-borda bg-superficie p-12 text-center">
-            <Repeat className="w-12 h-12 text-conteudo-tenue mx-auto mb-4" />
+            <IconeRepetir className="w-12 h-12 text-conteudo-tenue mx-auto mb-4" />
             <p className="text-conteudo-tenue text-lg">
               Nenhuma tarefa recorrente cadastrada.
             </p>
@@ -538,7 +524,7 @@ const TarefasRecorrentes: React.FC = () => {
                   {/* Próxima data + contador */}
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-borda">
                     <div className="flex items-center gap-2">
-                      <CalendarClock className="w-4 h-4 text-conteudo-tenue" />
+                      <IconeAgenda className="w-4 h-4 text-conteudo-tenue" />
                       <span className="text-sm text-conteudo-suave">
                         Próxima: {formatarDataBR(t.proxima_data)}
                       </span>
@@ -565,28 +551,28 @@ const TarefasRecorrentes: React.FC = () => {
                   <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-borda-suave pt-3">
                     {t.ativo && (
                       <Button variante="sucesso" tamanho="sm" onClick={() => abrirRealizar(t)}>
-                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                        <IconeConfereCirculo className="h-4 w-4" aria-hidden="true" />
                         Realizar
                       </Button>
                     )}
 
                     <Button variante="secundario" tamanho="sm" onClick={() => abrirDetalhes(t)}>
-                      <Info className="h-4 w-4" aria-hidden="true" />
+                      <IconeInfo className="h-4 w-4" aria-hidden="true" />
                       Detalhes
                     </Button>
 
                     <Button variante="secundario" tamanho="sm" onClick={() => abrirHistorico(t)}>
-                      <History className="h-4 w-4" aria-hidden="true" />
+                      <IconeHistorico className="h-4 w-4" aria-hidden="true" />
                       Histórico
                     </Button>
 
                     <Button variante="secundario" tamanho="sm" onClick={() => abrirEditar(t)}>
-                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                      <IconeEditar className="h-4 w-4" aria-hidden="true" />
                       Editar
                     </Button>
 
                     <Button variante="secundario" tamanho="sm" onClick={() => alternarAtivo(t)}>
-                      <Power className="h-4 w-4" aria-hidden="true" />
+                      <IconeEnergia className="h-4 w-4" aria-hidden="true" />
                       {t.ativo ? 'Desativar' : 'Reativar'}
                     </Button>
 
@@ -597,7 +583,7 @@ const TarefasRecorrentes: React.FC = () => {
                       title={`Excluir ${t.titulo}`}
                       className="ml-auto border-perigo/40 text-perigo hover:bg-perigo/10 hover:border-perigo/60"
                     >
-                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      <IconeApagar className="h-4 w-4" aria-hidden="true" />
                       Excluir
                     </Button>
                   </div>
@@ -823,9 +809,9 @@ const TarefasRecorrentes: React.FC = () => {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-info-forte disabled:opacity-60"
                   >
                     {salvando ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <IconeCarregando className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Save className="w-4 h-4" />
+                      <IconeSalvar className="w-4 h-4" />
                     )}
                     Salvar
                   </button>
@@ -880,9 +866,9 @@ const TarefasRecorrentes: React.FC = () => {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sucesso text-white font-medium hover:bg-sucesso-forte disabled:opacity-60"
                   >
                     {salvando ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <IconeCarregando className="w-4 h-4 animate-spin" />
                     ) : (
-                      <CheckCircle2 className="w-4 h-4" />
+                      <IconeConfereCirculo className="w-4 h-4" />
                     )}
                     Confirmar
                   </button>
@@ -1011,7 +997,7 @@ const TarefasRecorrentes: React.FC = () => {
 
                 <div>
                   <p className="text-xs uppercase text-conteudo-tenue mb-1 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
+                    <IconeDocumento className="w-3.5 h-3.5" />
                     Instruções / procedimento
                   </p>
                   <div className="text-sm text-conteudo-suave whitespace-pre-wrap rounded-lg bg-superficie-elevada border border-borda p-3">
@@ -1024,7 +1010,7 @@ const TarefasRecorrentes: React.FC = () => {
                     onClick={() => abrirEditar(selecionada)}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-superficie-elevada text-conteudo-suave hover:bg-borda"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <IconeEditar className="w-4 h-4" />
                     Editar
                   </button>
                   <button

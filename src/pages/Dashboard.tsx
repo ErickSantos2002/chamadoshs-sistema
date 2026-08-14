@@ -12,21 +12,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import {
-  Ticket,
-  AlertCircle,
-  Clock,
-  CheckCircle2,
-  Filter,
-  ChevronRight,
-  XCircle,
-  Loader2,
-  Activity,
-  Eye,
-  EyeOff,
-  Archive,
-  Ban,
-} from 'lucide-react';
 import { useChamados } from '../hooks/useChamados';
 import { useAuth } from '../hooks/useAuth';
 import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
@@ -34,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
 import { Colchetes, Rotulo, SeletorDeFiltro } from '../components/ui';
+import { IconeAlerta, IconeArquivar, IconeAtividade, IconeCarregando, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
 import {
   corDaPrioridade,
   corDaSerie,
@@ -397,7 +383,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="min-h-full bg-superficie-base flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-sinal mx-auto mb-4" />
+          <IconeCarregando className="w-12 h-12 animate-spin text-sinal mx-auto mb-4" />
           <p className="text-conteudo-suave">
             Carregando dashboard...
           </p>
@@ -430,7 +416,7 @@ const Dashboard: React.FC = () => {
         <div className="relative border border-borda bg-superficie p-6 mt-6 mb-6 transition-colors">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-              <Filter className="w-5 h-5 mr-2 text-conteudo-suave" />
+              <IconeFiltro className="w-5 h-5 mr-2 text-conteudo-suave" />
               <h2 className="text-lg font-semibold text-conteudo">
                 Filtros
               </h2>
@@ -448,12 +434,12 @@ const Dashboard: React.FC = () => {
             >
               {incluirCancelados ? (
                 <>
-                  <Eye className="w-4 h-4" />
+                  <IconeOlho className="w-4 h-4" />
                   <span className="hidden sm:inline">Exibindo cancelados</span>
                 </>
               ) : (
                 <>
-                  <EyeOff className="w-4 h-4" />
+                  <IconeOlhoFechado className="w-4 h-4" />
                   <span className="hidden sm:inline">Cancelados ocultos</span>
                 </>
               )}
@@ -598,28 +584,28 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {[
             // O total é a soma, não um status: não recebe cor de significado.
-            { rotulo: 'Total de Chamados', valor: metricas.total, Icone: Ticket, cor: null },
+            { rotulo: 'Total de Chamados', valor: metricas.total, Icone: IconeChamado, cor: null },
             {
               rotulo: 'Abertos',
               valor: metricas.abertos,
-              Icone: AlertCircle,
+              Icone: IconeAlerta,
               cor: corDoStatus('Aberto', darkMode),
             },
             {
               rotulo: 'Em Andamento',
               valor: metricas.emAndamento,
-              Icone: Clock,
+              Icone: IconeRelogio,
               cor: corDoStatus('Em Andamento', darkMode),
             },
             {
               rotulo: 'Resolvidos',
               valor: metricas.resolvidos,
-              Icone: CheckCircle2,
+              Icone: IconeConfereCirculo,
               cor: corDoStatus('Resolvido', darkMode),
             },
             // Arquivado não é status do chamado, é uma marca sobre ele. Usa a
             // mesma cor do selo "Arquivado" da tabela abaixo.
-            { rotulo: 'Arquivados', valor: metricas.arquivados, Icone: Archive, cor: null },
+            { rotulo: 'Arquivados', valor: metricas.arquivados, Icone: IconeArquivar, cor: null },
           ].map(({ rotulo, valor, Icone, cor }) => (
             <div
               key={rotulo}
@@ -713,7 +699,7 @@ const Dashboard: React.FC = () => {
                 </p>
               </div>
               <div className="bg-alerta/15 p-3 rounded-full">
-                <Activity className="w-6 h-6 text-info" />
+                <IconeAtividade className="w-6 h-6 text-info" />
               </div>
             </div>
           </div>
@@ -916,13 +902,13 @@ const Dashboard: React.FC = () => {
                           </span>
                           {chamado.arquivado && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
-                              <Archive className="w-3 h-3" />
+                              <IconeArquivar className="w-3 h-3" />
                               Arquivado
                             </span>
                           )}
                           {chamado.cancelado && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-perigo/15 text-perigo-forte dark:text-perigo-suave">
-                              <Ban className="w-3 h-3" />
+                              <IconeProibido className="w-3 h-3" />
                               Cancelado
                             </span>
                           )}
@@ -948,7 +934,7 @@ const Dashboard: React.FC = () => {
                           className="text-sinal hover:brightness-110 font-medium inline-flex items-center gap-1"
                         >
                           Ver detalhes
-                          <ChevronRight className="w-4 h-4" />
+                          <IconeSetaDireita className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -959,7 +945,7 @@ const Dashboard: React.FC = () => {
             </div>
           ) : (
             <div className="py-12 text-center">
-              <XCircle className="w-12 h-12 text-conteudo-tenue mx-auto mb-4" />
+              <IconeFecharCirculo className="w-12 h-12 text-conteudo-tenue mx-auto mb-4" />
               <p className="text-conteudo-tenue text-lg">
                 Nenhum chamado encontrado
               </p>

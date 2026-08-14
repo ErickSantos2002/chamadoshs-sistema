@@ -4,7 +4,7 @@ import { precisaAvaliar } from '../utils/avaliacao';
 import { cn } from '../lib/utils';
 import { Avatar, Badge, VarianteBadge } from './ui';
 import SlaProgresso from './SlaProgresso';
-import { Star } from 'lucide-react';
+import { IconeEstrela } from './ui/icones';
 
 interface KanbanColumnProps {
   title: string;
@@ -135,7 +135,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
                   {precisaAvaliar(chamado, usuarioLogadoId) && (
                     <Badge variante="alerta">
-                      <Star className="h-3 w-3" aria-hidden="true" />
+                      <IconeEstrela className="h-3 w-3" aria-hidden="true" />
                       Avaliar
                     </Badge>
                   )}

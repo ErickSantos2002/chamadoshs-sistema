@@ -46,8 +46,9 @@ describe('itens do menu', () => {
   it('todo item tem rótulo e ícone', () => {
     for (const item of ITENS_DO_MENU) {
       expect(item.label.trim()).not.toBe('');
-      // Ícone do lucide é `forwardRef`, então é objeto, não função.
-      expect(item.Icone).toBeTruthy();
+      // Os ícones do projeto são componentes de função. Quando vinham do
+      // lucide eram `forwardRef`, e isto precisava se contentar com `toBeTruthy`.
+      expect(item.Icone).toBeTypeOf('function');
     }
   });
 

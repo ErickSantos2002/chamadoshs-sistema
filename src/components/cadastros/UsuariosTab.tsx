@@ -1,25 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
-import {
-  Plus,
-  Edit,
-  Power,
-  Eye,
-  Search,
-  RefreshCw,
-  Users,
-  ChevronUp,
-  ChevronDown,
-  AlertCircle,
-  Key,
-  Building,
-  RotateCcw,
-} from 'lucide-react';
 import { useCadastros } from '../../context/CadastrosContext';
 import { Button, Colchetes, Input, Modal } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
+import { IconeAlerta, IconeBusca, IconeChave, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor, IconeUsuarios } from '../ui/icones';
 import type {
   Usuario,
   ModalMode,
@@ -239,7 +225,7 @@ const UsuariosTab: React.FC = () => {
       {/* Header com ações */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-alerta-forte dark:text-alerta-suave" />
+          <IconeUsuarios className="w-6 h-6 text-alerta-forte dark:text-alerta-suave" />
           <h2 className="text-xl font-semibold text-conteudo">
             Usuários
           </h2>
@@ -251,7 +237,7 @@ const UsuariosTab: React.FC = () => {
         <div className="flex gap-3">
           {/* Busca */}
           <div className="relative flex-1 sm:flex-none sm:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-conteudo-tenue" />
+            <IconeBusca className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-conteudo-tenue" />
             <input
               type="text"
               placeholder="Buscar usuários..."
@@ -268,7 +254,7 @@ const UsuariosTab: React.FC = () => {
             className="px-4 py-2 bg-superficie-elevada text-conteudo-suave rounded-lg hover:bg-borda transition-colors flex items-center gap-2"
             aria-label="Atualizar dados"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <IconeRecarregar className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
           {/* Botão Novo Usuário */}
@@ -277,7 +263,7 @@ const UsuariosTab: React.FC = () => {
               onClick={handleNovoUsuario}
               className="px-4 py-2 bg-sinal hover:brightness-110 text-white rounded-lg transition-colors flex items-center gap-2"
             >
-              <Plus className="w-4 h-4" />
+              <IconeMais className="w-4 h-4" />
               <span className="hidden sm:inline">Novo Usuário</span>
             </button>
           )}
@@ -287,7 +273,7 @@ const UsuariosTab: React.FC = () => {
       {/* Mensagem de erro */}
       {error && (
         <div className="mb-4 p-4 bg-perigo/10 border border-perigo/30 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
+          <IconeAlerta className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
           <div className="flex-1">
             <p className="text-perigo-forte dark:text-perigo-suave">{error}</p>
           </div>
@@ -300,13 +286,13 @@ const UsuariosTab: React.FC = () => {
         {loading && !usuarios.length ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-conteudo-tenue">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
+              <IconeRecarregar className="w-8 h-8 animate-spin mx-auto mb-2" />
               Carregando usuários...
             </div>
           </div>
         ) : usuariosOrdenados.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8">
-            <Users className="w-12 h-12 text-conteudo-tenue mb-4" />
+            <IconeUsuarios className="w-12 h-12 text-conteudo-tenue mb-4" />
             <p className="text-conteudo-tenue text-center">
               {busca 
                 ? 'Nenhum usuário encontrado com os critérios de busca'
@@ -317,7 +303,7 @@ const UsuariosTab: React.FC = () => {
                 onClick={handleNovoUsuario}
                 className="mt-4 px-4 py-2 bg-sinal hover:brightness-110 text-white rounded-lg transition-colors flex items-center gap-2"
               >
-                <Plus className="w-4 h-4" />
+                <IconeMais className="w-4 h-4" />
                 Criar primeiro usuário
               </button>
             )}
@@ -334,8 +320,8 @@ const UsuariosTab: React.FC = () => {
                     ID
                     {ordenacao.campo === 'id' && (
                       ordenacao.direcao === 'asc' ? 
-                        <ChevronUp className="w-4 h-4" /> : 
-                        <ChevronDown className="w-4 h-4" />
+                        <IconeSetaCima className="w-4 h-4" /> : 
+                        <IconeSeta className="w-4 h-4" />
                     )}
                   </button>
                 </th>
@@ -347,8 +333,8 @@ const UsuariosTab: React.FC = () => {
                     Usuário
                     {ordenacao.campo === 'nome' && (
                       ordenacao.direcao === 'asc' ? 
-                        <ChevronUp className="w-4 h-4" /> : 
-                        <ChevronDown className="w-4 h-4" />
+                        <IconeSetaCima className="w-4 h-4" /> : 
+                        <IconeSeta className="w-4 h-4" />
                     )}
                   </button>
                 </th>
@@ -370,8 +356,8 @@ const UsuariosTab: React.FC = () => {
                     Criado em
                     {ordenacao.campo === 'created_at' && (
                       ordenacao.direcao === 'asc' ? 
-                        <ChevronUp className="w-4 h-4" /> : 
-                        <ChevronDown className="w-4 h-4" />
+                        <IconeSetaCima className="w-4 h-4" /> : 
+                        <IconeSeta className="w-4 h-4" />
                     )}
                   </button>
                 </th>
@@ -395,7 +381,7 @@ const UsuariosTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-conteudo-tenue" />
+                      <IconeUsuarios className="w-4 h-4 text-conteudo-tenue" />
                       <span className="text-sm font-medium text-conteudo">
                         {usuario.nome}
                       </span>
@@ -416,7 +402,7 @@ const UsuariosTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-conteudo-tenue" />
+                      <IconeSetor className="w-4 h-4 text-conteudo-tenue" />
                       <span className="text-sm text-conteudo-suave">
                         {getSetorNome(usuario.setor_id)}
                       </span>
@@ -433,7 +419,7 @@ const UsuariosTab: React.FC = () => {
                         className="p-2 text-conteudo-suave hover:bg-superficie-elevada rounded-lg transition-colors"
                         aria-label="Visualizar usuário"
                       >
-                        <Eye className="w-4 h-4 text-info-forte dark:text-info-suave" />
+                        <IconeOlho className="w-4 h-4 text-info-forte dark:text-info-suave" />
                       </button>
 
                       {/* Editar - apenas admin */}
@@ -443,7 +429,7 @@ const UsuariosTab: React.FC = () => {
                           className="p-2 text-info-forte dark:text-info-suave hover:bg-info/10 rounded-lg transition-colors"
                           aria-label="Editar usuário"
                         >
-                          <Edit className="w-4 h-4 text-alerta-forte dark:text-alerta-suave" />
+                          <IconeEditar className="w-4 h-4 text-alerta-forte dark:text-alerta-suave" />
                         </button>
                       )}
 
@@ -454,7 +440,7 @@ const UsuariosTab: React.FC = () => {
                           className="p-2 text-alerta-forte dark:text-alerta-suave hover:bg-alerta/10 rounded-lg transition-colors"
                           aria-label="Resetar senha"
                         >
-                          <Key className="w-4 h-4" />
+                          <IconeChave className="w-4 h-4" />
                         </button>
                       )}
 
@@ -470,7 +456,7 @@ const UsuariosTab: React.FC = () => {
                             aria-label={`Reativar ${usuario.nome}`}
                             title="Reativar"
                           >
-                            <RotateCcw className="w-4 h-4" />
+                            <IconeDesfazer className="w-4 h-4" />
                           </button>
                         ) : confirmDelete === usuario.id ? (
                           <div className="flex items-center gap-2">
@@ -500,7 +486,7 @@ const UsuariosTab: React.FC = () => {
                             aria-label={`Desativar ${usuario.nome}`}
                             title="Desativar"
                           >
-                            <Power className="w-4 h-4" />
+                            <IconeEnergia className="w-4 h-4" />
                           </button>
                         )
                       )}
@@ -590,7 +576,7 @@ const UsuariosTab: React.FC = () => {
               Cancelar
             </Button>
             <Button onClick={handleResetPassword}>
-              <Key className="h-4 w-4" aria-hidden="true" />
+              <IconeChave className="h-4 w-4" aria-hidden="true" />
               Resetar senha
             </Button>
           </div>

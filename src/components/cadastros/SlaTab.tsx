@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Bell, Clock, Loader2, Pencil, ShieldCheck } from 'lucide-react';
 import { slaConfigsService } from '../../services/chamadoshsapi';
 import { PrioridadeEnum, SLAConfig } from '../../types/api';
 import { EXPEDIENTE, MINUTOS_POR_DIA_UTIL, formatarPrazo } from '../../lib/prazo';
 import { cn } from '../../lib/utils';
 import { Badge, Button, Input, Modal, VarianteBadge } from '../ui';
+import { IconeAlerta, IconeCarregando, IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
 
 interface SlaTabProps {
   /** Indica se a aba SLA está ativa/visível no momento. */
@@ -170,14 +170,14 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
 
       {erro && (
         <div className="flex items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {erro}
         </div>
       )}
 
       {carregando ? (
         <div className="flex items-center justify-center py-12 text-conteudo-tenue">
-          <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+          <IconeCarregando className="h-6 w-6 animate-spin" aria-hidden="true" />
         </div>
       ) : (
         <div className="rounded-xl border border-borda bg-superficie">
@@ -208,7 +208,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
 
                 <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
                   <span className="flex items-center gap-1.5 text-conteudo">
-                    <Clock className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+                    <IconeRelogio className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
                     <span className="text-conteudo-tenue">Resposta</span>
                     <strong className="font-semibold">
                       {formatarPrazo(config.minutos_resposta)}
@@ -216,7 +216,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                   </span>
 
                   <span className="flex items-center gap-1.5 text-conteudo">
-                    <ShieldCheck className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+                    <IconeEscudoConfere className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
                     <span className="text-conteudo-tenue">Resolução</span>
                     <strong className="font-semibold">
                       {formatarPrazo(config.minutos_resolucao)}
@@ -224,7 +224,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                   </span>
 
                   <span className="flex items-center gap-1.5 text-conteudo-tenue">
-                    <Bell className="h-4 w-4" aria-hidden="true" />
+                    <IconeSino className="h-4 w-4" aria-hidden="true" />
                     Atenção em {PERCENTUAL_ATENCAO}%
                   </span>
                 </div>
@@ -236,7 +236,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                 onClick={() => abrirEdicao(config)}
                 aria-label={`Editar prazos de ${config.prioridade}`}
               >
-                <Pencil className="h-4 w-4" aria-hidden="true" />
+                <IconeEditar className="h-4 w-4" aria-hidden="true" />
                 Editar
               </Button>
             </div>

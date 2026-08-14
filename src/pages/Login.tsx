@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AlertCircle, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { useSaudeDoSistema } from '../hooks/useSaudeDoSistema';
@@ -8,6 +7,7 @@ import { EstadoDoSistema, TEXTO_DO_ESTADO, descreverIdade } from '../lib/saude';
 import { useRelogio } from '../hooks/useRelogio';
 import { Button, Colchetes, Input, Rotulo } from '../components/ui';
 import logo from '../assets/logo.png';
+import { IconeAlerta, IconeUsuario } from '../components/ui/icones';
 
 /**
  * Cor do ponto de estado. Verde só quando é verde de verdade — o ponto existe
@@ -120,7 +120,7 @@ const Login: React.FC = () => {
               sim forma. Sobe metade da própria altura para furar a borda. */}
           <div className="absolute -top-8 left-1/2 -translate-x-1/2">
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-sinal/60 bg-superficie-elevada">
-              <User className="h-7 w-7 text-sinal" aria-hidden="true" />
+              <IconeUsuario className="h-7 w-7 text-sinal" aria-hidden="true" />
             </div>
           </div>
 
@@ -179,7 +179,7 @@ const Login: React.FC = () => {
                 role="alert"
                 className="flex items-start gap-2 border border-perigo/40 bg-perigo/10 px-3 py-2 text-sm text-perigo-forte dark:text-perigo-suave"
               >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 {error}
               </div>
             )}

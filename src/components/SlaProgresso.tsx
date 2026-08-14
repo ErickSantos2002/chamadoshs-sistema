@@ -1,8 +1,8 @@
 import React from 'react';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { SLAInfo, StatusEnum } from '../types/api';
 import { formatarDuracao } from '../lib/formato';
 import { cn } from '../lib/utils';
+import { IconeAlerta, IconeConfereCirculo } from './ui/icones';
 
 interface SlaProgressoProps {
   sla?: SLAInfo;
@@ -41,9 +41,9 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
         )}
       >
         {estourou ? (
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <IconeAlerta className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         ) : (
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <IconeConfereCirculo className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         )}
         <span className="truncate">
           Concluído em {formatarDuracao(sla.minutos_resolucao_consumidos)}
@@ -79,7 +79,7 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
           estourou ? 'text-perigo' : 'text-conteudo-tenue'
         )}
       >
-        {estourou && <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
+        {estourou && <IconeAlerta className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
         <span className="truncate">
           {estourou ? 'SLA vencido' : `${sla.percentual_resolucao}% do prazo`}
         </span>

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { CheckCircle, Clock, PlayCircle, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { chamadosService } from '../services/chamadoshsapi';
@@ -7,6 +6,8 @@ import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
 import ContadorMinimo from './ContadorMinimo';
 import { Button, Rotulo, Textarea } from './ui';
 import { Chamado, StatusEnum } from '../types/api';
+import type { PropsDeIcone } from './ui/icones';
+import { IconeConfereCirculo, IconeDesfazer, IconeIniciar, IconeRelogio } from './ui/icones';
 
 interface AcoesRapidasProps {
   chamado: Chamado;
@@ -16,24 +17,24 @@ interface AcoesRapidasProps {
 
 /** O que dá para fazer a partir de cada status, e com que palavra. */
 const TRANSICOES: Partial<
-  Record<StatusEnum, Array<{ para: StatusEnum; texto: string; Icone: typeof PlayCircle }>>
+  Record<StatusEnum, Array<{ para: StatusEnum; texto: string; Icone: React.FC<PropsDeIcone> }>>
 > = {
   [StatusEnum.ABERTO]: [
-    { para: StatusEnum.EM_ANDAMENTO, texto: 'Iniciar atendimento', Icone: PlayCircle },
+    { para: StatusEnum.EM_ANDAMENTO, texto: 'Iniciar atendimento', Icone: IconeIniciar },
   ],
   [StatusEnum.EM_ANDAMENTO]: [
-    { para: StatusEnum.AGUARDANDO, texto: 'Aguardando retorno', Icone: Clock },
-    { para: StatusEnum.RESOLVIDO, texto: 'Marcar como resolvido', Icone: CheckCircle },
+    { para: StatusEnum.AGUARDANDO, texto: 'Aguardando retorno', Icone: IconeRelogio },
+    { para: StatusEnum.RESOLVIDO, texto: 'Marcar como resolvido', Icone: IconeConfereCirculo },
   ],
   [StatusEnum.AGUARDANDO]: [
-    { para: StatusEnum.EM_ANDAMENTO, texto: 'Retomar atendimento', Icone: PlayCircle },
-    { para: StatusEnum.RESOLVIDO, texto: 'Marcar como resolvido', Icone: CheckCircle },
+    { para: StatusEnum.EM_ANDAMENTO, texto: 'Retomar atendimento', Icone: IconeIniciar },
+    { para: StatusEnum.RESOLVIDO, texto: 'Marcar como resolvido', Icone: IconeConfereCirculo },
   ],
   [StatusEnum.RESOLVIDO]: [
-    { para: StatusEnum.EM_ANDAMENTO, texto: 'Reabrir', Icone: RotateCcw },
+    { para: StatusEnum.EM_ANDAMENTO, texto: 'Reabrir', Icone: IconeDesfazer },
   ],
   [StatusEnum.FECHADO]: [
-    { para: StatusEnum.EM_ANDAMENTO, texto: 'Reabrir', Icone: RotateCcw },
+    { para: StatusEnum.EM_ANDAMENTO, texto: 'Reabrir', Icone: IconeDesfazer },
   ],
 };
 
@@ -132,7 +133,7 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
             carregando={salvando}
             className="flex-1"
           >
-            <CheckCircle className="h-4 w-4" aria-hidden="true" />
+            <IconeConfereCirculo className="h-4 w-4" aria-hidden="true" />
             Resolver
           </Button>
           <Button

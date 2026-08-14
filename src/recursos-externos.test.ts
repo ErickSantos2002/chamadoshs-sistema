@@ -9,7 +9,8 @@ import { join } from 'node:path';
  *
  * Havia 12 ícones vindos do `img.icons8.com`. Além da disponibilidade, cada
  * carregamento anunciava o host interno do sistema no `Referer` de um domínio
- * externo. Foram trocados por `lucide-react`, que entra no bundle.
+ * externo. Foram para um pacote no bundle, e de lá para `components/ui/icones`,
+ * desenhados no projeto — hoje nenhum ícone sai da rede.
  *
  * Este teste falha se alguém voltar a apontar `src` para fora.
  */

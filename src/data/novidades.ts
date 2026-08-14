@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.7',
+    data: '2026-08-14',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Os ícones do sistema foram redesenhados. Agora terminam em ponta reta, como as bordas e os cantos de todo o resto da interface — antes eram arredondados e destoavam.',
+      },
+    ],
+  },
+  {
     versao: '1.6.6',
     data: '2026-08-14',
     itens: [

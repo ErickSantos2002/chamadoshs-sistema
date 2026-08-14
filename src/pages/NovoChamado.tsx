@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import NovoChamadoForm from '../components/NovoChamadoForm';
+import { IconeVoltar } from '../components/ui/icones';
 
 /**
  * Abertura de chamado em página inteira.
@@ -20,7 +20,7 @@ const NovoChamado: React.FC = () => {
           onClick={() => navigate('/chamados')}
           className="mb-4 flex items-center gap-1 text-sm text-conteudo-suave transition-colors hover:text-info"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          <IconeVoltar className="h-4 w-4" aria-hidden="true" />
           Voltar
         </button>
 

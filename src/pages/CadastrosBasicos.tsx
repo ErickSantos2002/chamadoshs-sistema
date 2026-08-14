@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Settings, Tag, Building, Users, Clock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { CadastrosProvider } from '../context/CadastrosContext';
 import CategoriasTab from '../components/cadastros/CategoriasTab';
@@ -8,6 +7,7 @@ import UsuariosTab from '../components/cadastros/UsuariosTab';
 import SlaTab from '../components/cadastros/SlaTab';
 import Bloqueio from './Bloqueio';
 import type { TipoAba } from '../types/cadastros.types';
+import { IconeConfiguracoes, IconeEtiqueta, IconeRelogio, IconeSetor, IconeUsuarios } from '../components/ui/icones';
 
 // ========================================
 // COMPONENTE PRINCIPAL
@@ -51,21 +51,21 @@ const CadastrosBasicos: React.FC = () => {
     {
       id: 'categorias',
       label: 'Categorias',
-      icon: <Tag className="w-4 h-4" />,
+      icon: <IconeEtiqueta className="w-4 h-4" />,
       component: <CategoriasTab />,
       visible: true,
     },
     {
       id: 'setores',
       label: 'Setores',
-      icon: <Building className="w-4 h-4" />,
+      icon: <IconeSetor className="w-4 h-4" />,
       component: <SetoresTab />,
       visible: true,
     },
     {
       id: 'usuarios',
       label: 'Usuários',
-      icon: <Users className="w-4 h-4" />,
+      icon: <IconeUsuarios className="w-4 h-4" />,
       component: ehAdministrador ? (
         <UsuariosTab />
       ) : (
@@ -76,7 +76,7 @@ const CadastrosBasicos: React.FC = () => {
     {
       id: 'sla',
       label: 'SLA',
-      icon: <Clock className="w-4 h-4" />,
+      icon: <IconeRelogio className="w-4 h-4" />,
       component: <SlaTab ativo={abaAtiva === 'sla'} />,
       visible: true,
     },
