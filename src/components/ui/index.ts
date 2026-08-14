@@ -25,4 +25,11 @@ export { Rotulo } from './Rotulo';
 
 export { Select } from './Select';
 
+// Seletor dos FILTROS, com a lista desenhada por nós. O `Select` acima
+// continua sendo o certo em formulário — veja o cabeçalho de cada um.
+export { SeletorDeFiltro } from './SeletorDeFiltro';
+export type { OpcaoDeFiltro } from './SeletorDeFiltro';
+
+export { IconeConfere, IconeSeta } from './icones';
+
 export { Textarea } from './Textarea';

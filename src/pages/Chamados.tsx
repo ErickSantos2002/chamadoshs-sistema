@@ -7,9 +7,9 @@ import { StatusEnum, PrioridadeEnum, Chamado, TarefaRecorrente } from '../types/
 import { Plus, Search, Loader2, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
-import { Button, Input, Modal, Select } from '../components/ui';
+import { Button, Input, Modal, SeletorDeFiltro } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
-import { corDoStatus } from '../lib/graficos';
+import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
 
@@ -196,33 +196,38 @@ const Chamados: React.FC = () => {
                 className="w-56"
               />
 
-              <Select
-                value={filtroPrioridade}
-                onChange={(e) => setFiltroPrioridade(e.target.value as PrioridadeEnum | '')}
-                aria-label="Filtrar por prioridade"
-              >
-                <option value="">Todas prioridades</option>
-                {Object.values(PrioridadeEnum).map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </Select>
+              {/* O ponto colorido é a MESMA cor que a prioridade tem nos
+                  gráficos. Filtro e gráfico falando cores diferentes da mesma
+                  coisa é o tipo de detalhe que ensina a não confiar em nenhum
+                  dos dois. */}
+              <SeletorDeFiltro
+                rotulo="Filtrar por prioridade"
+                valor={filtroPrioridade}
+                aoMudar={(v) => setFiltroPrioridade(v as PrioridadeEnum | '')}
+                opcoes={[
+                  { valor: '', rotulo: 'Todas prioridades' },
+                  ...Object.values(PrioridadeEnum).map((p) => ({
+                    valor: p,
+                    rotulo: p,
+                    cor: corDaPrioridade(p, darkMode),
+                  })),
+                ]}
+                className="w-48"
+              />
 
-              <Select
-                value={filtroCategoria}
-                onChange={(e) =>
-                  setFiltroCategoria(e.target.value ? Number(e.target.value) : '')
-                }
-                aria-label="Filtrar por categoria"
-              >
-                <option value="">Todas categorias</option>
-                {categorias.map((categoria) => (
-                  <option key={categoria.id} value={categoria.id}>
-                    {categoria.nome}
-                  </option>
-                ))}
-              </Select>
+              <SeletorDeFiltro
+                rotulo="Filtrar por categoria"
+                valor={filtroCategoria === '' ? '' : String(filtroCategoria)}
+                aoMudar={(v) => setFiltroCategoria(v ? Number(v) : '')}
+                opcoes={[
+                  { valor: '', rotulo: 'Todas categorias' },
+                  ...categorias.map((categoria) => ({
+                    valor: String(categoria.id),
+                    rotulo: categoria.nome,
+                  })),
+                ]}
+                className="w-48"
+              />
 
               {temFiltro && (
                 <Button variante="fantasma" tamanho="sm" onClick={limparFiltros}>

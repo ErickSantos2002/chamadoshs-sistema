@@ -6,11 +6,17 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 /**
- * `<select>` nativo, estilizado.
+ * `<select>` nativo, estilizado. Para FORMULÁRIO.
  *
- * Nativo de propósito: um dropdown feito à mão precisaria reimplementar
- * navegação por teclado, busca por digitação e o comportamento de rolagem em
- * tela pequena — e a lista de prioridades não ganha nada com isso.
+ * Nativo de propósito, e o de propósito mudou de razão. O argumento antigo era
+ * que um dropdown caseiro custaria teclado e busca por digitação para não
+ * ganhar nada — mas ele ganhava algo: a lista ABERTA de um `<select>` é
+ * desenhada pelo sistema operacional, e aparecia branca com destaque azul do
+ * Windows no meio de uma interface escura.
+ *
+ * Nos filtros isso pesou, e lá entrou o `SeletorDeFiltro`. Aqui não: em
+ * formulário o seletor nativo do celular e a digitação para achar a opção valem
+ * mais que a aparência da lista, e as listas são maiores.
  */
 export const Select: React.FC<SelectProps> = ({ className, children, ...resto }) => (
   <select

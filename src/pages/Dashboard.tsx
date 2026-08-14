@@ -33,7 +33,7 @@ import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
 import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
-import { Colchetes, Rotulo } from '../components/ui';
+import { Colchetes, Rotulo, SeletorDeFiltro } from '../components/ui';
 import {
   corDaPrioridade,
   corDaSerie,
@@ -534,19 +534,32 @@ const Dashboard: React.FC = () => {
               <label className="block text-sm font-medium text-conteudo-suave mb-1">
                 Status
               </label>
-              <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg bg-superficie
-                          text-conteudo border-borda
-                          focus:outline-none focus:ring-2 focus:ring-info transition-colors"
-              >
-                <option value="todos">Todos</option>
-                <option value={StatusEnum.ABERTO}>Abertos</option>
-                <option value={StatusEnum.EM_ANDAMENTO}>Em Andamento</option>
-                <option value={StatusEnum.AGUARDANDO}>Aguardando</option>
-                <option value={StatusEnum.RESOLVIDO}>Resolvidos</option>
-              </select>
+              {/* Cada opção leva a cor que aquele status tem nos gráficos
+                  logo abaixo. É a mesma fonte, `corDoStatus`. */}
+              <SeletorDeFiltro
+                rotulo="Filtrar por status"
+                valor={filtroStatus}
+                aoMudar={setFiltroStatus}
+                opcoes={[
+                  { valor: 'todos', rotulo: 'Todos' },
+                  { valor: StatusEnum.ABERTO, rotulo: 'Abertos', cor: corDoStatus('Aberto', darkMode) },
+                  {
+                    valor: StatusEnum.EM_ANDAMENTO,
+                    rotulo: 'Em Andamento',
+                    cor: corDoStatus('Em Andamento', darkMode),
+                  },
+                  {
+                    valor: StatusEnum.AGUARDANDO,
+                    rotulo: 'Aguardando',
+                    cor: corDoStatus('Aguardando', darkMode),
+                  },
+                  {
+                    valor: StatusEnum.RESOLVIDO,
+                    rotulo: 'Resolvidos',
+                    cor: corDoStatus('Resolvido', darkMode),
+                  },
+                ]}
+              />
             </div>
 
             {/* Prioridade */}
@@ -554,19 +567,24 @@ const Dashboard: React.FC = () => {
               <label className="block text-sm font-medium text-conteudo-suave mb-1">
                 Prioridade
               </label>
-              <select
-                value={filtroPrioridade}
-                onChange={(e) => setFiltroPrioridade(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg bg-superficie
-                          text-conteudo border-borda
-                          focus:outline-none focus:ring-2 focus:ring-info transition-colors"
-              >
-                <option value="todas">Todas</option>
-                <option value={PrioridadeEnum.BAIXA}>Baixa</option>
-                <option value={PrioridadeEnum.MEDIA}>Média</option>
-                <option value={PrioridadeEnum.ALTA}>Alta</option>
-                <option value={PrioridadeEnum.CRITICA}>Crítica</option>
-              </select>
+              <SeletorDeFiltro
+                rotulo="Filtrar por prioridade"
+                valor={filtroPrioridade}
+                aoMudar={setFiltroPrioridade}
+                opcoes={[
+                  { valor: 'todas', rotulo: 'Todas' },
+                  ...[
+                    PrioridadeEnum.BAIXA,
+                    PrioridadeEnum.MEDIA,
+                    PrioridadeEnum.ALTA,
+                    PrioridadeEnum.CRITICA,
+                  ].map((p) => ({
+                    valor: p,
+                    rotulo: p,
+                    cor: corDaPrioridade(p, darkMode),
+                  })),
+                ]}
+              />
             </div>
 
           </div>

@@ -10,7 +10,7 @@ import {
   TrilhaComFalha,
   TrilhaVazia,
 } from '../components/EstadosDaTrilha';
-import { Button, Colchetes, Rotulo, Select } from '../components/ui';
+import { Button, Colchetes, Rotulo, SeletorDeFiltro } from '../components/ui';
 import type { EventoDeAuditoria } from '../types/api';
 
 /** Quantas linhas por página. A API aceita até 500; 50 cabe na tela. */
@@ -171,22 +171,26 @@ const Auditoria: React.FC = () => {
         <Colchetes />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Rotulo como="label" htmlFor="alvo" className="mb-1.5 block">
+            {/* Sem `htmlFor`: o seletor não é mais um `<select>` com id, e sim
+                um botão que carrega o próprio `aria-label`. Um `for` apontando
+                para nada é pior que nenhum — o leitor de tela anuncia o rótulo
+                e não encontra o campo. */}
+            <Rotulo como="label" className="mb-1.5 block">
               Tipo de cadastro
             </Rotulo>
             {ehAdministrador ? (
-              <Select
-                id="alvo"
-                value={alvo}
-                onChange={(e) =>
-                  aoFiltrar(() => setAlvo(e.target.value as '' | 'usuario' | 'setor'))
+              <SeletorDeFiltro
+                rotulo="Tipo de cadastro"
+                valor={alvo}
+                aoMudar={(v) =>
+                  aoFiltrar(() => setAlvo(v as '' | 'usuario' | 'setor'))
                 }
-                className="w-full"
-              >
-                <option value="">Todos</option>
-                <option value="usuario">Usuários</option>
-                <option value="setor">Setores</option>
-              </Select>
+                opcoes={[
+                  { valor: '', rotulo: 'Todos' },
+                  { valor: 'usuario', rotulo: 'Usuários' },
+                  { valor: 'setor', rotulo: 'Setores' },
+                ]}
+              />
             ) : (
               /* Sem seletor para o técnico, e com o motivo dito. Oferecer
                  "Usuários" seria oferecer um 403; oferecer "Todos" seria
@@ -202,24 +206,20 @@ const Auditoria: React.FC = () => {
           </div>
 
           <div>
-            <Rotulo como="label" htmlFor="ator" className="mb-1.5 block">
+            <Rotulo como="label" className="mb-1.5 block">
               Quem fez
             </Rotulo>
-            <Select
-              id="ator"
-              value={atorId}
-              onChange={(e) => aoFiltrar(() => setAtorId(e.target.value))}
-              className="w-full"
-            >
-              <option value="">Qualquer pessoa</option>
-              {Object.values(usuarios)
-                .sort((a, b) => a.nome.localeCompare(b.nome))
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.nome}
-                  </option>
-                ))}
-            </Select>
+            <SeletorDeFiltro
+              rotulo="Quem fez"
+              valor={atorId}
+              aoMudar={(v) => aoFiltrar(() => setAtorId(v))}
+              opcoes={[
+                { valor: '', rotulo: 'Qualquer pessoa' },
+                ...Object.values(usuarios)
+                  .sort((a, b) => a.nome.localeCompare(b.nome))
+                  .map((u) => ({ valor: String(u.id), rotulo: u.nome })),
+              ]}
+            />
           </div>
 
           <div>

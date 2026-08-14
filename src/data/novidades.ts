@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.6',
+    data: '2026-08-14',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'As listas dos filtros passaram a ter a aparência do sistema. Antes quem desenhava a lista aberta era o Windows, e ela aparecia branca no meio da tela escura.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Nos filtros de status e prioridade, cada opção agora mostra a cor que aquele status tem nos gráficos — a mesma cor nos dois lugares.',
+      },
+    ],
+  },
+  {
     versao: '1.6.5',
     data: '2026-08-14',
     itens: [
