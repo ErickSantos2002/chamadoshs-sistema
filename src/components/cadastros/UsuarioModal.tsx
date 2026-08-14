@@ -3,17 +3,19 @@ import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
 import HistoricoDaConta from './HistoricoDaConta';
-import { Button, Modal, Rotulo } from '../ui';
+import { Button, MensagemDeErro, Modal, Rotulo, RotuloDeCampo } from '../ui';
 import { getRoleName } from '../../utils/roleMapper';
-import { IconeAlerta, IconeEscudo, IconeOlho, IconeOlhoFechado, IconeSalvar, IconeSetor } from '../ui/icones';
+import { IconeEscudo, IconeOlho, IconeOlhoFechado, IconeSalvar, IconeSetor } from '../ui/icones';
 import type {
   Usuario,
   UsuarioCreate,
   UsuarioUpdate,
   ModalMode,
   ValidationErrors,
-  ROLES,
 } from '../../types/cadastros.types';
+
+/** Liga o botão do rodapé ao formulário, que fica no corpo do modal. */
+const ID_DO_FORM = 'form-usuario';
 
 // ========================================
 // INTERFACE DO COMPONENTE
@@ -163,9 +165,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
     setLoading(true);
     try {
       if (mode === 'create') {
-        console.log('🔍 FormData sendo enviado:', { ...formData, password: formData.password ? '***' : 'VAZIO' });
         await createUsuario(formData);
-        console.log('✅ Usuário criado com sucesso!');
         toast.success('Usuário criado com sucesso!');
       } else if (mode === 'edit' && usuario) {
         const updateData: UsuarioUpdate = {
@@ -181,12 +181,10 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
         }
 
         await updateUsuario(usuario.id, updateData);
-        console.log('✅ Usuário atualizado com sucesso!');
         toast.success('Usuário atualizado com sucesso!');
       }
       onClose();
     } catch (err: any) {
-      console.error('❌ Erro ao salvar usuário:', err);
       
       // Trata erro de username duplicado
       if (err.response?.status === 400 && err.response?.data?.detail?.includes('already exists')) {
@@ -234,17 +232,32 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
       aoFechar={onClose}
       titulo={modalTitle}
       largura={mostrarHistorico ? 'lg' : 'sm'}
+      // Este é o formulário mais longo do sistema, e era o que mais sofria com
+      // os botões desenhados junto com os campos: para salvar era preciso
+      // rolar até o fim. No rodapé do modal eles ficam sempre visíveis.
+      rodape={
+        <>
+          <Button type="button" variante="secundario" onClick={onClose}>
+            {isReadOnly ? 'Fechar' : 'Cancelar'}
+          </Button>
+
+          {!isReadOnly && (
+            // `form` liga o botão ao formulário mesmo estando fora dele.
+            <Button type="submit" form={ID_DO_FORM} carregando={loading}>
+              <IconeSalvar className="h-4 w-4" aria-hidden="true" />
+              Salvar
+            </Button>
+          )}
+        </>
+      }
     >
       <div className={mostrarHistorico ? 'grid gap-6 lg:grid-cols-[1fr_18rem]' : undefined}>
-      <form onSubmit={handleSubmit}>
+      <form id={ID_DO_FORM} onSubmit={handleSubmit}>
             {/* Campo Username */}
             <div className="mb-4">
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-conteudo-suave mb-2"
-              >
-                Nome de Usuário <span className="text-perigo">*</span>
-              </label>
+              <RotuloDeCampo htmlFor="username" obrigatorio>
+                Nome de Usuário
+              </RotuloDeCampo>
               <input
                 type="text"
                 id="username"
@@ -269,25 +282,22 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                 placeholder="Digite o nome de usuário"
                 maxLength={50}
               />
-              {errors.username && (
-                <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
-                  <IconeAlerta className="w-4 h-4" />
-                  <span>{errors.username}</span>
-                </div>
-              )}
+              <MensagemDeErro texto={errors.username} />
             </div>
 
             {/* Campo Senha (não mostrar no modo view) */}
             {mode !== 'view' && (
               <>
                 <div className="mb-4">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-conteudo-suave mb-2"
-                  >
-                    Senha {mode === 'create' && <span className="text-perigo">*</span>}
-                    {mode === 'edit' && <span className="text-xs text-conteudo-tenue"> (deixe em branco para manter a atual)</span>}
-                  </label>
+                  <RotuloDeCampo htmlFor="password" obrigatorio={mode === 'create'}>
+                    Senha
+                    {mode === 'edit' && (
+                      <span className="text-xs font-normal text-conteudo-tenue">
+                        {' '}
+                        (deixe em branco para manter a atual)
+                      </span>
+                    )}
+                  </RotuloDeCampo>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -316,21 +326,16 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                       {showPassword ? <IconeOlhoFechado className="w-4 h-4" /> : <IconeOlho className="w-4 h-4" />}
                     </button>
                   </div>
-                  {errors.password && (
-                    <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
-                      <IconeAlerta className="w-4 h-4" />
-                      <span>{errors.password}</span>
-                    </div>
-                  )}
+                  <MensagemDeErro texto={errors.password} />
                 </div>
 
                 <div className="mb-4">
-                  <label
+                  <RotuloDeCampo
                     htmlFor="confirmarSenha"
-                    className="block text-sm font-medium text-conteudo-suave mb-2"
+                    obrigatorio={mode === 'create'}
                   >
-                    Confirmar Senha {mode === 'create' && <span className="text-perigo">*</span>}
-                  </label>
+                    Confirmar Senha
+                  </RotuloDeCampo>
                   <div className="relative">
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
@@ -367,25 +372,17 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                       {showConfirmPassword ? <IconeOlhoFechado className="w-4 h-4" /> : <IconeOlho className="w-4 h-4" />}
                     </button>
                   </div>
-                  {errors.confirmarSenha && (
-                    <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
-                      <IconeAlerta className="w-4 h-4" />
-                      <span>{errors.confirmarSenha}</span>
-                    </div>
-                  )}
+                  <MensagemDeErro texto={errors.confirmarSenha} />
                 </div>
               </>
             )}
 
             {/* Campo Perfil/Role */}
             <div className="mb-4">
-              <label
-                htmlFor="role_name"
-                className="block text-sm font-medium text-conteudo-suave mb-2"
-              >
-                <IconeEscudo className="w-4 h-4 inline mr-1" />
-                Perfil <span className="text-perigo">*</span>
-              </label>
+              <RotuloDeCampo htmlFor="role_name" obrigatorio>
+                <IconeEscudo className="mr-1 inline h-4 w-4" />
+                Perfil
+              </RotuloDeCampo>
               <select
                 id="role_name"
                 name="role_name"
@@ -413,23 +410,15 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   </option>
                 ))}
               </select>
-              {errors.role_name && (
-                <div className="mt-1 flex items-center gap-1 text-perigo dark:text-perigo-suave text-sm">
-                  <IconeAlerta className="w-4 h-4" />
-                  <span>{errors.role_name}</span>
-                </div>
-              )}
+              <MensagemDeErro texto={errors.role_name} />
             </div>
 
             {/* Campo Setor */}
             <div className="mb-6">
-              <label
-                htmlFor="setor_id"
-                className="block text-sm font-medium text-conteudo-suave mb-2"
-              >
-                <IconeSetor className="w-4 h-4 inline mr-1" />
+              <RotuloDeCampo htmlFor="setor_id">
+                <IconeSetor className="mr-1 inline h-4 w-4" />
                 Setor
-              </label>
+              </RotuloDeCampo>
               <select
                 id="setor_id"
                 name="setor_id"
@@ -512,19 +501,6 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
               </div>
             )}
 
-            {/* Botões */}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variante="secundario" onClick={onClose}>
-                {isReadOnly ? 'Fechar' : 'Cancelar'}
-              </Button>
-
-              {!isReadOnly && (
-                <Button type="submit" carregando={loading}>
-                  <IconeSalvar className="h-4 w-4" aria-hidden="true" />
-                  Salvar
-                </Button>
-              )}
-            </div>
       </form>
 
         {/* A trilha fica ao lado, não abaixo: quem abre a conta para conferir

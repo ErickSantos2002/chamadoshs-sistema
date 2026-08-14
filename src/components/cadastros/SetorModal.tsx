@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Button, Input, Modal, Textarea } from '../ui';
-import { IconeAlerta, IconeSalvar } from '../ui/icones';
+import { Button, Input, MensagemDeErro, Modal, RotuloDeCampo, Textarea } from '../ui';
+import { IconeSalvar } from '../ui/icones';
 import type {
   Setor,
   SetorCreate,
@@ -11,16 +11,8 @@ import type {
   ValidationErrors,
 } from '../../types/cadastros.types';
 
-const ROTULO = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
-
-/** Erro de campo. Nada é renderizado quando não há erro. */
-const MensagemDeErro: React.FC<{ texto?: string }> = ({ texto }) =>
-  texto ? (
-    <p className="mt-1 flex items-center gap-1 text-sm text-perigo">
-      <IconeAlerta className="h-4 w-4 shrink-0" aria-hidden="true" />
-      {texto}
-    </p>
-  ) : null;
+/** Liga o botão do rodapé ao formulário, que fica no corpo do modal. */
+const ID_DO_FORM = 'form-setor';
 
 // ========================================
 // INTERFACE DO COMPONENTE
@@ -129,7 +121,6 @@ const SetorModal: React.FC<SetorModalProps> = ({
     try {
       if (mode === 'create') {
         await createSetor(formData);
-        console.log('✅ Setor criado com sucesso!');
         toast.success('Setor criado com sucesso!');
       } else if (mode === 'edit' && setor) {
         const updateData: SetorUpdate = {
@@ -137,12 +128,10 @@ const SetorModal: React.FC<SetorModalProps> = ({
           descricao: formData.descricao,
         };
         await updateSetor(setor.id, updateData);
-        console.log('✅ Setor atualizado com sucesso!');
         toast.success('Setor atualizado com sucesso!');
       }
       onClose();
     } catch (err: any) {
-      console.error('❌ Erro ao salvar setor:', err);
       toast.error(err.response?.data?.detail || 'Erro ao salvar setor');
     } finally {
       setLoading(false);
@@ -169,12 +158,29 @@ const SetorModal: React.FC<SetorModalProps> = ({
       aoFechar={onClose}
       titulo={modalTitle}
       largura="sm"
+      // As ações vão para o rodapé fixo do modal, e não para dentro do corpo
+      // que rola. O botão de salvar precisa estar sempre visível.
+      rodape={
+        <>
+          <Button type="button" variante="secundario" onClick={onClose}>
+            {isReadOnly ? 'Fechar' : 'Cancelar'}
+          </Button>
+
+          {!isReadOnly && (
+            // `form` liga o botão ao formulário mesmo estando fora dele.
+            <Button type="submit" form={ID_DO_FORM} carregando={loading}>
+              <IconeSalvar className="h-4 w-4" aria-hidden="true" />
+              Salvar
+            </Button>
+          )}
+        </>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id={ID_DO_FORM} onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="nome" className={ROTULO}>
-            Nome <span className="text-perigo">*</span>
-          </label>
+          <RotuloDeCampo htmlFor="nome" obrigatorio>
+            Nome
+          </RotuloDeCampo>
           <Input
             id="nome"
             name="nome"
@@ -189,9 +195,7 @@ const SetorModal: React.FC<SetorModalProps> = ({
         </div>
 
         <div>
-          <label htmlFor="descricao" className={ROTULO}>
-            Descrição
-          </label>
+          <RotuloDeCampo htmlFor="descricao">Descrição</RotuloDeCampo>
           <Textarea
             id="descricao"
             name="descricao"
@@ -212,7 +216,7 @@ const SetorModal: React.FC<SetorModalProps> = ({
         </div>
 
         {mode === 'view' && setor && (
-          <div className="rounded-lg bg-superficie-elevada p-4">
+          <div className="bg-superficie-elevada p-4">
             <h3 className="mb-2 text-sm font-medium text-conteudo-suave">
               Informações de Auditoria
             </h3>
@@ -233,18 +237,6 @@ const SetorModal: React.FC<SetorModalProps> = ({
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variante="secundario" onClick={onClose}>
-            {isReadOnly ? 'Fechar' : 'Cancelar'}
-          </Button>
-
-          {!isReadOnly && (
-            <Button type="submit" carregando={loading}>
-              <IconeSalvar className="h-4 w-4" aria-hidden="true" />
-              Salvar
-            </Button>
-          )}
-        </div>
       </form>
     </Modal>
   );

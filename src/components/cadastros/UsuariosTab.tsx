@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Button, Colchetes, Input, Modal } from '../ui';
+import { Button, Colchetes, Input, Modal, RotuloDeCampo } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
@@ -17,7 +17,6 @@ import type {
 // COMPONENTE USUARIOS TAB
 // ========================================
 
-const ROTULO = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
 
 const UsuariosTab: React.FC = () => {
   const {
@@ -25,7 +24,7 @@ const UsuariosTab: React.FC = () => {
     setores,
     desativarUsuario,
     reativarUsuario,
-    updateUsuario,
+    // `updateUsuario` não vem daqui: quem salva a edição é o `UsuarioModal`.
     updateUsuarioPassword,
     refreshData,
     loading,
@@ -538,9 +537,7 @@ const UsuariosTab: React.FC = () => {
           )}
 
           <div>
-            <label htmlFor="nova-senha" className={ROTULO}>
-              Nova senha
-            </label>
+            <RotuloDeCampo htmlFor="nova-senha">Nova senha</RotuloDeCampo>
             <Input
               id="nova-senha"
               type="password"
@@ -555,9 +552,7 @@ const UsuariosTab: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="confirmar-senha" className={ROTULO}>
-              Confirmar senha
-            </label>
+            <RotuloDeCampo htmlFor="confirmar-senha">Confirmar senha</RotuloDeCampo>
             <Input
               id="confirmar-senha"
               type="password"

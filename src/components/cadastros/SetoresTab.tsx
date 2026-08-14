@@ -17,7 +17,9 @@ import type {
 // ========================================
 
 const SetoresTab: React.FC = () => {
-  const { setores, desativarSetor, reativarSetor, updateSetor, refreshData, loading, error } = useCadastros();
+  // `updateSetor` não vem daqui: quem salva a edição é o `SetorModal`.
+  const { setores, desativarSetor, reativarSetor, refreshData, loading, error } =
+    useCadastros();
   const { user } = useAuth();
 
   // ========================================

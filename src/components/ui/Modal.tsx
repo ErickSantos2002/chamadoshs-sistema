@@ -109,8 +109,13 @@ export const Modal: React.FC<ModalProps> = ({
         // de leitura. Negativo para entrar por código e não pela ordem do Tab.
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        // Sem altura mínima: o painel encolhe até o tamanho do conteúdo e para
+        // de crescer em 92vh. O mínimo de meia tela existia enquanto as ações
+        // ficavam junto dos campos, e o vazio sobrava depois delas, no fim.
+        // Com o rodapé fixo ele passaria a separar os dois campos de "Nova
+        // Categoria" dos botões por meia tela de nada.
         className={cn(
-          'relative flex max-h-[92vh] min-h-[50vh] w-full flex-col border border-borda bg-superficie shadow-2xl',
+          'relative flex max-h-[92vh] w-full flex-col border border-borda bg-superficie shadow-2xl',
           LARGURAS[largura]
         )}
       >
@@ -127,7 +132,7 @@ export const Modal: React.FC<ModalProps> = ({
             type="button"
             onClick={aoFechar}
             aria-label="Fechar"
-            className="rounded-lg p-1 text-conteudo-tenue transition-colors hover:bg-superficie-elevada hover:text-conteudo"
+            className="p-1 text-conteudo-tenue transition-colors hover:bg-superficie-elevada hover:text-conteudo"
           >
             <IconeFechar className="h-5 w-5" aria-hidden="true" />
           </button>

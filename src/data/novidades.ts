@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.8',
+    data: '2026-08-14',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Nas janelas de cadastro, os botões Salvar e Cancelar ficam fixos embaixo. No cadastro de usuário, que é o formulário mais longo, era preciso rolar até o fim para achar o Salvar.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'As janelas passam a ter a altura do que mostram. Uma janela com dois campos ocupava meia tela, com o resto em branco.',
+      },
+    ],
+  },
+  {
     versao: '1.6.7',
     data: '2026-08-14',
     itens: [

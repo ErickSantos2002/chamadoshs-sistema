@@ -89,9 +89,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       const novaCategoria = await categoriasService.criar(data);
       setCategorias((prev) => [...prev, novaCategoria]);
 
-      console.log('✅ Categoria criada com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao criar categoria:', err);
       setError(err.response?.data?.detail || 'Erro ao criar categoria');
       throw err;
     } finally {
@@ -109,9 +107,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map((c) => (c.id === id ? categoriaAtualizada : c))
       );
 
-      console.log('✅ Categoria atualizada com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao atualizar categoria:', err);
       setError(err.response?.data?.detail || 'Erro ao atualizar categoria');
       throw err;
     } finally {
@@ -127,9 +123,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       await categoriasService.deletar(id);
       setCategorias((prev) => prev.filter((c) => c.id !== id));
 
-      console.log('✅ Categoria excluída com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao excluir categoria:', err);
 
       // Verifica se é erro de vínculo (a API manda a contagem em detail, ex.:
       // "Não é possível excluir categoria com 12 chamado(s) vinculado(s)")
@@ -156,9 +150,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       const novoSetor = await setoresService.criar(data);
       setSetores((prev) => [...prev, novoSetor]);
 
-      console.log('✅ Setor criado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao criar setor:', err);
       setError(err.response?.data?.detail || 'Erro ao criar setor');
       throw err;
     } finally {
@@ -176,9 +168,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map((s) => (s.id === id ? setorAtualizado : s))
       );
 
-      console.log('✅ Setor atualizado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao atualizar setor:', err);
       setError(err.response?.data?.detail || 'Erro ao atualizar setor');
       throw err;
     } finally {
@@ -203,9 +193,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       const setorAtualizado = await setoresService.desativar(id);
       setSetores((prev) => prev.map((s) => (s.id === id ? setorAtualizado : s)));
 
-      console.log('✅ Setor desativado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao desativar setor:', err);
 
       // A mensagem da API diz QUANTOS usuários ativos seguram o setor. A
       // versão genérica que existia aqui por cima ("com usuários vinculados")
@@ -225,9 +213,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       const setorAtualizado = await setoresService.reativar(id);
       setSetores((prev) => prev.map((s) => (s.id === id ? setorAtualizado : s)));
 
-      console.log('✅ Setor reativado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao reativar setor:', err);
       setError(err.response?.data?.detail || 'Erro ao reativar setor');
       throw err;
     } finally {
@@ -259,14 +245,11 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
         conta_de_servico: data.conta_de_servico ?? false,
       };
 
-      console.log('🔍 Dados sendo enviados para criar usuário:', { ...dadosUsuario, senha: '***' });
 
       const novoUsuario = await usuariosService.criar(dadosUsuario);
       setUsuarios((prev) => [...prev, novoUsuario]);
 
-      console.log('✅ Usuário criado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao criar usuário:', err);
 
       // Verifica se é erro de nome duplicado
       if (err.response?.status === 400 && err.response?.data?.detail?.includes('já existe')) {
@@ -314,9 +297,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map((u) => (u.id === id ? usuarioAtualizado : u))
       );
 
-      console.log('✅ Usuário atualizado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao atualizar usuário:', err);
       setError(err.response?.data?.detail || 'Erro ao atualizar usuário');
       throw err;
     } finally {
@@ -339,9 +320,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       const usuarioAtualizado = await usuariosService.desativar(id);
       setUsuarios((prev) => prev.map((u) => (u.id === id ? usuarioAtualizado : u)));
 
-      console.log('✅ Usuário desativado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao desativar usuário:', err);
       setError(err.response?.data?.detail || 'Erro ao desativar usuário');
       throw err;
     } finally {
@@ -364,9 +343,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       const usuarioAtualizado = await usuariosService.reativar(id);
       setUsuarios((prev) => prev.map((u) => (u.id === id ? usuarioAtualizado : u)));
 
-      console.log('✅ Usuário reativado com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao reativar usuário:', err);
       setError(err.response?.data?.detail || 'Erro ao reativar usuário');
       throw err;
     } finally {
@@ -380,9 +357,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(null);
 
       await usuariosService.atualizar(id, { senha: novaSenha });
-      console.log('✅ Senha atualizada com sucesso!');
     } catch (err: any) {
-      console.error('❌ Erro ao atualizar senha:', err);
       setError(err.response?.data?.detail || 'Erro ao atualizar senha');
       throw err;
     } finally {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, Modal } from './ui';
+import { Button, Input, Modal, RotuloDeCampo } from './ui';
 
 interface ModalTrocarSenhaProps {
   isOpen: boolean;
@@ -8,6 +8,9 @@ interface ModalTrocarSenhaProps {
 }
 
 const MINIMO_SENHA = 6;
+
+/** Liga o botão do rodapé ao formulário, que fica no corpo do modal. */
+const ID_DO_FORM = 'form-trocar-senha';
 
 const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
   isOpen,
@@ -61,21 +64,33 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
     onClose();
   };
 
-  const rotulo = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
-
   return (
-    <Modal aberto={isOpen} aoFechar={fechar} titulo="Trocar senha" largura="sm">
-      <form onSubmit={confirmar} className="space-y-4">
+    <Modal
+      aberto={isOpen}
+      aoFechar={fechar}
+      titulo="Trocar senha"
+      largura="sm"
+      rodape={
+        <>
+          <Button type="button" variante="secundario" onClick={fechar}>
+            Cancelar
+          </Button>
+          {/* `form` liga o botão ao formulário mesmo estando fora dele. */}
+          <Button type="submit" form={ID_DO_FORM}>
+            Trocar senha
+          </Button>
+        </>
+      }
+    >
+      <form id={ID_DO_FORM} onSubmit={confirmar} className="space-y-4">
         {erro && (
-          <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+          <div className="border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
             {erro}
           </div>
         )}
 
         <div>
-          <label htmlFor="senha-atual" className={rotulo}>
-            Senha atual
-          </label>
+          <RotuloDeCampo htmlFor="senha-atual">Senha atual</RotuloDeCampo>
           <Input
             id="senha-atual"
             type="password"
@@ -87,9 +102,7 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
         </div>
 
         <div>
-          <label htmlFor="nova-senha" className={rotulo}>
-            Nova senha
-          </label>
+          <RotuloDeCampo htmlFor="nova-senha">Nova senha</RotuloDeCampo>
           <Input
             id="nova-senha"
             type="password"
@@ -101,9 +114,7 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
         </div>
 
         <div>
-          <label htmlFor="repita-senha" className={rotulo}>
-            Repita a nova senha
-          </label>
+          <RotuloDeCampo htmlFor="repita-senha">Repita a nova senha</RotuloDeCampo>
           <Input
             id="repita-senha"
             type="password"
@@ -114,12 +125,6 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variante="secundario" onClick={fechar}>
-            Cancelar
-          </Button>
-          <Button type="submit">Trocar senha</Button>
-        </div>
       </form>
     </Modal>
   );

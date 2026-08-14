@@ -13,6 +13,10 @@ export type { VarianteBadge } from './Badge';
 export { Button } from './Button';
 export type { VarianteBotao, TamanhoBotao } from './Button';
 
+// Rótulo e erro de campo de FORMULÁRIO. Não confundir com o `Rotulo` abaixo,
+// que é monoespaçado e serve a rótulo de painel.
+export { MensagemDeErro, RotuloDeCampo } from './Campo';
+
 export { Card, CardHeader, CardBody } from './Card';
 
 export { Colchetes } from './Colchetes';

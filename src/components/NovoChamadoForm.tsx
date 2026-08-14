@@ -4,7 +4,7 @@ import { useChamados } from '../hooks/useChamados';
 import { slaConfigsService } from '../services/chamadoshsapi';
 import { Chamado, ChamadoCreate, PrioridadeEnum, SLAConfig } from '../types/api';
 import { EXPEDIENTE, formatarPrazo } from '../lib/prazo';
-import { Button, Input, Select, Textarea } from './ui';
+import { Button, Input, RotuloDeCampo, Select, Textarea } from './ui';
 import ContadorMinimo from './ContadorMinimo';
 import { IconeEscudoConfere, IconeRelogio } from './ui/icones';
 import {
@@ -117,8 +117,6 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
     }
   };
 
-  const rotulo = 'mb-1.5 block text-sm font-medium text-conteudo-suave';
-  const obrigatorio = <span className="text-perigo">*</span>;
 
   return (
     <form onSubmit={enviar} className="space-y-4">
@@ -129,9 +127,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       )}
 
       <div>
-        <label htmlFor="titulo" className={rotulo}>
-          Título {obrigatorio}
-        </label>
+        <RotuloDeCampo htmlFor="titulo" obrigatorio>Título</RotuloDeCampo>
         <Input
           id="titulo"
           value={titulo}
@@ -148,9 +144,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       </div>
 
       <div>
-        <label htmlFor="descricao" className={rotulo}>
-          Descrição {obrigatorio}
-        </label>
+        <RotuloDeCampo htmlFor="descricao" obrigatorio>Descrição</RotuloDeCampo>
         <Textarea
           id="descricao"
           value={descricao}
@@ -164,9 +158,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
       {ehEquipe && (
         <div>
-          <label htmlFor="solicitante" className={rotulo}>
-            Solicitante {obrigatorio}
-          </label>
+          <RotuloDeCampo htmlFor="solicitante" obrigatorio>Solicitante</RotuloDeCampo>
           <Select
             id="solicitante"
             className="w-full"
@@ -191,9 +183,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label htmlFor="categoria" className={rotulo}>
-            Categoria
-          </label>
+          <RotuloDeCampo htmlFor="categoria">Categoria</RotuloDeCampo>
           <Select
             id="categoria"
             className="w-full"
@@ -210,9 +200,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
         </div>
 
         <div>
-          <label htmlFor="prioridade" className={rotulo}>
-            Prioridade
-          </label>
+          <RotuloDeCampo htmlFor="prioridade">Prioridade</RotuloDeCampo>
           <Select
             id="prioridade"
             className="w-full"
