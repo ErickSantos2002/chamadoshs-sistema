@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.12',
+    data: '2026-08-17',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'No tema escuro, o cartão de comentário do chamado aparecia claro, com o nome de quem escreveu quase invisível por cima. Agora ele segue o tema, como o resto da tela.',
+      },
+    ],
+  },
+  {
     versao: '1.6.11',
     data: '2026-08-14',
     itens: [

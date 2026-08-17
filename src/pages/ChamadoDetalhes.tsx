@@ -1050,11 +1050,16 @@ const ChamadoDetalhes: React.FC = () => {
               comentarios.map((comentario) => {
                 const usuario = usuarios[comentario.usuario_id];
 
+                // Um fundo SÓ. O cartão carregava dois — o `bg-white/80` da
+                // era pré-paleta e o `bg-superficie/80` que veio substituí-lo
+                // sem que o antigo saísse. Com duas classes de fundo, quem
+                // decide é a ordem do CSS gerado, não a do atributo: venceu o
+                // branco, e no tema escuro o cartão aparecia claro com o nome
+                // ilegível por cima.
                 return (
                   <div
                     key={comentario.id}
-                    className="border border-borda 
-                            rounded-lg p-4 bg-white/80 bg-superficie/80"
+                    className="border border-borda p-4 bg-superficie-elevada"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
