@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.13',
+    data: '2026-08-17',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'A janela do chamado agora permite atribuir o responsável, ali mesmo: o campo vira uma lista para a equipe, e escolher já salva. Antes era preciso abrir a página inteira só para dizer de quem é o chamado.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'Na edição do chamado, escolher "Sem atribuição" ou "Sem categoria" agora limpa o campo de verdade — antes o salvar dizia que sim e o chamado continuava como estava.',
+      },
+    ],
+  },
+  {
     versao: '1.6.12',
     data: '2026-08-17',
     itens: [

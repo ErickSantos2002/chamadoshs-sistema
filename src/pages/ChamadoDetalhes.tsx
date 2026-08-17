@@ -171,11 +171,15 @@ const ChamadoDetalhes: React.FC = () => {
     try {
       setLoading(true);
 
+      // `?? null` nos dois campos limpáveis: escolher "Sem categoria" ou "Sem
+      // atribuição" deixa o estado local `undefined`, o axios descarta
+      // `undefined` antes de enviar, e a API com `exclude_unset` não toca no
+      // que não chegou — a limpeza era engolida em silêncio. `null` viaja.
       const dadosAtualizacao: ChamadoUpdate = {
-        categoria_id: categoriaEditada,
+        categoria_id: categoriaEditada ?? null,
         status: statusEditado,
         prioridade: prioridadeEditada,
-        tecnico_responsavel_id: tecnicoEditado,
+        tecnico_responsavel_id: tecnicoEditado ?? null,
       };
 
       // A solução só vai quando muda de fato. Reenviar o valor carregado faria

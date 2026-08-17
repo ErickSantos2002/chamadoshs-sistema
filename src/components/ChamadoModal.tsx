@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
+import { chamadosService } from '../services/chamadoshsapi';
+import { podeSerResponsavel } from '../utils/roleMapper';
 import { Chamado, Comentario, PrioridadeEnum, StatusEnum } from '../types/api';
-import { Avatar, Badge, Button, Modal, Textarea, VarianteBadge } from './ui';
+import { Avatar, Badge, Button, Modal, Seletor, Textarea, VarianteBadge } from './ui';
 import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
@@ -87,8 +91,13 @@ const Campo: React.FC<{ rotulo: string; children: React.ReactNode }> = ({
  *
  * ── Onde fica a linha entre o modal e a página ────────────────────────
  *
- * O modal LÊ, COMENTA e MOVE O STATUS. A página faz o resto: editar campos,
- * cancelar, arquivar e reatribuir.
+ * O modal LÊ, COMENTA, MOVE O STATUS e ATRIBUI O RESPONSÁVEL. A página faz o
+ * resto: editar campos, cancelar e arquivar.
+ *
+ * A atribuição entrou pelo mesmo raciocínio das ações de status: quem abre um
+ * chamado do quadro quase sempre quer empurrá-lo adiante, e "isto é do fulano"
+ * é o empurrão mais comum depois de mudar o status. Exigir a página inteira
+ * para isso custava uma navegação a cada triagem.
  *
  * A versão anterior deste comentário dizia que status também era só da página,
  * e o motivo era real — resolver pede a solução, e aquilo abria um segundo
@@ -111,6 +120,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
 }) => {
   const { buscarChamado, carregarComentarios, criarComentario } = useChamados();
   const usuarios = useUsuariosPorId();
+  const { user } = useAuth();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
@@ -119,6 +129,16 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
 
   const [novoComentario, setNovoComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [atribuindo, setAtribuindo] = useState(false);
+
+  // Mesma regra das ações de status: atribuir é da equipe, e a API recusa
+  // para o solicitante — mostrar o seletor a ele seria oferecer um 403.
+  // Cancelado e arquivado ficam de fora pelo mesmo motivo das ações: mexer
+  // neles é decisão da página inteira, junto do motivo e do histórico.
+  const podeAtribuir =
+    (user?.role === 'Administrador' || user?.role === 'Tecnico') &&
+    !chamado?.cancelado &&
+    !chamado?.arquivado;
 
   useEffect(() => {
     if (chamadoId === null) return;
@@ -177,6 +197,43 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
 
   const nome = (id?: number | null): string =>
     id ? (usuarios[id]?.nome ?? `Usuário #${id}`) : 'Não atribuído';
+
+  /**
+   * Quem pode aparecer no seletor de responsável.
+   *
+   * `podeSerResponsavel` é a mesma régua do formulário de edição: equipe, e
+   * não conta de serviço — atribuir um chamado ao painel da TV não diz quem
+   * resolve. Contas desativadas também ficam de fora: são de quem saiu, e
+   * atribuir a elas é jogar o chamado num buraco.
+   */
+  const atribuiveis = Object.values(usuarios)
+    .filter((u) => u.ativo && podeSerResponsavel(u))
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+
+  const atribuir = async (valor: string) => {
+    if (!chamado) return;
+
+    try {
+      setAtribuindo(true);
+      // `null`, não `undefined`: a API só limpa a atribuição se o campo FOR na
+      // requisição — e o axios descarta `undefined` antes de enviar. Com
+      // `undefined`, escolher "Sem atribuição" viraria silêncio.
+      const atualizado = await chamadosService.atualizar(chamado.id, {
+        tecnico_responsavel_id: valor ? Number(valor) : null,
+      });
+      setChamado(atualizado);
+    } catch (err: any) {
+      // O 403 já é anunciado pelo interceptor; repetir mostraria duas
+      // mensagens para o mesmo erro.
+      if (err?.response?.status !== 403) {
+        toast.error(
+          err?.response?.data?.detail || 'Não foi possível atribuir o responsável.'
+        );
+      }
+    } finally {
+      setAtribuindo(false);
+    }
+  };
 
   return (
     <Modal
@@ -306,18 +363,41 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
               </Campo>
 
               <Campo rotulo="Responsável">
-                <span className="flex items-center gap-1.5">
-                  <Avatar
-                    nome={
+                {podeAtribuir ? (
+                  // Para a equipe o campo É o seletor, sem modo de edição à
+                  // parte: escolher salva na hora, como as ações de status. O
+                  // valor volta do servidor — o que aparece é o que ficou.
+                  <Seletor
+                    rotulo="Responsável"
+                    disabled={atribuindo}
+                    valor={
                       chamado.tecnico_responsavel_id
-                        ? nome(chamado.tecnico_responsavel_id)
-                        : null
+                        ? String(chamado.tecnico_responsavel_id)
+                        : ''
                     }
+                    aoMudar={atribuir}
+                    opcoes={[
+                      { valor: '', rotulo: 'Sem atribuição' },
+                      ...atribuiveis.map((u) => ({
+                        valor: String(u.id),
+                        rotulo: u.nome,
+                      })),
+                    ]}
                   />
-                  <span className="truncate text-conteudo">
-                    {nome(chamado.tecnico_responsavel_id)}
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <Avatar
+                      nome={
+                        chamado.tecnico_responsavel_id
+                          ? nome(chamado.tecnico_responsavel_id)
+                          : null
+                      }
+                    />
+                    <span className="truncate text-conteudo">
+                      {nome(chamado.tecnico_responsavel_id)}
+                    </span>
                   </span>
-                </span>
+                )}
               </Campo>
 
               <Campo rotulo="Aberto em">

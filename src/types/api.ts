@@ -184,11 +184,18 @@ export interface ChamadoCreate {
 export interface ChamadoUpdate {
   titulo?: string;
   descricao?: string;
-  categoria_id?: number;
+  /** `null` limpa; ausente não toca. Veja `tecnico_responsavel_id` abaixo. */
+  categoria_id?: number | null;
   prioridade?: PrioridadeEnum;
   urgencia?: UrgenciaEnum;
   status?: StatusEnum;
-  tecnico_responsavel_id?: number;
+  /**
+   * `null` é diferente de ausente, e a diferença importa: a API atualiza com
+   * `exclude_unset` — campo que não vai, ela não toca; campo com `null`, ela
+   * LIMPA. Tirar a atribuição de um chamado exige mandar `null` de propósito.
+   * `undefined` o axios descarta antes de enviar, e a escolha viraria silêncio.
+   */
+  tecnico_responsavel_id?: number | null;
   solucao?: string;
   observacoes?: string;
   avaliacao?: number;
