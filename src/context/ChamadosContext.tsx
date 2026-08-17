@@ -34,6 +34,8 @@ type ChamadosContextType = {
   criarChamado: (dados: ChamadoCreate) => Promise<Chamado>;
   atualizarChamado: (id: number, dados: ChamadoUpdate) => Promise<Chamado>;
   deletarChamado: (id: number) => Promise<void>;
+  /** Funde na lista um chamado que outro caminho já salvou. Não faz requisição. */
+  aplicarChamado: (chamado: Chamado) => void;
 
   // Funções de comentários
   carregarComentarios: (chamadoId: number) => Promise<Comentario[]>;
@@ -150,6 +152,23 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  /**
+   * Funde na lista um chamado que já foi salvo por outro caminho.
+   *
+   * Existe porque a janela do chamado salva direto pelo serviço — usar o
+   * `atualizarChamado` daqui ligaria o `loading` global, e a página de
+   * Chamados apaga o quadro inteiro atrás de um spinner quando ele acende.
+   * Sem esta fusão, o quadro e a janela viravam duas verdades: a pessoa
+   * resolvia o chamado na janela e o card ficava parado na coluna antiga até
+   * alguém recarregar a página.
+   *
+   * Só mexe em quem já está na lista. Chamado que não está nela não é deste
+   * quadro (filtro por perfil), e inserir aqui furaria esse filtro.
+   */
+  const aplicarChamado = useCallback((chamado: Chamado) => {
+    setChamados((prev) => prev.map((c) => (c.id === chamado.id ? chamado : c)));
   }, []);
 
   // Atualizar chamado
@@ -313,6 +332,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         criarChamado,
         atualizarChamado,
         deletarChamado,
+        aplicarChamado,
         carregarComentarios,
         criarComentario,
         carregarHistorico,

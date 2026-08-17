@@ -118,7 +118,8 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   aoFechar,
   aoAbrirEmPagina,
 }) => {
-  const { buscarChamado, carregarComentarios, criarComentario } = useChamados();
+  const { buscarChamado, carregarComentarios, criarComentario, aplicarChamado } =
+    useChamados();
   const usuarios = useUsuariosPorId();
   const { user } = useAuth();
 
@@ -199,6 +200,18 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     id ? (usuarios[id]?.nome ?? `Usuário #${id}`) : 'Não atribuído';
 
   /**
+   * Toda mudança salva pela janela passa por aqui: atualiza a janela E o
+   * quadro atrás dela. As ações salvam direto pelo serviço — de propósito,
+   * porque o `atualizarChamado` do contexto acende o `loading` global e a
+   * página apagaria o quadro inteiro — mas isso deixava a lista sem saber da
+   * mudança: o card resolvido ficava parado na coluna antiga até um F5.
+   */
+  const registrarMudanca = (atualizado: Chamado) => {
+    setChamado(atualizado);
+    aplicarChamado(atualizado);
+  };
+
+  /**
    * Quem pode aparecer no seletor de responsável.
    *
    * `podeSerResponsavel` é a mesma régua do formulário de edição: equipe, e
@@ -221,7 +234,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       const atualizado = await chamadosService.atualizar(chamado.id, {
         tecnico_responsavel_id: valor ? Number(valor) : null,
       });
-      setChamado(atualizado);
+      registrarMudanca(atualizado);
     } catch (err: any) {
       // O 403 já é anunciado pelo interceptor; repetir mostraria duas
       // mensagens para o mesmo erro.
@@ -352,7 +365,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 quase sempre quer fazer algo com ele, não conferir a data de
                 abertura. O componente some sozinho para quem não pode agir e
                 para chamado cancelado ou arquivado. */}
-            <AcoesRapidas chamado={chamado} aoMudar={setChamado} />
+            <AcoesRapidas chamado={chamado} aoMudar={registrarMudanca} />
 
             <dl className="space-y-3 border-t border-borda-suave pt-4 text-sm">
               <Campo rotulo="Solicitante">
@@ -415,9 +428,11 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 tinha por que abrir a página de detalhe depois que o problema
                 acabou. O componente some sozinho enquanto o chamado não estiver
                 resolvido. */}
+            {/* A nota também vai para o quadro: é ela que apaga o selo
+                "Avaliar" do card sem exigir recarga. */}
             <Avaliacao
               chamado={chamado}
-              aoAvaliar={setChamado}
+              aoAvaliar={registrarMudanca}
               className="border-t border-borda-suave pt-4"
             />
           </aside>

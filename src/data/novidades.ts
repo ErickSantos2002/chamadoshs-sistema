@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.14',
+    data: '2026-08-17',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'O card agora muda de coluna na hora em que o chamado avança pela janela — resolver, iniciar ou atribuir alguém aparece no quadro sem recarregar a página. Antes o quadro só ficava sabendo no F5.',
+      },
+    ],
+  },
+  {
     versao: '1.6.13',
     data: '2026-08-17',
     itens: [
