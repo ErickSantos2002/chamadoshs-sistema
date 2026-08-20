@@ -90,6 +90,23 @@ O interruptor NÃO entra em `temFiltro` nem é zerado por "Limpar filtros". Não
 um recorte da lista, é uma coluna a mais; limpar filtro não deveria fechar a
 coluna que a pessoa acabou de abrir.
 
+### O escopo do quadro, e a contagem do cabeçalho
+
+Consequência de carregar os arquivados sempre: `chamados.length` passa a
+incluí-los, e o cabeçalho diz "N chamados" com esse número. Com o interruptor
+desligado, isso seria mentira — contaria cards que não estão na tela.
+
+Então o interruptor define um ESCOPO, aplicado antes dos filtros:
+
+```
+chamadosNoEscopo = mostrarArquivados ? chamados : chamados sem os arquivados
+chamadosFiltrados = chamadosNoEscopo passados pelos filtros de prioridade,
+                    categoria e busca
+```
+
+O cabeçalho compara `chamadosFiltrados.length` com `chamadosNoEscopo.length`.
+Com o interruptor desligado e nenhum filtro, o texto fica idêntico ao de hoje.
+
 ### A coluna "Arquivado"
 
 Reusa `KanbanColumn` sem props novas — só mais uma chamada no JSX:
