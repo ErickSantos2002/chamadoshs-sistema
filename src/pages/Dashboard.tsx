@@ -195,11 +195,29 @@ const Dashboard: React.FC = () => {
       chamadosFiltrados = chamadosFiltrados.filter((c) => c.prioridade === filtroPrioridade);
     }
 
-    // Separar arquivados dos ativos
-    const chamadosAtivos = chamadosFiltrados.filter((c) => !c.arquivado);
+    /**
+     * Separar do fluxo o que saiu dele.
+     *
+     * Cancelado entra aqui junto com arquivado, e não entrava: o filtro
+     * descontava só `arquivado`, então com "Exibindo cancelados" ligado um
+     * chamado cancelado com status "Aberto" era contado no card "Abertos".
+     * CHAM-2026-0127 é exatamente isso — cancelado em 10/08, status "Aberto"
+     * até hoje.
+     *
+     * As duas marcas são independentes do status justamente porque descrevem o
+     * que aconteceu COM o chamado, não em que etapa ele está. Um contador de
+     * trabalho pendente não pode ler o status sem antes perguntar se aquele
+     * chamado ainda é trabalho.
+     *
+     * A métrica de SLA logo abaixo já excluía cancelados de "em aberto". Eram
+     * duas contas na mesma tela discordando sobre o que é um chamado aberto.
+     */
+    const chamadosAtivos = chamadosFiltrados.filter(
+      (c) => !c.arquivado && !c.cancelado
+    );
     const chamadosArquivados = chamadosFiltrados.filter((c) => c.arquivado);
 
-    // Contadores por status (APENAS ATIVOS - excluindo arquivados)
+    // Contadores por status (APENAS ATIVOS - fora arquivados e cancelados)
     // Nota: Resolvidos inclui também os Fechados (unificado no frontend)
     const abertos = chamadosAtivos.filter((c) => c.status === StatusEnum.ABERTO).length;
     const emAndamento = chamadosAtivos.filter((c) => c.status === StatusEnum.EM_ANDAMENTO).length;
