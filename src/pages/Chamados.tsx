@@ -9,7 +9,7 @@ import { KanbanColumn } from '../components/KanbanColumn';
 import { Button, Input, Modal, Seletor } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
-import { agruparPorColuna } from '../lib/quadro';
+import { agruparPorColuna, estaNoFluxo } from '../lib/quadro';
 import { cn } from '../lib/utils';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
@@ -112,14 +112,12 @@ const Chamados: React.FC = () => {
 
   // Nomes dos solicitantes: uma listagem só, em vez de um GET por usuário.
 
-  // O interruptor define o ESCOPO do quadro, aplicado antes dos filtros. Sem
-  // isso o cabeçalho contaria cards que não estão na tela: `chamados` traz
-  // arquivados e cancelados desde que o contexto passou a pedi-los à API.
+  // O interruptor define o ESCOPO do quadro, aplicado antes dos filtros:
+  // `chamados` traz arquivados e cancelados desde que o contexto passou a
+  // pedi-los à API, e só as colunas de fora do fluxo devem recebê-los.
   const chamadosNoEscopo = useMemo(
     () =>
-      mostrarForaDoFluxo
-        ? chamados
-        : chamados.filter((c) => !c.arquivado && !c.cancelado),
+      mostrarForaDoFluxo ? chamados : chamados.filter(estaNoFluxo),
     [chamados, mostrarForaDoFluxo]
   );
 
@@ -139,6 +137,22 @@ const Chamados: React.FC = () => {
 
     return true;
   });
+
+  /**
+   * A contagem do cabeçalho ignora arquivados e cancelados SEMPRE, inclusive
+   * com o interruptor ligado. Ela responde "quantos chamados este sistema
+   * tem", e quem lê esse número está pensando em trabalho — abrir as colunas
+   * de fora do fluxo para consultar um chamado antigo não deveria inflar o
+   * total de 141 para 150.
+   *
+   * Quantos chamados fora do fluxo existem continua visível: cada uma das
+   * duas colunas traz o próprio contador no topo.
+   */
+  const totalNoFluxo = useMemo(
+    () => chamados.filter(estaNoFluxo).length,
+    [chamados]
+  );
+  const filtradosNoFluxo = chamadosFiltrados.filter(estaNoFluxo).length;
 
   // A regra de qual coluna cada chamado ocupa vive em `lib/quadro`, com teste.
   // A ordem lá é a correção: a marca `arquivado` é consultada antes do status.
@@ -173,9 +187,9 @@ const Chamados: React.FC = () => {
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-conteudo">Chamados</h1>
               <p className="text-sm text-conteudo-tenue">
-                {chamadosFiltrados.length === chamadosNoEscopo.length
-                  ? `${chamadosNoEscopo.length} chamados`
-                  : `${chamadosFiltrados.length} de ${chamadosNoEscopo.length} chamados`}
+                {filtradosNoFluxo === totalNoFluxo
+                  ? `${totalNoFluxo} chamados`
+                  : `${filtradosNoFluxo} de ${totalNoFluxo} chamados`}
               </p>
             </div>
 

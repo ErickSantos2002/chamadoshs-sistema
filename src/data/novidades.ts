@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.18',
+    data: '2026-08-20',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'O total de chamados no alto do quadro passou a contar só o que está no fluxo. Abrir as colunas de arquivados e cancelados não muda mais esse número — antes ele pulava de 141 para 150 e dava a impressão de que tinham entrado nove chamados novos. Quantos ficaram fora do fluxo continua no contador de cada uma das duas colunas.',
+      },
+    ],
+  },
+  {
     versao: '1.6.17',
     data: '2026-08-20',
     itens: [

@@ -86,3 +86,19 @@ export function agruparPorColuna(
 
   return grupos;
 }
+
+/**
+ * O chamado ainda está no fluxo de atendimento?
+ *
+ * Arquivado e cancelado saíram dele: um foi guardado para consulta, o outro
+ * foi interrompido antes de ser resolvido. Nenhum dos dois é trabalho, e
+ * nenhum dos dois deve entrar em contagem que se lê como "quantos chamados
+ * este sistema tem".
+ *
+ * As duas marcas são independentes do status — o chamado cancelado continua
+ * com o status que tinha —, então a checagem tem que ser pelas marcas, nunca
+ * pelo status.
+ */
+export function estaNoFluxo(chamado: Chamado): boolean {
+  return !chamado.arquivado && !chamado.cancelado;
+}

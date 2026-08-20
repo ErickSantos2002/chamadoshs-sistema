@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agruparPorColuna } from './quadro';
+import { agruparPorColuna, estaNoFluxo } from './quadro';
 import { Chamado, StatusEnum } from '../types/api';
 
 /**
@@ -122,5 +122,39 @@ describe('agruparPorColuna', () => {
 
     expect(grupos.arquivado.map((c) => c.id)).toEqual([42]);
     expect(grupos.cancelado).toEqual([]);
+  });
+});
+
+/**
+ * A contagem do cabeçalho do quadro sai daqui. A regressão que estes casos
+ * impedem: contar pelo status. Cancelar e arquivar não mexem no status — o
+ * chamado cancelado continua "Aberto" por dentro —, então qualquer contagem
+ * feita por status devolve o cancelado junto com o trabalho de verdade.
+ */
+describe('estaNoFluxo', () => {
+  it('deixa passar o chamado ativo, em qualquer status', () => {
+    expect(estaNoFluxo(chamadoDe(1, StatusEnum.ABERTO))).toBe(true);
+    expect(estaNoFluxo(chamadoDe(2, StatusEnum.EM_ANDAMENTO))).toBe(true);
+    expect(estaNoFluxo(chamadoDe(3, StatusEnum.AGUARDANDO))).toBe(true);
+    expect(estaNoFluxo(chamadoDe(4, StatusEnum.RESOLVIDO))).toBe(true);
+    expect(estaNoFluxo(chamadoDe(5, StatusEnum.FECHADO))).toBe(true);
+  });
+
+  it('barra o arquivado e o cancelado, mesmo com status Aberto', () => {
+    expect(estaNoFluxo(chamadoDe(6, StatusEnum.ABERTO, true))).toBe(false);
+    expect(estaNoFluxo(chamadoDe(7, StatusEnum.ABERTO, false, true))).toBe(false);
+    expect(estaNoFluxo(chamadoDe(8, StatusEnum.ABERTO, true, true))).toBe(false);
+  });
+
+  it('serve de filtro de contagem: 3 de 5 no fluxo', () => {
+    const todos = [
+      chamadoDe(9, StatusEnum.ABERTO),
+      chamadoDe(10, StatusEnum.RESOLVIDO),
+      chamadoDe(11, StatusEnum.AGUARDANDO),
+      chamadoDe(12, StatusEnum.ABERTO, true),
+      chamadoDe(13, StatusEnum.ABERTO, false, true),
+    ];
+
+    expect(todos.filter(estaNoFluxo).map((c) => c.id)).toEqual([9, 10, 11]);
   });
 });
