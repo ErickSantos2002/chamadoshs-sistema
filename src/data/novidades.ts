@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.15',
+    data: '2026-08-20',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'Chamado arquivado agora tem coluna própria no quadro. O botão "Mostrar arquivados", no alto da tela, abre a coluna quando você precisa consultar algo antigo — e ela some de novo quando você fecha. Antes o arquivado simplesmente desaparecia do quadro, sem jeito de encontrar de volta.',
+      },
+    ],
+  },
+  {
     versao: '1.6.14',
     data: '2026-08-17',
     itens: [
