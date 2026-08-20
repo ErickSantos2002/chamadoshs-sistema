@@ -133,6 +133,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     {chamado.prioridade}
                   </Badge>
 
+                  {/* Mesma palavra e mesma variante que a janela do chamado
+                      usa. Dentro da coluna "Arquivado" o selo é redundante, e
+                      tudo bem: ele existe para quando o card aparece numa
+                      busca, onde a coluna não está à vista como contexto. */}
+                  {chamado.arquivado && (
+                    <Badge variante="neutro">Arquivado</Badge>
+                  )}
+
                   {precisaAvaliar(chamado, usuarioLogadoId) && (
                     <Badge variante="alerta">
                       <IconeEstrela className="h-3 w-3" aria-hidden="true" />
