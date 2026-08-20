@@ -12,7 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
-import { Seletor } from '../components/ui';
+import { Badge, Seletor } from '../components/ui';
 import { IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
 import {
   Chamado,
@@ -597,6 +597,28 @@ const ChamadoDetalhes: React.FC = () => {
                 <p className="text-conteudo-suave mt-1">
                   {chamado.titulo}
                 </p>
+
+                {/* Cancelado e arquivado dizem o que aconteceu COM o chamado, e
+                    o campo "Status" logo abaixo não os menciona: cancelar não
+                    mexe no status, então um chamado cancelado continua exibindo
+                    "Aberto" ou "Resolvido" ali.
+
+                    Esta era a única tela que não avisava. O modal, o card do
+                    quadro e a tabela do painel já mostravam o selo; aqui, a
+                    única pista era a AUSÊNCIA do botão "Cancelar Chamado" — e
+                    ninguém percebe um botão que não está lá. Foi assim que um
+                    chamado cancelado foi marcado como resolvido sem que quem
+                    marcou soubesse do cancelamento. */}
+                {(chamado.cancelado || chamado.arquivado) && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {chamado.cancelado && <Badge variante="perigo">Cancelado</Badge>}
+                    {chamado.arquivado && <Badge variante="neutro">Arquivado</Badge>}
+                    <span className="text-sm text-conteudo-tenue">
+                      Fora do fluxo de atendimento — o status abaixo é o que ele
+                      tinha quando saiu.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Botões de ação (editar / salvar / cancelar / arquivar) */}

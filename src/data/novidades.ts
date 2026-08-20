@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.17',
+    data: '2026-08-20',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'A página do chamado agora avisa, logo abaixo do título, quando ele está cancelado ou arquivado. Antes essa era a única tela que não avisava — dava para marcar como resolvido um chamado cancelado sem perceber que ele estava cancelado.',
+      },
+    ],
+  },
+  {
     versao: '1.6.16',
     data: '2026-08-20',
     itens: [
