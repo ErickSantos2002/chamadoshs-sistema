@@ -244,7 +244,11 @@ const Chamados: React.FC = () => {
 
                   O rótulo nomeia as duas marcas em vez de resumi-las em "fora
                   do fluxo": esse é vocabulário nosso, e quem abre chamado
-                  precisaria clicar para descobrir o que significa. */}
+                  precisaria clicar para descobrir o que significa.
+
+                  O verbo saiu: era a metade mais longa do rótulo e dizia o que o
+                  botão já diz aceso ou apagado — e `aria-pressed` conta o mesmo
+                  para quem usa leitor de tela. */}
               <Button
                 variante={mostrarForaDoFluxo ? 'secundario' : 'fantasma'}
                 tamanho="sm"
@@ -252,9 +256,7 @@ const Chamados: React.FC = () => {
                 onClick={() => setMostrarForaDoFluxo((antes) => !antes)}
               >
                 <IconeArquivar className="h-4 w-4" aria-hidden="true" />
-                {mostrarForaDoFluxo
-                  ? 'Ocultar arquivados e cancelados'
-                  : 'Mostrar arquivados e cancelados'}
+                Arquivados e cancelados
               </Button>
 
               {temFiltro && (
