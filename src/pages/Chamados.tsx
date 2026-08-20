@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
-import { StatusEnum, PrioridadeEnum, Chamado, TarefaRecorrente } from '../types/api';
+import { PrioridadeEnum, TarefaRecorrente } from '../types/api';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
 import { Button, Input, Modal, Seletor } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
+import { agruparPorColuna } from '../lib/quadro';
+import { cn } from '../lib/utils';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
-import { IconeAgenda, IconeBusca, IconeCarregando, IconeConfereCirculo, IconeMais } from '../components/ui/icones';
+import { IconeAgenda, IconeArquivar, IconeBusca, IconeCarregando, IconeConfereCirculo, IconeMais } from '../components/ui/icones';
 
 // Data de hoje (local) em YYYY-MM-DD, para comparar com proxima_data das tarefas
 const hojeYMD = (): string => {
@@ -39,6 +41,16 @@ const Chamados: React.FC = () => {
   const [filtroPrioridade, setFiltroPrioridade] = useState<PrioridadeEnum | ''>('');
   const [filtroCategoria, setFiltroCategoria] = useState<number | ''>('');
   const [busca, setBusca] = useState('');
+
+  /**
+   * O arquivo não é etapa do atendimento e não pode disputar espaço com o
+   * trabalho do dia: fica atrás de um interruptor, desligado por padrão.
+   *
+   * Sem persistir de propósito. Quem foi consultar um arquivado consultou uma
+   * vez; deixar a coluna aberta para a próxima visita cobraria dessa pessoa
+   * lembrar de fechá-la.
+   */
+  const [mostrarArquivados, setMostrarArquivados] = useState(false);
 
   const [modalNovoAberto, setModalNovoAberto] = useState(false);
   const [chamadoAberto, setChamadoAberto] = useState<number | null>(null);
@@ -97,9 +109,17 @@ const Chamados: React.FC = () => {
 
   // Nomes dos solicitantes: uma listagem só, em vez de um GET por usuário.
 
+  // O interruptor define o ESCOPO do quadro, aplicado antes dos filtros. Sem
+  // isso o cabeçalho contaria cards que não estão na tela: `chamados` traz os
+  // arquivados desde que o contexto passou a pedi-los à API.
+  const chamadosNoEscopo = useMemo(
+    () => (mostrarArquivados ? chamados : chamados.filter((c) => !c.arquivado)),
+    [chamados, mostrarArquivados]
+  );
+
   // Filtra os chamados localmente. A busca cobre título e protocolo: quem
   // lembra do assunto raramente lembra do número.
-  const chamadosFiltrados = chamados.filter((chamado) => {
+  const chamadosFiltrados = chamadosNoEscopo.filter((chamado) => {
     if (filtroPrioridade && chamado.prioridade !== filtroPrioridade) return false;
     if (filtroCategoria && chamado.categoria_id !== filtroCategoria) return false;
 
@@ -114,33 +134,12 @@ const Chamados: React.FC = () => {
     return true;
   });
 
-  // Agrupa chamados por status para o layout Kanban
-  // Nota: Fechados são unificados com Resolvidos visualmente
-  const chamadosPorStatus = useMemo(() => {
-    const grupos: Record<StatusEnum, Chamado[]> = {
-      [StatusEnum.ABERTO]: [],
-      [StatusEnum.EM_ANDAMENTO]: [],
-      [StatusEnum.AGUARDANDO]: [],
-      [StatusEnum.RESOLVIDO]: [],
-      [StatusEnum.FECHADO]: [], // Mantido para compatibilidade, mas não será exibido
-    };
-
-    chamadosFiltrados.forEach((chamado) => {
-      // Unifica Fechados com Resolvidos
-      if (chamado.status === StatusEnum.FECHADO) {
-        grupos[StatusEnum.RESOLVIDO].push(chamado);
-      } else {
-        grupos[chamado.status].push(chamado);
-      }
-    });
-
-    // Ordena cada grupo por ID decrescente (mais recente primeiro)
-    Object.keys(grupos).forEach((status) => {
-      grupos[status as StatusEnum].sort((a, b) => b.id - a.id);
-    });
-
-    return grupos;
-  }, [chamadosFiltrados]);
+  // A regra de qual coluna cada chamado ocupa vive em `lib/quadro`, com teste.
+  // A ordem lá é a correção: a marca `arquivado` é consultada antes do status.
+  const chamadosPorColuna = useMemo(
+    () => agruparPorColuna(chamadosFiltrados),
+    [chamadosFiltrados]
+  );
 
   // As cores de status e de prioridade agora vivem no KanbanColumn, mapeadas
   // para as cores de significado do tema.
@@ -168,9 +167,9 @@ const Chamados: React.FC = () => {
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-conteudo">Chamados</h1>
               <p className="text-sm text-conteudo-tenue">
-                {chamadosFiltrados.length === chamados.length
-                  ? `${chamados.length} chamados`
-                  : `${chamadosFiltrados.length} de ${chamados.length} chamados`}
+                {chamadosFiltrados.length === chamadosNoEscopo.length
+                  ? `${chamadosNoEscopo.length} chamados`
+                  : `${chamadosFiltrados.length} de ${chamadosNoEscopo.length} chamados`}
               </p>
             </div>
 
@@ -217,6 +216,19 @@ const Chamados: React.FC = () => {
                 ]}
                 className="w-48"
               />
+
+              {/* Não entra em `temFiltro` nem em "Limpar": não é recorte da
+                  lista, é uma coluna a mais. Limpar filtro fechando a coluna
+                  que a pessoa acabou de abrir seria surpresa, não limpeza. */}
+              <Button
+                variante={mostrarArquivados ? 'secundario' : 'fantasma'}
+                tamanho="sm"
+                aria-pressed={mostrarArquivados}
+                onClick={() => setMostrarArquivados((antes) => !antes)}
+              >
+                <IconeArquivar className="h-4 w-4" aria-hidden="true" />
+                {mostrarArquivados ? 'Ocultar arquivados' : 'Mostrar arquivados'}
+              </Button>
 
               {temFiltro && (
                 <Button variante="fantasma" tamanho="sm" onClick={limparFiltros}>
@@ -310,15 +322,22 @@ const Chamados: React.FC = () => {
         )}
 
 
-        {/* Kanban - 4 colunas (Fechados unificados com Resolvidos) */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 lg:grid-cols-2 md:grid-cols-2 gap-4">
+        {/* Kanban. Quatro colunas de fluxo; a quinta, o arquivo, só entra
+            quando pedida — ela só cresce, e sem interruptor apertaria as
+            outras quatro para sempre. */}
+        <div
+          className={cn(
+            'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2',
+            mostrarArquivados ? 'xl:grid-cols-5' : 'xl:grid-cols-4'
+          )}
+        >
 
           {/* === COLUNA ABERTO === */}
           <KanbanColumn
             title="Aberto"
             descricao="Aguardando atendimento"
             colorDot={corDoStatus("Aberto", darkMode)}
-            items={chamadosPorStatus[StatusEnum.ABERTO]}
+            items={chamadosPorColuna['Aberto']}
             usuarios={usuarios}
             categorias={categorias}
             aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
@@ -330,7 +349,7 @@ const Chamados: React.FC = () => {
             title="Em Andamento"
             descricao="Técnico trabalhando no chamado"
             colorDot={corDoStatus("Em Andamento", darkMode)}
-            items={chamadosPorStatus[StatusEnum.EM_ANDAMENTO]}
+            items={chamadosPorColuna['Em Andamento']}
             usuarios={usuarios}
             categorias={categorias}
             aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
@@ -342,7 +361,7 @@ const Chamados: React.FC = () => {
             title="Aguardando"
             descricao="Relógio de SLA pausado"
             colorDot={corDoStatus("Aguardando", darkMode)}
-            items={chamadosPorStatus[StatusEnum.AGUARDANDO]}
+            items={chamadosPorColuna['Aguardando']}
             usuarios={usuarios}
             categorias={categorias}
             aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
@@ -354,12 +373,32 @@ const Chamados: React.FC = () => {
             title="Resolvido"
             descricao="Finalizado com sucesso"
             colorDot={corDoStatus("Resolvido", darkMode)}
-            items={chamadosPorStatus[StatusEnum.RESOLVIDO]}
+            items={chamadosPorColuna['Resolvido']}
             usuarios={usuarios}
             categorias={categorias}
             aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
             usuarioLogadoId={user?.id}
           />
+
+          {/* === ARQUIVADO ===
+              `corDoStatus` não conhece "Arquivado" e devolve o cinza neutro de
+              fallback. É de propósito, por dois motivos que se somam: as quatro
+              cores de status passam pela conta de ΔE >= 20 do `validar:paleta`,
+              e uma quinta cor viva teria que ser calculada contra todas elas em
+              quatro tipos de visão. E cinza neutro é o que "fora do fluxo"
+              significa — arquivado não é uma etapa do atendimento. */}
+          {mostrarArquivados && (
+            <KanbanColumn
+              title="Arquivado"
+              descricao="Fora do fluxo, guardado para consulta"
+              colorDot={corDoStatus("Arquivado", darkMode)}
+              items={chamadosPorColuna['arquivado']}
+              usuarios={usuarios}
+              categorias={categorias}
+              aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+              usuarioLogadoId={user?.id}
+            />
+          )}
         </div>
       </div>
 
