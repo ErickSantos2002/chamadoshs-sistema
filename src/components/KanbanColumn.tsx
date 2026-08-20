@@ -133,12 +133,22 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     {chamado.prioridade}
                   </Badge>
 
-                  {/* Mesma palavra e mesma variante que a janela do chamado
-                      usa. Dentro da coluna "Arquivado" o selo é redundante, e
-                      tudo bem: ele existe para quando o card aparece numa
-                      busca, onde a coluna não está à vista como contexto. */}
+                  {/* Mesmas palavras e mesmas variantes que a janela do chamado
+                      usa. Dentro das colunas "Arquivado" e "Cancelado" o selo é
+                      redundante, e tudo bem: ele existe para quando o card
+                      aparece numa busca, onde a coluna não está à vista como
+                      contexto.
+
+                      Os dois aparecem juntos quando as duas marcas estão
+                      ligadas. O card fica no arquivo, mas o cancelamento não
+                      pode sumir junto — é o que explica por que aquele chamado
+                      nunca foi atendido. */}
                   {chamado.arquivado && (
                     <Badge variante="neutro">Arquivado</Badge>
+                  )}
+
+                  {chamado.cancelado && (
+                    <Badge variante="perigo">Cancelado</Badge>
                   )}
 
                   {precisaAvaliar(chamado, usuarioLogadoId) && (

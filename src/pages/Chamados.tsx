@@ -43,14 +43,17 @@ const Chamados: React.FC = () => {
   const [busca, setBusca] = useState('');
 
   /**
-   * O arquivo não é etapa do atendimento e não pode disputar espaço com o
-   * trabalho do dia: fica atrás de um interruptor, desligado por padrão.
+   * Arquivado e cancelado não são etapas do atendimento e não podem disputar
+   * espaço com o trabalho do dia: ficam atrás de um interruptor, desligado por
+   * padrão. Um só, e não dois — são a mesma pergunta ("cadê o que saiu do
+   * fluxo?"), e dois botões no cabeçalho cobrariam da pessoa saber de antemão
+   * sob qual das duas marcas o chamado sumiu.
    *
-   * Sem persistir de propósito. Quem foi consultar um arquivado consultou uma
-   * vez; deixar a coluna aberta para a próxima visita cobraria dessa pessoa
-   * lembrar de fechá-la.
+   * Sem persistir de propósito. Quem foi consultar um chamado fora do fluxo
+   * consultou uma vez; deixar as colunas abertas para a próxima visita
+   * cobraria dessa pessoa lembrar de fechá-las.
    */
-  const [mostrarArquivados, setMostrarArquivados] = useState(false);
+  const [mostrarForaDoFluxo, setMostrarForaDoFluxo] = useState(false);
 
   const [modalNovoAberto, setModalNovoAberto] = useState(false);
   const [chamadoAberto, setChamadoAberto] = useState<number | null>(null);
@@ -110,11 +113,14 @@ const Chamados: React.FC = () => {
   // Nomes dos solicitantes: uma listagem só, em vez de um GET por usuário.
 
   // O interruptor define o ESCOPO do quadro, aplicado antes dos filtros. Sem
-  // isso o cabeçalho contaria cards que não estão na tela: `chamados` traz os
-  // arquivados desde que o contexto passou a pedi-los à API.
+  // isso o cabeçalho contaria cards que não estão na tela: `chamados` traz
+  // arquivados e cancelados desde que o contexto passou a pedi-los à API.
   const chamadosNoEscopo = useMemo(
-    () => (mostrarArquivados ? chamados : chamados.filter((c) => !c.arquivado)),
-    [chamados, mostrarArquivados]
+    () =>
+      mostrarForaDoFluxo
+        ? chamados
+        : chamados.filter((c) => !c.arquivado && !c.cancelado),
+    [chamados, mostrarForaDoFluxo]
   );
 
   // Filtra os chamados localmente. A busca cobre título e protocolo: quem
@@ -218,16 +224,23 @@ const Chamados: React.FC = () => {
               />
 
               {/* Não entra em `temFiltro` nem em "Limpar": não é recorte da
-                  lista, é uma coluna a mais. Limpar filtro fechando a coluna
-                  que a pessoa acabou de abrir seria surpresa, não limpeza. */}
+                  lista, são duas colunas a mais. Limpar filtro fechando a
+                  coluna que a pessoa acabou de abrir seria surpresa, não
+                  limpeza.
+
+                  O rótulo nomeia as duas marcas em vez de resumi-las em "fora
+                  do fluxo": esse é vocabulário nosso, e quem abre chamado
+                  precisaria clicar para descobrir o que significa. */}
               <Button
-                variante={mostrarArquivados ? 'secundario' : 'fantasma'}
+                variante={mostrarForaDoFluxo ? 'secundario' : 'fantasma'}
                 tamanho="sm"
-                aria-pressed={mostrarArquivados}
-                onClick={() => setMostrarArquivados((antes) => !antes)}
+                aria-pressed={mostrarForaDoFluxo}
+                onClick={() => setMostrarForaDoFluxo((antes) => !antes)}
               >
                 <IconeArquivar className="h-4 w-4" aria-hidden="true" />
-                {mostrarArquivados ? 'Ocultar arquivados' : 'Mostrar arquivados'}
+                {mostrarForaDoFluxo
+                  ? 'Ocultar arquivados e cancelados'
+                  : 'Mostrar arquivados e cancelados'}
               </Button>
 
               {temFiltro && (
@@ -322,13 +335,13 @@ const Chamados: React.FC = () => {
         )}
 
 
-        {/* Kanban. Quatro colunas de fluxo; a quinta, o arquivo, só entra
-            quando pedida — ela só cresce, e sem interruptor apertaria as
-            outras quatro para sempre. */}
+        {/* Kanban. Quatro colunas de fluxo; as duas de fora — arquivo e
+            cancelados — só entram quando pedidas. As duas só crescem, e sem
+            interruptor apertariam as outras quatro para sempre. */}
         <div
           className={cn(
             'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2',
-            mostrarArquivados ? 'xl:grid-cols-5' : 'xl:grid-cols-4'
+            mostrarForaDoFluxo ? 'xl:grid-cols-6' : 'xl:grid-cols-4'
           )}
         >
 
@@ -380,24 +393,42 @@ const Chamados: React.FC = () => {
             usuarioLogadoId={user?.id}
           />
 
-          {/* === ARQUIVADO ===
-              `corDoStatus` não conhece "Arquivado" e devolve o cinza neutro de
-              fallback. É de propósito, por dois motivos que se somam: as quatro
-              cores de status passam pela conta de ΔE >= 20 do `validar:paleta`,
-              e uma quinta cor viva teria que ser calculada contra todas elas em
-              quatro tipos de visão. E cinza neutro é o que "fora do fluxo"
-              significa — arquivado não é uma etapa do atendimento. */}
-          {mostrarArquivados && (
-            <KanbanColumn
-              title="Arquivado"
-              descricao="Fora do fluxo, guardado para consulta"
-              colorDot={corDoStatus("Arquivado", darkMode)}
-              items={chamadosPorColuna['arquivado']}
-              usuarios={usuarios}
-              categorias={categorias}
-              aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
-              usuarioLogadoId={user?.id}
-            />
+          {/* === ARQUIVADO E CANCELADO ===
+              `corDoStatus` não conhece nenhum dos dois e devolve o cinza neutro
+              de fallback. É de propósito, por dois motivos que se somam: as
+              quatro cores de status passam pela conta de ΔE >= 20 do
+              `validar:paleta`, e cores novas teriam que ser calculadas contra
+              todas elas em quatro tipos de visão. E cinza neutro é o que "fora
+              do fluxo" significa — nenhum dos dois é etapa do atendimento.
+
+              O que separa as duas colunas é o texto, não a cor: o selo vermelho
+              "Cancelado" nos cards já dá o sinal de que ali houve interrupção,
+              e repeti-lo no ponto da coluna seria a mesma informação duas
+              vezes. */}
+          {mostrarForaDoFluxo && (
+            <>
+              <KanbanColumn
+                title="Arquivado"
+                descricao="Fora do fluxo, guardado para consulta"
+                colorDot={corDoStatus("Arquivado", darkMode)}
+                items={chamadosPorColuna['arquivado']}
+                usuarios={usuarios}
+                categorias={categorias}
+                aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+                usuarioLogadoId={user?.id}
+              />
+
+              <KanbanColumn
+                title="Cancelado"
+                descricao="Interrompido antes de ser resolvido"
+                colorDot={corDoStatus("Cancelado", darkMode)}
+                items={chamadosPorColuna['cancelado']}
+                usuarios={usuarios}
+                categorias={categorias}
+                aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+                usuarioLogadoId={user?.id}
+              />
+            </>
           )}
         </div>
       </div>
