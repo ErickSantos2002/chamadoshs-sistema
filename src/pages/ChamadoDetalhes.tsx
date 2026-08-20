@@ -13,7 +13,8 @@ import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
 import { Badge, Seletor } from '../components/ui';
-import { IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
+import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
+import { IconeApagar, IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
 import {
   Chamado,
   Comentario,
@@ -37,6 +38,7 @@ const ChamadoDetalhes: React.FC = () => {
     criarComentario,
     carregarHistorico,
     carregarTecnicos,
+    deletarChamado,
   } = useChamados();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
@@ -79,6 +81,18 @@ const ChamadoDetalhes: React.FC = () => {
   const [mostrarModalArquivar, setMostrarModalArquivar] = useState(false);
   const [processando, setProcessando] = useState(false);
   const [motivoCancelamento, setMotivoCancelamento] = useState('');
+
+  // Exclusão. O protocolo digitado é a trava: o botão só libera quando ele
+  // bate com o do chamado. Ver `podeExcluir` para quem chega até aqui.
+  const [mostrarModalExcluir, setMostrarModalExcluir] = useState(false);
+  const [confirmacaoProtocolo, setConfirmacaoProtocolo] = useState('');
+
+  // A trava do botão de excluir. A comparação mora em `utils/exclusao`, com
+  // teste: escrita aqui, ela dava verdadeiro com chamado nulo.
+  const protocoloConfere = confirmacaoConfere(
+    confirmacaoProtocolo,
+    chamado?.protocolo
+  );
 
   // Permissões
   const isAdmin = user?.role === 'Administrador';
@@ -347,6 +361,41 @@ const ChamadoDetalhes: React.FC = () => {
     } catch (err: any) {
       console.error('Erro ao arquivar/desarquivar chamado:', err);
       toast.error(err?.response?.data?.detail || 'Erro ao processar solicitação.');
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  /**
+   * Apaga o chamado de vez.
+   *
+   * Quem chega aqui já passou por `podeExcluir` (administrador, chamado fora
+   * do fluxo) e já digitou o protocolo. `deletarChamado` vem do contexto e
+   * também tira o chamado da lista em memória — sem isso o card ficaria no
+   * quadro até o próximo carregamento, apontando para uma página que não
+   * existe mais.
+   */
+  const handleExcluirChamado = async () => {
+    if (!chamado) return;
+
+    try {
+      setProcessando(true);
+
+      await deletarChamado(chamado.id);
+
+      setMostrarModalExcluir(false);
+      setConfirmacaoProtocolo('');
+      toast.success(`Chamado ${chamado.protocolo} excluído.`);
+
+      // `replace` para o Voltar do navegador não trazer a pessoa de volta a
+      // uma página de chamado que já não existe.
+      navigate('/chamados', { replace: true });
+    } catch (err: any) {
+      // O 403 já é anunciado pelo interceptor; repetir mostraria duas
+      // mensagens para o mesmo erro.
+      if (err?.response?.status !== 403) {
+        toast.error(err?.response?.data?.detail || 'Não foi possível excluir o chamado.');
+      }
     } finally {
       setProcessando(false);
     }
@@ -662,6 +711,26 @@ const ChamadoDetalhes: React.FC = () => {
                           </>
                         )}
                       </button>
+
+                      {/* Botão Excluir.
+                          Último da fileira e o único em vermelho cheio: é a
+                          única ação da página que não tem volta, e não pode
+                          parecer irmã de "Arquivar" nem de "Editar".
+
+                          Quem pode chegar aqui está em `utils/exclusao`, com
+                          teste — administrador, e só em chamado que já saiu do
+                          fluxo. */}
+                      {chamado && podeExcluir(chamado, user?.role) && (
+                        <button
+                          onClick={() => setMostrarModalExcluir(true)}
+                          className="px-4 py-2 bg-perigo hover:bg-perigo-forte
+                                    text-white rounded-lg
+                                    transition-colors flex items-center gap-2"
+                        >
+                          <IconeApagar className="w-5 h-5" />
+                          Excluir
+                        </button>
+                      )}
 
                       {/* Botão Editar */}
                       <button
@@ -1351,6 +1420,102 @@ const ChamadoDetalhes: React.FC = () => {
                 >
                   <IconeProibido className="w-5 h-5" />
                   {processando ? 'Cancelando...' : 'Sim, cancelar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Excluir Chamado.
+          A trava é digitar o protocolo. Um "Sim, excluir" simples — o padrão
+          dos outros modais desta tela — resolve para ações que se desfazem,
+          e nenhuma outra aqui apaga dados. Digitar obriga a ler o que está na
+          caixa vermelha, e é impossível de fazer por reflexo. */}
+      {mostrarModalExcluir && chamado && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-superficie shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-conteudo dark:text-info">
+                    Excluir Chamado
+                  </h2>
+                  <p className="text-conteudo-suave mt-1">
+                    Chamado #{chamado.protocolo}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setMostrarModalExcluir(false);
+                    setConfirmacaoProtocolo('');
+                  }}
+                  className="text-conteudo-tenue hover:text-conteudo-suave
+                            text-conteudo-tenue dark:hover:text-conteudo"
+                >
+                  <IconeFechar className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Diz o que se perde, não o que a ação se chama. "Esta ação é
+                  irreversível" é frase de aviso que ninguém lê; nomear os
+                  comentários e o histórico faz a pessoa pensar no que havia
+                  ali dentro. */}
+              <div className="bg-perigo/10 border border-perigo/30 rounded-lg p-4 mb-4">
+                <p className="text-sm text-perigo-forte dark:text-perigo-suave">
+                  O chamado, os {comentarios.length} comentários e as{' '}
+                  {historico.length} entradas de histórico dele deixam de
+                  existir. Não há como desfazer, e não há cópia em outro lugar.
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <label
+                  htmlFor="confirmacao-protocolo"
+                  className="block text-sm font-bold text-conteudo dark:text-info mb-2"
+                >
+                  Digite <span className="font-mono">{chamado.protocolo}</span> para confirmar
+                </label>
+
+                <input
+                  id="confirmacao-protocolo"
+                  type="text"
+                  value={confirmacaoProtocolo}
+                  onChange={(e) => setConfirmacaoProtocolo(e.target.value)}
+                  autoComplete="off"
+                  autoFocus
+                  placeholder={chamado.protocolo}
+                  className="w-full px-3 py-2 border border-borda
+                            rounded-lg focus:ring-2 focus:ring-perigo
+                            bg-superficie font-mono
+                            text-conteudo"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setMostrarModalExcluir(false);
+                    setConfirmacaoProtocolo('');
+                  }}
+                  disabled={processando}
+                  className="px-4 py-2 border border-borda
+                            text-conteudo-suave rounded-lg
+                            hover:bg-superficie-elevada
+                            transition-colors disabled:opacity-50"
+                >
+                  Não, voltar
+                </button>
+                <button
+                  onClick={handleExcluirChamado}
+                  disabled={processando || !protocoloConfere}
+                  className="px-4 py-2 bg-perigo hover:bg-perigo-forte
+                            text-white rounded-lg
+                            transition-colors disabled:opacity-50
+                            disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <IconeApagar className="w-5 h-5" />
+                  {processando ? 'Excluindo...' : 'Excluir'}
                 </button>
               </div>
             </div>

@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.20',
+    data: '2026-08-20',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'Agora dá para excluir um chamado de vez, pela página dele. O botão só aparece para administrador e só em chamado já cancelado ou arquivado, e a confirmação pede que você digite o número do protocolo — é a única ação do sistema que não tem como desfazer.',
+      },
+    ],
+  },
+  {
     versao: '1.6.19',
     data: '2026-08-20',
     itens: [
