@@ -43,6 +43,9 @@ const TITULOS_SETOR: Record<string, string> = {
   criacao: 'Setor criado',
   desativacao: 'Setor desativado',
   reativacao: 'Setor reativado',
+  // O setor sai do banco de vez, e a linha da trilha é o único lugar onde o
+  // nome dele continua existindo. Sem esta entrada aparecia como "Exclusao".
+  exclusao: 'Setor excluído',
   alteracao_de_nome: 'Nome alterado',
   alteracao_de_descricao: 'Descrição alterada',
 };
