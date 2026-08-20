@@ -77,10 +77,14 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setError(null);
 
-      // Os arquivados vêm junto e o quadro decide o que mostrar. Sem este
-      // parâmetro a API os omite, e o chamado arquivado some da tela: nenhum
+      // Arquivados e cancelados vêm junto, e o quadro decide o que mostrar.
+      // Sem estes parâmetros a API os omite, e o chamado some da tela: nenhum
       // filtro no front traz de volta o que não chegou.
-      const params: any = { incluir_arquivados: true };
+      //
+      // São as duas marcas que não mexem no status — um chamado cancelado
+      // continua "Aberto" no banco — e os dois recortes que a API aplica em
+      // silêncio. Juntos, faziam um chamado sumir sem deixar rastro na tela.
+      const params: any = { incluir_arquivados: true, incluir_cancelados: true };
 
       // Usuários comuns só veem seus próprios chamados
       if (user.role === 'Usuario') {

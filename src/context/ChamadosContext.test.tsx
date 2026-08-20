@@ -126,15 +126,24 @@ describe('aplicarChamado', () => {
 });
 
 /**
- * O quadro precisa RECEBER os arquivados para poder mostrá-los numa coluna
- * própria. Sem este parâmetro a API os omite, e o chamado arquivado some da
+ * O quadro precisa RECEBER arquivados e cancelados para poder mostrá-los em
+ * colunas próprias. Sem estes parâmetros a API os omite, e o chamado some da
  * tela — não existe filtro no front capaz de trazer de volta o que nunca
  * chegou.
+ *
+ * São os dois recortes que a API aplica em silêncio, e as duas marcas que não
+ * mexem no status: um chamado cancelado continua "Aberto" no banco.
  */
 describe('carregarChamados', () => {
   it('pede os arquivados à API', () => {
     const [params] = vi.mocked(chamadosService.listarTodos).mock.calls[0];
 
     expect(params).toMatchObject({ incluir_arquivados: true });
+  });
+
+  it('pede os cancelados à API', () => {
+    const [params] = vi.mocked(chamadosService.listarTodos).mock.calls[0];
+
+    expect(params).toMatchObject({ incluir_cancelados: true });
   });
 });
