@@ -29,6 +29,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.16',
+    data: '2026-08-20',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'Chamado cancelado também ganhou coluna no quadro, ao lado da de arquivados. O botão no alto da tela agora se chama "Mostrar arquivados e cancelados" e abre as duas de uma vez — é onde procurar quando um chamado sumiu e você não sabe por quê.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'O painel parou de contar chamado cancelado como chamado aberto. Cancelar nunca mexeu no status, então um chamado cancelado continuava marcado como "Aberto" por dentro e inflava o número de pendências na tela inicial.',
+      },
+    ],
+  },
+  {
     versao: '1.6.15',
     data: '2026-08-20',
     itens: [
