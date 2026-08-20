@@ -3,16 +3,19 @@ import { agruparPorColuna } from './quadro';
 import { Chamado, StatusEnum } from '../types/api';
 
 /**
- * A regressão que este arquivo existe para impedir: arquivar um chamado só
- * liga a marca `arquivado` — o status dele continua sendo o que era, quase
- * sempre "Aberto". Se o agrupamento olhar o status antes da marca, o chamado
- * arquivado volta a aparecer na coluna Aberto, que é o defeito relatado.
+ * A regressão que este arquivo existe para impedir: arquivar ou cancelar um
+ * chamado só liga uma marca — o status dele continua sendo o que era, quase
+ * sempre "Aberto". Se o agrupamento olhar o status antes das marcas, o chamado
+ * arquivado ou cancelado volta a aparecer na coluna Aberto, que é o defeito
+ * relatado.
  */
 const chamadoDe = (
   id: number,
   status: StatusEnum,
-  arquivado = false
-): Chamado => ({ id, status, arquivado, titulo: `Chamado ${id}` }) as Chamado;
+  arquivado = false,
+  cancelado = false
+): Chamado =>
+  ({ id, status, arquivado, cancelado, titulo: `Chamado ${id}` }) as Chamado;
 
 describe('agruparPorColuna', () => {
   it('manda o arquivado para a coluna dele, não para a do status', () => {
@@ -68,7 +71,56 @@ describe('agruparPorColuna', () => {
     const grupos = agruparPorColuna([]);
 
     expect(Object.keys(grupos).sort()).toEqual(
-      ['Aberto', 'Aguardando', 'Em Andamento', 'Resolvido', 'arquivado'].sort()
+      [
+        'Aberto',
+        'Aguardando',
+        'Em Andamento',
+        'Resolvido',
+        'arquivado',
+        'cancelado',
+      ].sort()
     );
+  });
+
+  /**
+   * Cancelar tem exatamente a mesma forma que arquivar: liga uma marca e não
+   * toca no status. Foi assim que CHAM-2026-0127 ficou cancelado com status
+   * "Aberto", sumiu do quadro e ainda por cima entrou na contagem de abertos
+   * do painel.
+   */
+  it('manda o cancelado para a coluna dele, não para a do status', () => {
+    const grupos = agruparPorColuna([
+      chamadoDe(40, StatusEnum.ABERTO, false, true),
+    ]);
+
+    expect(grupos.cancelado.map((c) => c.id)).toEqual([40]);
+    expect(grupos['Aberto']).toEqual([]);
+  });
+
+  it('manda o cancelado em andamento para a coluna do cancelado', () => {
+    const grupos = agruparPorColuna([
+      chamadoDe(41, StatusEnum.EM_ANDAMENTO, false, true),
+    ]);
+
+    expect(grupos.cancelado.map((c) => c.id)).toEqual([41]);
+    expect(grupos['Em Andamento']).toEqual([]);
+  });
+
+  /**
+   * A combinação existe: a tela de detalhe esconde o botão "Cancelar" de quem
+   * já está cancelado, mas deixa o "Arquivar" à mão — dá para cancelar e
+   * depois arquivar o mesmo chamado.
+   *
+   * Arquivado ganha. Arquivar é o ato deliberado de guardar, e vem por último;
+   * quem foi ao arquivo procurar algo antigo espera encontrá-lo lá. O card
+   * carrega os dois selos, então o cancelamento não fica escondido.
+   */
+  it('põe no arquivo o que está cancelado E arquivado', () => {
+    const grupos = agruparPorColuna([
+      chamadoDe(42, StatusEnum.ABERTO, true, true),
+    ]);
+
+    expect(grupos.arquivado.map((c) => c.id)).toEqual([42]);
+    expect(grupos.cancelado).toEqual([]);
   });
 });
