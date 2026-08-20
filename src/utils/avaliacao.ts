@@ -15,7 +15,10 @@ import { Chamado, StatusEnum } from '../types/api';
  * não mede nada.
  */
 export function precisaAvaliar(
-  chamado: Pick<Chamado, 'solicitante_id' | 'status' | 'avaliacao' | 'cancelado'>,
+  chamado: Pick<
+    Chamado,
+    'solicitante_id' | 'status' | 'avaliacao' | 'cancelado' | 'arquivado'
+  >,
   usuarioId: number | undefined
 ): boolean {
   // Enquanto o usuário não carregou, `usuarioId` é undefined e a comparação
@@ -24,6 +27,12 @@ export function precisaAvaliar(
 
   // Chamado cancelado não teve atendimento para avaliar.
   if (chamado.cancelado) return false;
+
+  // Arquivado já foi guardado: pedir nota agora é pedir que a pessoa avalie um
+  // atendimento que ela provavelmente nem lembra. O caso ficou visível quando
+  // o arquivo ganhou coluna própria no quadro — antes o card não aparecia em
+  // lugar nenhum, e o selo "Avaliar" existia sem ter onde ser visto.
+  if (chamado.arquivado) return false;
 
   const encerrado =
     chamado.status === StatusEnum.RESOLVIDO || chamado.status === StatusEnum.FECHADO;

@@ -167,6 +167,7 @@ const Dashboard: React.FC = () => {
         aguardando: 0,
         resolvidos: 0,
         arquivados: 0,
+        cancelados: 0,
         porStatus: [],
         porPrioridade: [],
         porCategoria: [],
@@ -216,6 +217,12 @@ const Dashboard: React.FC = () => {
       (c) => !c.arquivado && !c.cancelado
     );
     const chamadosArquivados = chamadosFiltrados.filter((c) => c.arquivado);
+    // `&& !c.arquivado` para os dois cartões não contarem o mesmo chamado
+    // duas vezes: dá para cancelar e depois arquivar. A precedência é a mesma
+    // que o quadro usa — arquivado ganha.
+    const chamadosCancelados = chamadosFiltrados.filter(
+      (c) => c.cancelado && !c.arquivado
+    );
 
     // Contadores por status (APENAS ATIVOS - fora arquivados e cancelados)
     // Nota: Resolvidos inclui também os Fechados (unificado no frontend)
@@ -226,6 +233,7 @@ const Dashboard: React.FC = () => {
     ).length;
     const aguardando = chamadosAtivos.filter((c) => c.status === StatusEnum.AGUARDANDO).length;
     const arquivados = chamadosArquivados.length;
+    const cancelados = chamadosCancelados.length;
 
     // Dados para gráfico de status (Fechados unificados com Resolvidos)
     // Sem campo `color`: a cor de cada fatia vem de `corDoStatus` na hora de
@@ -246,7 +254,11 @@ const Dashboard: React.FC = () => {
       [PrioridadeEnum.CRITICA]: 0,
     };
 
-    chamadosFiltrados.forEach((c) => {
+    // Sobre os ATIVOS, como os cartões de status logo acima. Os dois gráficos
+    // ficam lado a lado e precisam somar o mesmo total; enquanto este lia
+    // `chamadosFiltrados` e aquele lia `chamadosAtivos`, ligar "Exibindo
+    // cancelados" engordava um e não mexia no outro.
+    chamadosAtivos.forEach((c) => {
       if (c.prioridade) {
         prioridades[c.prioridade]++;
       }
@@ -261,7 +273,7 @@ const Dashboard: React.FC = () => {
 
     // Dados para gráfico de categoria
     const categoriaMap = new Map<string, number>();
-    chamadosFiltrados.forEach((c) => {
+    chamadosAtivos.forEach((c) => {
       if (c.categoria_id) {
         const categoria = categorias.find((cat) => cat.id === c.categoria_id);
         const nome = categoria?.nome || 'Sem categoria';
@@ -277,7 +289,9 @@ const Dashboard: React.FC = () => {
       .slice(0, 5);
 
     // Tempo médio de resolução (em horas) - Considera Resolvidos E Fechados
-    const chamadosComResolucao = chamadosFiltrados.filter(
+    // Também sobre os ativos: chamado cancelado não teve resolução para
+    // entrar numa média de tempo de resolução.
+    const chamadosComResolucao = chamadosAtivos.filter(
       (c) =>
         (c.status === StatusEnum.RESOLVIDO || c.status === StatusEnum.FECHADO) &&
         c.tempo_resolucao_minutos !== null &&
@@ -297,12 +311,16 @@ const Dashboard: React.FC = () => {
       .slice(0, 10);
 
     return {
-      total: chamadosFiltrados.length,
+      // O total é de trabalho, e por isso conta os ativos. Arquivados e
+      // cancelados têm cartão próprio logo ao lado — ficam visíveis sem
+      // inflar o número que alguém lê como "quantos chamados temos".
+      total: chamadosAtivos.length,
       abertos,
       emAndamento,
       aguardando,
       resolvidos,
       arquivados,
+      cancelados,
       porStatus,
       porPrioridade,
       porCategoria,
@@ -599,7 +617,10 @@ const Dashboard: React.FC = () => {
             cores discordavam da fatia da pizza logo abaixo — o mesmo "Abertos"
             aparecia rosa no gráfico e num rosa diferente no cartão.
             Os três que SÃO status puxam a cor de `corDoStatus`. */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {/* Seis cartões: 3+3 em telas médias, um por coluna a partir de xl.
+            Eram cinco em `lg:grid-cols-5`; enfileirar seis naquela largura
+            deixaria cada um com menos de 170px. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           {[
             // O total é a soma, não um status: não recebe cor de significado.
             { rotulo: 'Total de Chamados', valor: metricas.total, Icone: IconeChamado, cor: null },
@@ -624,6 +645,10 @@ const Dashboard: React.FC = () => {
             // Arquivado não é status do chamado, é uma marca sobre ele. Usa a
             // mesma cor do selo "Arquivado" da tabela abaixo.
             { rotulo: 'Arquivados', valor: metricas.arquivados, Icone: IconeArquivar, cor: null },
+            // Cancelado saiu dos contadores de status — sem cartão próprio, o
+            // número desapareceria da tela e ligar "Exibindo cancelados" não
+            // teria efeito visível nenhum aqui em cima.
+            { rotulo: 'Cancelados', valor: metricas.cancelados, Icone: IconeProibido, cor: null },
           ].map(({ rotulo, valor, Icone, cor }) => (
             <div
               key={rotulo}

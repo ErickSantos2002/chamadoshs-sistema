@@ -29,6 +29,27 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.6.19',
+    data: '2026-08-20',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'A busca do quadro agora encontra também os chamados arquivados e cancelados, sem precisar ligar nada antes. Digitou o protocolo, a coluna dele aparece com o chamado dentro — antes a busca respondia com o quadro vazio, como se aquele chamado não existisse.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'No painel, os cancelados ganharam cartão próprio e saíram das contas de trabalho pendente. O total, os gráficos de prioridade e categoria e o tempo médio agora falam todos dos mesmos chamados — antes ligar "Exibindo cancelados" mexia em uns e não em outros.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'Chamado arquivado parou de pedir avaliação. Ele já tinha sido guardado, então o pedido chegava para um atendimento que a pessoa provavelmente nem lembrava mais.',
+      },
+    ],
+  },
+  {
     versao: '1.6.18',
     data: '2026-08-20',
     itens: [

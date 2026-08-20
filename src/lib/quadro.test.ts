@@ -115,6 +115,23 @@ describe('agruparPorColuna', () => {
    * quem foi ao arquivo procurar algo antigo espera encontrá-lo lá. O card
    * carrega os dois selos, então o cancelamento não fica escondido.
    */
+  /**
+   * O status vem da API. Um valor que este código não conhece — status novo no
+   * back, ou `null` num registro antigo — daria `undefined.push` e derrubaria
+   * o render inteiro: o quadro sairia branco por causa de um chamado.
+   */
+  it('não quebra com status que não conhece', () => {
+    const estranho = { id: 50, status: 'Em Triagem', arquivado: false, cancelado: false } as unknown as Chamado;
+    const semStatus = { id: 51, status: null, arquivado: false, cancelado: false } as unknown as Chamado;
+
+    const grupos = agruparPorColuna([estranho, semStatus, chamadoDe(52, StatusEnum.ABERTO)]);
+
+    // Nenhum chamado se perde, e a tela continua de pé.
+    const total = Object.values(grupos).reduce((soma, col) => soma + col.length, 0);
+    expect(total).toBe(3);
+    expect(grupos['Aberto'].map((c) => c.id)).toEqual([52, 51, 50]);
+  });
+
   it('põe no arquivo o que está cancelado E arquivado', () => {
     const grupos = agruparPorColuna([
       chamadoDe(42, StatusEnum.ABERTO, true, true),

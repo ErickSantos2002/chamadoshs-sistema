@@ -7,6 +7,7 @@ const base = {
   status: StatusEnum.RESOLVIDO,
   avaliacao: undefined as number | undefined,
   cancelado: false,
+  arquivado: false,
 };
 
 describe('precisaAvaliar', () => {
@@ -39,6 +40,12 @@ describe('precisaAvaliar', () => {
 
   it('não pede em chamado cancelado, que não teve atendimento', () => {
     expect(precisaAvaliar({ ...base, cancelado: true }, 7)).toBe(false);
+  });
+
+  // Ficou visível quando o arquivo ganhou coluna no quadro: o card arquivado
+  // aparecia pedindo nota de um atendimento antigo, já guardado.
+  it('não pede em chamado arquivado, que já foi guardado', () => {
+    expect(precisaAvaliar({ ...base, arquivado: true }, 7)).toBe(false);
   });
 
   // Durante o carregamento inicial o usuário ainda não existe no contexto. A

@@ -75,7 +75,16 @@ export function agruparPorColuna(
     } else if (chamado.status === StatusEnum.FECHADO) {
       grupos['Resolvido'].push(chamado);
     } else {
-      grupos[chamado.status as ColunaDoQuadro].push(chamado);
+      // O status vem da API, não deste código. Um valor fora das quatro
+      // colunas — status novo no back, ou `null` num registro antigo — daria
+      // `undefined.push` e derrubaria o render INTEIRO: o quadro sairia branco
+      // por causa de um chamado. Cair em "Aberto" mostra o chamado no lugar
+      // errado, o que é um problema visível e pequeno perto de uma tela vazia.
+      const coluna: ColunaDoQuadro = grupos[chamado.status as ColunaDoQuadro]
+        ? (chamado.status as ColunaDoQuadro)
+        : 'Aberto';
+
+      grupos[coluna].push(chamado);
     }
   }
 

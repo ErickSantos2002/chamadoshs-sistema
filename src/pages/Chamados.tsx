@@ -112,13 +112,26 @@ const Chamados: React.FC = () => {
 
   // Nomes dos solicitantes: uma listagem só, em vez de um GET por usuário.
 
-  // O interruptor define o ESCOPO do quadro, aplicado antes dos filtros:
-  // `chamados` traz arquivados e cancelados desde que o contexto passou a
-  // pedi-los à API, e só as colunas de fora do fluxo devem recebê-los.
+  const buscando = busca.trim().length > 0;
+
+  /**
+   * O interruptor define o ESCOPO do quadro, aplicado antes dos filtros:
+   * `chamados` traz arquivados e cancelados desde que o contexto passou a
+   * pedi-los à API, e só as colunas de fora do fluxo devem recebê-los.
+   *
+   * A BUSCA atravessa o escopo. Quem digita um protocolo já sabe que aquele
+   * chamado existe — está perguntando ONDE ele está. Devolver quatro colunas
+   * vazias porque ele foi cancelado responde "não existe", que é falso e é o
+   * caminho mais curto para a pessoa concluir que o sistema perdeu o chamado.
+   * Foi assim que quatro protocolos viraram um mistério de meia hora.
+   *
+   * Vale só para a busca. Prioridade e categoria são recortes de quem está
+   * varrendo o quadro, não de quem procura um chamado específico.
+   */
   const chamadosNoEscopo = useMemo(
     () =>
-      mostrarForaDoFluxo ? chamados : chamados.filter(estaNoFluxo),
-    [chamados, mostrarForaDoFluxo]
+      mostrarForaDoFluxo || buscando ? chamados : chamados.filter(estaNoFluxo),
+    [chamados, mostrarForaDoFluxo, buscando]
   );
 
   // Filtra os chamados localmente. A busca cobre título e protocolo: quem
@@ -161,6 +174,19 @@ const Chamados: React.FC = () => {
     [chamadosFiltrados]
   );
 
+  /**
+   * Quantos chamados fora do fluxo estão DESENHADOS agora.
+   *
+   * Serve a duas coisas. Primeiro, decide se as duas colunas aparecem: a busca
+   * atravessa o escopo, então ela pode trazer um cancelado para dentro sem que
+   * exista coluna para desenhá-lo. Segundo, entra no texto do cabeçalho — sem
+   * ele, procurar um protocolo cancelado mostraria "0 de 141 chamados" com o
+   * card do chamado ali na tela, ao lado.
+   */
+  const foraDoFluxoNaTela =
+    chamadosPorColuna.arquivado.length + chamadosPorColuna.cancelado.length;
+  const mostrarColunasDeFora = mostrarForaDoFluxo || foraDoFluxoNaTela > 0;
+
   // As cores de status e de prioridade agora vivem no KanbanColumn, mapeadas
   // para as cores de significado do tema.
 
@@ -190,6 +216,11 @@ const Chamados: React.FC = () => {
                 {filtradosNoFluxo === totalNoFluxo
                   ? `${totalNoFluxo} chamados`
                   : `${filtradosNoFluxo} de ${totalNoFluxo} chamados`}
+                {/* Contados à parte, e não somados ao número acima: são
+                    unidades diferentes. "141 chamados" é trabalho; os de fora
+                    do fluxo são registro. Somar os dois criaria um total que
+                    não corresponde a nada que alguém queira saber. */}
+                {foraDoFluxoNaTela > 0 && ` · ${foraDoFluxoNaTela} fora do fluxo`}
               </p>
             </div>
 
@@ -246,9 +277,11 @@ const Chamados: React.FC = () => {
                   do fluxo": esse é vocabulário nosso, e quem abre chamado
                   precisaria clicar para descobrir o que significa.
 
-                  O verbo saiu: era a metade mais longa do rótulo e dizia o que o
-                  botão já diz aceso ou apagado — e `aria-pressed` conta o mesmo
-                  para quem usa leitor de tela. */}
+                  O verbo fica. Tirá-lo encurtaria o botão e deixaria o estado
+                  por conta do aspecto aceso ou apagado — que é justamente o
+                  que ninguém lê num cabeçalho com outros quatro controles.
+                  "Mostrar" diz o que o clique faz, sem precisar interpretar
+                  tom de cor. */}
               <Button
                 variante={mostrarForaDoFluxo ? 'secundario' : 'fantasma'}
                 tamanho="sm"
@@ -256,7 +289,9 @@ const Chamados: React.FC = () => {
                 onClick={() => setMostrarForaDoFluxo((antes) => !antes)}
               >
                 <IconeArquivar className="h-4 w-4" aria-hidden="true" />
-                Arquivados e cancelados
+                {mostrarForaDoFluxo
+                  ? 'Ocultar arquivados e cancelados'
+                  : 'Mostrar arquivados e cancelados'}
               </Button>
 
               {temFiltro && (
@@ -357,7 +392,7 @@ const Chamados: React.FC = () => {
         <div
           className={cn(
             'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2',
-            mostrarForaDoFluxo ? 'xl:grid-cols-6' : 'xl:grid-cols-4'
+            mostrarColunasDeFora ? 'xl:grid-cols-6' : 'xl:grid-cols-4'
           )}
         >
 
@@ -421,7 +456,7 @@ const Chamados: React.FC = () => {
               "Cancelado" nos cards já dá o sinal de que ali houve interrupção,
               e repeti-lo no ponto da coluna seria a mesma informação duas
               vezes. */}
-          {mostrarForaDoFluxo && (
+          {mostrarColunasDeFora && (
             <>
               <KanbanColumn
                 title="Arquivado"
