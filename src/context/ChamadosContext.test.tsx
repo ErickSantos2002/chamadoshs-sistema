@@ -124,3 +124,17 @@ describe('aplicarChamado', () => {
     expect(visto.map((c) => c.id)).toEqual([1, 2]);
   });
 });
+
+/**
+ * O quadro precisa RECEBER os arquivados para poder mostrá-los numa coluna
+ * própria. Sem este parâmetro a API os omite, e o chamado arquivado some da
+ * tela — não existe filtro no front capaz de trazer de volta o que nunca
+ * chegou.
+ */
+describe('carregarChamados', () => {
+  it('pede os arquivados à API', () => {
+    const [params] = vi.mocked(chamadosService.listarTodos).mock.calls[0];
+
+    expect(params).toMatchObject({ incluir_arquivados: true });
+  });
+});

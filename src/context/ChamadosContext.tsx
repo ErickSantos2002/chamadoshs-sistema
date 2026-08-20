@@ -77,7 +77,10 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setError(null);
 
-      const params: any = {};
+      // Os arquivados vêm junto e o quadro decide o que mostrar. Sem este
+      // parâmetro a API os omite, e o chamado arquivado some da tela: nenhum
+      // filtro no front traz de volta o que não chegou.
+      const params: any = { incluir_arquivados: true };
 
       // Usuários comuns só veem seus próprios chamados
       if (user.role === 'Usuario') {
