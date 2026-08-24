@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
@@ -81,9 +81,17 @@ const Chamados: React.FC = () => {
     carregarChamados();
   }, []);
 
-  // Carrega as tarefas recorrentes do dia para o lembrete: as pendentes
-  // (proxima_data <= hoje) e as que já foram realizadas hoje (ultima_execucao).
-  useEffect(() => {
+  /**
+   * Carrega as tarefas recorrentes do dia para o lembrete: as pendentes
+   * (proxima_data <= hoje) e as que já foram realizadas hoje (ultima_execucao).
+   *
+   * Função, e não corpo de efeito, porque o auto-refresh também precisa dela:
+   * o quadro numa TV recarrega sozinho e o lembrete ficava congelado no que
+   * era verdade quando a página abriu. `hojeYMD()` é lido a cada chamada de
+   * propósito — assim a virada de meia-noite entra na próxima atualização, em
+   * vez de manter as tarefas de ontem na tela até alguém recarregar no F5.
+   */
+  const carregarTarefasDoDia = useCallback(() => {
     if (!(isAdmin || isTecnico)) return;
     const hoje = hojeYMD();
     tarefasRecorrentesService
@@ -100,15 +108,21 @@ const Chamados: React.FC = () => {
       .catch(() => setTarefasDoDia([]));
   }, [isAdmin, isTecnico]);
 
-  // Auto-refresh a cada 10 minutos (para TV/monitoramento)
+  useEffect(() => {
+    carregarTarefasDoDia();
+  }, [carregarTarefasDoDia]);
+
+  // Auto-refresh a cada 10 minutos (para TV/monitoramento). Atualiza as duas
+  // coisas que a tela mostra: o quadro e o lembrete de tarefas do dia.
   useEffect(() => {
     const intervalo = setInterval(() => {
       carregarChamados();
+      carregarTarefasDoDia();
     }, 600000); // 10 minutos em milissegundos
 
     // Cleanup: limpar o intervalo quando o componente desmontar
     return () => clearInterval(intervalo);
-  }, []);
+  }, [carregarTarefasDoDia]);
 
   // Nomes dos solicitantes: uma listagem só, em vez de um GET por usuário.
 
