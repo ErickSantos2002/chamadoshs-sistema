@@ -181,7 +181,7 @@ const Login: React.FC = () => {
         </aside>
 
         {/* ── Coluna do formulário ─────────────────────────────────── */}
-        <div className="flex flex-1 flex-col items-center justify-center bg-superficie-base px-6 py-12 lg:w-2/5">
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:w-2/5">
           <div className="w-full max-w-sm space-y-8">
             {/* A marca só aparece aqui quando o painel da esquerda não está
                 na tela — senão o logo apareceria duas vezes. */}

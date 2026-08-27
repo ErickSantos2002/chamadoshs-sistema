@@ -432,7 +432,7 @@ const Dashboard: React.FC = () => {
 
         {/* Cabeçalho da página. O `<div>` de moldura que pintava o fundo saiu:
             quem pinta agora é o `<main>` da casca. */}
-        <div className="rounded-xl border border-borda bg-superficie px-5 py-4">
+        <div className="rounded-2xl border border-borda bg-superficie px-5 py-4">
           <h1 className="text-xl font-extrabold tracking-tight text-conteudo">
             Dashboard
           </h1>
@@ -938,16 +938,16 @@ const Dashboard: React.FC = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                       Título
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
                       Prioridade
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
                       Data
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
                       Ações
                     </th>
                   </tr>

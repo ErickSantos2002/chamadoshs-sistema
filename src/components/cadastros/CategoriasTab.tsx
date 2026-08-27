@@ -136,7 +136,7 @@ const CategoriasTab: React.FC = () => {
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <IconeEtiqueta className="h-6 w-6 text-info-forte dark:text-info-suave" />
-          <h2 className="text-xl font-semibold text-conteudo">
+          <h2 className="text-sm font-semibold text-conteudo">
             Categorias
           </h2>
         </div>

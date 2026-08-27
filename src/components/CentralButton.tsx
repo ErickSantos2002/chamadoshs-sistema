@@ -15,7 +15,7 @@ const CentralButton: React.FC = () => {
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="group fixed bottom-6 right-6 z-50 flex items-center justify-center rounded-full border border-borda bg-superficie shadow-lg transition-all duration-300 ease-in-out hover:bg-superficie-elevada hover:shadow-xl"
+        className="group fixed bottom-6 right-6 z-30 flex items-center justify-center rounded-full border border-borda bg-superficie shadow-lg transition-all duration-300 ease-in-out hover:bg-superficie-elevada hover:shadow-xl"
         style={{
           width: '64px',
           height: '64px',
@@ -40,7 +40,7 @@ const CentralButton: React.FC = () => {
       {/* Tooltip */}
       {isHovered && (
         <div
-          className="animate-fadeIn fixed bottom-6 z-50 whitespace-nowrap rounded-lg border border-borda bg-superficie px-3 py-2 text-sm font-medium text-conteudo shadow-lg"
+          className="animate-fadeIn fixed bottom-6 z-30 whitespace-nowrap rounded-lg border border-borda bg-superficie px-3 py-2 text-sm font-medium text-conteudo shadow-lg"
           style={{
             right: '90px',
           }}

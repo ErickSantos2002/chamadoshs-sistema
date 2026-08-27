@@ -159,7 +159,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
   return (
     <div className="flex h-full flex-col gap-5 p-6">
       <div className="shrink-0">
-        <h2 className="text-xl font-semibold text-conteudo">Prazos de SLA</h2>
+        <h2 className="text-sm font-semibold text-conteudo">Prazos de SLA</h2>
         <p className="mt-0.5 text-sm text-conteudo-tenue">
           Tempo máximo de primeira resposta e de resolução, por prioridade.
           Contados em horário útil ({EXPEDIENTE}).
@@ -185,7 +185,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                 key={config.prioridade}
                 className={cn(
                   'flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4',
-                  indice > 0 && 'border-t border-borda-suave'
+                  indice > 0 && 'border-t border-borda'
                 )}
               >
                 <div className="w-24 shrink-0">

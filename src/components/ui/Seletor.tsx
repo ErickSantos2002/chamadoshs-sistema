@@ -6,6 +6,7 @@ import {
   acumularBusca,
   LARGURA_MINIMA,
   posicionarLista,
+  ALTURA_MAXIMA,
   type PosicaoDaLista,
 } from '../../lib/seletor';
 import { IconeConfere, IconeSeta } from './icones';
@@ -79,10 +80,13 @@ export const Seletor: React.FC<SeletorProps> = ({
   const id = useId();
   const [aberto, setAberto] = useState(false);
   const [destacado, setDestacado] = useState(0);
+  // Valor de partida, nunca desenhado: a posição de verdade é medida no
+  // instante em que a lista abre.
   const [posicao, setPosicao] = useState<PosicaoDaLista>({
     top: 0,
     left: 0,
     minWidth: LARGURA_MINIMA,
+    maxHeight: ALTURA_MAXIMA,
   });
 
   const gatilhoRef = useRef<HTMLButtonElement>(null);
@@ -105,7 +109,13 @@ export const Seletor: React.FC<SeletorProps> = ({
       const gatilho = gatilhoRef.current;
       if (!gatilho) return;
 
-      setPosicao(posicionarLista(gatilho.getBoundingClientRect(), window.innerWidth));
+      setPosicao(
+        posicionarLista(
+          gatilho.getBoundingClientRect(),
+          window.innerWidth,
+          window.innerHeight
+        )
+      );
       setDestacado(partirDe);
       setAberto(true);
     },
@@ -239,7 +249,9 @@ export const Seletor: React.FC<SeletorProps> = ({
           style={{ position: 'fixed', ...posicao, zIndex: 9999 }}
           // `overscroll-contain`: chegar ao fim da lista não pode emendar a
           // rolagem na página atrás — que fecharia a lista pelo caminho.
-          className="max-h-72 overflow-auto overscroll-contain rounded-lg border border-borda bg-superficie shadow-xl focus:outline-none"
+          // Sem `max-h-*`: o teto vem calculado em `posicao.maxHeight`, e é
+          // o espaço que existe de verdade acima ou abaixo do campo.
+          className="overflow-auto overscroll-contain rounded-lg border border-borda bg-superficie shadow-xl focus:outline-none"
         >
           {opcoes.map((opcao, indice) => {
             const ehEscolhida = opcao.valor === valor;

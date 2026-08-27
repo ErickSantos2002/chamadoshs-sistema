@@ -16,7 +16,11 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Loading Fallback Component
 const PageLoader: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-superficie-base">
+  // `min-h-full`, e não `min-h-screen`: isto aparece DENTRO do `<main>`,
+  // que já desconta a faixa do topo e o próprio padding. Com a altura da
+  // viewport inteira, toda troca de rota com pedaço ainda não baixado
+  // criava uma barra de rolagem e jogava o spinner abaixo do centro.
+  <div className="flex min-h-full items-center justify-center">
     <div className="text-center">
       <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-sinal mx-auto"></div>
       <p className="mt-4 text-conteudo-suave">Carregando...</p>

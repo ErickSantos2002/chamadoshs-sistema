@@ -225,7 +225,7 @@ const UsuariosTab: React.FC = () => {
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <IconeUsuarios className="h-6 w-6 text-alerta-forte dark:text-alerta-suave" />
-          <h2 className="text-xl font-semibold text-conteudo">
+          <h2 className="text-sm font-semibold text-conteudo">
             Usuários
           </h2>
           <span className="rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-alerta-forte dark:text-alerta-suave">

@@ -14,11 +14,24 @@ interface ModalProps {
   largura?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
+/**
+ * A escada de larguras.
+ *
+ * Puxada um degrau para baixo, na direção do HelpHS, cuja escada vai de 384px
+ * a 768px enquanto esta ia de 448px a 1152px — lado a lado, um diálogo daqui
+ * cobria quase a tela e o de lá ocupava metade.
+ *
+ * Não é a escada do HelpHS ao pé da letra, e o motivo é estrutural: lá o
+ * chamado tem PÁGINA de detalhe, e o diálogo mais largo é um formulário
+ * simples. Aqui o `ChamadoModal` traz a ficha do chamado em duas colunas
+ * dentro de um diálogo, e a 768px do HelpHS as duas colunas se espremem. O
+ * topo continua largo por necessidade; o resto desceu.
+ */
 const LARGURAS = {
   sm: 'max-w-md',
-  md: 'max-w-2xl',
-  lg: 'max-w-4xl',
-  xl: 'max-w-6xl',
+  md: 'max-w-xl',
+  lg: 'max-w-3xl',
+  xl: 'max-w-5xl',
 };
 
 /**

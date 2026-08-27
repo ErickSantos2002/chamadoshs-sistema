@@ -347,7 +347,9 @@ const Chamados: React.FC = () => {
               Nenhuma tarefa recorrente para hoje.
             </p>
           ) : (
-            <ul className="space-y-1.5">
+            // Teto proporcional: sem ele, um dia com muitas tarefas
+            // espremia o quadro (que é `flex-1`) até zero.
+            <ul className="max-h-[30vh] space-y-1.5 overflow-y-auto">
               {tarefasDoDia.map((t) => {
                 const hoje = hojeYMD();
                 const pendente = t.proxima_data <= hoje;
@@ -416,11 +418,18 @@ const Chamados: React.FC = () => {
           por dentro: `min-h-0` para o flex poder encolhê-la, `overflow-hidden`
           para o canto arredondado cortar o conteúdo, e a rolagem lateral no
           rolador de dentro. */}
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-borda">
+      {/* `min-h-[26rem]` é o que impede o quadro de sumir.
+          Ele é o único `flex-1` entre irmãos `shrink-0` numa página de
+          altura travada: num celular de 667px, o cabeçalho empilhado e o
+          card de tarefas do dia comem quase tudo, e o que sobra para as
+          colunas chega perto de zero — a tela abria sem mostrar chamado
+          nenhum, sem barra de rolagem e sem aviso. Com um piso, o que não
+          couber passa a empurrar o `<main>`, que rola. */}
+      <div className="min-h-[26rem] min-h-0 flex-1 overflow-hidden rounded-2xl border border-borda bg-superficie-elevada/50">
         {/* Só na horizontal. A vertical é de cada coluna, por dentro —
             `overflow-auto` aqui dava duas barras verticais aninhadas. */}
         <div className="h-full overflow-x-auto">
-          <div className="flex h-full min-w-max gap-4 p-4">
+          <div className="flex h-full min-w-max gap-3 p-3">
 
             {/* === COLUNA ABERTO === */}
             <div className={raia}>

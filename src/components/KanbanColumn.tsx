@@ -41,6 +41,23 @@ const PONTO_PRIORIDADE: Record<PrioridadeEnum, string> = {
   [PrioridadeEnum.BAIXA]: 'bg-conteudo-tenue',
 };
 
+/**
+ * A mesma prioridade, na borda esquerda do cartão.
+ *
+ * É a marca que o quadro do HelpHS usa, e ela resolve um problema real: num
+ * quadro com vinte cartões, um ponto de 8px no canto superior direito não é
+ * lido de relance. Uma faixa de 4px na lateral é.
+ *
+ * O ponto continua ali, ao lado do protocolo, porque ele carrega o `title`
+ * com o nome da prioridade — a faixa é cor, e cor sozinha não informa.
+ */
+const BORDA_PRIORIDADE: Record<PrioridadeEnum, string> = {
+  [PrioridadeEnum.CRITICA]: 'border-l-perigo',
+  [PrioridadeEnum.ALTA]: 'border-l-alerta',
+  [PrioridadeEnum.MEDIA]: 'border-l-info',
+  [PrioridadeEnum.BAIXA]: 'border-l-borda',
+};
+
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   title,
   descricao,
@@ -59,7 +76,13 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   return (
     <div className="flex h-full min-w-[268px] flex-col overflow-hidden rounded-xl border border-borda bg-superficie-elevada">
       {/* Cabeçalho */}
-      <div className="shrink-0 border-b border-borda px-4 py-3">
+      {/* A cor do status pinta a faixa de baixo, no lugar da régua cinza,
+          e tinge o fundo do cabeçalho em 5%. São seis colunas lado a lado: sem
+          nenhuma cor no topo, distinguir uma da outra exige ler o título. */}
+      <div
+        className="shrink-0 px-4 py-3"
+        style={{ backgroundColor: `${colorDot}0D` }}
+      >
         <div className="flex items-center justify-between gap-2">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-conteudo">
             <span
@@ -76,6 +99,15 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         </div>
         <p className="mt-0.5 pl-4 text-xs text-conteudo-tenue">{descricao}</p>
       </div>
+
+      {/* A régua da coluna, na cor cheia do status. Substitui o
+          `border-b` cinza: é o que dá a faixa colorida no topo de cada
+          coluna do quadro de referência. */}
+      <div
+        aria-hidden="true"
+        className="h-0.5 shrink-0"
+        style={{ backgroundColor: colorDot }}
+      />
 
       {/* Cards */}
       {/* Teto proporcional à tela, não `calc(100vh - 400px)`.
@@ -95,7 +127,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           `min-h-0` não é enfeite: item de flex nasce com `min-height: auto` e
           se recusa a encolher abaixo do próprio conteúdo. Sem ele, uma coluna
           cheia empurra a altura da coluna inteira em vez de rolar. */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
         {items.length === 0 ? (
           <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-borda py-10 text-sm text-conteudo-tenue">
             Nenhum chamado
@@ -112,9 +144,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 key={chamado.id}
                 type="button"
                 onClick={() => aoAbrir(chamado)}
-                className="w-full space-y-2 rounded-lg border border-borda bg-superficie p-3 text-left
-                           transition-all hover:border-sinal/50 hover:shadow-md
-                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal"
+                className={cn(
+                  'w-full space-y-2 rounded-lg border border-l-4 border-borda bg-superficie p-3 text-left',
+                  'shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal',
+                  BORDA_PRIORIDADE[chamado.prioridade]
+                )}
               >
                 {/* Protocolo e prioridade */}
                 <div className="flex items-center justify-between gap-2">
@@ -131,7 +166,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 </div>
 
                 {/* Título */}
-                <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-conteudo">
+                <h4 className="line-clamp-2 text-sm font-medium leading-snug text-conteudo">
                   {chamado.titulo}
                 </h4>
 

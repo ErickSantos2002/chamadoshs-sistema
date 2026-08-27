@@ -12,7 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
-import { Badge, Seletor } from '../components/ui';
+import { Badge, Modal, Seletor } from '../components/ui';
 import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
 import { IconeApagar, IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
 import {
@@ -1142,8 +1142,12 @@ const ChamadoDetalhes: React.FC = () => {
               </button>
             </div>
 
-            {/* Lista de comentários com scroll */}
-            <div className="max-h-[600px] space-y-4 overflow-y-auto pr-2">
+            {/* Lista de comentários.
+                Sem rolagem própria: tinha um teto de 600px, herdado de
+                quando a página inteira rolava. Com o `<main>` da casca já
+                rolando, aquilo dava duas barras verticais coladas e
+                prendia a roda do mouse aqui dentro. */}
+            <div className="space-y-4">
               {comentarios.length === 0 ? (
                 <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
                   Nenhum comentário ainda.
@@ -1203,8 +1207,9 @@ const ChamadoDetalhes: React.FC = () => {
             </h2>
           </div>
 
-          {/* Lista de histórico com scroll */}
-          <div className="max-h-[500px] space-y-3 overflow-y-auto p-5">
+          {/* Lista de histórico. Mesma história do bloco de comentários:
+              o teto de 500px saiu, quem rola é o `<main>`. */}
+          <div className="space-y-3 p-5">
             {historico.length === 0 ? (
               <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
                 Nenhum histórico registrado.
@@ -1247,187 +1252,148 @@ const ChamadoDetalhes: React.FC = () => {
 
       {/* Modal de Resolução/Fechamento */}
       {mostrarModalResolucao && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-borda bg-superficie shadow-xl">
-            <div className="p-5">
+        <Modal
+          aberto={mostrarModalResolucao}
+          aoFechar={() => {
+            setMostrarModalResolucao(false);
+            setSolucaoModal("");
+          }}
+          titulo={
+            statusAlvo === StatusEnum.RESOLVIDO
+              ? "Resolver Chamado"
+              : "Fechar Chamado"
+          }
+          descricao="Descreva a solução aplicada para este chamado"
+          largura="md"
+          rodape={
+            <>
+              <button
+                onClick={() => {
+                  setMostrarModalResolucao(false);
+                  setSolucaoModal("");
+                }}
+                className="rounded-lg border border-borda px-4 py-2
+                          text-sm font-semibold text-conteudo-suave
+                          transition-colors hover:bg-superficie-elevada hover:text-conteudo"
+              >
+                Cancelar
+              </button>
 
-              {/* Título e Fechar */}
-              <div className="mb-5 flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-base font-semibold text-conteudo">
-                    {statusAlvo === StatusEnum.RESOLVIDO
-                      ? "Resolver Chamado"
-                      : "Fechar Chamado"}
-                  </h2>
+              <button
+                onClick={handleConfirmarResolucao}
+                disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}
+                className="flex items-center gap-2 rounded-lg bg-sucesso px-4 py-2
+                          text-sm font-semibold text-white
+                          transition-colors hover:bg-sucesso-forte
+                          disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <IconeConfereCirculo className="h-4 w-4" />
+                {statusAlvo === StatusEnum.RESOLVIDO
+                  ? "Marcar como Resolvido"
+                  : "Fechar Chamado"}
+              </button>
+            </>
+          }
+        >
+          {/* Campo de Solução */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-conteudo-suave">
+              Solução <span className="text-perigo">*</span>
+            </label>
 
-                  <p className="mt-0.5 text-sm text-conteudo-tenue">
-                    Descreva a solução aplicada para este chamado
-                  </p>
-                </div>
+            <textarea
+              value={solucaoModal}
+              onChange={(e) => setSolucaoModal(e.target.value)}
+              rows={6}
+              placeholder="Descreva detalhadamente a solução aplicada..."
+              className="w-full resize-none rounded-lg border border-borda
+                        bg-superficie px-3 py-2 text-sm text-conteudo
+                        transition-colors hover:border-conteudo-tenue
+                        focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
+            />
 
-                <button
-                  onClick={() => {
-                    setMostrarModalResolucao(false);
-                    setSolucaoModal("");
-                  }}
-                  className="rounded-lg p-1 text-conteudo-tenue transition-colors
-                            hover:bg-superficie-elevada hover:text-conteudo"
-                >
-                  <IconeFechar className="h-5 w-5" />
-                </button>
-              </div>
+            <ContadorMinimo valor={solucaoModal} minimo={MINIMO_SOLUCAO} />
 
-              {/* Conteúdo */}
-              <div className="space-y-4">
-
-                {/* Campo de Solução */}
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-conteudo-suave">
-                    Solução <span className="text-perigo">*</span>
-                  </label>
-
-                  <textarea
-                    value={solucaoModal}
-                    onChange={(e) => setSolucaoModal(e.target.value)}
-                    rows={6}
-                    placeholder="Descreva detalhadamente a solução aplicada..."
-                    className="w-full resize-none rounded-lg border border-borda
-                              bg-superficie px-3 py-2 text-sm text-conteudo
-                              transition-colors hover:border-conteudo-tenue
-                              focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
-                  />
-
-                  <ContadorMinimo valor={solucaoModal} minimo={MINIMO_SOLUCAO} />
-
-                  <p className="mt-1 text-sm text-conteudo-tenue">
-                    É o que alguém vai ler quando o mesmo problema voltar.
-                  </p>
-                </div>
-
-                {/* Botões */}
-                <div className="flex justify-end gap-2 border-t border-borda pt-4">
-
-                  <button
-                    onClick={() => {
-                      setMostrarModalResolucao(false);
-                      setSolucaoModal("");
-                    }}
-                    className="rounded-lg border border-borda px-4 py-2
-                              text-sm font-semibold text-conteudo-suave
-                              transition-colors hover:bg-superficie-elevada hover:text-conteudo"
-                  >
-                    Cancelar
-                  </button>
-
-                  <button
-                    onClick={handleConfirmarResolucao}
-                    disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}
-                    className="flex items-center gap-2 rounded-lg bg-sucesso px-4 py-2
-                              text-sm font-semibold text-white
-                              transition-colors hover:bg-sucesso-forte
-                              disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <IconeConfereCirculo className="h-4 w-4" />
-                    {statusAlvo === StatusEnum.RESOLVIDO
-                      ? "Marcar como Resolvido"
-                      : "Fechar Chamado"}
-                  </button>
-
-                </div>
-              </div>
-            </div>
+            <p className="mt-1 text-sm text-conteudo-tenue">
+              É o que alguém vai ler quando o mesmo problema voltar.
+            </p>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Modal de Cancelar Chamado */}
       {mostrarModalCancelar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-borda bg-superficie shadow-xl">
-            <div className="p-5">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-base font-semibold text-conteudo">
-                    Cancelar Chamado
-                  </h2>
-                  <p className="mt-0.5 text-sm text-conteudo-tenue">
-                    Descreva o motivo do cancelamento deste chamado
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setMostrarModalCancelar(false);
-                    setMotivoCancelamento('');
-                  }}
-                  className="rounded-lg p-1 text-conteudo-tenue transition-colors
-                            hover:bg-superficie-elevada hover:text-conteudo"
-                >
-                  <IconeFechar className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mb-4 rounded-xl border border-perigo/30 bg-perigo/10 p-4">
-                <p className="text-sm text-perigo-forte dark:text-perigo-suave">
-                  Esta ação irá marcar o chamado como cancelado. O chamado não será excluído, mas não aparecerá mais na listagem padrão.
-                </p>
-              </div>
-
-              {/* Campo de Motivo */}
-              <div className="mb-5">
-                <label className="mb-1.5 block text-sm font-medium text-conteudo-suave">
-                  Motivo do Cancelamento <span className="text-perigo">*</span>
-                </label>
-
-                <textarea
-                  value={motivoCancelamento}
-                  onChange={(e) => setMotivoCancelamento(e.target.value)}
-                  rows={6}
-                  placeholder="Descreva o motivo pelo qual este chamado está sendo cancelado..."
-                  className="w-full resize-none rounded-lg border border-borda
-                            bg-superficie px-3 py-2 text-sm text-conteudo
-                            transition-colors hover:border-conteudo-tenue
-                            focus:border-transparent focus:outline-none focus:ring-2 focus:ring-perigo"
-                />
-
-                <ContadorMinimo valor={motivoCancelamento} minimo={MINIMO_SOLUCAO} />
-
-                <p className="mt-1 text-sm text-conteudo-tenue">
-                  Fica registrado no chamado como o desfecho dele.
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-borda pt-4">
-                <button
-                  onClick={() => {
-                    setMostrarModalCancelar(false);
-                    setMotivoCancelamento('');
-                  }}
-                  disabled={processando}
-                  className="rounded-lg border border-borda px-4 py-2
-                            text-sm font-semibold text-conteudo-suave
-                            transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                            disabled:opacity-50"
-                >
-                  Não, voltar
-                </button>
-                <button
-                  onClick={handleCancelarChamado}
-                  disabled={
-                    processando ||
-                    validarMinimo(motivoCancelamento, MINIMO_SOLUCAO, 'Motivo') !== null
-                  }
-                  className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
-                            text-sm font-semibold text-white
-                            transition-colors hover:bg-perigo-forte
-                            disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <IconeProibido className="h-4 w-4" />
-                  {processando ? 'Cancelando...' : 'Sim, cancelar'}
-                </button>
-              </div>
-            </div>
+        <Modal
+          aberto={mostrarModalCancelar}
+          aoFechar={() => {
+            setMostrarModalCancelar(false);
+            setMotivoCancelamento('');
+          }}
+          titulo="Cancelar Chamado"
+          descricao="Descreva o motivo do cancelamento deste chamado"
+          largura="md"
+          rodape={
+            <>
+              <button
+                onClick={() => {
+                  setMostrarModalCancelar(false);
+                  setMotivoCancelamento('');
+                }}
+                disabled={processando}
+                className="rounded-lg border border-borda px-4 py-2
+                          text-sm font-semibold text-conteudo-suave
+                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
+                          disabled:opacity-50"
+              >
+                Não, voltar
+              </button>
+              <button
+                onClick={handleCancelarChamado}
+                disabled={
+                  processando ||
+                  validarMinimo(motivoCancelamento, MINIMO_SOLUCAO, 'Motivo') !== null
+                }
+                className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
+                          text-sm font-semibold text-white
+                          transition-colors hover:bg-perigo-forte
+                          disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <IconeProibido className="h-4 w-4" />
+                {processando ? 'Cancelando...' : 'Sim, cancelar'}
+              </button>
+            </>
+          }
+        >
+          <div className="mb-4 rounded-xl border border-perigo/30 bg-perigo/10 p-4">
+            <p className="text-sm text-perigo-forte dark:text-perigo-suave">
+              Esta ação irá marcar o chamado como cancelado. O chamado não será excluído, mas não aparecerá mais na listagem padrão.
+            </p>
           </div>
-        </div>
+
+          {/* Campo de Motivo */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-conteudo-suave">
+              Motivo do Cancelamento <span className="text-perigo">*</span>
+            </label>
+
+            <textarea
+              value={motivoCancelamento}
+              onChange={(e) => setMotivoCancelamento(e.target.value)}
+              rows={6}
+              placeholder="Descreva o motivo pelo qual este chamado está sendo cancelado..."
+              className="w-full resize-none rounded-lg border border-borda
+                        bg-superficie px-3 py-2 text-sm text-conteudo
+                        transition-colors hover:border-conteudo-tenue
+                        focus:border-transparent focus:outline-none focus:ring-2 focus:ring-perigo"
+            />
+
+            <ContadorMinimo valor={motivoCancelamento} minimo={MINIMO_SOLUCAO} />
+
+            <p className="mt-1 text-sm text-conteudo-tenue">
+              Fica registrado no chamado como o desfecho dele.
+            </p>
+          </div>
+        </Modal>
       )}
 
       {/* Modal de Excluir Chamado.
@@ -1436,171 +1402,139 @@ const ChamadoDetalhes: React.FC = () => {
           e nenhuma outra aqui apaga dados. Digitar obriga a ler o que está na
           caixa vermelha, e é impossível de fazer por reflexo. */}
       {mostrarModalExcluir && chamado && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-borda bg-superficie shadow-xl">
-            <div className="p-5">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-base font-semibold text-conteudo">
-                    Excluir Chamado
-                  </h2>
-                  <p className="mt-0.5 text-sm text-conteudo-tenue">
-                    Chamado #{chamado.protocolo}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setMostrarModalExcluir(false);
-                    setConfirmacaoProtocolo('');
-                  }}
-                  className="rounded-lg p-1 text-conteudo-tenue transition-colors
-                            hover:bg-superficie-elevada hover:text-conteudo"
-                >
-                  <IconeFechar className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Diz o que se perde, não o que a ação se chama. "Esta ação é
-                  irreversível" é frase de aviso que ninguém lê; nomear os
-                  comentários e o histórico faz a pessoa pensar no que havia
-                  ali dentro. */}
-              <div className="mb-4 rounded-xl border border-perigo/30 bg-perigo/10 p-4">
-                <p className="text-sm text-perigo-forte dark:text-perigo-suave">
-                  O chamado, os {comentarios.length} comentários e as{' '}
-                  {historico.length} entradas de histórico dele deixam de
-                  existir. Não há como desfazer, e não há cópia em outro lugar.
-                </p>
-              </div>
-
-              <div className="mb-5">
-                <label
-                  htmlFor="confirmacao-protocolo"
-                  className="mb-1.5 block text-sm font-medium text-conteudo-suave"
-                >
-                  Digite <span className="font-mono">{chamado.protocolo}</span> para confirmar
-                </label>
-
-                <input
-                  id="confirmacao-protocolo"
-                  type="text"
-                  value={confirmacaoProtocolo}
-                  onChange={(e) => setConfirmacaoProtocolo(e.target.value)}
-                  autoComplete="off"
-                  autoFocus
-                  placeholder={chamado.protocolo}
-                  className="w-full rounded-lg border border-borda
-                            bg-superficie px-3 py-2 font-mono text-sm
-                            text-conteudo transition-colors hover:border-conteudo-tenue
-                            focus:border-transparent focus:outline-none focus:ring-2 focus:ring-perigo"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-borda pt-4">
-                <button
-                  onClick={() => {
-                    setMostrarModalExcluir(false);
-                    setConfirmacaoProtocolo('');
-                  }}
-                  disabled={processando}
-                  className="rounded-lg border border-borda px-4 py-2
-                            text-sm font-semibold text-conteudo-suave
-                            transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                            disabled:opacity-50"
-                >
-                  Não, voltar
-                </button>
-                <button
-                  onClick={handleExcluirChamado}
-                  disabled={processando || !protocoloConfere}
-                  className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
-                            text-sm font-semibold text-white
-                            transition-colors hover:bg-perigo-forte
-                            disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <IconeApagar className="h-4 w-4" />
-                  {processando ? 'Excluindo...' : 'Excluir'}
-                </button>
-              </div>
-            </div>
+        <Modal
+          aberto={mostrarModalExcluir}
+          aoFechar={() => {
+            setMostrarModalExcluir(false);
+            setConfirmacaoProtocolo('');
+          }}
+          titulo="Excluir Chamado"
+          descricao={`Chamado #${chamado.protocolo}`}
+          largura="sm"
+          rodape={
+            <>
+              <button
+                onClick={() => {
+                  setMostrarModalExcluir(false);
+                  setConfirmacaoProtocolo('');
+                }}
+                disabled={processando}
+                className="rounded-lg border border-borda px-4 py-2
+                          text-sm font-semibold text-conteudo-suave
+                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
+                          disabled:opacity-50"
+              >
+                Não, voltar
+              </button>
+              <button
+                onClick={handleExcluirChamado}
+                disabled={processando || !protocoloConfere}
+                className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
+                          text-sm font-semibold text-white
+                          transition-colors hover:bg-perigo-forte
+                          disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <IconeApagar className="h-4 w-4" />
+                {processando ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </>
+          }
+        >
+          {/* Diz o que se perde, não o que a ação se chama. "Esta ação é
+              irreversível" é frase de aviso que ninguém lê; nomear os
+              comentários e o histórico faz a pessoa pensar no que havia
+              ali dentro. */}
+          <div className="mb-4 rounded-xl border border-perigo/30 bg-perigo/10 p-4">
+            <p className="text-sm text-perigo-forte dark:text-perigo-suave">
+              O chamado, os {comentarios.length} comentários e as{' '}
+              {historico.length} entradas de histórico dele deixam de
+              existir. Não há como desfazer, e não há cópia em outro lugar.
+            </p>
           </div>
-        </div>
+
+          <div>
+            <label
+              htmlFor="confirmacao-protocolo"
+              className="mb-1.5 block text-sm font-medium text-conteudo-suave"
+            >
+              Digite <span className="font-mono">{chamado.protocolo}</span> para confirmar
+            </label>
+
+            <input
+              id="confirmacao-protocolo"
+              type="text"
+              value={confirmacaoProtocolo}
+              onChange={(e) => setConfirmacaoProtocolo(e.target.value)}
+              autoComplete="off"
+              autoFocus
+              placeholder={chamado.protocolo}
+              className="w-full rounded-lg border border-borda
+                        bg-superficie px-3 py-2 font-mono text-sm
+                        text-conteudo transition-colors hover:border-conteudo-tenue
+                        focus:border-transparent focus:outline-none focus:ring-2 focus:ring-perigo"
+            />
+          </div>
+        </Modal>
       )}
 
       {/* Modal de Arquivar/Desarquivar Chamado */}
       {mostrarModalArquivar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          {/* `max-h` e rolagem como nos outros dois modais desta tela. Sem
-              teto, num visor baixo — a TV em paisagem, por exemplo — o painel
-              transborda para cima e para baixo e é cortado nos dois lados, sem
-              rolagem possível. */}
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-borda bg-superficie shadow-xl">
-            <div className="p-5">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-base font-semibold text-conteudo">
-                    {chamado?.arquivado ? 'Desarquivar Chamado' : 'Arquivar Chamado'}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-conteudo-tenue">
-                    {chamado?.arquivado
-                      ? 'Este chamado voltará a aparecer na listagem padrão.'
-                      : 'Este chamado será ocultado da listagem padrão.'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setMostrarModalArquivar(false)}
-                  className="rounded-lg p-1 text-conteudo-tenue transition-colors
-                            hover:bg-superficie-elevada hover:text-conteudo"
-                >
-                  <IconeFechar className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className={`mb-4 rounded-xl border p-4 ${chamado?.arquivado ? 'border-sucesso/30 bg-sucesso/10' : 'border-alerta/30 bg-alerta/10'}`}>
-                <p className={`text-sm ${chamado?.arquivado ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-alerta-forte dark:text-alerta-suave'}`}>
-                  {chamado?.arquivado
-                    ? 'O chamado será restaurado e voltará a aparecer na listagem principal.'
-                    : 'O chamado não será excluído, apenas ocultado da visualização padrão. Você poderá visualizá-lo novamente usando os filtros.'}
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-borda pt-4">
-                <button
-                  onClick={() => setMostrarModalArquivar(false)}
-                  disabled={processando}
-                  className="rounded-lg border border-borda px-4 py-2
-                            text-sm font-semibold text-conteudo-suave
-                            transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                            disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleArquivarChamado}
-                  disabled={processando}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-2
-                            text-sm font-semibold text-white transition-colors
-                            disabled:opacity-50 ${
-                              chamado?.arquivado
-                                ? 'bg-sucesso hover:bg-sucesso-forte'
-                                : 'bg-alerta-forte hover:brightness-110'
-                            }`}
-                >
-                  {chamado?.arquivado ? (
-                    <>
-                      <IconeDesarquivar className="h-4 w-4" />
-                      {processando ? 'Desarquivando...' : 'Sim, desarquivar'}
-                    </>
-                  ) : (
-                    <>
-                      <IconeArquivar className="h-4 w-4" />
-                      {processando ? 'Arquivando...' : 'Sim, arquivar'}
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+        <Modal
+          aberto={mostrarModalArquivar}
+          aoFechar={() => setMostrarModalArquivar(false)}
+          titulo={chamado?.arquivado ? 'Desarquivar Chamado' : 'Arquivar Chamado'}
+          descricao={
+            chamado?.arquivado
+              ? 'Este chamado voltará a aparecer na listagem padrão.'
+              : 'Este chamado será ocultado da listagem padrão.'
+          }
+          largura="sm"
+          rodape={
+            <>
+              <button
+                onClick={() => setMostrarModalArquivar(false)}
+                disabled={processando}
+                className="rounded-lg border border-borda px-4 py-2
+                          text-sm font-semibold text-conteudo-suave
+                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
+                          disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleArquivarChamado}
+                disabled={processando}
+                className={`flex items-center gap-2 rounded-lg px-4 py-2
+                          text-sm font-semibold text-white transition-colors
+                          disabled:opacity-50 ${
+                            chamado?.arquivado
+                              ? 'bg-sucesso hover:bg-sucesso-forte'
+                              : 'bg-alerta-forte hover:brightness-110'
+                          }`}
+              >
+                {chamado?.arquivado ? (
+                  <>
+                    <IconeDesarquivar className="h-4 w-4" />
+                    {processando ? 'Desarquivando...' : 'Sim, desarquivar'}
+                  </>
+                ) : (
+                  <>
+                    <IconeArquivar className="h-4 w-4" />
+                    {processando ? 'Arquivando...' : 'Sim, arquivar'}
+                  </>
+                )}
+              </button>
+            </>
+          }
+        >
+          <div className={`rounded-xl border p-4 ${chamado?.arquivado ? 'border-sucesso/30 bg-sucesso/10' : 'border-alerta/30 bg-alerta/10'}`}>
+            <p className={`text-sm ${chamado?.arquivado ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-alerta-forte dark:text-alerta-suave'}`}>
+              {chamado?.arquivado
+                ? 'O chamado será restaurado e voltará a aparecer na listagem principal.'
+                : 'O chamado não será excluído, apenas ocultado da visualização padrão. Você poderá visualizá-lo novamente usando os filtros.'}
+            </p>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
