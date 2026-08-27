@@ -76,7 +76,9 @@ export const HistoricoDaConta: React.FC<HistoricoDaContaProps> = ({ usuarioId })
   }
 
   return (
-    <ol className="divide-y divide-borda-suave border-y border-borda-suave">
+    // `borda-suave` no tema escuro tem o mesmo valor de `superficie`: usada
+    // aqui, a lista ficava sem nenhum divisor visível no escuro.
+    <ol className="divide-y divide-borda border-y border-borda">
       {eventos.map((evento) => {
         const { titulo, mudanca, autor } = descreverEvento(evento);
         const momento = momentoDoEvento(evento.created_at);

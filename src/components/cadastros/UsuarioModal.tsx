@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
+import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import HistoricoDaConta from './HistoricoDaConta';
-import { Button, MensagemDeErro, Modal, Rotulo, RotuloDeCampo, Seletor } from '../ui';
+import { Button, Input, MensagemDeErro, Modal, Rotulo, RotuloDeCampo, Seletor } from '../ui';
 import { getRoleName } from '../../utils/roleMapper';
 import { IconeEscudo, IconeOlho, IconeOlhoFechado, IconeSalvar, IconeSetor } from '../ui/icones';
 import type {
@@ -251,245 +252,220 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
         </>
       }
     >
-      <div className={mostrarHistorico ? 'grid gap-6 lg:grid-cols-[1fr_18rem]' : undefined}>
-      <form id={ID_DO_FORM} onSubmit={handleSubmit}>
-            {/* Campo Username */}
-            <div className="mb-4">
-              <RotuloDeCampo htmlFor="username" obrigatorio>
-                Nome de Usuário
-              </RotuloDeCampo>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                className={`
-                  w-full px-4 py-2 border rounded-lg
-                  bg-superficie
-                  text-conteudo
-                  ${errors.username 
-                    ? 'border-perigo' 
-                    : 'border-borda'
-                  }
-                  ${isReadOnly
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal'
-                  }
-                  transition-colors
-                `}
-                placeholder="Digite o nome de usuário"
-                maxLength={50}
-              />
-              <MensagemDeErro texto={errors.username} />
-            </div>
+      <div className={mostrarHistorico ? 'grid gap-5 lg:grid-cols-[1fr_18rem]' : undefined}>
+        <form id={ID_DO_FORM} onSubmit={handleSubmit} className="space-y-4">
+          {/* Campo Username */}
+          <div>
+            <RotuloDeCampo htmlFor="username" obrigatorio>
+              Nome de Usuário
+            </RotuloDeCampo>
+            <Input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              disabled={isReadOnly}
+              className={errors.username ? 'border-perigo' : undefined}
+              placeholder="Digite o nome de usuário"
+              maxLength={50}
+            />
+            <MensagemDeErro texto={errors.username} />
+          </div>
 
-            {/* Campo Senha (não mostrar no modo view) */}
-            {mode !== 'view' && (
-              <>
-                <div className="mb-4">
-                  <RotuloDeCampo htmlFor="password" obrigatorio={mode === 'create'}>
-                    Senha
-                    {mode === 'edit' && (
-                      <span className="text-xs font-normal text-conteudo-tenue">
-                        {' '}
-                        (deixe em branco para manter a atual)
-                      </span>
-                    )}
-                  </RotuloDeCampo>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className={`
-                        w-full px-4 py-2 pr-10 border rounded-lg
-                        bg-superficie
-                        text-conteudo
-                        ${errors.password 
-                          ? 'border-perigo' 
-                          : 'border-borda'
-                        }
-                        focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal
-                        transition-colors
-                      `}
-                      placeholder={mode === 'create' ? 'Mínimo 6 caracteres' : 'Nova senha (opcional)'}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-conteudo-tenue hover:text-conteudo"
-                    >
-                      {showPassword ? <IconeOlhoFechado className="w-4 h-4" /> : <IconeOlho className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <MensagemDeErro texto={errors.password} />
-                </div>
-
-                <div className="mb-4">
-                  <RotuloDeCampo
-                    htmlFor="confirmarSenha"
-                    obrigatorio={mode === 'create'}
+          {/* Campo Senha (não mostrar no modo view) */}
+          {mode !== 'view' && (
+            <>
+              <div>
+                <RotuloDeCampo htmlFor="password" obrigatorio={mode === 'create'}>
+                  Senha
+                  {mode === 'edit' && (
+                    <span className="text-xs font-normal text-conteudo-tenue">
+                      {' '}
+                      (deixe em branco para manter a atual)
+                    </span>
+                  )}
+                </RotuloDeCampo>
+                {/* O `relative` fica aqui, e não no `Input`: o botão do olho é
+                    irmão do campo e se posiciona por este contêiner. */}
+                <div className="relative">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className={cn('pr-10', errors.password && 'border-perigo')}
+                    placeholder={mode === 'create' ? 'Mínimo 6 caracteres' : 'Nova senha (opcional)'}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-conteudo-tenue transition-colors hover:text-conteudo"
                   >
-                    Confirmar Senha
-                  </RotuloDeCampo>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      id="confirmarSenha"
-                      value={confirmarSenha}
-                      onChange={(e) => {
-                        setConfirmarSenha(e.target.value);
-                        if (errors.confirmarSenha) {
-                          setErrors((prev) => {
-                            const newErrors = { ...prev };
-                            delete newErrors.confirmarSenha;
-                            return newErrors;
-                          });
-                        }
-                      }}
-                      className={`
-                        w-full px-4 py-2 pr-10 border rounded-lg
-                        bg-superficie
-                        text-conteudo
-                        ${errors.confirmarSenha 
-                          ? 'border-perigo' 
-                          : 'border-borda'
-                        }
-                        focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal
-                        transition-colors
-                      `}
-                      placeholder="Digite a senha novamente"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-conteudo-tenue hover:text-conteudo"
-                    >
-                      {showConfirmPassword ? <IconeOlhoFechado className="w-4 h-4" /> : <IconeOlho className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <MensagemDeErro texto={errors.confirmarSenha} />
+                    {showPassword ? (
+                      <IconeOlhoFechado className="h-4 w-4" />
+                    ) : (
+                      <IconeOlho className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
-              </>
-            )}
+                <MensagemDeErro texto={errors.password} />
+              </div>
 
-            {/* Campo Perfil/Role */}
-            <div className="mb-4">
-              <RotuloDeCampo htmlFor="role_name" obrigatorio>
-                <IconeEscudo className="mr-1 inline h-4 w-4" />
-                Perfil
-              </RotuloDeCampo>
-              <Seletor
-                id="role_name"
-                rotulo="Perfil"
-                disabled={isReadOnly}
-                invalido={Boolean(errors.role_name)}
-                valor={formData.role_name ?? ''}
-                aoMudar={(v) => {
-                  setFormData((prev) => ({ ...prev, role_name: v }));
-                  // Mesma cortesia do handleInputChange: escolher limpa o erro.
-                  setErrors((prev) => {
-                    const { role_name: _ignorado, ...resto } = prev;
-                    return resto;
-                  });
-                }}
-                opcoes={roles.map((role) => ({ valor: role, rotulo: role }))}
-              />
-              <MensagemDeErro texto={errors.role_name} />
-            </div>
+              <div>
+                <RotuloDeCampo
+                  htmlFor="confirmarSenha"
+                  obrigatorio={mode === 'create'}
+                >
+                  Confirmar Senha
+                </RotuloDeCampo>
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    id="confirmarSenha"
+                    value={confirmarSenha}
+                    onChange={(e) => {
+                      setConfirmarSenha(e.target.value);
+                      if (errors.confirmarSenha) {
+                        setErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors.confirmarSenha;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    className={cn('pr-10', errors.confirmarSenha && 'border-perigo')}
+                    placeholder="Digite a senha novamente"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-conteudo-tenue transition-colors hover:text-conteudo"
+                  >
+                    {showConfirmPassword ? (
+                      <IconeOlhoFechado className="h-4 w-4" />
+                    ) : (
+                      <IconeOlho className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <MensagemDeErro texto={errors.confirmarSenha} />
+              </div>
+            </>
+          )}
 
-            {/* Campo Setor */}
-            <div className="mb-6">
-              <RotuloDeCampo htmlFor="setor_id">
-                <IconeSetor className="mr-1 inline h-4 w-4" />
-                Setor
-              </RotuloDeCampo>
-              <Seletor
-                id="setor_id"
-                rotulo="Setor"
-                disabled={isReadOnly}
-                valor={formData.setor_id ? String(formData.setor_id) : ''}
-                aoMudar={(v) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    setor_id: v ? Number(v) : undefined,
+          {/* Campo Perfil/Role */}
+          <div>
+            <RotuloDeCampo htmlFor="role_name" obrigatorio>
+              <IconeEscudo className="mr-1 inline h-4 w-4" />
+              Perfil
+            </RotuloDeCampo>
+            <Seletor
+              id="role_name"
+              rotulo="Perfil"
+              disabled={isReadOnly}
+              invalido={Boolean(errors.role_name)}
+              valor={formData.role_name ?? ''}
+              aoMudar={(v) => {
+                setFormData((prev) => ({ ...prev, role_name: v }));
+                // Mesma cortesia do handleInputChange: escolher limpa o erro.
+                setErrors((prev) => {
+                  const { role_name: _ignorado, ...resto } = prev;
+                  return resto;
+                });
+              }}
+              opcoes={roles.map((role) => ({ valor: role, rotulo: role }))}
+            />
+            <MensagemDeErro texto={errors.role_name} />
+          </div>
+
+          {/* Campo Setor */}
+          <div>
+            <RotuloDeCampo htmlFor="setor_id">
+              <IconeSetor className="mr-1 inline h-4 w-4" />
+              Setor
+            </RotuloDeCampo>
+            <Seletor
+              id="setor_id"
+              rotulo="Setor"
+              disabled={isReadOnly}
+              valor={formData.setor_id ? String(formData.setor_id) : ''}
+              aoMudar={(v) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  setor_id: v ? Number(v) : undefined,
+                }))
+              }
+              opcoes={[
+                { valor: '', rotulo: 'Nenhum' },
+                ...setores.map((setor) => ({
+                  valor: String(setor.id),
+                  rotulo: setor.nome,
+                })),
+              ]}
+            />
+          </div>
+
+          {/* Conta de serviço */}
+          <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                name="conta_de_servico"
+                checked={formData.conta_de_servico ?? false}
+                onChange={(e) =>
+                  setFormData((anterior) => ({
+                    ...anterior,
+                    conta_de_servico: e.target.checked,
                   }))
                 }
-                opcoes={[
-                  { valor: '', rotulo: 'Nenhum' },
-                  ...setores.map((setor) => ({
-                    valor: String(setor.id),
-                    rotulo: setor.nome,
-                  })),
-                ]}
+                disabled={isReadOnly}
+                className={`mt-0.5 h-4 w-4 shrink-0 accent-sinal ${
+                  isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                }`}
               />
-            </div>
-
-            {/* Conta de serviço */}
-            <div className="mb-6">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="conta_de_servico"
-                  checked={formData.conta_de_servico ?? false}
-                  onChange={(e) =>
-                    setFormData((anterior) => ({
-                      ...anterior,
-                      conta_de_servico: e.target.checked,
-                    }))
-                  }
-                  disabled={isReadOnly}
-                  className={`
-                    mt-0.5 w-4 h-4 rounded
-                    border-borda
-                    text-sinal focus:ring-2 focus:ring-sinal
-                    ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
-                  `}
-                />
-                <span>
-                  <span className="block text-sm font-medium text-conteudo-suave">
-                    Conta de serviço
-                  </span>
-                  <span className="block text-xs text-conteudo-tenue mt-0.5">
-                    Marque para contas que não são pessoas — painel de TV, login de
-                    integração. Elas continuam acessando o sistema, mas deixam de
-                    aparecer na lista de técnico responsável.
-                  </span>
+              <span>
+                <span className="block text-sm font-medium text-conteudo">
+                  Conta de serviço
                 </span>
-              </label>
-            </div>
+                <span className="mt-0.5 block text-xs text-conteudo-tenue">
+                  Marque para contas que não são pessoas — painel de TV, login de
+                  integração. Elas continuam acessando o sistema, mas deixam de
+                  aparecer na lista de técnico responsável.
+                </span>
+              </span>
+            </label>
+          </div>
 
-            {/* Informações de auditoria (apenas visualização) */}
-            {mode === 'view' && usuario && (
-              <div className="mb-6 p-4 bg-superficie-elevada rounded-lg">
-                <h3 className="text-sm font-medium text-conteudo-suave mb-2">
-                  Informações de Auditoria
-                </h3>
-                <div className="space-y-2 text-sm text-conteudo-suave">
-                  <div>
-                    <span className="font-medium">ID:</span> #{usuario.id}
-                  </div>
-                  <div>
-                    <span className="font-medium">Criado em:</span>{' '}
-                    {usuario.created_at 
-                      ? new Date(usuario.created_at).toLocaleString('pt-BR')
-                      : 'N/A'
-                    }
-                  </div>
+          {/* Informações de auditoria (apenas visualização) */}
+          {mode === 'view' && usuario && (
+            <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
+              <h3 className="mb-2 text-sm font-semibold text-conteudo">
+                Informações de Auditoria
+              </h3>
+              <dl className="space-y-1 text-sm">
+                <div>
+                  <dt className="inline font-medium text-conteudo-tenue">ID:</dt>{' '}
+                  <dd className="inline text-conteudo">#{usuario.id}</dd>
                 </div>
-              </div>
-            )}
-
-      </form>
+                <div>
+                  <dt className="inline font-medium text-conteudo-tenue">Criado em:</dt>{' '}
+                  <dd className="inline text-conteudo">
+                    {usuario.created_at
+                      ? new Date(usuario.created_at).toLocaleString('pt-BR')
+                      : 'N/A'}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </form>
 
         {/* A trilha fica ao lado, não abaixo: quem abre a conta para conferir
             quem mexeu nela precisa ver o cadastro e o histórico juntos. */}
         {mostrarHistorico && usuario && (
-          <aside className="lg:border-l lg:border-borda lg:pl-6">
+          <aside className="lg:border-l lg:border-borda lg:pl-5">
             <Rotulo como="h3" className="mb-1 block">
               Histórico da conta
             </Rotulo>

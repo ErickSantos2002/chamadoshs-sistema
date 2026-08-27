@@ -51,6 +51,10 @@ const dataHora = (valor?: string | null): string =>
  * O modal antes empilhava tudo separado só por espaço em branco, e as partes
  * se misturavam: não dava para ver onde a descrição terminava e os comentários
  * começavam. A moldura define o espaço de cada coisa.
+ *
+ * O fundo é o recuado (`superficie-elevada`), não o de card: o painel do modal
+ * JÁ é `bg-superficie`, e um bloco da mesma cor do painel não tem moldura
+ * nenhuma — só a linha da borda.
  */
 const Secao: React.FC<{
   titulo: string;
@@ -60,12 +64,12 @@ const Secao: React.FC<{
   <section
     className={
       destaque
-        ? 'rounded-lg border border-sucesso/30 bg-sucesso/10 p-4'
-        : 'rounded-lg border border-borda bg-superficie p-4'
+        ? 'rounded-xl border border-sucesso/30 bg-sucesso/10 p-4'
+        : 'rounded-xl border border-borda bg-superficie-elevada p-4'
     }
   >
     <h3
-      className={`mb-2 text-xs font-semibold uppercase tracking-wide ${
+      className={`mb-2 text-sm font-semibold ${
         destaque ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-conteudo-tenue'
       }`}
     >
@@ -271,7 +275,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       )}
 
       {erro && !carregando && (
-        <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+        <div className="rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
           {erro}
         </div>
       )}
@@ -307,7 +311,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                   {comentarios.map((c) => (
                     <li key={c.id} className="flex gap-2">
                       <Avatar nome={nome(c.usuario_id)} className="mt-0.5" />
-                      <div className="min-w-0 flex-1 rounded-lg bg-superficie-elevada px-3 py-2">
+                      <div className="min-w-0 flex-1 rounded-lg border border-borda bg-superficie px-3 py-2">
                         <div className="flex items-baseline justify-between gap-2">
                           <span className="text-sm font-medium text-conteudo">
                             {nome(c.usuario_id)}
@@ -325,7 +329,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 </ul>
               )}
 
-              <div className="mt-3 space-y-2 border-t border-borda-suave pt-3">
+              <div className="mt-3 space-y-2 border-t border-borda pt-3">
                 <Textarea
                   value={novoComentario}
                   onChange={(e) => setNovoComentario(e.target.value)}
@@ -349,7 +353,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
           </div>
 
           {/* Ficha */}
-          <aside className="space-y-4 rounded-lg border border-borda bg-superficie-base/50 p-4">
+          <aside className="space-y-4 rounded-xl border border-borda bg-superficie-elevada p-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variante={VARIANTE_STATUS[chamado.status]}>{chamado.status}</Badge>
               <Badge variante={VARIANTE_PRIORIDADE[chamado.prioridade]}>
@@ -367,7 +371,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 para chamado cancelado ou arquivado. */}
             <AcoesRapidas chamado={chamado} aoMudar={registrarMudanca} />
 
-            <dl className="space-y-3 border-t border-borda-suave pt-4 text-sm">
+            <dl className="space-y-3 border-t border-borda pt-4 text-sm">
               <Campo rotulo="Solicitante">
                 <span className="flex items-center gap-1.5">
                   <Avatar nome={nome(chamado.solicitante_id)} />
@@ -433,7 +437,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
             <Avaliacao
               chamado={chamado}
               aoAvaliar={registrarMudanca}
-              className="border-t border-borda-suave pt-4"
+              className="border-t border-borda pt-4"
             />
           </aside>
         </div>

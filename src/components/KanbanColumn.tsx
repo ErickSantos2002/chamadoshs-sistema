@@ -57,18 +57,20 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   };
 
   return (
-    <div className="flex flex-col rounded-xl border border-borda bg-superficie-base/60">
+    <div className="flex h-full min-w-[268px] flex-col overflow-hidden rounded-xl border border-borda bg-superficie-elevada">
       {/* Cabeçalho */}
-      <div className="border-b border-borda px-4 py-3">
+      <div className="shrink-0 border-b border-borda px-4 py-3">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 font-semibold text-conteudo">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-conteudo">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: colorDot }}
             />
             {title}
           </h3>
-          <span className="rounded-full bg-superficie-elevada px-2 py-0.5 text-xs font-semibold text-conteudo-suave">
+          {/* O contador fica na superfície de card: a coluna já é a superfície
+              recuada, e uma pastilha da mesma cor do fundo não seria pastilha. */}
+          <span className="shrink-0 rounded-full bg-superficie px-2 py-0.5 text-xs font-semibold text-conteudo-suave">
             {items.length}
           </span>
         </div>
@@ -80,13 +82,24 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           Aqueles 400px eram uma medida chutada do cabeçalho mais os filtros
           mais a barra de busca. Numa tela de 600px de altura sobravam 200px de
           coluna; abaixo de 400px o resultado é negativo, vira zero, e a coluna
-          deixa de mostrar qualquer card — sem erro, sem aviso.
-          Com `vh` o valor acompanha a tela e nunca chega a zero. O `main` já
-          rola por fora, então este teto serve só para manter o cabeçalho da
-          coluna à vista. */}
-      <div className="max-h-[60vh] space-y-2 overflow-y-auto p-3">
+          deixa de mostrar qualquer card — sem erro, sem aviso. O teto virou
+          `max-h-[60vh]`, que acompanhava a tela e nunca chegava a zero.
+
+          Agora não há teto nenhum: a coluna preenche a raia (`h-full`) e esta
+          lista fica com `min-h-0 flex-1`, ou seja, ela ocupa o que sobrar da
+          altura da coluna e rola por dentro. Some a conta e some junto o
+          efeito colateral do teto — com o quadro já limitado em altura pela
+          casca, `60vh` criava uma SEGUNDA barra de rolagem vertical dentro da
+          primeira, e deixava as seis colunas com alturas diferentes.
+
+          `min-h-0` não é enfeite: item de flex nasce com `min-height: auto` e
+          se recusa a encolher abaixo do próprio conteúdo. Sem ele, uma coluna
+          cheia empurra a altura da coluna inteira em vez de rolar. */}
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {items.length === 0 ? (
-          <p className="py-6 text-center text-sm text-conteudo-tenue">Nenhum chamado</p>
+          <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-borda py-10 text-sm text-conteudo-tenue">
+            Nenhum chamado
+          </div>
         ) : (
           items.map((chamado) => {
             const responsavel = chamado.tecnico_responsavel_id
@@ -100,8 +113,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 type="button"
                 onClick={() => aoAbrir(chamado)}
                 className="w-full space-y-2 rounded-lg border border-borda bg-superficie p-3 text-left
-                           transition-all hover:border-info/50 hover:shadow-md
-                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
+                           transition-all hover:border-sinal/50 hover:shadow-md
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal"
               >
                 {/* Protocolo e prioridade */}
                 <div className="flex items-center justify-between gap-2">
@@ -118,7 +131,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 </div>
 
                 {/* Título */}
-                <h4 className="line-clamp-2 font-semibold leading-snug text-conteudo">
+                <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-conteudo">
                   {chamado.titulo}
                 </h4>
 

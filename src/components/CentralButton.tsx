@@ -15,14 +15,7 @@ const CentralButton: React.FC = () => {
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="fixed bottom-6 right-6 z-50
-                 bg-superficie hover:bg-superficie-elevada
-                 border-2 border-info
-                 rounded-full
-                 shadow-lg hover:shadow-2xl
-                 transition-all duration-300 ease-in-out
-                 flex items-center justify-center
-                 group"
+        className="group fixed bottom-6 right-6 z-50 flex items-center justify-center rounded-full border border-borda bg-superficie shadow-lg transition-all duration-300 ease-in-out hover:bg-superficie-elevada hover:shadow-xl"
         style={{
           width: '64px',
           height: '64px',
@@ -30,41 +23,31 @@ const CentralButton: React.FC = () => {
         }}
         aria-label="Ir para Central HS"
       >
+        {/* Efeito de pulso (opcional) */}
+        <span
+          className="absolute inline-flex h-full w-full rounded-full bg-sinal/20 animate-ping"
+          style={{ animationDuration: '2s' }}
+        />
+
         {/* Logo */}
         <img
           src={logo}
           alt="Central HS"
-          className="w-10 h-10 object-contain transition-transform duration-300
-                   group-hover:rotate-12"
-        />
-
-        {/* Efeito de pulso (opcional) */}
-        <span className="absolute inline-flex h-full w-full rounded-full
-                       bg-sinal opacity-75 animate-ping"
-              style={{ animationDuration: '2s' }}
+          className="relative h-10 w-10 object-contain transition-transform duration-300 group-hover:rotate-12"
         />
       </button>
 
       {/* Tooltip */}
       {isHovered && (
         <div
-          className="fixed bottom-6 z-50
-                   bg-superficie-elevada
-                   text-white text-sm font-medium
-                   px-3 py-2 rounded-lg shadow-lg
-                   whitespace-nowrap
-                   animate-fadeIn"
+          className="animate-fadeIn fixed bottom-6 z-50 whitespace-nowrap rounded-lg border border-borda bg-superficie px-3 py-2 text-sm font-medium text-conteudo shadow-lg"
           style={{
             right: '90px',
           }}
         >
           Central HS
           {/* Seta do tooltip */}
-          <div
-            className="absolute top-1/2 -right-1
-                     w-2 h-2 bg-superficie-elevada
-                     transform rotate-45 -translate-y-1/2"
-          />
+          <div className="absolute top-1/2 -right-1 h-2 w-2 -translate-y-1/2 rotate-45 border-r border-t border-borda bg-superficie" />
         </div>
       )}
     </>

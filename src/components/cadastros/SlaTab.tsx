@@ -3,7 +3,7 @@ import { slaConfigsService } from '../../services/chamadoshsapi';
 import { PrioridadeEnum, SLAConfig } from '../../types/api';
 import { EXPEDIENTE, MINUTOS_POR_DIA_UTIL, formatarPrazo } from '../../lib/prazo';
 import { cn } from '../../lib/utils';
-import { Badge, Button, Input, Modal, VarianteBadge } from '../ui';
+import { Badge, Button, Input, Modal, RotuloDeCampo, VarianteBadge } from '../ui';
 import { IconeAlerta, IconeCarregando, IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
 
 interface SlaTabProps {
@@ -54,9 +54,7 @@ const CampoDePrazo: React.FC<{
   aoMudar: (minutos: number) => void;
 }> = ({ id, rotulo, valor, aoMudar }) => (
   <div>
-    <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-conteudo-suave">
-      {rotulo}
-    </label>
+    <RotuloDeCampo htmlFor={id}>{rotulo}</RotuloDeCampo>
     <Input
       id={id}
       type="number"
@@ -160,7 +158,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
 
   return (
     <div className="flex h-full flex-col gap-5 p-6">
-      <div>
+      <div className="shrink-0">
         <h2 className="text-xl font-semibold text-conteudo">Prazos de SLA</h2>
         <p className="mt-0.5 text-sm text-conteudo-tenue">
           Tempo máximo de primeira resposta e de resolução, por prioridade.
@@ -169,110 +167,117 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
       </div>
 
       {erro && (
-        <div className="flex items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
           <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {erro}
         </div>
       )}
 
-      {carregando ? (
-        <div className="flex items-center justify-center py-12 text-conteudo-tenue">
-          <IconeCarregando className="h-6 w-6 animate-spin" aria-hidden="true" />
-        </div>
-      ) : (
-        <div className="rounded-xl border border-borda bg-superficie">
-          {ordenadas.map((config, indice) => (
-            <div
-              key={config.prioridade}
-              className={cn(
-                'flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4',
-                indice > 0 && 'border-t border-borda-suave'
-              )}
-            >
-              <div className="w-24 shrink-0">
-                <Badge variante={VARIANTE[config.prioridade]}>{config.prioridade}</Badge>
-              </div>
-
-              <div className="flex min-w-[10rem] flex-1 flex-col gap-2">
-                <div
-                  className="h-1.5 w-full overflow-hidden rounded-full bg-superficie-elevada"
-                  title={`Resolução em ${formatarPrazo(config.minutos_resolucao)}`}
-                >
-                  <div
-                    className={cn('h-full rounded-full', BARRA[config.prioridade])}
-                    style={{
-                      width: `${(config.minutos_resolucao / maiorResolucao) * 100}%`,
-                    }}
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-                  <span className="flex items-center gap-1.5 text-conteudo">
-                    <IconeRelogio className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
-                    <span className="text-conteudo-tenue">Resposta</span>
-                    <strong className="font-semibold">
-                      {formatarPrazo(config.minutos_resposta)}
-                    </strong>
-                  </span>
-
-                  <span className="flex items-center gap-1.5 text-conteudo">
-                    <IconeEscudoConfere className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
-                    <span className="text-conteudo-tenue">Resolução</span>
-                    <strong className="font-semibold">
-                      {formatarPrazo(config.minutos_resolucao)}
-                    </strong>
-                  </span>
-
-                  <span className="flex items-center gap-1.5 text-conteudo-tenue">
-                    <IconeSino className="h-4 w-4" aria-hidden="true" />
-                    Atenção em {PERCENTUAL_ATENCAO}%
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                variante="secundario"
-                tamanho="sm"
-                onClick={() => abrirEdicao(config)}
-                aria-label={`Editar prazos de ${config.prioridade}`}
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto">
+        {carregando ? (
+          <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
+            <IconeCarregando className="h-6 w-6 animate-spin" aria-hidden="true" />
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
+            {ordenadas.map((config, indice) => (
+              <div
+                key={config.prioridade}
+                className={cn(
+                  'flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4',
+                  indice > 0 && 'border-t border-borda-suave'
+                )}
               >
-                <IconeEditar className="h-4 w-4" aria-hidden="true" />
-                Editar
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+                <div className="w-24 shrink-0">
+                  <Badge variante={VARIANTE[config.prioridade]}>{config.prioridade}</Badge>
+                </div>
 
-      <div className="rounded-xl border border-borda bg-superficie-base/50 p-5">
-        <h3 className="mb-2 text-sm font-semibold text-conteudo">Como o prazo é contado</h3>
-        <dl className="space-y-1.5 text-sm text-conteudo-suave">
-          <div>
-            <dt className="inline font-medium text-conteudo">Resposta:</dt>{' '}
-            <dd className="inline">
-              da abertura até o chamado sair de “Aberto”, ou seja, até alguém assumir.
-            </dd>
+                <div className="flex min-w-[10rem] flex-1 flex-col gap-2">
+                  <div
+                    className="h-1 w-full overflow-hidden rounded-full bg-superficie-elevada"
+                    title={`Resolução em ${formatarPrazo(config.minutos_resolucao)}`}
+                  >
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all duration-700',
+                        BARRA[config.prioridade]
+                      )}
+                      style={{
+                        width: `${(config.minutos_resolucao / maiorResolucao) * 100}%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                    <span className="flex items-center gap-1.5 text-conteudo">
+                      <IconeRelogio className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+                      <span className="text-conteudo-tenue">Resposta</span>
+                      <strong className="font-semibold">
+                        {formatarPrazo(config.minutos_resposta)}
+                      </strong>
+                    </span>
+
+                    <span className="flex items-center gap-1.5 text-conteudo">
+                      <IconeEscudoConfere className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+                      <span className="text-conteudo-tenue">Resolução</span>
+                      <strong className="font-semibold">
+                        {formatarPrazo(config.minutos_resolucao)}
+                      </strong>
+                    </span>
+
+                    <span className="flex items-center gap-1.5 text-conteudo-tenue">
+                      <IconeSino className="h-4 w-4" aria-hidden="true" />
+                      Atenção em {PERCENTUAL_ATENCAO}%
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  variante="secundario"
+                  tamanho="sm"
+                  onClick={() => abrirEdicao(config)}
+                  aria-label={`Editar prazos de ${config.prioridade}`}
+                >
+                  <IconeEditar className="h-4 w-4" aria-hidden="true" />
+                  Editar
+                </Button>
+              </div>
+            ))}
           </div>
-          <div>
-            <dt className="inline font-medium text-conteudo">Resolução:</dt>{' '}
-            <dd className="inline">da abertura até o chamado ser resolvido ou fechado.</dd>
+        )}
+
+        <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
+          <div className="border-b border-borda px-5 py-4">
+            <h3 className="text-sm font-semibold text-conteudo">Como o prazo é contado</h3>
           </div>
-          <div>
-            <dt className="inline font-medium text-conteudo">Atenção:</dt>{' '}
-            <dd className="inline">
-              ao consumir {PERCENTUAL_ATENCAO}% do prazo, o chamado passa a aparecer em
-              amarelo no quadro. Esse percentual é fixo.
-            </dd>
-          </div>
-          <div>
-            <dt className="inline font-medium text-conteudo">Pausa:</dt>{' '}
-            <dd className="inline">
-              o tempo em “Aguardando” não conta. Fora do expediente também não —
-              um chamado aberto às 16h50 com prazo de 1h vence às 08h50 do dia
-              seguinte.
-            </dd>
-          </div>
-        </dl>
+          <dl className="space-y-1.5 p-5 text-sm text-conteudo-suave">
+            <div>
+              <dt className="inline font-medium text-conteudo">Resposta:</dt>{' '}
+              <dd className="inline">
+                da abertura até o chamado sair de “Aberto”, ou seja, até alguém assumir.
+              </dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-conteudo">Resolução:</dt>{' '}
+              <dd className="inline">da abertura até o chamado ser resolvido ou fechado.</dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-conteudo">Atenção:</dt>{' '}
+              <dd className="inline">
+                ao consumir {PERCENTUAL_ATENCAO}% do prazo, o chamado passa a aparecer em
+                amarelo no quadro. Esse percentual é fixo.
+              </dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-conteudo">Pausa:</dt>{' '}
+              <dd className="inline">
+                o tempo em “Aguardando” não conta. Fora do expediente também não —
+                um chamado aberto às 16h50 com prazo de 1h vence às 08h50 do dia
+                seguinte.
+              </dd>
+            </div>
+          </dl>
+        </div>
       </div>
 
       <Modal

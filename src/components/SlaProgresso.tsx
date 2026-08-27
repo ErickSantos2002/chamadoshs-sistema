@@ -68,7 +68,10 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
     <div className="space-y-1" title={detalhe}>
       <div className="h-1 w-full overflow-hidden rounded-full bg-superficie-elevada">
         <div
-          className={cn('h-full rounded-full transition-all', COR_DA_BARRA[sla.situacao])}
+          className={cn(
+            'h-full rounded-full transition-all duration-700',
+            COR_DA_BARRA[sla.situacao]
+          )}
           style={{ width: `${largura}%` }}
         />
       </div>

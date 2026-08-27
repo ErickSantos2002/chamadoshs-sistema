@@ -417,7 +417,9 @@ const Chamados: React.FC = () => {
           para o canto arredondado cortar o conteúdo, e a rolagem lateral no
           rolador de dentro. */}
       <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-borda">
-        <div className="h-full overflow-auto">
+        {/* Só na horizontal. A vertical é de cada coluna, por dentro —
+            `overflow-auto` aqui dava duas barras verticais aninhadas. */}
+        <div className="h-full overflow-x-auto">
           <div className="flex h-full min-w-max gap-4 p-4">
 
             {/* === COLUNA ABERTO === */}

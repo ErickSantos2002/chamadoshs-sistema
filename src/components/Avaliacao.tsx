@@ -110,7 +110,9 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
             {[1, 2, 3, 4, 5].map((n) => (
               <span key={n}>{estrela(n <= nota)}</span>
             ))}
-            <span className="ml-1 text-sm text-conteudo-suave">{nota} de 5</span>
+            <span className="ml-1 rounded bg-superficie-elevada px-2 py-0.5 text-[11px] text-conteudo-tenue">
+              {nota} de 5
+            </span>
           </>
         ) : (
           <p className="text-sm text-conteudo-tenue">Aguardando avaliação do solicitante</p>
@@ -132,17 +134,21 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
             // O rótulo diz a nota inteira, não "estrela 3": quem usa leitor de
             // tela não vê o preenchimento das anteriores.
             aria-label={`Avaliar com ${n} de 5`}
-            className="transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50
-                       focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sinal"
+            className="rounded-lg transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal"
           >
             {estrela(sobre !== null ? n <= sobre : n <= (nota ?? 0))}
           </button>
         ))}
 
-        {nota && <span className="ml-1 text-sm text-conteudo-suave">{nota} de 5</span>}
+        {nota && (
+          <span className="ml-1 rounded bg-superficie-elevada px-2 py-0.5 text-[11px] text-conteudo-tenue">
+            {nota} de 5
+          </span>
+        )}
       </div>
 
-      <p className="mt-1 text-xs text-conteudo-tenue">
+      <p className="mt-2 text-xs text-conteudo-tenue">
         {nota
           ? 'Clique nas estrelas para alterar sua avaliação'
           : 'Como foi o atendimento? Sua nota ajuda a melhorar.'}
