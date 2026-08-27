@@ -19,7 +19,7 @@ export const Card: React.FC<CardProps> = ({ children, className, onClick }) => {
   const clicavel = onClick !== undefined;
 
   const conteudo = cn(
-    'relative border border-borda bg-superficie transition-colors',
+    'relative rounded-xl border border-borda bg-superficie transition-colors',
     clicavel &&
       'w-full cursor-pointer text-left hover:border-sinal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sinal',
     className
@@ -53,12 +53,12 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
 }) => (
   <div
     className={cn(
-      'flex items-start justify-between gap-4 border-b border-borda-suave px-5 py-4',
+      'flex items-start justify-between gap-4 border-b border-borda px-5 py-4',
       className
     )}
   >
     <div>
-      <h3 className="font-semibold text-conteudo">{titulo}</h3>
+      <h3 className="text-base font-semibold text-conteudo">{titulo}</h3>
       {descricao && <p className="mt-0.5 text-sm text-conteudo-tenue">{descricao}</p>}
     </div>
     {acao}

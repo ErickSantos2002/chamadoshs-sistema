@@ -239,7 +239,7 @@ export const Seletor: React.FC<SeletorProps> = ({
           style={{ position: 'fixed', ...posicao, zIndex: 9999 }}
           // `overscroll-contain`: chegar ao fim da lista não pode emendar a
           // rolagem na página atrás — que fecharia a lista pelo caminho.
-          className="max-h-72 overflow-auto overscroll-contain border border-borda-forte bg-superficie-elevada shadow-2xl focus:outline-none"
+          className="max-h-72 overflow-auto overscroll-contain rounded-lg border border-borda bg-superficie shadow-xl focus:outline-none"
         >
           {opcoes.map((opcao, indice) => {
             const ehEscolhida = opcao.valor === valor;
@@ -290,15 +290,18 @@ export const Seletor: React.FC<SeletorProps> = ({
         onClick={() => (aberto ? fechar(false) : abrir(indiceAtual))}
         onKeyDown={aoTeclarNoGatilho}
         className={cn(
-          'flex w-full items-center gap-2 border px-3 py-2 text-sm transition-colors',
-          'bg-superficie-base text-conteudo',
+          // A mesma forma do `Input`: o gatilho fica ao lado de campos em
+          // todo formulário, e um deles arredondado com o outro reto é o que
+          // mais denuncia um kit meio migrado.
+          'flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+          'bg-superficie text-conteudo',
           'disabled:cursor-not-allowed disabled:opacity-60',
           aberto
-            ? 'border-sinal ring-1 ring-sinal'
+            ? 'border-transparent ring-2 ring-sinal'
             : invalido
               ? 'border-perigo'
-              : 'border-borda hover:border-borda-forte',
-          'focus:border-sinal focus:outline-none focus:ring-1 focus:ring-sinal'
+              : 'border-borda hover:border-conteudo-tenue',
+          'focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal'
         )}
       >
         {escolhida?.cor && (

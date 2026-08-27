@@ -114,20 +114,20 @@ export const Modal: React.FC<ModalProps> = ({
         // Com o rodapé fixo ele passaria a separar os dois campos de "Nova
         // Categoria" dos botões por meia tela de nada.
         className={cn(
-          'relative flex max-h-[92vh] w-full flex-col border border-borda bg-superficie shadow-2xl',
+          'relative flex max-h-[92vh] w-full flex-col rounded-xl border border-borda bg-superficie shadow-xl',
           LARGURAS[largura]
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-borda px-5 py-4">
           <div>
-            <h2 className="text-lg font-bold text-conteudo">{titulo}</h2>
+            <h2 className="text-base font-semibold text-conteudo">{titulo}</h2>
             {descricao && <p className="mt-0.5 text-sm text-conteudo-tenue">{descricao}</p>}
           </div>
           <button
             type="button"
             onClick={aoFechar}
             aria-label="Fechar"
-            className="p-1 text-conteudo-tenue transition-colors hover:bg-superficie-elevada hover:text-conteudo"
+            className="rounded-lg p-1 text-conteudo-tenue transition-colors hover:bg-superficie-elevada hover:text-conteudo"
           >
             <IconeFechar className="h-5 w-5" aria-hidden="true" />
           </button>
