@@ -14,11 +14,19 @@ import { GRUPOS_DO_MENU, ITENS_DO_MENU } from './navegacao';
  *
  * Um teste de renderização diria o que cada componente desenha, e este projeto
  * não tem biblioteca para isso. O que dá para travar sem ela é a causa: que
- * exista uma lista só, e que nenhum dos dois menus volte a decidir por perfil.
+ * exista uma lista só, e que nenhum menu volte a decidir por perfil.
+ *
+ * ── Por que agora há um arquivo só nesta lista ────────────────────────
+ *
+ * Eram dois — a `Sidebar`, a partir de `lg`, e a gaveta dentro do `Header`.
+ * Na migração para a casca do HelpHS os dois viraram um: a mesma barra que
+ * fica na lateral no desktop desliza para dentro como gaveta no celular. O
+ * defeito que este arquivo persegue passou a ser impossível por construção,
+ * e o teste continua aqui para o caso de alguém reintroduzir um segundo menu.
  */
 
 const SRC = join(__dirname, '..');
-const MENUS = ['components/Sidebar.tsx', 'components/Header.tsx'];
+const MENUS = ['components/layout/Sidebar.tsx'];
 
 const ler = (caminho: string) => readFileSync(join(SRC, caminho), 'utf-8');
 
@@ -91,17 +99,20 @@ describe('itens do menu', () => {
     }
   });
 
-  it('os dois menus leem a mesma lista', () => {
+  it('o menu lê a lista do sistema', () => {
     for (const arquivo of MENUS) {
-      // O que se exige é o USO — `ITENS_DO_MENU.map(` — e não a menção. Um
+      // O que se exige é o USO — `.map(` sobre a lista — e não a menção. Um
       // `toContain` do nome se satisfazia com o import, que sobra intacto
       // quando alguém volta a montar a lista à mão; e com comentários no meio,
       // até uma citação em prosa bastava. Sem comentários e com o `.map`, só o
       // menu de verdade lendo a lista de verdade passa.
+      //
+      // `GRUPOS_DO_MENU` vale tanto quanto `ITENS_DO_MENU` porque ele é
+      // DERIVADO dela, e o teste acima trava essa derivação.
       expect(
         semComentarios(ler(arquivo)),
         `${arquivo} monta a própria lista`
-      ).toMatch(/ITENS_DO_MENU\s*\.map\(/);
+      ).toMatch(/(ITENS_DO_MENU|GRUPOS_DO_MENU)\s*\.map\(/);
     }
   });
 
@@ -114,8 +125,9 @@ describe('itens do menu', () => {
     for (const arquivo of MENUS) {
       const codigo = semComentarios(ler(arquivo));
 
-      // O Header exibe o perfil ao lado do nome, e isso pode ficar. O que não
-      // pode voltar é COMPARAR o perfil para montar a navegação.
+      // O Topbar exibe o perfil ao lado do nome, e isso pode ficar — ele não
+      // está nesta lista. O que não pode voltar é COMPARAR o perfil para
+      // montar a navegação.
       //
       // Duas guardas, porque a comparação tem mais de uma forma. `[!=]=` cobre
       // `===`, `!==` e as versões frouxas. E qualquer gate por perfil precisa

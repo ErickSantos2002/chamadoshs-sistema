@@ -3,73 +3,65 @@ import { useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import './styles/index.css'; // Importa o Tailwind e estilos globais
 import AppRoutes from './router';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
+import AppLayout from './components/layout/AppLayout';
 import CentralButton from './components/CentralButton';
 import NovidadesModal from './components/NovidadesModal';
 import { useNovidades } from './hooks/useNovidades';
 
-// Rotas onde o layout (Header/Sidebar) não deve aparecer (ex: login)
+// Rotas onde a casca (barra lateral e topo) não deve aparecer.
 const noLayoutRoutes = ['/login'];
+
+/**
+ * O toast é o mesmo nas duas situações — com casca e sem — então a
+ * configuração fica num lugar só. Estava duplicada, e as duas cópias já
+ * podiam ter divergido sem ninguém notar.
+ *
+ * As cores saem de CSS variables porque o react-hot-toast recebe um objeto de
+ * estilo em JS e não enxerga classe do Tailwind.
+ */
+const AvisosFlutuantes: React.FC = () => (
+  <Toaster
+    position="top-right"
+    containerStyle={{ top: 80, zIndex: 9999 }}
+    toastOptions={{
+      duration: 4000,
+      style: {
+        background: 'var(--toast-bg)',
+        color: 'var(--toast-color)',
+        border: '1px solid var(--toast-border)',
+      },
+      success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+      error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+    }}
+  />
+);
 
 const App: React.FC = () => {
   const location = useLocation();
   const hideLayout = noLayoutRoutes.includes(location.pathname);
 
-  // O aviso vive aqui, e não na Sidebar, porque a Sidebar some abaixo de
-  // `lg` — quem usa no celular nunca veria novidade nenhuma.
+  // O aviso vive aqui, e não dentro da barra lateral, porque quem abre a
+  // gaveta no celular precisa que ele já esteja montado para poder abrir.
   const novidades = useNovidades();
 
   if (hideLayout) {
-    // 🔥 Quando for rota sem layout, renderiza só as rotas
     return (
       <>
         <AppRoutes />
-        <Toaster
-          position="top-right"
-          containerStyle={{
-            top: 80,
-            zIndex: 9999,
-          }}
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: 'var(--toast-bg)',
-              color: 'var(--toast-color)',
-              border: '1px solid var(--toast-border)',
-            },
-            success: {
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
+        <AvisosFlutuantes />
       </>
     );
   }
 
   return (
     <>
-      <div className="h-screen flex flex-col bg-superficie-base text-conteudo transition-colors">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar
-            aoAbrirNovidades={novidades.abrir}
-            temNovidade={novidades.temNovidade}
-          />
-          <main className="flex-1 overflow-auto bg-superficie-base transition-colors">
-            <AppRoutes />
-          </main>
-        </div>
-      </div>
+      <AppLayout
+        aoAbrirNovidades={novidades.abrir}
+        temNovidade={novidades.temNovidade}
+        versao={novidades.versaoAtual}
+      >
+        <AppRoutes />
+      </AppLayout>
 
       <NovidadesModal
         aberto={novidades.aberto}
@@ -77,36 +69,10 @@ const App: React.FC = () => {
         versaoAtual={novidades.versaoAtual}
       />
 
-      {/* Botão Flutuante Central HS */}
+      {/* Botão flutuante da Central HS */}
       <CentralButton />
 
-      <Toaster
-        position="top-right"
-        containerStyle={{
-          top: 80,
-          zIndex: 9999,
-        }}
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'var(--toast-bg)',
-            color: 'var(--toast-color)',
-            border: '1px solid var(--toast-border)',
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+      <AvisosFlutuantes />
     </>
   );
 };
