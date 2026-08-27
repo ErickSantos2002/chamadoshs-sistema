@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.7.1',
+    data: '2026-08-27',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'O quadro de chamados voltou a mostrar todas as colunas. Com o visual novo ele abria com uma coluna só ocupando a tela inteira, e as outras ficavam escondidas atrás da barra de rolagem — era preciso arrastar para o lado para achar o resto do quadro.',
+      },
+    ],
+  },
+  {
     versao: '1.7.0',
     data: '2026-08-27',
     itens: [
