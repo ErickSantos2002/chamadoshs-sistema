@@ -35,13 +35,20 @@ describe('ícones', () => {
     expect(html).toMatch(/<(path|circle|rect|line|polyline|polygon)\b/);
   });
 
-  it.each(TODOS)('%s segue a linguagem do console', (_nome, Icone) => {
+  // O que este teste protege não é UM traço, é a existência de um só.
+  //
+  // Ele já exigiu ponta em esquadro e junção viva, que era a linguagem do
+  // console — enquanto a escala de cantos do sistema era zerada. A escala
+  // voltou ao padrão para o ChamadosHS falar a mesma língua do HelpHS, e o
+  // traço acompanhou. O valor mudou; o motivo do teste, não: um ícone
+  // esquecido com o desenho antigo destoa sem que ninguém saiba dizer por quê.
+  it.each(TODOS)('%s segue a mesma linguagem de traço', (_nome, Icone) => {
     const html = renderToStaticMarkup(createElement(Icone));
 
-    expect(html).toContain('stroke-linecap="square"');
-    expect(html).toContain('stroke-linejoin="miter"');
-    // 1.5 e não 2: o traço fica ao lado de texto pequeno o tempo todo.
-    expect(html).toContain('stroke-width="1.5"');
+    expect(html).toContain('stroke-linecap="round"');
+    expect(html).toContain('stroke-linejoin="round"');
+    // 1.75, que é o peso dos ícones do menu do HelpHS.
+    expect(html).toContain('stroke-width="1.75"');
   });
 
   it('o tamanho vem de fora, e a cor vem do texto', () => {
