@@ -122,3 +122,58 @@ describe('classes de fundo', () => {
     expect(infratores).toEqual([]);
   });
 });
+
+/**
+ * O mesmo defeito dos dois fundos, noutra propriedade.
+ *
+ * O quadro de chamados saiu do redesenho com `min-h-[26rem] min-h-0` no mesmo
+ * elemento. As duas escrevem `min-height`, e quem vencia era a ordem das
+ * regras no CSS gerado — não a ordem no atributo. Ninguém pega isso em revisão
+ * pelo mesmo motivo do caso anterior: as duas parecem uma correção aplicada.
+ *
+ * A varredura fica nas famílias que mapeiam para UMA propriedade só e sem
+ * ambiguidade. `border-l-4 border-borda` é par legítimo (largura e cor), e
+ * `p-2 px-4` é sobrescrita deliberada — nenhum dos dois entra aqui.
+ */
+const FAMILIAS_EXCLUSIVAS = ['min-h', 'min-w', 'max-h', 'max-w'];
+
+/**
+ * Classes de uma família, ignorando as que têm variante.
+ *
+ * Variante (`sm:`, `dark:`, `hover:`) é intenção: mudar a medida noutro
+ * tamanho de tela ou noutro estado é o uso normal do Tailwind, não disputa.
+ */
+function daFamilia(classes: string, familia: string): string[] {
+  return classes
+    .split(/\s+/)
+    .filter((c) => !c.includes(':'))
+    .filter((c) => new RegExp(`^${familia}-`).test(c));
+}
+
+describe('medidas duplicadas', () => {
+  const arquivos = arquivosDeCodigo(RAIZ);
+
+  it.each(FAMILIAS_EXCLUSIVAS)(
+    'nenhum elemento tem dois %s- disputando',
+    (familia) => {
+      const infratores: string[] = [];
+
+      for (const arquivo of arquivos) {
+        const conteudo = readFileSync(arquivo, 'utf-8');
+
+        for (const casamento of conteudo.matchAll(CLASSNAMES)) {
+          const classes = casamento[1] ?? casamento[2] ?? '';
+          const disputa = daFamilia(classes, familia);
+
+          if (disputa.length > 1) {
+            infratores.push(
+              `${arquivo.replace(RAIZ, 'src')}: ${disputa.join(' + ')}`
+            );
+          }
+        }
+      }
+
+      expect(infratores).toEqual([]);
+    }
+  );
+});

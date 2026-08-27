@@ -425,11 +425,28 @@ const Chamados: React.FC = () => {
           colunas chega perto de zero — a tela abria sem mostrar chamado
           nenhum, sem barra de rolagem e sem aviso. Com um piso, o que não
           couber passa a empurrar o `<main>`, que rola. */}
-      <div className="min-h-[26rem] min-h-0 flex-1 overflow-hidden rounded-2xl border border-borda bg-superficie-elevada/50">
+      {/* `min-h-[26rem]` sozinho, sem `min-h-0` ao lado. As duas classes
+          escrevem `min-height` no mesmo elemento e quem vencia era a ordem do
+          CSS gerado, não a ordem no atributo — a mesma armadilha que
+          `estilos.test.ts` já pega para `bg-*`. E o piso basta: ele também
+          derruba o `min-height: auto` que todo item de flex traz de fábrica,
+          que era o motivo de alguém ter posto `min-h-0` junto. */}
+      <div className="min-h-[26rem] flex-1 overflow-hidden rounded-2xl border border-borda bg-superficie-elevada/50">
         {/* Só na horizontal. A vertical é de cada coluna, por dentro —
             `overflow-auto` aqui dava duas barras verticais aninhadas. */}
         <div className="h-full overflow-x-auto">
-          <div className="flex h-full min-w-max gap-3 p-3">
+          {/* Sem `min-w-max`. Ele mandava a fileira ser tão larga quanto o
+              conteúdo, e as raias são `flex-1`: numa fileira de largura
+              max-content, todo item que cresce recebe a fração do MAIOR deles,
+              e as seis raias esticavam juntas. O resultado era o quadro
+              aparecendo com uma coluna só ocupando a tela inteira e as outras
+              cinco jogadas para fora, atrás da barra de rolagem.
+
+              Sem ele a fileira tem a largura do quadro. As raias dividem esse
+              espaço e param de encolher nos 268px de `min-w`; a partir daí a
+              fileira transborda e a rolagem horizontal entra — que era o
+              comportamento pretendido desde o começo. */}
+          <div className="flex h-full gap-3 p-3">
 
             {/* === COLUNA ABERTO === */}
             <div className={raia}>
