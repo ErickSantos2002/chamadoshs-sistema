@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Colchetes } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import CategoriaModal from './CategoriaModal';
 import { IconeAlerta, IconeApagar, IconeBusca, IconeEditar, IconeEtiqueta, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima } from '../ui/icones';
@@ -189,7 +188,6 @@ const CategoriasTab: React.FC = () => {
 
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
-        <Colchetes />
         {loading && !categorias.length ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-conteudo-tenue">

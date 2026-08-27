@@ -21,14 +21,23 @@ interface ColchetesProps {
 /**
  * Os quatro colchetes de canto do painel.
  *
- * É o motivo que atravessa todas as telas e liga o sistema à tela de login.
- * Traço de 1px, sem brilho constante: o login dura cinco segundos e pode se
- * dar ao luxo de uma entrada; o quadro de chamados fica aberto oito horas, e
- * o que pisca nele vira irritação por volta das dez da manhã.
+ * ── Em vias de sair ───────────────────────────────────────────────────
  *
- * Só entra em PAINEL — modal, coluna, seção. Se cada card pequeno tiver os
- * seus, um painel com oito cards vira trinta e dois riscos e o traço deixa de
- * significar "isto é uma superfície" para virar textura.
+ * Era o motivo que atravessava todas as telas: doze painéis o desenhavam, do
+ * quadro de chamados ao modal de cadastro. O HelpHS não tem nada equivalente,
+ * e enquanto os dois sistemas precisarem parecer da mesma família, um traço
+ * que existe só de um lado é o que denuncia que não são.
+ *
+ * Os doze saíram. Sobrou UM: a tela de login, que é a única com a fachada de
+ * console inteira — a malha, a vinheta e a varredura de entrada. Tirar só o
+ * colchete de lá deixaria aquela tela meio console, que é pior que qualquer
+ * um dos dois extremos. Ela é redesenhada por inteiro na migração do Login, e
+ * este arquivo sai junto.
+ *
+ * Não acrescente uso novo.
+ *
+ * Traço de 1px, sem brilho constante: o login dura cinco segundos e pode se
+ * dar ao luxo de uma entrada.
  *
  * Puramente decorativo: `aria-hidden` porque não há o que anunciar, e
  * `pointer-events-none` para não roubar clique da borda do painel. Exige que

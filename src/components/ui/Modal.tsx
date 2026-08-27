@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
 import { primeiroCampoFocavel } from '../../lib/foco';
-import { Colchetes } from './Colchetes';
 import { IconeFechar } from './icones';
 
 interface ModalProps {
@@ -119,10 +118,6 @@ export const Modal: React.FC<ModalProps> = ({
           LARGURAS[largura]
         )}
       >
-        {/* Modal é painel por definição: é a superfície de trabalho do
-            momento, e não existem oito dele na tela. */}
-        <Colchetes />
-
         <div className="flex items-start justify-between gap-4 border-b border-borda px-5 py-4">
           <div>
             <h2 className="text-lg font-bold text-conteudo">{titulo}</h2>

@@ -18,7 +18,7 @@ import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
 import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
-import { Colchetes, Rotulo, Seletor } from '../components/ui';
+import { Rotulo, Seletor } from '../components/ui';
 import { IconeAlerta, IconeArquivar, IconeAtividade, IconeCarregando, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
 import {
   corDaPrioridade,
@@ -753,7 +753,6 @@ const Dashboard: React.FC = () => {
 
           {/* Gráfico de Status */}
           <div className="relative border border-borda bg-superficie p-6 transition-colors">
-            <Colchetes />
             <h3 className="text-lg font-semibold text-conteudo mb-4">
               Chamados por Status
             </h3>
@@ -803,7 +802,6 @@ const Dashboard: React.FC = () => {
 
           {/* Gráfico de Prioridade */}
           <div className="relative border border-borda bg-superficie p-6 transition-colors">
-            <Colchetes />
             <h3 className="text-lg font-semibold text-conteudo mb-4">
               Chamados por Prioridade
             </h3>
@@ -843,7 +841,6 @@ const Dashboard: React.FC = () => {
         {/* Top 5 Categorias */}
         {metricas.porCategoria.length > 0 && (
           <div className="relative border border-borda bg-superficie p-6 mb-6 transition-colors">
-            <Colchetes />
             <h3 className="text-lg font-semibold text-conteudo mb-4">
               Top 5 Categorias
             </h3>
@@ -888,7 +885,6 @@ const Dashboard: React.FC = () => {
 
         {/* Tabela de Chamados Recentes */}
         <div className="relative border border-borda bg-superficie p-6 transition-colors">
-          <Colchetes />
           <h3 className="text-lg font-semibold text-conteudo mb-4">
             Chamados Recentes
           </h3>

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Colchetes } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import SetorModal from './SetorModal';
 import { IconeAlerta, IconeBusca, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor } from '../ui/icones';
@@ -201,7 +200,6 @@ const SetoresTab: React.FC = () => {
 
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
-        <Colchetes />
         {loading && !setores.length ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-conteudo-tenue">

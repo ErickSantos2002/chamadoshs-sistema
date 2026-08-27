@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Button, Colchetes, Input, Modal, RotuloDeCampo } from '../ui';
+import { Button, Input, Modal, RotuloDeCampo } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
@@ -281,7 +281,6 @@ const UsuariosTab: React.FC = () => {
 
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
-        <Colchetes />
         {loading && !usuarios.length ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-conteudo-tenue">

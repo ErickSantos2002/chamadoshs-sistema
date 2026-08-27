@@ -9,7 +9,7 @@ import {
   TrilhaComFalha,
   TrilhaVazia,
 } from '../components/EstadosDaTrilha';
-import { Button, Colchetes, Rotulo, RotuloDeCampo, Seletor } from '../components/ui';
+import { Button, Rotulo, RotuloDeCampo, Seletor } from '../components/ui';
 import type { EventoDeAuditoria } from '../types/api';
 import { IconeRecarregar, IconeTrilha } from '../components/ui/icones';
 
@@ -168,7 +168,6 @@ const Auditoria: React.FC = () => {
 
       {/* Filtros */}
       <div className="relative border border-borda bg-superficie p-4">
-        <Colchetes />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             {/* Sem `htmlFor`: o seletor não é mais um `<select>` com id, e sim
@@ -254,8 +253,6 @@ const Auditoria: React.FC = () => {
 
       {/* Lista */}
       <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
-        <Colchetes />
-
         {/* Os três estados vêm de `EstadosDaTrilha`, compartilhados com o painel
             de histórico do modal de usuário. O que é específico desta tela — os
             três vazios diferentes, logo abaixo — continua aqui. */}
