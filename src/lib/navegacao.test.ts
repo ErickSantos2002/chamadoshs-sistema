@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ITENS_DO_MENU } from './navegacao';
+import { GRUPOS_DO_MENU, ITENS_DO_MENU } from './navegacao';
 
 /**
  * O menu tinha duas listas, e por isso duas verdades.
@@ -60,6 +60,34 @@ describe('itens do menu', () => {
 
     for (const item of ITENS_DO_MENU) {
       expect(rotas, `${item.to} não é rota`).toContain(item.to);
+    }
+  });
+
+  /**
+   * A forma agrupada não pode virar uma segunda lista escrita à mão.
+   *
+   * É exatamente assim que a divergência anterior nasceu: uma cópia da
+   * decisão, num arquivo que ninguém lembra de abrir quando acrescenta uma
+   * área. Aqui a checagem é de conteúdo — se `GRUPOS_DO_MENU` deixar de
+   * conter os mesmos destinos, na mesma ordem, alguém rompeu a derivação.
+   */
+  it('os grupos são a mesma lista, agrupada', () => {
+    const nosGrupos = GRUPOS_DO_MENU.flatMap((s) => s.itens.map((i) => i.to));
+
+    expect([...nosGrupos].sort()).toEqual(
+      [...ITENS_DO_MENU.map((i) => i.to)].sort()
+    );
+
+    // Dentro de cada grupo, a ordem é a da lista original.
+    for (const secao of GRUPOS_DO_MENU) {
+      expect(secao.itens).toEqual(
+        ITENS_DO_MENU.filter((i) => i.grupo === secao.grupo)
+      );
+    }
+
+    // Grupo vazio viraria um título sozinho na tela.
+    for (const secao of GRUPOS_DO_MENU) {
+      expect(secao.itens.length, `grupo ${secao.grupo} vazio`).toBeGreaterThan(0);
     }
   });
 
