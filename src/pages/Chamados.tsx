@@ -217,7 +217,7 @@ const Chamados: React.FC = () => {
 
   return (
     <div className="min-h-full bg-superficie-base transition-colors">
-      <div className="p-6">
+      <div>
 
         {/* Cabeçalho: título, busca, filtros e ação, numa faixa só.
             Os filtros eram um painel que abria e fechava — escondido por

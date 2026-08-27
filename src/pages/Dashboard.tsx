@@ -430,7 +430,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-full bg-superficie-base transition-colors">
-      <div className="p-6">
+      <div>
 
         {/* Cabeçalho */}
         <div className="relative border border-borda bg-superficie transition-colors">

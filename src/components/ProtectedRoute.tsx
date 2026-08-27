@@ -29,7 +29,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      // `min-h-full`, e não `min-h-screen`: isto é desenhado DENTRO do
+      // `<main>`, que já desconta a faixa do topo e o próprio padding. Com
+      // a altura da viewport inteira, o "Carregando" ficava fora do centro
+      // e a tela ganhava uma barra de rolagem enquanto a sessão era lida.
+      <div className="flex items-center justify-center min-h-full">
         <span className="text-conteudo-tenue text-lg">Carregando...</span>
       </div>
     );

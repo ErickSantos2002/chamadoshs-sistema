@@ -146,7 +146,7 @@ const Auditoria: React.FC = () => {
   const talvezTenhaMais = (eventos?.length ?? 0) === POR_PAGINA;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
+    <div className="flex h-full flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <IconeTrilha className="h-6 w-6 text-conteudo-tenue" aria-hidden="true" />

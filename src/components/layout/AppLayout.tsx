@@ -30,17 +30,20 @@ interface AppLayoutProps {
  * (`router.tsx`), e trocar isso mexeria em roteamento para não mudar nada na
  * tela. A casca recebe a página como filho e o roteamento fica onde está.
  *
- * ── O padding ainda NÃO mora aqui ─────────────────────────────────────
+ * ── O padding mora aqui ───────────────────────────────────────────────
  *
- * No HelpHS o `<main>` carrega `p-4 md:p-6` e as páginas começam coladas na
- * borda. Aqui todas as onze páginas aplicam o próprio `p-6` no primeiro
- * `<div>`, e a soma daria 48px em volta de tudo — uma regressão visível em
- * cada tela, no mesmo passo que só deveria trocar a casca.
+ * `p-4 md:p-6`, como no HelpHS: 16px no celular, 24px a partir de `md`. As
+ * páginas começam coladas na borda e não repetem mais o próprio `p-6` — eram
+ * dez cópias da mesma decisão, e mudar o respiro do sistema exigia abrir dez
+ * arquivos.
  *
- * O padding não pode migrar página a página: no instante em que ele entra
- * aqui, quem ainda tem o seu fica com o dobro. Ou some de todas de uma vez,
- * ou de nenhuma. Ele entra junto com a migração das páginas, num passo
- * mecânico só de espaçamento.
+ * A migração teve de ser num passo só: enquanto o padding estivesse aqui E na
+ * página, o espaçamento dobrava. Não havia como fazer tela a tela.
+ *
+ * O fundo também é daqui. Antes cada página pintava `bg-superficie-base` num
+ * `<div>` de moldura; agora o `<main>` pinta, e a calha de 24px em volta do
+ * conteúdo tem a cor certa — sem isso ela mostraria o fundo da casca por trás
+ * e apareceria como um quadro de tom diferente em volta de cada tela.
  */
 export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
@@ -83,8 +86,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           recolhida={recolhida}
         />
 
-        {/* Sem padding, por enquanto — o motivo está no comentário do topo. */}
-        <main id="conteudo-principal" className="flex-1 overflow-y-auto">
+        <main
+          id="conteudo-principal"
+          className="flex-1 overflow-y-auto bg-superficie-base p-4 md:p-6"
+        >
           {children}
         </main>
       </div>

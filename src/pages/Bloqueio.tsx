@@ -39,7 +39,7 @@ const Bloqueio: React.FC<BloqueioProps> = ({
   const { user } = useAuth();
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-superficie-base p-6">
+    <div className="flex min-h-full items-center justify-center bg-superficie-base">
       <Helmet>
         <title>{area ? `${area} | ChamadosHS` : 'Sem acesso | ChamadosHS'}</title>
       </Helmet>

@@ -12,7 +12,7 @@ const EmConstrucao: React.FC<EmConstrucaoProps> = ({ titulo }) => {
     // tela estreita. Como o `main` já define a área disponível, preencher o
     // pai dispensa saber quanto o cabeçalho ocupa.
     <div
-      className="flex min-h-full flex-col items-center justify-center px-4 text-center
+      className="flex min-h-full flex-col items-center justify-center text-center
                 bg-superficie-base transition-colors"
     >
       <Helmet>

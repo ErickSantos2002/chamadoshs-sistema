@@ -91,7 +91,7 @@ const CadastrosBasicos: React.FC = () => {
 
   return (
     <CadastrosProvider>
-      <div className="h-full flex flex-col p-6 bg-superficie-base">
+      <div className="h-full flex flex-col bg-superficie-base">
         {/* Header */}
         <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

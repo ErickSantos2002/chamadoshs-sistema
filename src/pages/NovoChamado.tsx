@@ -15,7 +15,7 @@ const NovoChamado: React.FC = () => {
 
   return (
     <div className="min-h-full bg-superficie-base transition-colors">
-      <div className="mx-auto max-w-3xl p-6">
+      <div className="mx-auto max-w-3xl">
         <button
           onClick={() => navigate('/chamados')}
           className="mb-4 flex items-center gap-1 text-sm text-conteudo-suave transition-colors hover:text-info"

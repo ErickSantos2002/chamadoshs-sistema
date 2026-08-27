@@ -593,7 +593,7 @@ const ChamadoDetalhes: React.FC = () => {
 
   if (loading && !chamado) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-info mx-auto"></div>
           <p className="mt-4 text-conteudo-suave">
@@ -606,7 +606,7 @@ const ChamadoDetalhes: React.FC = () => {
 
   if (error || !chamado) {
     return (
-      <div className="p-6">
+      <div>
         <div className="bg-perigo/10 border border-perigo/30
                         text-perigo-forte dark:text-perigo-suave px-4 py-3 rounded-lg">
           {error || 'Chamado não encontrado'}
@@ -623,7 +623,7 @@ const ChamadoDetalhes: React.FC = () => {
 
   return (
     <div className="min-h-full bg-superficie-base transition-colors">
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         {/* Cabeçalho */}
         <div className="bg-superficie border border-borda rounded-xl shadow-md transition-colors">
           <div className="px-6 py-4">

@@ -401,7 +401,7 @@ const TarefasRecorrentes: React.FC = () => {
 
   if (!podeGerenciar) {
     return (
-      <div className="min-h-full bg-superficie-base flex items-center justify-center p-6">
+      <div className="min-h-full bg-superficie-base flex items-center justify-center">
         <div className="text-center">
           <IconeAtencao className="w-12 h-12 text-alerta mx-auto mb-4" />
           <p className="text-conteudo-suave text-lg">
@@ -418,7 +418,7 @@ const TarefasRecorrentes: React.FC = () => {
 
   return (
     <div className="min-h-full bg-superficie-base transition-colors">
-      <div className="p-6">
+      <div>
         {/* Cabeçalho */}
         <div className="relative border border-borda bg-superficie transition-colors">
           <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-4">

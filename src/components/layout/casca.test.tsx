@@ -137,6 +137,18 @@ describe('casca', () => {
   });
 
   /**
+   * O espaçamento e o fundo moram no `<main>`, não nas páginas.
+   *
+   * Eram dez cópias do mesmo `p-6`, uma por tela. Se alguma voltar a aplicar o
+   * próprio, o espaçamento daquela tela dobra — e isso não quebra nada, só
+   * fica errado, que é o tipo de defeito que sobrevive a revisão.
+   */
+  it('o espaçamento e o fundo do conteúdo são da casca', () => {
+    expect(html).toContain('p-4 md:p-6');
+    expect(html).toContain('bg-superficie-base');
+  });
+
+  /**
    * `min-w-0` na coluna do conteúdo. Sem ele, uma tabela larga empurra a
    * largura da coluna inteira e a página passa a rolar de lado, em vez de a
    * tabela rolar dentro do próprio quadro.
