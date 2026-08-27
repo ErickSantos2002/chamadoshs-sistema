@@ -122,10 +122,16 @@ describe('estiloDoGrafico', () => {
     expect(claro.dica.backgroundColor).not.toBe(escuro.dica.backgroundColor);
   });
 
-  it('mantém a dica sem canto arredondado', () => {
+  it('a dica acompanha o canto do resto da interface', () => {
     // A dica é desenhada pelo Recharts em estilo inline, fora do alcance do
-    // Tailwind — o canto reto do resto da interface precisa ser dito aqui.
-    expect(estiloDoGrafico(false).dica.borderRadius).toBe('0px');
-    expect(estiloDoGrafico(true).dica.borderRadius).toBe('0px');
+    // Tailwind — o canto do resto da interface precisa ser dito aqui, à mão.
+    //
+    // Já exigiu `0px`, enquanto a escala de `borderRadius` do sistema era
+    // zerada. A escala voltou ao padrão para acompanhar o HelpHS, e `8px` é o
+    // `rounded-lg` que card, campo e botão usam. O motivo do teste não mudou:
+    // este é o único lugar do sistema onde o canto não vem do Tailwind, e
+    // portanto o único que fica para trás sem ninguém perceber.
+    expect(estiloDoGrafico(false).dica.borderRadius).toBe('8px');
+    expect(estiloDoGrafico(true).dica.borderRadius).toBe('8px');
   });
 });

@@ -52,6 +52,36 @@ function fundos(classes: string): string[] {
     );
 }
 
+/**
+ * Separa o que é INCONDICIONAL do que são ALTERNATIVAS.
+ *
+ * Um `className` de template pode conter os dois lados de um ternário, cada
+ * lado numa string entre aspas:
+ *
+ *   className={`border px-3 ${ativo ? 'bg-sinal' : 'bg-superficie-elevada'}`}
+ *
+ * Ali há dois `bg-*` no mesmo texto e nenhuma disputa: eles nunca chegam
+ * juntos ao elemento. Contar tudo num monte só acusava esse caso.
+ *
+ * Ele passou despercebido por muito tempo por acidente: a varredura quebra o
+ * texto por espaço, e o primeiro token de cada lado do ternário vem colado na
+ * aspa (`'bg-sinal`), o que não casa com `^bg-`. Enquanto o fundo fosse a
+ * primeira classe de cada lado, o teste não via nenhum dos dois. Bastou uma
+ * refatoração pôr `border-*` antes do `bg-*` para os dois aparecerem — e o
+ * teste acusar um defeito que não existe.
+ *
+ * A separação abaixo é o que o teste sempre quis dizer: o primeiro grupo é o
+ * que se aplica sempre; cada grupo seguinte é uma alternativa.
+ */
+function grupos(conteudo: string): string[] {
+  const alternativas = [...conteudo.matchAll(/'([^']*)'|"([^"]*)"/g)].map(
+    (m) => m[1] ?? m[2] ?? ''
+  );
+  const incondicional = conteudo.replace(/'[^']*'|"[^"]*"/g, ' ');
+
+  return [incondicional, ...alternativas];
+}
+
 describe('classes de fundo', () => {
   const arquivos = arquivosDeCodigo(RAIZ);
 
@@ -68,7 +98,18 @@ describe('classes de fundo', () => {
 
       for (const casamento of conteudo.matchAll(CLASSNAMES)) {
         const classes = casamento[1] ?? casamento[2] ?? '';
-        const disputa = fundos(classes);
+        const [sempre, ...alternativas] = grupos(classes).map(fundos);
+
+        // Disputa de verdade é uma destas três:
+        //  - dois fundos aplicados sempre;
+        //  - um fundo fixo e outro condicional por cima dele;
+        //  - dois fundos dentro do MESMO lado de um ternário.
+        const disputa =
+          sempre.length > 1
+            ? sempre
+            : sempre.length === 1 && alternativas.some((a) => a.length > 0)
+              ? [...sempre, ...alternativas.flat()]
+              : (alternativas.find((a) => a.length > 1) ?? []);
 
         if (disputa.length > 1) {
           infratores.push(

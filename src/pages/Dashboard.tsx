@@ -7,7 +7,6 @@ import {
   Cell,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -18,7 +17,7 @@ import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
 import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
-import { Rotulo, Seletor } from '../components/ui';
+import { Seletor } from '../components/ui';
 import { IconeAlerta, IconeArquivar, IconeAtividade, IconeCarregando, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
 import {
   corDaPrioridade,
@@ -417,7 +416,7 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-full bg-superficie-base flex items-center justify-center">
+      <div className="flex min-h-full items-center justify-center">
         <div className="text-center">
           <IconeCarregando className="w-12 h-12 animate-spin text-sinal mx-auto mb-4" />
           <p className="text-conteudo-suave">
@@ -429,42 +428,35 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-superficie-base transition-colors">
-      <div>
+    <div className="space-y-5">
 
-        {/* Cabeçalho */}
-        <div className="relative border border-borda bg-superficie transition-colors">
-          <div className="px-6 py-4">
-            <h1 className="text-3xl font-bold text-conteudo tracking-tight">
-              Chamados - Dashboard
-            </h1>
-            <p className="text-conteudo-suave mt-1">
-              Bem-vindo, <span className="font-semibold">{user?.username}</span>{' '}
-              ({user?.role})
-            </p>
-            <p className="text-conteudo-tenue text-sm mt-2">
-              Visualize os indicadores e a situação atual dos chamados do sistema.
-            </p>
-          </div>
+        {/* Cabeçalho da página. O `<div>` de moldura que pintava o fundo saiu:
+            quem pinta agora é o `<main>` da casca. */}
+        <div className="rounded-xl border border-borda bg-superficie px-5 py-4">
+          <h1 className="text-xl font-extrabold tracking-tight text-conteudo">
+            Dashboard
+          </h1>
+          <p className="mt-0.5 text-sm text-conteudo-tenue">
+            Bem-vindo, <span className="font-semibold text-conteudo-suave">{user?.username}</span>{' '}
+            ({user?.role}) — situação atual dos chamados do sistema.
+          </p>
         </div>
 
         {/* Filtros */}
-        <div className="relative border border-borda bg-superficie p-6 mt-6 mb-6 transition-colors">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <IconeFiltro className="w-5 h-5 mr-2 text-conteudo-suave" />
-              <h2 className="text-lg font-semibold text-conteudo">
-                Filtros
-              </h2>
+        <div className="rounded-xl border border-borda bg-superficie p-5">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <IconeFiltro className="h-4 w-4 text-conteudo-tenue" />
+              <h2 className="text-sm font-semibold text-conteudo">Filtros</h2>
             </div>
 
             {/* Botão Toggle Cancelados */}
             <button
               onClick={() => setIncluirCancelados(!incluirCancelados)}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-medium ${
+              className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                 incluirCancelados
-                  ? 'bg-perigo/15 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/25'
-                  : 'bg-superficie-elevada text-conteudo-suave hover:bg-superficie-elevada'
+                  ? 'border-perigo/30 bg-perigo/20 text-perigo-forte hover:bg-perigo/30 dark:text-perigo-suave'
+                  : 'border-borda bg-superficie-elevada text-conteudo-suave hover:text-conteudo'
               }`}
               title={incluirCancelados ? 'Ocultar cancelados' : 'Mostrar cancelados'}
             >
@@ -499,10 +491,10 @@ const Dashboard: React.FC = () => {
                 <button
                   key={p.key}
                   onClick={() => aplicarPreset(p.key)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                     presetAtivo === p.key
-                      ? 'bg-info text-white shadow'
-                      : 'bg-superficie-elevada text-conteudo-suave hover:bg-superficie-elevada'
+                      ? 'border-transparent bg-sinal text-white dark:text-superficie-base'
+                      : 'border-borda bg-superficie-elevada text-conteudo-suave hover:text-conteudo'
                   }`}
                 >
                   {p.label}
@@ -524,9 +516,9 @@ const Dashboard: React.FC = () => {
                     setPeriodoInicio(e.target.value);
                     setPresetAtivo('custom');
                   }}
-                  className="px-3 py-2 border rounded-lg bg-superficie
-                            text-conteudo border-borda
-                            focus:outline-none focus:ring-2 focus:ring-info transition-colors"
+                  className="rounded-lg border border-borda bg-superficie px-3 py-2 text-sm
+                            text-conteudo transition-colors hover:border-conteudo-tenue
+                            focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
                 />
               </div>
               <div>
@@ -541,9 +533,9 @@ const Dashboard: React.FC = () => {
                     setPeriodoFim(e.target.value);
                     setPresetAtivo('custom');
                   }}
-                  className="px-3 py-2 border rounded-lg bg-superficie
-                            text-conteudo border-borda
-                            focus:outline-none focus:ring-2 focus:ring-info transition-colors"
+                  className="rounded-lg border border-borda bg-superficie px-3 py-2 text-sm
+                            text-conteudo transition-colors hover:border-conteudo-tenue
+                            focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
                 />
               </div>
             </div>
@@ -620,7 +612,7 @@ const Dashboard: React.FC = () => {
         {/* Seis cartões: 3+3 em telas médias, um por coluna a partir de xl.
             Eram cinco em `lg:grid-cols-5`; enfileirar seis naquela largura
             deixaria cada um com menos de 170px. */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[
             // O total é a soma, não um status: não recebe cor de significado.
             { rotulo: 'Total de Chamados', valor: metricas.total, Icone: IconeChamado, cor: null },
@@ -652,26 +644,30 @@ const Dashboard: React.FC = () => {
           ].map(({ rotulo, valor, Icone, cor }) => (
             <div
               key={rotulo}
-              className="relative border border-borda bg-superficie p-6 transition-colors"
+              // `border-l-4` na cor do status: é a marca que o HelpHS usa nos
+              // cartões de indicador, e ela diz de relance a que status o
+              // número pertence sem depender de ler o rótulo.
+              className="rounded-xl border border-l-4 border-borda bg-superficie p-5"
+              style={cor ? { borderLeftColor: cor } : undefined}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <Rotulo como="p" className="block">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                     {rotulo}
-                  </Rotulo>
+                  </p>
                   <p
-                    className="mt-2 text-3xl font-semibold tracking-tight text-conteudo"
+                    className="mt-2 text-3xl font-bold tabular-nums text-conteudo"
                     style={cor ? { color: cor } : undefined}
                   >
                     {valor}
                   </p>
                 </div>
                 <div
-                  className="p-3"
-                  style={cor ? { backgroundColor: `${cor}22` } : undefined}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-superficie-elevada"
+                  style={cor ? { backgroundColor: `${cor}1A` } : undefined}
                 >
                   <Icone
-                    className="h-6 w-6 text-conteudo-suave"
+                    className="h-5 w-5 text-conteudo-tenue"
                     style={cor ? { color: cor } : undefined}
                   />
                 </div>
@@ -684,17 +680,17 @@ const Dashboard: React.FC = () => {
         {/* ======================================== */}
         {/* MÉTRICAS DE SLA                          */}
         {/* ======================================== */}
-        <div className="relative border border-borda bg-superficie-elevada p-6 mb-6">
-          <h2 className="text-lg font-semibold text-conteudo mb-4">
-            SLA
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
+          <div className="border-b border-borda px-5 py-4">
+            <p className="text-sm font-semibold text-conteudo">SLA</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
             <div>
-              <p className="text-sm text-conteudo-tenue">
+              <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                 Resolvidos dentro do prazo
               </p>
               <p
-                className={`text-3xl font-bold ${
+                className={`mt-2 text-3xl font-bold tabular-nums ${
                   metricasSla.percentualNoPrazo !== null
                     ? 'text-sucesso-forte dark:text-sucesso-suave'
                     : 'text-conteudo-tenue'
@@ -704,115 +700,148 @@ const Dashboard: React.FC = () => {
                   ? `${metricasSla.percentualNoPrazo}%`
                   : '—'}
               </p>
-              <p className="text-xs text-conteudo-tenue">
+              <p className="mt-1.5 text-xs text-conteudo-tenue">
                 {metricasSla.percentualNoPrazo !== null
                   ? `de ${metricasSla.totalResolvidosComSla} chamado(s) resolvido(s) no período`
                   : 'sem dados de SLA no período'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-conteudo-tenue">
+              <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                 Estourados em aberto
               </p>
-              <p className="text-3xl font-bold text-perigo-forte dark:text-perigo-suave">
+              <p className="mt-2 text-3xl font-bold tabular-nums text-perigo-forte dark:text-perigo-suave">
                 {metricasSla.estouradosEmAberto}
               </p>
-              <p className="text-xs text-conteudo-tenue">precisam de ação agora</p>
+              <p className="mt-1.5 text-xs text-conteudo-tenue">precisam de ação agora</p>
             </div>
             <div>
-              <p className="text-sm text-conteudo-tenue">
+              <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                 Em atenção (≥80% do prazo)
               </p>
-              <p className="text-3xl font-bold text-alerta-forte dark:text-alerta-suave">
+              <p className="mt-2 text-3xl font-bold tabular-nums text-alerta-forte dark:text-alerta-suave">
                 {metricasSla.emAtencao}
               </p>
-              <p className="text-xs text-conteudo-tenue">prestes a estourar</p>
+              <p className="mt-1.5 text-xs text-conteudo-tenue">prestes a estourar</p>
             </div>
           </div>
         </div>
 
         {/* Tempo Médio */}
         {metricas.tempoMedioResolucao > 0 && (
-          <div className="relative border border-borda bg-superficie p-6 mb-6 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-conteudo-tenue">Tempo Médio de Resolução</p>
-                <p className="text-2xl font-bold text-info mt-2">
+          <div className="rounded-xl border border-l-4 border-borda border-l-sinal bg-superficie p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
+                  Tempo médio de resolução
+                </p>
+                <p className="mt-2 text-3xl font-bold tabular-nums text-sinal">
                   {metricas.tempoMedioResolucao}h
                 </p>
+                <p className="mt-1.5 text-xs text-conteudo-tenue">
+                  média dos chamados resolvidos no período
+                </p>
               </div>
-              <div className="bg-alerta/15 p-3 rounded-full">
-                <IconeAtividade className="w-6 h-6 text-info" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sinal/10">
+                <IconeAtividade className="h-5 w-5 text-sinal" />
               </div>
             </div>
           </div>
         )}
 
         {/* Gráficos */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
           {/* Gráfico de Status */}
-          <div className="relative border border-borda bg-superficie p-6 transition-colors">
-            <h3 className="text-lg font-semibold text-conteudo mb-4">
-              Chamados por Status
-            </h3>
+          <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
+            <div className="border-b border-borda px-5 py-4">
+              <p className="text-sm font-semibold text-conteudo">Chamados por Status</p>
+            </div>
 
+            <div className="p-5">
             {metricas.porStatus.some(s => s.value > 0) ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <RChart>
-                  <Pie
-                    data={metricas.porStatus}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={85}
-                    dataKey="value"
-                    label={({ name, value }) => (value > 0 ? `${name}: ${value}` : '')}
-                    stroke={estilo.dica.backgroundColor}
-                    strokeWidth={2}
-                  >
-                    {metricas.porStatus.map((entry) => (
-                      <Cell key={entry.name} fill={corDoStatus(entry.name, darkMode)} />
-                    ))}
-                  </Pie>
+              <>
+                {/* Rosca com o total no meio, como a do HelpHS.
+                    Era pizza cheia com o rótulo escrito por cima de cada fatia,
+                    e numa fatia estreita o texto saía por fora e encavalava no
+                    vizinho. Os nomes e os números foram para a lista abaixo,
+                    onde cabem sempre e ficam alinhados numa coluna só. */}
+                <div className="relative">
+                  <ResponsiveContainer width="100%" height={190}>
+                    <RChart>
+                      <Pie
+                        data={metricas.porStatus}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={58}
+                        outerRadius={86}
+                        paddingAngle={3}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {metricas.porStatus.map((entry) => (
+                          <Cell key={entry.name} fill={corDoStatus(entry.name, darkMode)} />
+                        ))}
+                      </Pie>
 
-                  <Tooltip
-                    wrapperStyle={{ outline: 'none' }}
-                    contentStyle={estilo.dica}
-                    labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
-                  />
+                      <Tooltip
+                        wrapperStyle={{ outline: 'none' }}
+                        contentStyle={estilo.dica}
+                        labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                      />
+                    </RChart>
+                  </ResponsiveContainer>
 
-                  <Legend
-                    verticalAlign="bottom"
-                    align="center"
-                    wrapperStyle={{
-                      marginTop: 10,
-                      fontSize: "12px",
-                      color: "#fff",
-                    }}
-                  />
-                </RChart>
-              </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <p className="text-2xl font-bold tabular-nums text-conteudo">
+                      {metricas.porStatus.reduce((soma, item) => soma + item.value, 0)}
+                    </p>
+                    <p className="text-xs text-conteudo-tenue">no fluxo</p>
+                  </div>
+                </div>
 
+                <div className="mt-3 flex flex-col gap-1.5">
+                  {metricas.porStatus.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          aria-hidden="true"
+                          className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                          style={{ backgroundColor: corDoStatus(item.name, darkMode) }}
+                        />
+                        <span className="text-xs text-conteudo-suave">{item.name}</span>
+                      </div>
+                      <span className="text-xs font-semibold tabular-nums text-conteudo">
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-conteudo-tenue">
+              <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
                 Sem dados para exibir
               </div>
             )}
+            </div>
           </div>
 
           {/* Gráfico de Prioridade */}
-          <div className="relative border border-borda bg-superficie p-6 transition-colors">
-            <h3 className="text-lg font-semibold text-conteudo mb-4">
-              Chamados por Prioridade
-            </h3>
+          <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
+            <div className="border-b border-borda px-5 py-4">
+              <p className="text-sm font-semibold text-conteudo">Chamados por Prioridade</p>
+            </div>
 
+            <div className="p-5">
             {metricas.porPrioridade.some(p => p.value > 0) ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={metricas.porPrioridade}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} />
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={metricas.porPrioridade} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                  {/* Só a grade horizontal: as verticais competiam com as
+                      próprias barras, que já marcam a posição no eixo. */}
+                  <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} vertical={false} />
 
-                  <XAxis dataKey="name" stroke={estilo.eixo} tick={{ fill: estilo.texto }} />
-                  <YAxis stroke={estilo.eixo} tick={{ fill: estilo.texto }} allowDecimals={false} />
+                  <XAxis dataKey="name" tick={{ fill: estilo.texto, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: estilo.texto, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
 
                   <Tooltip
                     cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
@@ -821,7 +850,7 @@ const Dashboard: React.FC = () => {
                     labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
                   />
 
-                  <Bar dataKey="value" name="Chamados" radius={[8, 8, 0, 0]}>
+                  <Bar dataKey="value" name="Chamados" radius={[6, 6, 0, 0]}>
                     {metricas.porPrioridade.map((entry) => (
                       <Cell key={entry.name} fill={corDaPrioridade(entry.name, darkMode)} />
                     ))}
@@ -830,37 +859,44 @@ const Dashboard: React.FC = () => {
               </ResponsiveContainer>
 
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-conteudo-tenue">
+              <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
                 Sem dados para exibir
               </div>
             )}
+            </div>
           </div>
 
         </div>
 
         {/* Top 5 Categorias */}
         {metricas.porCategoria.length > 0 && (
-          <div className="relative border border-borda bg-superficie p-6 mb-6 transition-colors">
-            <h3 className="text-lg font-semibold text-conteudo mb-4">
-              Top 5 Categorias
-            </h3>
+          <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
+            <div className="border-b border-borda px-5 py-4">
+              <p className="text-sm font-semibold text-conteudo">Top 5 Categorias</p>
+            </div>
 
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={metricas.porCategoria} layout="vertical">
+            <div className="p-5">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={metricas.porCategoria} layout="vertical" margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} horizontal={false} />
 
                 <XAxis
                   type="number"
-                  stroke={estilo.eixo}
-                  tick={{ fill: estilo.texto }}
+                  tick={{ fill: estilo.texto, fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
                   allowDecimals={false}
                 />
+                {/* 120px, e não 150: a barra lateral foi de 224px para 256px e
+                    esses 32px saíram da largura útil da página. Com 150 as
+                    barras do gráfico ficavam espremidas contra o rótulo. */}
                 <YAxis
                   dataKey="name"
                   type="category"
-                  stroke={estilo.eixo}
-                  tick={{ fill: estilo.texto }}
-                  width={150}
+                  tick={{ fill: estilo.texto, fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={120}
                 />
 
                 <Tooltip
@@ -873,31 +909,33 @@ const Dashboard: React.FC = () => {
                 {/* A cor sai da POSIÇÃO na lista, e o índice vem do dado — não
                     da ordenação por valor. Se seguisse o tamanho da barra, uma
                     categoria mudaria de cor sempre que outra a ultrapassasse. */}
-                <Bar dataKey="value" name="Chamados" radius={[0, 8, 8, 0]}>
+                <Bar dataKey="value" name="Chamados" radius={[0, 6, 6, 0]}>
                   {metricas.porCategoria.map((entry, idx) => (
                     <Cell key={entry.name} fill={corDaSerie(idx, darkMode)} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            </div>
           </div>
         )}
 
         {/* Tabela de Chamados Recentes */}
-        <div className="relative border border-borda bg-superficie p-6 transition-colors">
-          <h3 className="text-lg font-semibold text-conteudo mb-4">
-            Chamados Recentes
-          </h3>
+        <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
+          <div className="border-b border-borda px-5 py-4">
+            <p className="text-sm font-semibold text-conteudo">Chamados Recentes</p>
+          </div>
 
+          <div className="p-5">
           {metricas.chamadosRecentes.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-superficie-elevada border-b border-borda">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-conteudo-suave">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                       Protocolo
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-conteudo-suave">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                       Título
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-conteudo-suave">
@@ -990,9 +1028,8 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
           )}
+          </div>
         </div>
-
-      </div>
     </div>
   );
 };
