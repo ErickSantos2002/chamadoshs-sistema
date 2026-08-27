@@ -12,8 +12,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // ── Rampa da marca ──────────────────────────────────────────
+        // A escala `sky` do HelpHS, copiada valor a valor: é o que dá a
+        // identidade de família entre os dois sistemas.
+        //
+        // Cuidado de uso: `primary` (#0EA5E9) dá 2,77:1 sobre branco. Serve
+        // para PREENCHIMENTO — fundo de botão, trilho de interruptor, ponto —
+        // não para texto sobre superfície clara. Texto usa `sinal`, que é a
+        // mesma família ajustada por tema e validada em 4,5:1.
         primary: {
-          DEFAULT: "#2563eb", // azul principal (mantido)
+          DEFAULT: "#0ea5e9",
+          50: "#f0f9ff",
+          100: "#e0f2fe",
+          200: "#bae6fd",
+          300: "#7dd3fc",
+          400: "#38bdf8",
+          500: "#0ea5e9",
+          600: "#0284c7",
+          700: "#0369a1",
+          800: "#075985",
+          900: "#0c4a6e",
         },
 
         // ── Tokens semânticos ────────────────────────────────────────
@@ -87,7 +105,16 @@ module.exports = {
           "Consolas",
           "monospace",
         ],
+        // A fonte do HelpHS. Hospedada no próprio bundle
+        // (`@fontsource/plus-jakarta-sans`, importada em styles/index.css) e
+        // NÃO no CDN do Google, que é como o HelpHS carrega: o ChamadosHS roda
+        // na rede interna, e `src/recursos-externos.test.ts` existe justamente
+        // para impedir que a interface dependa de servidor de terceiro.
+        //
+        // A pilha de sistema fica de reserva, para o intervalo do carregamento
+        // e para o caso de a fonte não chegar.
         sans: [
+          "Plus Jakarta Sans",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
@@ -99,81 +126,33 @@ module.exports = {
         ],
       },
 
-      // Ponto de corte por ALTURA, não por largura.
+      // Entradas. Todas rodam UMA vez: a diferença entre entrada e enfeite
+      // é essa — a entrada termina. O que fica em laço numa tela aberta o
+      // dia inteiro vira incômodo por volta das dez da manhã.
       //
-      // Os breakpoints do Tailwind são todos de largura, e largura não diz
-      // nada sobre o problema que apareceu: uma TV em paisagem é larguíssima
-      // e baixa. O login cabia folgado no notebook e era cortado lá.
-      //
-      // Espaçamento generoso passa a ser condicional: `alto:` só vale quando
-      // há altura para gastar.
-      screens: {
-        alto: { raw: '(min-height: 720px)' },
-      },
-
-      fontSize: {
-        // Tamanho dos rótulos monoespaçados. 11px, não os 9,6px da maquete:
-        // lá era textura de fundo, aqui carrega a palavra "PROTOCOLO" acima de
-        // um número que alguém precisa ler.
-        rotulo: ["0.6875rem", { lineHeight: "1rem", letterSpacing: "0.14em" }],
-      },
-
-      // As animações `blinkLight`/`blinkDark` saíram daqui junto com o único
-      // lugar que as usava: o "ACESSO NEGADO" piscando em vermelho da tela de
-      // bloqueio. Alarme para quem não fez nada errado ensina a ignorar alarme.
-      keyframes: {
-        // ── Entradas ────────────────────────────────────────────────
-        // Todas rodam UMA vez. A diferença entre entrada e enfeite é
-        // essa: a entrada termina. O que fica em laço numa tela aberta
-        // o dia inteiro vira incômodo por volta das dez da manhã.
-        subir: {
-          from: { opacity: "0", transform: "translateY(12px)" },
-          to: { opacity: "1", transform: "none" },
-        },
-        acender: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        varrer: {
-          "0%": { top: "-2px", opacity: "0" },
-          "15%": { opacity: "1" },
-          "85%": { opacity: "1" },
-          "100%": { top: "100%", opacity: "0" },
-        },
-      },
-
-      animation: {
-        subir: "subir .6s cubic-bezier(.2,.8,.2,1) both",
-        acender: "acender .5s ease-out .35s both",
-        varrer: "varrer 1.1s cubic-bezier(.4,0,.2,1) .25s 1 both",
-      },
+      // `varrer` saiu com a fachada de console do login, e `subir`/`acender`
+      // saíram junto: eram o painel entrando e os colchetes acendendo, e
+      // nenhum dos dois existe mais. Animação sem uso é convite para alguém
+      // reintroduzir o vocabulário antigo sem saber que ele foi retirado.
     },
 
     // ── Cantos ───────────────────────────────────────────────────────
     //
-    // Sobrescreve a escala inteira, em vez de estender: assim `rounded-lg`,
-    // `rounded-xl` e companhia passam a valer 0 sem precisar editar as 202
-    // ocorrências espalhadas por 25 arquivos. Canto reto é o traço que mais
-    // lê como console, e este é o jeito de aplicá-lo sem um diff de 200
-    // linhas no mesmo commit que troca a paleta — se algo quebrar, dá para
-    // saber o que foi.
+    // A escala PADRÃO do Tailwind, de volta.
     //
-    // As classes que sobraram viraram ruído e saem tela a tela, junto com o
-    // redesenho de cada uma (1.4.1 em diante).
+    // Da 1.4 até a 1.6.20 ela era zerada: canto reto era o traço que mais
+    // lia como console, e zerar a escala aplicava isso às 112 classes
+    // `rounded-*` já escritas sem um diff de 200 linhas.
     //
-    // `full` continua existindo porque avatar e ponto de status são círculo
-    // por natureza, não canto arredondado.
-    borderRadius: {
-      none: "0",
-      sm: "0",
-      DEFAULT: "0",
-      md: "0",
-      lg: "0",
-      xl: "0",
-      "2xl": "0",
-      "3xl": "0",
-      full: "9999px",
-    },
+    // O alvo visual agora é o HelpHS, que não sobrescreve a escala. Voltar
+    // ao padrão usa a mesma alavanca na direção contrária: as mesmas 112
+    // ocorrências em 25 arquivos passam a arredondar de novo, com
+    // `rounded-lg` = 8px e `rounded-xl` = 12px, que são exatamente os
+    // valores que o HelpHS usa em botão, card, input e dropdown.
+    //
+    // Não há bloco `borderRadius` aqui de propósito: escrever os mesmos
+    // valores do padrão seria uma cópia que só pode divergir.
+
   },
   plugins: [],
 };

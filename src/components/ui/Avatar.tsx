@@ -55,7 +55,7 @@ export const Avatar: React.FC<AvatarProps> = ({ nome, title, className }) => {
       style={cor ? { color: cor, backgroundColor: `${cor}33` } : undefined}
       className={cn(
         'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-        'text-[10px] font-bold leading-none',
+        'text-[10px] font-medium leading-none',
         !cor && 'bg-superficie-elevada text-conteudo-tenue',
         className
       )}

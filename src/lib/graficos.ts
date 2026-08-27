@@ -149,14 +149,22 @@ export function corDoStatus(status: string, escuro: boolean): string {
  */
 export function estiloDoGrafico(escuro: boolean) {
   return {
-    grade: escuro ? '#253E56' : '#C5D1DD',
-    eixo: escuro ? '#7590A3' : '#5A7287',
-    texto: escuro ? '#9DB6C8' : '#435A70',
+    // Os mesmos tokens de `styles/index.css`, em hexadecimal porque o Recharts
+    // recebe cor como string em JS e não enxerga classe do Tailwind.
+    //
+    // É uma CÓPIA, e cópia diverge: quando a paleta mudou para a do HelpHS,
+    // estes valores ficaram para trás — a grade continuou no cinza-azulado
+    // antigo dentro de cards que já eram slate. Se mexer nos tokens, mexa aqui.
+    grade: escuro ? '#1E3A5F' : '#E2E8F0', // --borda
+    eixo: escuro ? '#818FA3' : '#5E6E84', // --conteudo-tenue
+    texto: escuro ? '#94A3B8' : '#475569', // --conteudo-suave
     dica: {
-      backgroundColor: escuro ? '#192938' : '#FFFFFF',
-      border: `1px solid ${escuro ? '#253E56' : '#C5D1DD'}`,
-      borderRadius: '0px',
-      color: escuro ? '#DAE7F1' : '#142334',
+      // No escuro a dica sobe para a superfície elevada, senão ela se confunde
+      // com o card por onde passa; no claro o branco já contrasta com a página.
+      backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF',
+      border: `1px solid ${escuro ? '#1E3A5F' : '#E2E8F0'}`,
+      borderRadius: '8px',
+      color: escuro ? '#F1F5F9' : '#0F172A',
       padding: '8px 12px',
       boxShadow: '0 4px 14px rgb(0 0 0 / 0.25)',
     },

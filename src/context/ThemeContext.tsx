@@ -56,7 +56,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       {/* A cor da casca sai dos tokens: quem decide o tom é o CSS, não este
           ternário. Antes o claro e o escuro eram duas strings independentes,
           e cada tela precisava repetir a mesma decisão com `dark:`. */}
-      <div className={`${darkMode ? 'dark ' : ''}min-h-screen bg-superficie-base text-conteudo`}>
+      <div className={`${darkMode ? 'dark ' : ''}h-full bg-superficie-base text-conteudo`}>
         {children}
       </div>
     </ThemeContext.Provider>

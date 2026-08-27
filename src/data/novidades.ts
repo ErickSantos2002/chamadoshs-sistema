@@ -29,6 +29,32 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.7.0',
+    data: '2026-08-27',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'O sistema está com a cara nova — a mesma do HelpHS. O menu foi para uma barra lateral que dá para recolher, e no celular ele vira uma gaveta; o seu nome, o perfil, o modo escuro e o botão de sair ficam agora num menu só, no canto superior direito, que existe em qualquer tamanho de tela.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'O aviso de novidades saiu da lista de áreas e virou o número da versão, no rodapé do menu. Um pontinho azul ao lado dele indica que há novidade que você ainda não leu.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'No celular, a tela de Chamados podia abrir sem mostrar chamado nenhum, e o botão redondo da Central HS ficava por cima do botão de salvar das janelas. Os dois foram corrigidos.',
+      },
+      {
+        tipo: 'corrigido',
+        texto:
+          'As listas de escolha (categoria, prioridade, responsável) abriam para fora da tela quando o campo estava na parte de baixo, e não dava para alcançar as últimas opções. Agora elas abrem para cima quando não há espaço embaixo.',
+      },
+    ],
+  },
+  {
     versao: '1.6.20',
     data: '2026-08-20',
     itens: [

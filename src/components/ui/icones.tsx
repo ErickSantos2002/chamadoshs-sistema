@@ -10,16 +10,20 @@ import React from 'react';
  * origem dos ícones, sozinho, não mudaria quase nada — desenhados à mão sairia
  * o mesmo traço de 2px com ponta redonda, porque é o que um ícone de 24px é.
  *
- * O que destoava de verdade era outra coisa, e estava aqui desde a 1.4: o
- * sistema inteiro tem CANTO RETO — a escala de `borderRadius` foi zerada — e
- * todo ícone chegava com ponta e junção ARREDONDADAS. Duas linguagens na mesma
- * tela, e a do ícone era a do pacote, não a nossa.
+ * O traço acompanha a escala de cantos, e ela mudou duas vezes.
  *
- * Daí as três escolhas abaixo, que valem para os 50 e poucos de uma vez:
+ * Da 1.4 até a 1.6.20 o sistema tinha CANTO RETO — a escala de `borderRadius`
+ * era zerada — e por isso os ícones foram desenhados com ponta em esquadro e
+ * junção viva: um ícone de ponta redonda ao lado de um painel de canto vivo
+ * são duas linguagens na mesma tela.
  *
- *  - `strokeWidth 1.5`, e não 2. Mais leve ao lado de texto pequeno.
- *  - `strokeLinecap="square"`: a ponta termina em esquadro, como as bordas.
- *  - `strokeLinejoin="miter"`: o canto do traço é vivo, como o dos painéis.
+ * A escala voltou ao padrão para o sistema falar a mesma língua do HelpHS, e
+ * o mesmo argumento agora aponta para o outro lado. As três escolhas abaixo
+ * viram as do HelpHS, e valem para os 50 e poucos de uma vez:
+ *
+ *  - `strokeWidth 1.75`: o peso que o HelpHS usa nos ícones do menu.
+ *  - `strokeLinecap="round"`: a ponta acompanha o canto arredondado.
+ *  - `strokeLinejoin="round"`: e o canto do traço, também.
  *
  * ── Como usar ─────────────────────────────────────────────────────────
  *
@@ -56,9 +60,9 @@ const Traco: React.FC<PropsDeIcone> = ({ children, ...resto }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={1.5}
-    strokeLinecap="square"
-    strokeLinejoin="miter"
+    strokeWidth={1.75}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     aria-hidden="true"
     // Depois dos padrões, de propósito: quem chamar pode sobrescrever um deles
     // sem precisar de um ícone novo.

@@ -1,5 +1,6 @@
 import React from 'react';
 import { SLAInfo } from '../types/api';
+import { Badge, VarianteBadge } from './ui';
 
 interface SlaBadgeProps {
   sla?: SLAInfo;
@@ -7,13 +8,10 @@ interface SlaBadgeProps {
   compacto?: boolean;
 }
 
-const ESTILOS: Record<string, string> = {
-  'No prazo':
-    'bg-sucesso/15 text-sucesso-forte dark:text-sucesso-suave',
-  'Atenção':
-    'bg-alerta/15 text-alerta-forte dark:text-alerta-suave',
-  'Estourado':
-    'bg-perigo/15 text-perigo-forte dark:text-perigo-suave',
+const VARIANTE: Record<string, VarianteBadge> = {
+  'No prazo': 'sucesso',
+  'Atenção': 'alerta',
+  'Estourado': 'perigo',
 };
 
 const formatarPrazo = (prazo: string | null): string => {
@@ -29,19 +27,16 @@ const formatarPrazo = (prazo: string | null): string => {
 export const SlaBadge: React.FC<SlaBadgeProps> = ({ sla, compacto = false }) => {
   if (!sla) return null;
 
-  const estilo = ESTILOS[sla.situacao] ?? ESTILOS['No prazo'];
+  const variante = VARIANTE[sla.situacao] ?? VARIANTE['No prazo'];
   const titulo = `Prazo de resolução: ${formatarPrazo(sla.prazo_resolucao)} · ${sla.percentual_resolucao}% consumido${
     sla.minutos_pausados > 0 ? ` · ${sla.minutos_pausados} min pausados em Aguardando` : ''
   }`;
 
   return (
-    <span
-      title={titulo}
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${estilo}`}
-    >
+    <Badge variante={variante} title={titulo}>
       {sla.situacao}
       {!compacto && ` · ${sla.percentual_resolucao}%`}
-    </span>
+    </Badge>
   );
 };
 

@@ -1,3 +1,28 @@
+/* ── Fonte ───────────────────────────────────────────────────────
+ *
+ * Plus Jakarta Sans, que é a fonte do HelpHS — e o que mais faz duas telas
+ * parecerem do mesmo sistema, antes mesmo da cor.
+ *
+ * Vem do pacote `@fontsource/plus-jakarta-sans`, ou seja: os `.woff2` entram
+ * no bundle e são servidos pelo nginx do próprio ChamadosHS.
+ *
+ * O HelpHS carrega a mesma fonte do CDN do Google. Aqui isso não serve: o
+ * sistema roda na rede interna da HS, e `src/recursos-externos.test.ts` existe
+ * justamente porque já houve 12 ícones vindos de `img.icons8.com`. Se o
+ * provedor cair ou o IP da empresa for bloqueado, a tipografia inteira some
+ * sem ninguém ter tocado em código — e o `font-display: swap` do Google
+ * garante que ela some em silêncio, caindo na fonte do sistema.
+ *
+ * São os mesmos seis pesos que o HelpHS pede (300 a 800), só no subconjunto
+ * latino: ~76 KB no total, e o latino básico já cobre todo acento do
+ * português. */
+@import '@fontsource/plus-jakarta-sans/latin-300.css';
+@import '@fontsource/plus-jakarta-sans/latin-400.css';
+@import '@fontsource/plus-jakarta-sans/latin-500.css';
+@import '@fontsource/plus-jakarta-sans/latin-600.css';
+@import '@fontsource/plus-jakarta-sans/latin-700.css';
+@import '@fontsource/plus-jakarta-sans/latin-800.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,35 +59,35 @@
  */
 @layer base {
   :root {
-    --superficie-base: 244 247 250;    /* #F4F7FA — fundo da página      */
-    --superficie: 255 255 255;         /* #FFFFFF — cards, painéis       */
-    --superficie-elevada: 234 240 245; /* #EAF0F5 — hover, cabeçalhos    */
+    --superficie-base: 248 250 252;    /* #F8FAFC — slate-50            */
+    --superficie: 255 255 255;         /* #FFFFFF — cards, painéis      */
+    --superficie-elevada: 241 245 249; /* #F1F5F9 — slate-100           */
 
-    --borda: 197 209 221;              /* #C5D1DD — divisores visíveis   */
-    --borda-suave: 222 230 237;        /* #DEE6ED — separação sutil      */
-    --borda-forte: 127 161 189;        /* #7FA1BD — colchete de HUD      */
+    --borda: 226 232 240;              /* #E2E8F0 — slate-200           */
+    --borda-suave: 241 245 249;        /* #F1F5F9 — slate-100           */
+    --borda-forte: 148 163 184;        /* #94A3B8 — slate-400, scrollbar*/
 
-    --conteudo: 20 35 52;              /* #142334 — 15,9:1               */
-    --conteudo-suave: 67 90 112;       /* #435A70 —  7,2:1               */
-    --conteudo-tenue: 90 114 135;      /* #5A7287 —  5,0:1               */
+    --conteudo: 15 23 42;              /* #0F172A — 17,9:1              */
+    --conteudo-suave: 71 85 105;       /* #475569 —  7,6:1              */
+    --conteudo-tenue: 94 110 132;      /* #5E6E84 —  5,2:1              */
 
-    --sinal: 26 113 168;               /* #1A71A8 —  5,3:1               */
+    --sinal: 3 105 161;                /* #0369A1 —  5,9:1              */
   }
 
   .dark {
-    --superficie-base: 10 17 25;       /* #0A1119 */
-    --superficie: 17 28 39;            /* #111C27 */
-    --superficie-elevada: 25 41 56;    /* #192938 */
+    --superficie-base: 13 27 42;       /* #0D1B2A — navy do HelpHS */
+    --superficie: 19 34 56;            /* #132238 */
+    --superficie-elevada: 26 47 74;    /* #1A2F4A */
 
-    --borda: 37 62 86;                 /* #253E56 */
-    --borda-suave: 28 46 63;           /* #1C2E3F */
-    --borda-forte: 49 93 129;          /* #315D81 */
+    --borda: 30 58 95;                 /* #1E3A5F */
+    --borda-suave: 19 34 56;           /* #132238 — = superfície */
+    --borda-forte: 100 116 139;        /* #64748B — slate-500, scrollbar */
 
-    --conteudo: 218 231 241;           /* #DAE7F1 — 13,7:1 */
-    --conteudo-suave: 157 182 200;     /* #9DB6C8 —  8,2:1 */
-    --conteudo-tenue: 117 144 163;     /* #7590A3 —  5,2:1 */
+    --conteudo: 241 245 249;           /* #F1F5F9 — slate-100, 14,6:1 */
+    --conteudo-suave: 148 163 184;     /* #94A3B8 — slate-400,  6,2:1 */
+    --conteudo-tenue: 129 143 163;     /* #818FA3 —             4,9:1 */
 
-    --sinal: 71 166 225;               /* #47A6E1 —  6,4:1 */
+    --sinal: 14 165 233;               /* #0EA5E9 — primary,    5,8:1 */
   }
 }
 
@@ -85,7 +110,7 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
-  @apply bg-superficie-base text-conteudo transition-colors;
+  @apply bg-superficie-base font-sans text-conteudo antialiased transition-colors;
 }
 
 /* Ícone do calendário branco no modo escuro */
@@ -95,21 +120,27 @@ body,
 
 /* Scrollbar
  *
- * Sai dos cinzas cravados e passa a usar os tokens: no claro ela precisa
- * escurecer para aparecer, no escuro precisa clarear, e era isso que os dois
- * blocos separados faziam à mão. Quadrada, como o resto. */
+ * A do HelpHS: 6px, trilho transparente, polegar arredondado e translúcido —
+ * discreta o bastante para não competir com o conteúdo e visível o bastante
+ * para dizer que há mais coisa abaixo.
+ *
+ * Continua saindo do token (`--borda-forte`) e não de um cinza cravado: no
+ * claro ela precisa escurecer para aparecer, no escuro precisa clarear, e a
+ * variável já faz essa troca sozinha. Deixou de ser quadrada junto com o resto
+ * do sistema. */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: rgb(var(--borda-forte));
+  border-radius: 9999px;
+  background-color: rgb(var(--borda-forte) / 0.6);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(var(--sinal));
+  background-color: rgb(var(--borda-forte) / 0.9);
 }
 
 /* Toast
@@ -120,65 +151,14 @@ body,
 @layer base {
   :root {
     --toast-bg: #ffffff;
-    --toast-color: #142334;
-    --toast-border: #c5d1dd;
+    --toast-color: #0f172a;
+    --toast-border: #e2e8f0;
   }
   .dark {
-    --toast-bg: #192938;
-    --toast-color: #dae7f1;
-    --toast-border: #253e56;
+    --toast-bg: #1a2f4a;
+    --toast-color: #f1f5f9;
+    --toast-border: #1e3a5f;
   }
-}
-
-/* ── Fundo de console ─────────────────────────────────────────────────
- *
- * Duas camadas estáticas, sem canvas e sem JavaScript.
- *
- * A maquete tinha linhas de log em deriva desenhadas em canvas. Ficava bonito
- * e custava um `requestAnimationFrame` rodando enquanto alguém digita a senha
- * — num notebook em bateria, para uma tela que dura cinco segundos. As duas
- * camadas abaixo dão a mesma sensação de profundidade e não custam quadro
- * nenhum depois de pintadas.
- *
- * A malha usa `--borda`, então ela funciona nos dois temas sem regra separada:
- * no escuro é o risco de um console, no claro é papel milimetrado.
- */
-.malha {
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      rgb(var(--borda) / 0.28) 0 1px,
-      transparent 1px 46px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgb(var(--borda) / 0.28) 0 1px,
-      transparent 1px 46px
-    );
-}
-
-/* Escurece as bordas e puxa o olho ao centro. Sem isto a malha compete com o
- * painel; com isto ela vira profundidade. */
-.vinheta {
-  background: radial-gradient(
-    ellipse 62% 58% at 50% 45%,
-    transparent 0%,
-    rgb(var(--superficie-base) / 0.86) 72%,
-    rgb(var(--superficie-base)) 100%
-  );
-}
-
-/* A varredura que percorre o painel uma vez, na entrada. É a "inicialização",
- * não um laço. */
-.varredura::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -2px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--sinal)), transparent);
-  @apply animate-varrer;
 }
 
 /* 🎯 Animação para tooltip do botão Central HS */

@@ -11,25 +11,34 @@ interface RotuloProps {
 }
 
 /**
- * Rótulo estrutural: monoespaçado, caixa alta, entrelinha larga.
+ * Rótulo de SEÇÃO: caixa alta, pequeno, entrelinha larga.
  *
- * É o elemento que mais carrega a identidade de console — mais que a cor,
- * porque aparece em toda tela e a cor só aparece no que está ativo.
+ * ── O que mudou, e por quê ────────────────────────────────────────────
  *
- * ── Duas decisões que valem a pena estar escritas ─────────────────────
+ * Era monoespaçado, em 11px. Era o elemento que mais carregava a identidade
+ * de console — mais que a cor, porque aparecia em toda tela e a cor só
+ * aparece no que está ativo. Foi exatamente por isso que ele precisou mudar:
+ * enquanto ele fosse monoespaçado, o ChamadosHS não pareceria do mesmo
+ * sistema que o HelpHS por mais que a paleta batesse.
  *
- * **11px, não os 9,6px da maquete.** Lá o rótulo era textura de fundo. Aqui
- * ele diz "PROTOCOLO" acima de um número que alguém precisa ler, e texto que
- * carrega informação não desce abaixo de 11px.
+ * A forma agora é a que o HelpHS usa para o mesmo papel — os títulos de grupo
+ * da barra lateral: `10px`, `font-semibold`, caixa alta, `tracking-widest`.
+ * O papel não mudou: dizer o que a seção abaixo é.
  *
- * **Monoespaçada só aqui e em dado de máquina** — protocolo, data, contador.
- * Título, descrição e comentário continuam em sans: são texto que uma pessoa
- * escreveu para outra ler, e monoespaçada pequena atrapalha exatamente esse
- * tipo de leitura.
+ * ── O que ele NÃO é ───────────────────────────────────────────────────
  *
- * A cor vem de `--conteudo-tenue`, que dá 5,0:1 no tema claro e 5,2:1 no
- * escuro. O tom equivalente da maquete dava 2,54:1 — o elemento mais
- * característico da interface era o ilegível.
+ * Não é rótulo de campo. Campo que alguém preenche usa `RotuloDeCampo`
+ * (`ui/Campo`), que é `text-sm font-medium` — a mesma forma que o HelpHS usa
+ * nos rótulos de `Input`, `Select` e `Textarea`. Caixa alta em 10px acima de
+ * "Confirmar senha" atrapalha quem está preenchendo, e era assim que sete
+ * campos deste sistema estavam rotulados.
+ *
+ * Nem é para dado de máquina. Protocolo, data e contador continuam em
+ * monoespaçada, que é o papel que a família ainda tem no sistema — só que
+ * escrita onde o dado está, não aqui.
+ *
+ * A cor vem de `--conteudo-tenue`, validada em 5,2:1 no claro e 4,9:1 no
+ * escuro por `npm run validar:paleta`.
  */
 export const Rotulo: React.FC<RotuloProps> = ({
   children,
@@ -39,7 +48,10 @@ export const Rotulo: React.FC<RotuloProps> = ({
 }) => (
   <Tag
     htmlFor={htmlFor}
-    className={cn('font-mono text-rotulo uppercase text-conteudo-tenue', className)}
+    className={cn(
+      'text-[10px] font-semibold uppercase tracking-widest text-conteudo-tenue',
+      className
+    )}
   >
     {children}
   </Tag>

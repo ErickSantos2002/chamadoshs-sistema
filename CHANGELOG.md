@@ -15,7 +15,119 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ## [Não publicado]
 
-_Nada pendente. O ciclo de modificações de agosto fechou na 1.6.13._
+_Nada pendente._
+
+---
+
+## [1.7.0] — 2026-08-27
+
+O front inteiro passou a usar a linguagem visual do **HelpHS**. Funcionalidade
+do ChamadosHS, design do HelpHS — nenhuma rota, contrato de API, regra de
+permissão ou dado de domínio mudou.
+
+Doze fases, na ordem: tokens → casca → componentes → Dashboard → telas de
+chamado → demais telas → Login → responsividade → revisão. Cada tela foi
+migrada contra uma especificação escrita e auditada em seguida por um segundo
+leitor, com uma pergunta só: mudou alguma coisa além de aparência? Foram 16
+auditorias; nenhum campo, coluna, filtro, botão, estado vazio ou mensagem saiu.
+
+### ⚠️ Requer ação no deploy
+
+Nada além do rebuild do front. Sem migration, sem variável nova, sem alteração
+no repositório da API.
+
+### Changed
+
+- **Paleta.** Os dez tokens semânticos (`--superficie`, `--borda`,
+  `--conteudo`, `--sinal`) mantêm os nomes e recebem os valores do HelpHS —
+  navy `#0D1B2A` no escuro, slate no claro.
+- **Duas cores NÃO foram copiadas ao pé da letra**, porque
+  `npm run validar:paleta` roda no build e exige 4,5:1: o `primary` do HelpHS
+  (`#0EA5E9`) dá 2,77:1 sobre branco, então `--sinal` no tema claro é o
+  `primary-700` `#0369A1`; e o `slate-500` que o HelpHS usa para texto apagado
+  no escuro dá 3,36:1, então `--conteudo-tenue` é `#818FA3`.
+- **Tipografia.** Plus Jakarta Sans, a fonte do HelpHS — hospedada no próprio
+  bundle por `@fontsource`, e **não** no CDN do Google. O sistema roda na rede
+  interna, e `src/recursos-externos.test.ts` existe porque já houve 12 ícones
+  vindos do `img.icons8.com`. São 76 KB, zero requisição externa.
+- **Cantos.** O bloco `borderRadius` zerado saiu do `tailwind.config.js`. As
+  112 classes `rounded-*` já escritas em 25 arquivos voltaram a arredondar de
+  uma vez, com `rounded-lg` = 8px e `rounded-xl` = 12px.
+- **Ícones.** A base `Traco` passou de `1.5 / square / miter` para
+  `1.75 / round / round` — uma linha virou os ~50.
+- **Casca.** `Header` + `Sidebar` viraram `AppLayout` + `Sidebar` + `Topbar`.
+  A barra lateral é uma só em todas as larguras: 256px no desktop, 72px
+  recolhida com o rótulo em tooltip, gaveta sobre fundo escuro abaixo de `md`.
+  Antes eram dois componentes lendo a mesma lista — e eles já tinham divergido
+  uma vez, deixando o técnico sem metade do sistema numa janela estreita.
+- **Nome, perfil, sair e o modo escuro** foram para o menu do usuário, no canto
+  superior direito. O interruptor de tema morava no rodapé da barra lateral e
+  sumia abaixo de `lg`; agora existe em qualquer largura.
+- **O aviso de novidades** deixou de ser item na lista de áreas — não é uma
+  área — e virou o número da versão no rodapé do menu, com o ponto de não-lido.
+- **O espaçamento e o fundo do conteúdo** passaram a ser da casca (`p-4 md:p-6`
+  no `<main>`). Eram dez cópias do mesmo `p-6`, uma por tela.
+- **Larguras do `Modal`** desceram um degrau na direção do HelpHS.
+
+### Added
+
+- `src/components/layout/casca.test.tsx` e `src/components/ui/kit.test.tsx`:
+  24 casos travando as medidas que definem "mesma família" — 256px, 72px,
+  64px, os raios, o anel de foco — e que exista **um** `<nav>` na casca.
+- Quatro casos novos em `src/lib/seletor.test.ts`, para a lista que passou a
+  caber na altura da tela.
+
+### Fixed
+
+- **No celular, a tela de Chamados podia abrir sem mostrar chamado nenhum.** O
+  quadro é o único `flex-1` entre irmãos que não encolhem: numa tela de 667px o
+  cabeçalho empilhado e o card de tarefas comiam tudo, e as colunas ficavam com
+  altura perto de zero — sem barra de rolagem e sem aviso, porque o quadro é
+  `overflow-hidden`.
+- **O botão flutuante da Central HS cobria o "Salvar"** das janelas no celular,
+  e ficava por cima da gaveta lateral: o toque que deveria fechar o menu abria
+  um site externo. Era `z-50`, o mesmo do modal, e vinha depois no DOM.
+- **As listas de escolha abriam para fora da tela** quando o campo estava na
+  metade de baixo, e as últimas opções eram inalcançáveis no toque — rolar
+  fecha a lista, de propósito. Agora elas abrem para cima quando não cabem
+  embaixo, e sempre recebem um teto igual ao espaço que existe de fato.
+- **Rolagem aninhada** em três lugares: comentários e histórico da tela de
+  detalhe, e o carregador de rota. Os tetos vinham de quando a página inteira
+  rolava; com o `<main>` rolando, davam duas barras verticais coladas.
+- **Quatro janelas da tela de detalhe rolavam por inteiro**, então o título
+  subia e sumia e a barra de ações saía da tela em formulário longo. Passaram a
+  usar o `Modal` do kit, com cabeçalho e rodapé fixos.
+- **`bg-superficie-base` usado dentro de componente** (coluna do quadro, ficha
+  do ChamadoModal, item do NovidadesModal, card da SlaTab). É o fundo do
+  `<main>`: num card ele repete a cor da página e o bloco some.
+- **`border-borda-suave` como divisor de card** em cinco lugares. No tema
+  escuro esse token vale o mesmo que `--superficie` — a régua existia no CSS e
+  não na tela.
+- **Sete rótulos de campo** usavam o rótulo de painel: "Usuário", "Senha",
+  "Quem fez", "De", "Até" e mais dois apareciam em caixa alta monoespaçada, que
+  é a forma de dado de máquina.
+- **`estiloDoGrafico` estava com os hexadecimais da paleta antiga.** O Recharts
+  recebe cor como string em JS e não enxerga classe do Tailwind, então aquela
+  cópia manual não acompanhou a troca — a grade dos gráficos ficou no
+  cinza-azulado antigo dentro de cards já slate.
+- **O tooltip do botão da Central HS** era texto branco sobre superfície clara
+  no tema claro, e o pulso da animação cobria a logo a cada ciclo.
+- `estilos.test.ts` acusava os dois lados de um ternário como conflito de
+  fundo — eles nunca chegam juntos ao elemento — e, pelo mesmo descuido,
+  **escondia** o caso real de um fundo fixo com outro condicional por cima.
+
+### Removed
+
+- **A linguagem de console, inteira.** Ela foi construída da 1.3 à 1.6.13 e é
+  incompatível com o alvo: `Colchetes` (12 painéis + o componente), o `Rotulo`
+  monoespaçado, as camadas `.malha` / `.vinheta` / `.varredura` do login, os
+  keyframes `subir` / `acender` / `varrer`, o breakpoint `alto:` e o token
+  `fontSize.rotulo`.
+- `src/components/Header.tsx` (223 linhas) e `src/components/Sidebar.tsx`
+  (116 linhas), absorvidos pela casca nova.
+
+Monoespaçada continua no sistema onde ela informa: protocolo, data, contador,
+versão.
 
 ---
 

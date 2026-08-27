@@ -32,16 +32,53 @@ import { IconeChamado, IconeConfiguracoes, IconePainel, IconeRepetir, IconeTrilh
  * próprias classes de tamanho e opacidade, e um elemento já construído aqui
  * obrigaria os dois a concordarem também sobre isso.
  */
+/**
+ * O grupo em que a área aparece no menu.
+ *
+ * Não é permissão — o menu continua mostrando tudo para todo mundo, pelo
+ * motivo escrito acima. É só a divisória visual da barra lateral.
+ *
+ * A linha entre os dois grupos é a mesma que o `router` já traça: `Principal`
+ * são as áreas que qualquer perfil abre, `Gestão` são as três que o
+ * `ProtectedRoute` restringe a administrador e técnico. Um terceiro grupo com
+ * um item só seria uma divisória sem nada para dividir.
+ */
+export type GrupoDoMenu = 'Principal' | 'Gestão';
+
 export interface ItemDeMenu {
   label: string;
   to: string;
   Icone: React.FC<PropsDeIcone>;
+  grupo: GrupoDoMenu;
 }
 
 export const ITENS_DO_MENU: ItemDeMenu[] = [
-  { label: 'Dashboard', to: '/dashboard', Icone: IconePainel },
-  { label: 'Chamados', to: '/chamados', Icone: IconeChamado },
-  { label: 'Cadastros', to: '/cadastros', Icone: IconeConfiguracoes },
-  { label: 'Tarefas Recorrentes', to: '/tarefas-recorrentes', Icone: IconeRepetir },
-  { label: 'Auditoria', to: '/auditoria', Icone: IconeTrilha },
+  { label: 'Dashboard', to: '/dashboard', Icone: IconePainel, grupo: 'Principal' },
+  { label: 'Chamados', to: '/chamados', Icone: IconeChamado, grupo: 'Principal' },
+  { label: 'Cadastros', to: '/cadastros', Icone: IconeConfiguracoes, grupo: 'Gestão' },
+  { label: 'Tarefas Recorrentes', to: '/tarefas-recorrentes', Icone: IconeRepetir, grupo: 'Gestão' },
+  { label: 'Auditoria', to: '/auditoria', Icone: IconeTrilha, grupo: 'Gestão' },
 ];
+
+/** A ordem em que os grupos aparecem. */
+const ORDEM_DOS_GRUPOS: GrupoDoMenu[] = ['Principal', 'Gestão'];
+
+export interface SecaoDoMenu {
+  grupo: GrupoDoMenu;
+  itens: ItemDeMenu[];
+}
+
+/**
+ * A mesma lista, agrupada — o formato que a barra lateral desenha.
+ *
+ * DERIVADA de `ITENS_DO_MENU`, e não escrita à mão ao lado dela. Uma segunda
+ * lista literal seria a segunda verdade que este arquivo inteiro existe para
+ * eliminar: acrescentar uma área e esquecer de repetir aqui daria de novo dois
+ * menus discordando, que é o defeito que trouxe o técnico para cá.
+ *
+ * Grupo sem item nenhum não vira seção vazia.
+ */
+export const GRUPOS_DO_MENU: SecaoDoMenu[] = ORDEM_DOS_GRUPOS.map((grupo) => ({
+  grupo,
+  itens: ITENS_DO_MENU.filter((item) => item.grupo === grupo),
+})).filter((secao) => secao.itens.length > 0);

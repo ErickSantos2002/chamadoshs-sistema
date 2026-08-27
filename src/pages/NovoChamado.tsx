@@ -14,27 +14,26 @@ const NovoChamado: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-full bg-superficie-base transition-colors">
-      <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-3xl space-y-5">
+      <div className="rounded-2xl border border-borda bg-superficie px-5 py-4">
         <button
           onClick={() => navigate('/chamados')}
-          className="mb-4 flex items-center gap-1 text-sm text-conteudo-suave transition-colors hover:text-info"
+          className="mb-2 flex items-center gap-1.5 text-xs font-medium text-conteudo-tenue transition-colors hover:text-sinal"
         >
-          <IconeVoltar className="h-4 w-4" aria-hidden="true" />
+          <IconeVoltar className="h-3.5 w-3.5" aria-hidden="true" />
           Voltar
         </button>
+        <h1 className="text-xl font-extrabold tracking-tight text-conteudo">Novo Chamado</h1>
+        <p className="mt-0.5 text-sm text-conteudo-tenue">
+          Quanto mais claro o relato, menos idas e vindas até a solução.
+        </p>
+      </div>
 
-        <div className="rounded-xl border border-borda bg-superficie p-6 shadow-sm">
-          <h1 className="mb-1 text-2xl font-bold tracking-tight text-conteudo">Novo Chamado</h1>
-          <p className="mb-6 text-sm text-conteudo-tenue">
-            Quanto mais claro o relato, menos idas e vindas até a solução.
-          </p>
-
-          <NovoChamadoForm
-            aoCriar={(chamado) => navigate(`/chamados/${chamado.id}`)}
-            aoCancelar={() => navigate('/chamados')}
-          />
-        </div>
+      <div className="rounded-xl border border-borda bg-superficie p-5">
+        <NovoChamadoForm
+          aoCriar={(chamado) => navigate(`/chamados/${chamado.id}`)}
+          aoCancelar={() => navigate('/chamados')}
+        />
       </div>
     </div>
   );

@@ -18,7 +18,11 @@ const FOLGA = 8;
 /** Distância entre o campo e a lista. */
 const RESPIRO = 6;
 
+/** Altura máxima da lista, quando há tela sobrando para ela. */
+export const ALTURA_MAXIMA = 288;
+
 export interface AreaDoGatilho {
+  top: number;
   left: number;
   right: number;
   bottom: number;
@@ -26,10 +30,15 @@ export interface AreaDoGatilho {
 }
 
 export interface PosicaoDaLista {
-  top: number;
+  /** Ancorada pelo topo quando abre para baixo. */
+  top?: number;
+  /** Ancorada pela base quando abre para cima. */
+  bottom?: number;
   left?: number;
   right?: number;
   minWidth: number;
+  /** Nunca deixa a lista passar da borda da janela. */
+  maxHeight: number;
 }
 
 /**
@@ -42,19 +51,55 @@ export interface PosicaoDaLista {
  *
  * A largura nunca é menor que a do campo: uma lista mais estreita que o botão
  * que a abriu parece defeito.
+ *
+ * ── E a altura ────────────────────────────────────────────────────────
+ *
+ * A conta acima existia só para a largura, e isso bastava enquanto o sistema
+ * era usado em tela grande. No celular não basta: um seletor na metade de
+ * baixo da tela abria uma lista de até 288px que passava da borda inferior, e
+ * o que ficava para fora era inalcançável — rolar a página FECHA a lista (é o
+ * comportamento escolhido, para ela não descolar do campo), e no toque não há
+ * teclado para descer até a opção.
+ *
+ * Agora a lista faz o mesmo que faz na horizontal: se não cabe para baixo e
+ * há mais espaço para cima, ela abre para cima. E em qualquer um dos dois
+ * lados ela ganha um teto igual ao espaço que existe de verdade, então nunca
+ * atravessa a borda — no pior caso ela fica baixa e rola por dentro, que é o
+ * que já sabe fazer.
  */
 export function posicionarLista(
   area: AreaDoGatilho,
-  larguraDaJanela: number
+  larguraDaJanela: number,
+  alturaDaJanela: number
 ): PosicaoDaLista {
   const minWidth = Math.max(LARGURA_MINIMA, area.width);
-  const top = area.bottom + RESPIRO;
 
-  if (area.left + minWidth > larguraDaJanela - FOLGA) {
-    return { top, right: larguraDaJanela - area.right, minWidth };
+  const lado =
+    area.left + minWidth > larguraDaJanela - FOLGA
+      ? { right: larguraDaJanela - area.right }
+      : { left: area.left };
+
+  const abaixo = alturaDaJanela - area.bottom - RESPIRO - FOLGA;
+  const acima = area.top - RESPIRO - FOLGA;
+
+  // Só vira para cima quando há motivo E ganho: não cabe embaixo, e em cima
+  // sobra mais. Virar por qualquer aperto faria a lista pular de lado entre
+  // duas aberturas seguidas no mesmo campo.
+  if (abaixo < ALTURA_MAXIMA && acima > abaixo) {
+    return {
+      ...lado,
+      bottom: alturaDaJanela - area.top + RESPIRO,
+      minWidth,
+      maxHeight: Math.min(ALTURA_MAXIMA, acima),
+    };
   }
 
-  return { top, left: area.left, minWidth };
+  return {
+    ...lado,
+    top: area.bottom + RESPIRO,
+    minWidth,
+    maxHeight: Math.min(ALTURA_MAXIMA, abaixo),
+  };
 }
 
 /** Quanto tempo as letras digitadas contam como uma busca só. */

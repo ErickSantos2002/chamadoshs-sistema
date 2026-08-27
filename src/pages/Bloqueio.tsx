@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '../hooks/useAuth';
-import { Colchetes, Rotulo } from '../components/ui';
+import { Rotulo } from '../components/ui';
 import { IconeCadeado } from '../components/ui/icones';
 
 interface BloqueioProps {
@@ -39,14 +39,12 @@ const Bloqueio: React.FC<BloqueioProps> = ({
   const { user } = useAuth();
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-superficie-base p-6">
+    <div className="flex min-h-full items-center justify-center px-4 py-10">
       <Helmet>
         <title>{area ? `${area} | ChamadosHS` : 'Sem acesso | ChamadosHS'}</title>
       </Helmet>
 
-      <div className="relative max-w-md border border-borda bg-superficie px-8 py-10 text-center">
-        <Colchetes />
-
+      <div className="relative w-full max-w-md rounded-xl border border-borda bg-superficie px-8 py-10 text-center">
         <IconeCadeado className="mx-auto h-8 w-8 text-conteudo-tenue" aria-hidden="true" />
 
         <Rotulo como="p" className="mt-4 block">

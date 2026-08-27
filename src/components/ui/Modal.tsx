@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
 import { primeiroCampoFocavel } from '../../lib/foco';
-import { Colchetes } from './Colchetes';
 import { IconeFechar } from './icones';
 
 interface ModalProps {
@@ -15,11 +14,24 @@ interface ModalProps {
   largura?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
+/**
+ * A escada de larguras.
+ *
+ * Puxada um degrau para baixo, na direção do HelpHS, cuja escada vai de 384px
+ * a 768px enquanto esta ia de 448px a 1152px — lado a lado, um diálogo daqui
+ * cobria quase a tela e o de lá ocupava metade.
+ *
+ * Não é a escada do HelpHS ao pé da letra, e o motivo é estrutural: lá o
+ * chamado tem PÁGINA de detalhe, e o diálogo mais largo é um formulário
+ * simples. Aqui o `ChamadoModal` traz a ficha do chamado em duas colunas
+ * dentro de um diálogo, e a 768px do HelpHS as duas colunas se espremem. O
+ * topo continua largo por necessidade; o resto desceu.
+ */
 const LARGURAS = {
   sm: 'max-w-md',
-  md: 'max-w-2xl',
-  lg: 'max-w-4xl',
-  xl: 'max-w-6xl',
+  md: 'max-w-xl',
+  lg: 'max-w-3xl',
+  xl: 'max-w-5xl',
 };
 
 /**
@@ -115,24 +127,20 @@ export const Modal: React.FC<ModalProps> = ({
         // Com o rodapé fixo ele passaria a separar os dois campos de "Nova
         // Categoria" dos botões por meia tela de nada.
         className={cn(
-          'relative flex max-h-[92vh] w-full flex-col border border-borda bg-superficie shadow-2xl',
+          'relative flex max-h-[92vh] w-full flex-col rounded-xl border border-borda bg-superficie shadow-xl',
           LARGURAS[largura]
         )}
       >
-        {/* Modal é painel por definição: é a superfície de trabalho do
-            momento, e não existem oito dele na tela. */}
-        <Colchetes />
-
         <div className="flex items-start justify-between gap-4 border-b border-borda px-5 py-4">
           <div>
-            <h2 className="text-lg font-bold text-conteudo">{titulo}</h2>
+            <h2 className="text-base font-semibold text-conteudo">{titulo}</h2>
             {descricao && <p className="mt-0.5 text-sm text-conteudo-tenue">{descricao}</p>}
           </div>
           <button
             type="button"
             onClick={aoFechar}
             aria-label="Fechar"
-            className="p-1 text-conteudo-tenue transition-colors hover:bg-superficie-elevada hover:text-conteudo"
+            className="rounded-lg p-1 text-conteudo-tenue transition-colors hover:bg-superficie-elevada hover:text-conteudo"
           >
             <IconeFechar className="h-5 w-5" aria-hidden="true" />
           </button>

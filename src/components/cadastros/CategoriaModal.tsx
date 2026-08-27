@@ -219,18 +219,18 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
         </div>
 
         {mode === 'view' && categoria && (
-          <div className="bg-superficie-elevada p-4">
-            <h3 className="mb-2 text-sm font-medium text-conteudo-suave">
+          <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
+            <h3 className="mb-2 text-sm font-semibold text-conteudo">
               Informações de Auditoria
             </h3>
-            <dl className="space-y-1 text-sm text-conteudo-suave">
+            <dl className="space-y-1 text-sm">
               <div>
-                <dt className="inline font-medium">ID:</dt>{' '}
-                <dd className="inline">#{categoria.id}</dd>
+                <dt className="inline font-medium text-conteudo-tenue">ID:</dt>{' '}
+                <dd className="inline text-conteudo">#{categoria.id}</dd>
               </div>
               <div>
-                <dt className="inline font-medium">Criado em:</dt>{' '}
-                <dd className="inline">
+                <dt className="inline font-medium text-conteudo-tenue">Criado em:</dt>{' '}
+                <dd className="inline text-conteudo">
                   {categoria.created_at
                     ? new Date(categoria.created_at).toLocaleString('pt-BR')
                     : 'N/A'}
@@ -239,7 +239,6 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
             </dl>
           </div>
         )}
-
       </form>
     </Modal>
   );

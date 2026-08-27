@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Colchetes } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
+import { Button, Input } from '../ui';
 import CategoriaModal from './CategoriaModal';
 import { IconeAlerta, IconeApagar, IconeBusca, IconeEditar, IconeEtiqueta, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima } from '../ui/icones';
 import type {
@@ -131,159 +131,147 @@ const CategoriasTab: React.FC = () => {
   // ========================================
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="flex h-full flex-col gap-5 p-6">
       {/* Header com ações */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
+      <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeEtiqueta className="w-6 h-6 text-info-forte dark:text-info-suave" />
-          <h2 className="text-xl font-semibold text-conteudo">
+          <IconeEtiqueta className="h-6 w-6 text-info-forte dark:text-info-suave" />
+          <h2 className="text-sm font-semibold text-conteudo">
             Categorias
           </h2>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Busca */}
-          <div className="relative flex-1 sm:flex-none sm:w-64">
-            <IconeBusca className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-conteudo-tenue" />
-            <input
+          <div className="w-full sm:w-64">
+            <Input
               type="text"
               placeholder="Buscar categorias..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-borda bg-superficie-base text-conteudo placeholder:text-conteudo-tenue focus:outline-none focus:border-sinal focus:ring-1 focus:ring-sinal"
+              icone={<IconeBusca className="h-4 w-4" />}
             />
           </div>
 
           {/* Botão Atualizar */}
-          <button
+          <Button
+            variante="secundario"
             onClick={refreshData}
             disabled={loading}
-            className="px-4 py-2 bg-superficie-elevada text-conteudo-suave rounded-lg hover:bg-borda transition-colors flex items-center gap-2"
             aria-label="Atualizar dados"
           >
-            <IconeRecarregar className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+            <IconeRecarregar className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
 
           {/* Botão Nova Categoria */}
           {podeEditar && (
-            <button
-              onClick={handleNovaCategoria}
-              className="px-4 py-2 bg-info hover:bg-info-forte text-white rounded-lg transition-colors flex items-center gap-2"
-            >
-              <IconeMais className="w-4 h-4" />
+            <Button onClick={handleNovaCategoria}>
+              <IconeMais className="h-4 w-4" />
               <span className="hidden sm:inline">Nova Categoria</span>
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="mb-4 p-4 bg-perigo/10 border border-perigo/30 rounded-lg flex items-start gap-3">
-          <IconeAlerta className="w-5 h-5 text-perigo-forte dark:text-perigo-suave mt-0.5" />
+        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex-1">
-            <p className="text-perigo-forte dark:text-perigo-suave">{error}</p>
+            <p>{error}</p>
           </div>
         </div>
       )}
 
       {/* Tabela */}
-      <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
-        <Colchetes />
+      <div className="relative min-h-0 flex-1 overflow-auto rounded-xl border border-borda bg-superficie">
         {loading && !categorias.length ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-conteudo-tenue">
-              <IconeRecarregar className="w-8 h-8 animate-spin mx-auto mb-2" />
+          <div className="flex h-full items-center justify-center">
+            <div className="text-sm text-conteudo-tenue">
+              <IconeRecarregar className="mx-auto mb-2 h-8 w-8 animate-spin" />
               Carregando categorias...
             </div>
           </div>
         ) : categoriasOrdenadas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full p-8">
-            <IconeEtiqueta className="w-12 h-12 text-conteudo-tenue mb-4" />
-            <p className="text-conteudo-tenue text-center">
-              {busca 
+          <div className="flex h-full flex-col items-center justify-center p-8">
+            <IconeEtiqueta className="mb-4 h-12 w-12 text-conteudo-tenue" />
+            <p className="text-center text-sm text-conteudo-tenue">
+              {busca
                 ? 'Nenhuma categoria encontrada com os critérios de busca'
                 : 'Nenhuma categoria cadastrada ainda'}
             </p>
             {podeEditar && !busca && (
-              <button
-                onClick={handleNovaCategoria}
-                className="mt-4 px-4 py-2 bg-info hover:bg-info-forte text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                <IconeMais className="w-4 h-4" />
+              <Button className="mt-4" onClick={handleNovaCategoria}>
+                <IconeMais className="h-4 w-4" />
                 Criar primeira categoria
-              </button>
+              </Button>
             )}
           </div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="border-b border-borda">
-                <th className="px-6 py-3 text-left">
+                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                   <button
                     onClick={() => handleOrdenar('id')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
+                    className="flex items-center gap-1 hover:text-conteudo"
                   >
                     ID
                     {ordenacao.campo === 'id' && (
-                      ordenacao.direcao === 'asc' ? 
-                        <IconeSetaCima className="w-4 h-4" /> : 
-                        <IconeSeta className="w-4 h-4" />
+                      ordenacao.direcao === 'asc' ?
+                        <IconeSetaCima className="h-4 w-4" /> :
+                        <IconeSeta className="h-4 w-4" />
                     )}
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left">
+                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                   <button
                     onClick={() => handleOrdenar('nome')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
+                    className="flex items-center gap-1 hover:text-conteudo"
                   >
                     Nome
                     {ordenacao.campo === 'nome' && (
-                      ordenacao.direcao === 'asc' ? 
-                        <IconeSetaCima className="w-4 h-4" /> : 
-                        <IconeSeta className="w-4 h-4" />
+                      ordenacao.direcao === 'asc' ?
+                        <IconeSetaCima className="h-4 w-4" /> :
+                        <IconeSeta className="h-4 w-4" />
                     )}
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left">
-                  <span className="font-medium text-xs uppercase tracking-wider text-conteudo-tenue">
-                    Descrição
-                  </span>
+                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                  Descrição
                 </th>
-                <th className="px-6 py-3 text-left">
+                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                   <button
                     onClick={() => handleOrdenar('created_at')}
-                    className="flex items-center gap-1 font-medium text-xs uppercase tracking-wider text-conteudo-tenue hover:text-conteudo"
+                    className="flex items-center gap-1 hover:text-conteudo"
                   >
                     Criado em
                     {ordenacao.campo === 'created_at' && (
-                      ordenacao.direcao === 'asc' ? 
-                        <IconeSetaCima className="w-4 h-4" /> : 
-                        <IconeSeta className="w-4 h-4" />
+                      ordenacao.direcao === 'asc' ?
+                        <IconeSetaCima className="h-4 w-4" /> :
+                        <IconeSeta className="h-4 w-4" />
                     )}
                   </button>
                 </th>
-                <th className="px-6 py-3 text-right">
-                  <span className="font-medium text-xs uppercase tracking-wider text-conteudo-tenue">
-                    Ações
-                  </span>
+                <th className="px-4 py-3 text-right text-xs font-medium text-conteudo-suave">
+                  Ações
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-borda">
+            <tbody>
               {categoriasOrdenadas.map((categoria) => (
                 <tr
                   key={categoria.id}
-                  className={`hover:bg-superficie-elevada transition-colors ${
+                  className={`border-b border-borda-suave transition-colors hover:bg-superficie-elevada ${
                     categoria.ativo ? '' : 'opacity-60'
                   }`}
                 >
-                  <td className="px-6 py-4 text-sm text-conteudo">
+                  <td className="px-4 py-3 text-sm text-conteudo">
                     #{categoria.id}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3 text-sm">
                     <div className="flex items-center gap-2">
-                      <IconeEtiqueta className="w-4 h-4 text-conteudo-tenue" />
+                      <IconeEtiqueta className="h-4 w-4 text-conteudo-tenue" />
                       <span className="text-sm font-medium text-conteudo">
                         {categoria.nome}
                       </span>
@@ -297,31 +285,31 @@ const CategoriasTab: React.FC = () => {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-conteudo-suave">
+                  <td className="px-4 py-3 text-sm text-conteudo-suave">
                     {categoria.descricao || '-'}
                   </td>
-                  <td className="px-6 py-4 text-sm text-conteudo-suave">
+                  <td className="px-4 py-3 text-sm text-conteudo-suave">
                     {formatDate(categoria.created_at)}
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="px-4 py-3 text-right text-sm">
+                    <div className="flex items-center justify-end gap-1">
                       {/* Visualizar sempre disponível */}
                       <button
                         onClick={() => handleVisualizarCategoria(categoria)}
-                        className="p-2 text-conteudo-suave hover:bg-superficie-elevada rounded-lg transition-colors"
+                        className="rounded-lg p-2 text-conteudo-suave transition-colors hover:bg-superficie-elevada"
                         aria-label="Visualizar categoria"
                       >
-                        <IconeOlho className="w-4 h-4 text-info-forte dark:text-info-suave" />
+                        <IconeOlho className="h-4 w-4 text-info-forte dark:text-info-suave" />
                       </button>
 
                       {/* Editar - apenas para admin/gerente */}
                       {podeEditar && (
                         <button
                           onClick={() => handleEditarCategoria(categoria)}
-                          className="p-2 text-info-forte dark:text-info-suave hover:bg-info/10 rounded-lg transition-colors"
+                          className="rounded-lg p-2 text-info-forte transition-colors hover:bg-info/10 dark:text-info-suave"
                           aria-label="Editar categoria"
                         >
-                          <IconeEditar className="w-4 h-4 text-alerta-forte dark:text-alerta-suave" />
+                          <IconeEditar className="h-4 w-4 text-alerta-forte dark:text-alerta-suave" />
                         </button>
                       )}
 
@@ -331,13 +319,13 @@ const CategoriasTab: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleExcluirCategoria(categoria.id)}
-                              className="px-2 py-1 bg-perigo hover:bg-perigo-forte text-white text-xs rounded transition-colors"
+                              className="rounded-lg bg-perigo px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-perigo-forte"
                             >
                               Confirmar
                             </button>
                             <button
                               onClick={() => setConfirmDelete(null)}
-                              className="px-2 py-1 bg-superficie-elevada hover:bg-borda text-conteudo-suave text-xs rounded transition-colors"
+                              className="rounded-lg border border-borda bg-superficie-elevada px-3 py-1.5 text-xs font-semibold text-conteudo transition-colors hover:bg-borda"
                             >
                               Cancelar
                             </button>
@@ -345,11 +333,11 @@ const CategoriasTab: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => handleExcluirCategoria(categoria.id)}
-                            className="p-2 text-perigo-forte dark:text-perigo-suave hover:bg-perigo/10 rounded-lg transition-colors"
+                            className="rounded-lg p-2 text-perigo-forte transition-colors hover:bg-perigo/10 dark:text-perigo-suave"
                             aria-label="Excluir categoria"
                             title="Excluir"
                           >
-                            <IconeApagar className="w-4 h-4" />
+                            <IconeApagar className="h-4 w-4" />
                           </button>
                         )
                       )}
@@ -363,7 +351,7 @@ const CategoriasTab: React.FC = () => {
       </div>
 
       {/* Footer com informações */}
-      <div className="mt-4 flex justify-between items-center text-sm text-conteudo-suave">
+      <div className="flex shrink-0 items-center justify-between text-sm text-conteudo-tenue">
         <div>
           Total: {categoriasOrdenadas.length} categoria(s)
         </div>

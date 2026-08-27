@@ -9,7 +9,7 @@ import {
   TrilhaComFalha,
   TrilhaVazia,
 } from '../components/EstadosDaTrilha';
-import { Button, Colchetes, Rotulo, Seletor } from '../components/ui';
+import { Button, Rotulo, RotuloDeCampo, Seletor } from '../components/ui';
 import type { EventoDeAuditoria } from '../types/api';
 import { IconeRecarregar, IconeTrilha } from '../components/ui/icones';
 
@@ -146,38 +146,39 @@ const Auditoria: React.FC = () => {
   const talvezTenhaMais = (eventos?.length ?? 0) === POR_PAGINA;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex h-full flex-col gap-5">
+      <div className="flex shrink-0 flex-col gap-4 rounded-2xl border border-borda bg-superficie px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <IconeTrilha className="h-6 w-6 text-conteudo-tenue" aria-hidden="true" />
-          <h1 className="text-xl font-semibold text-conteudo">Auditoria de cadastros</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-conteudo">
+            Auditoria de cadastros
+          </h1>
         </div>
 
-        <Button
-          variante="secundario"
-          onClick={() => setRecarga((n) => n + 1)}
-          disabled={carregando}
-        >
-          <IconeRecarregar
-            className={`h-4 w-4 ${carregando ? 'animate-spin' : ''}`}
-            aria-hidden="true"
-          />
-          Atualizar
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variante="secundario"
+            onClick={() => setRecarga((n) => n + 1)}
+            disabled={carregando}
+          >
+            <IconeRecarregar
+              className={`h-4 w-4 ${carregando ? 'animate-spin' : ''}`}
+              aria-hidden="true"
+            />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
-      <div className="relative border border-borda bg-superficie p-4">
-        <Colchetes />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="relative shrink-0 rounded-xl border border-borda bg-superficie p-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             {/* Sem `htmlFor`: o seletor não é mais um `<select>` com id, e sim
                 um botão que carrega o próprio `aria-label`. Um `for` apontando
                 para nada é pior que nenhum — o leitor de tela anuncia o rótulo
                 e não encontra o campo. */}
-            <Rotulo como="label" className="mb-1.5 block">
-              Tipo de cadastro
-            </Rotulo>
+            <RotuloDeCampo>Tipo de cadastro</RotuloDeCampo>
             {ehAdministrador ? (
               <Seletor
                 rotulo="Tipo de cadastro"
@@ -196,7 +197,7 @@ const Auditoria: React.FC = () => {
                  "Usuários" seria oferecer um 403; oferecer "Todos" seria
                  chamar de todos uma lista que traz só metade. O silêncio
                  pareceria defeito — a frase evita a dúvida. */
-              <div className="border border-borda bg-superficie-base px-3 py-2 text-sm text-conteudo">
+              <div className="rounded-lg border border-borda bg-superficie-elevada px-3 py-2 text-sm text-conteudo">
                 Setores
                 <span className="mt-0.5 block text-xs text-conteudo-tenue">
                   Eventos de contas de usuário são restritos a administradores.
@@ -206,9 +207,7 @@ const Auditoria: React.FC = () => {
           </div>
 
           <div>
-            <Rotulo como="label" className="mb-1.5 block">
-              Quem fez
-            </Rotulo>
+            <RotuloDeCampo>Quem fez</RotuloDeCampo>
             <Seletor
               rotulo="Quem fez"
               valor={atorId}
@@ -223,36 +222,32 @@ const Auditoria: React.FC = () => {
           </div>
 
           <div>
-            <Rotulo como="label" htmlFor="de" className="mb-1.5 block">
-              De
-            </Rotulo>
+            <RotuloDeCampo htmlFor="de">De</RotuloDeCampo>
             <input
               id="de"
               type="date"
               value={de}
               onChange={(e) => aoFiltrar(() => setDe(e.target.value))}
-              className="w-full border border-borda bg-superficie-base px-3 py-2 text-sm text-conteudo
-                         transition-colors focus:border-sinal focus:outline-none focus:ring-1 focus:ring-sinal"
+              className="w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm text-conteudo
+                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
             />
           </div>
 
           <div>
-            <Rotulo como="label" htmlFor="ate" className="mb-1.5 block">
-              Até
-            </Rotulo>
+            <RotuloDeCampo htmlFor="ate">Até</RotuloDeCampo>
             <input
               id="ate"
               type="date"
               value={ate}
               onChange={(e) => aoFiltrar(() => setAte(e.target.value))}
-              className="w-full border border-borda bg-superficie-base px-3 py-2 text-sm text-conteudo
-                         transition-colors focus:border-sinal focus:outline-none focus:ring-1 focus:ring-sinal"
+              className="w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm text-conteudo
+                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
             />
           </div>
         </div>
 
         {temFiltro && (
-          <div className="mt-3">
+          <div className="mt-4">
             <Button variante="fantasma" tamanho="sm" onClick={limpar}>
               Limpar filtros
             </Button>
@@ -261,9 +256,7 @@ const Auditoria: React.FC = () => {
       </div>
 
       {/* Lista */}
-      <div className="relative min-h-0 flex-1 overflow-auto border border-borda bg-superficie">
-        <Colchetes />
-
+      <div className="relative min-h-0 flex-1 overflow-auto rounded-xl border border-borda bg-superficie">
         {/* Os três estados vêm de `EstadosDaTrilha`, compartilhados com o painel
             de histórico do modal de usuário. O que é específico desta tela — os
             três vazios diferentes, logo abaixo — continua aqui. */}
@@ -319,7 +312,7 @@ const Auditoria: React.FC = () => {
                 {['Quando', 'Quem', 'O quê', 'Cadastro', 'Origem'].map((coluna) => (
                   <th
                     key={coluna}
-                    className="border-b border-borda px-4 py-2 text-left font-mono text-rotulo uppercase text-conteudo-tenue"
+                    className="border-b border-borda px-4 py-3 text-left text-xs font-medium text-conteudo-suave"
                   >
                     {coluna}
                   </th>
@@ -333,11 +326,11 @@ const Auditoria: React.FC = () => {
 
                 return (
                   <tr key={evento.chave} className="border-b border-borda-suave">
-                    <td className="whitespace-nowrap px-4 py-2.5 align-top font-mono text-xs text-conteudo-suave">
+                    <td className="whitespace-nowrap px-4 py-3 align-top font-mono text-xs text-conteudo-suave">
                       {momento ?? '—'}
                     </td>
-                    <td className="px-4 py-2.5 align-top text-conteudo">{autor}</td>
-                    <td className="px-4 py-2.5 align-top">
+                    <td className="px-4 py-3 align-top text-conteudo">{autor}</td>
+                    <td className="px-4 py-3 align-top">
                       <span className="text-conteudo">{titulo}</span>
                       {mudanca && (
                         <span className="mt-0.5 block font-mono text-xs text-conteudo-suave">
@@ -346,16 +339,20 @@ const Auditoria: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 align-top">
-                      <Rotulo>{NOME_DO_ALVO[evento.alvo_tipo] ?? evento.alvo_tipo}</Rotulo>
-                      <span className="block text-conteudo">
+                    <td className="px-4 py-3 align-top">
+                      {/* Pastilha de metadado: o tipo do cadastro é dado sobre a
+                          linha, não título de seção — `Rotulo` é rótulo de seção. */}
+                      <span className="inline-block rounded bg-superficie-elevada px-2 py-0.5 text-[11px] text-conteudo-tenue">
+                        {NOME_DO_ALVO[evento.alvo_tipo] ?? evento.alvo_tipo}
+                      </span>
+                      <span className="mt-1 block text-conteudo">
                         {evento.alvo_nome ?? `#${evento.alvo_id}`}
                       </span>
                     </td>
                     {/* A rota que gravou. É o que denuncia cliente que ninguém
                         lembrava — um PUT ou DELETE aqui significa que algo além
                         do front mexe nos cadastros. */}
-                    <td className="px-4 py-2.5 align-top font-mono text-xs text-conteudo-tenue">
+                    <td className="px-4 py-3 align-top font-mono text-xs text-conteudo-tenue">
                       {evento.origem ?? '—'}
                     </td>
                   </tr>
@@ -368,7 +365,7 @@ const Auditoria: React.FC = () => {
 
       {/* Paginação */}
       {(pagina > 0 || talvezTenhaMais) && (
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-3 rounded-xl border border-borda bg-superficie px-5 py-3">
           <Rotulo>Página {pagina + 1}</Rotulo>
           <div className="flex gap-2">
             <Button

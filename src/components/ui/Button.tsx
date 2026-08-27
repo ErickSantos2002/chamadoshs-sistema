@@ -23,9 +23,9 @@ const VARIANTES: Record<VarianteBotao, string> = {
   // uma segunda cor: dá o relevo de um botão físico sem inventar um token de
   // "sinal claro" que precisaria ser validado à parte.
   primario:
-    'bg-sinal bg-gradient-to-b from-white/10 to-transparent text-white dark:text-superficie-base hover:brightness-110 focus-visible:ring-sinal',
+    'bg-sinal text-white dark:text-superficie-base hover:brightness-110 focus-visible:ring-sinal',
   secundario:
-    'bg-superficie-elevada text-conteudo border border-borda hover:bg-borda-suave focus-visible:ring-borda',
+    'bg-superficie-elevada text-conteudo border border-borda hover:bg-borda focus-visible:ring-borda',
   // Para concluir algo — registrar execução, marcar como feito. É o mesmo verde
   // de "no prazo" e "resolvido": a cor já carrega esse significado no sistema.
   sucesso: 'bg-sucesso text-white hover:bg-sucesso-forte focus-visible:ring-sucesso',
@@ -36,7 +36,7 @@ const VARIANTES: Record<VarianteBotao, string> = {
 const TAMANHOS: Record<TamanhoBotao, string> = {
   sm: 'px-3 py-1.5 text-xs',
   md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  lg: 'px-6 py-3 text-base',
 };
 
 /**

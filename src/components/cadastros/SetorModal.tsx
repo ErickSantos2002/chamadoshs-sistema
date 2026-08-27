@@ -216,18 +216,18 @@ const SetorModal: React.FC<SetorModalProps> = ({
         </div>
 
         {mode === 'view' && setor && (
-          <div className="bg-superficie-elevada p-4">
-            <h3 className="mb-2 text-sm font-medium text-conteudo-suave">
+          <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
+            <h3 className="mb-2 text-sm font-semibold text-conteudo">
               Informações de Auditoria
             </h3>
-            <dl className="space-y-1 text-sm text-conteudo-suave">
+            <dl className="space-y-1 text-sm">
               <div>
-                <dt className="inline font-medium">ID:</dt>{' '}
-                <dd className="inline">#{setor.id}</dd>
+                <dt className="inline font-medium text-conteudo-tenue">ID:</dt>{' '}
+                <dd className="inline text-conteudo">#{setor.id}</dd>
               </div>
               <div>
-                <dt className="inline font-medium">Criado em:</dt>{' '}
-                <dd className="inline">
+                <dt className="inline font-medium text-conteudo-tenue">Criado em:</dt>{' '}
+                <dd className="inline text-conteudo">
                   {setor.created_at
                     ? new Date(setor.created_at).toLocaleString('pt-BR')
                     : 'N/A'}
@@ -236,7 +236,6 @@ const SetorModal: React.FC<SetorModalProps> = ({
             </dl>
           </div>
         )}
-
       </form>
     </Modal>
   );

@@ -32,7 +32,7 @@ export const TrilhaCarregando: React.FC<{
 }> = ({ folga = 'ampla', children }) => (
   <p
     className={`flex items-center gap-2 text-sm text-conteudo-tenue ${
-      folga === 'ampla' ? 'justify-center py-16' : 'py-6'
+      folga === 'ampla' ? 'h-48 justify-center' : 'py-6'
     }`}
   >
     <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -54,10 +54,10 @@ export const TrilhaComFalha: React.FC<{ mensagem: string; folga?: Folga }> = ({
 }) => (
   <div
     role="alert"
-    className={`flex items-start gap-2 text-sm text-perigo-forte dark:text-perigo-suave ${
+    className={`flex gap-2 text-sm text-perigo-forte dark:text-perigo-suave ${
       folga === 'ampla'
-        ? 'px-6 py-16'
-        : 'border border-perigo/40 bg-perigo/10 px-3 py-2'
+        ? 'h-48 items-center justify-center px-6'
+        : 'items-start rounded-lg border border-perigo/40 bg-perigo/10 px-3 py-2'
     }`}
   >
     <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -77,10 +77,13 @@ export const TrilhaVazia: React.FC<{
 }> = ({ folga = 'ampla', children }) => (
   <div
     className={`text-sm text-conteudo-tenue ${
-      folga === 'ampla' ? 'px-6 py-16 text-center' : 'py-6'
+      folga === 'ampla' ? 'flex h-48 items-center justify-center px-6 text-center' : 'py-6'
     }`}
   >
-    {children}
+    {/* O vazio da tela cheia centraliza um bloco só: sem esta div, cada trecho
+        do conteúdo viraria um item do flex e eles se enfileirariam lado a
+        lado. */}
+    <div>{children}</div>
   </div>
 );
 

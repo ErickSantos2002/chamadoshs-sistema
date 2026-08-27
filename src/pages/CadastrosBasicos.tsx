@@ -91,49 +91,41 @@ const CadastrosBasicos: React.FC = () => {
 
   return (
     <CadastrosProvider>
-      <div className="h-full flex flex-col p-6 bg-superficie-base">
+      <div className="flex h-full flex-col gap-5">
         {/* Header */}
-        <div className="bg-superficie border border-borda rounded-xl shadow-md p-6 transition-colors mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex shrink-0 flex-col gap-4 rounded-2xl border border-borda bg-superficie px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Título e Descrição */}
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-conteudo">
+              Gestão de Cadastros Básicos
+            </h1>
 
-            {/* Título e Descrição */}
-            <div>
-              <h1 className="text-3xl font-bold text-info tracking-tight">
-                Gestão de Cadastros Básicos
-              </h1>
-
-              <p className="text-conteudo-suave mt-1">
-                Gerencie categorias, setores e usuários do sistema
-              </p>
-            </div>
-
+            <p className="mt-0.5 text-sm text-conteudo-tenue">
+              Gerencie categorias, setores e usuários do sistema
+            </p>
           </div>
         </div>
 
         {/* Container Principal */}
-        <div className="bg-superficie rounded-xl border border-borda shadow-md transition-colors">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-borda bg-superficie">
           {/* Sistema de Abas */}
-          <div className="border-b border-borda">
-            <nav className="flex overflow-x-auto -mb-px px-4">
+          <div className="shrink-0 border-b border-borda">
+            <nav className="-mb-px flex overflow-x-auto px-2">
               {abasVisiveis.map((aba) => (
                 <button
                   key={aba.id}
                   onClick={() => setAbaAtiva(aba.id)}
-                  className={`
-            flex items-center gap-2 px-6 py-3 font-medium text-sm
-            border-b-2 transition-all duration-200 whitespace-nowrap
-            ${
-              abaAtiva === aba.id
-                ? 'border-sinal text-info-forte dark:text-info-suave'
-                : 'border-transparent text-conteudo-tenue hover:text-conteudo hover:border-borda'
-            }
-          `}
+                  className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
+                    abaAtiva === aba.id
+                      ? 'border-sinal text-sinal'
+                      : 'border-transparent text-conteudo-suave hover:border-borda hover:text-conteudo'
+                  }`}
                 >
                   {aba.icon}
                   <span>{aba.label}</span>
 
                   {aba.id === 'usuarios' && (
-                    <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-alerta/15 text-alerta-forte dark:text-alerta-suave rounded-full">
+                    <span className="ml-1 rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-alerta-forte dark:text-alerta-suave">
                       Admin
                     </span>
                   )}
@@ -143,11 +135,11 @@ const CadastrosBasicos: React.FC = () => {
           </div>
 
           {/* Conteúdo da Aba Ativa */}
-          <div className="p-6">
+          <div className="min-h-0 flex-1 overflow-auto">
             {abasVisiveis.map((aba) => (
               <div
                 key={aba.id}
-                className={`${abaAtiva === aba.id ? 'block' : 'hidden'}`}
+                className={`${abaAtiva === aba.id ? 'h-full' : 'hidden'}`}
               >
                 {aba.component}
               </div>

@@ -7,7 +7,6 @@ import {
   TrilhaComFalha,
   TrilhaVazia,
 } from '../EstadosDaTrilha';
-import { Rotulo } from '../ui';
 import type { EventoDeAuditoria } from '../../types/api';
 
 interface HistoricoDaContaProps {
@@ -77,7 +76,9 @@ export const HistoricoDaConta: React.FC<HistoricoDaContaProps> = ({ usuarioId })
   }
 
   return (
-    <ol className="divide-y divide-borda-suave border-y border-borda-suave">
+    // `borda-suave` no tema escuro tem o mesmo valor de `superficie`: usada
+    // aqui, a lista ficava sem nenhum divisor visível no escuro.
+    <ol className="divide-y divide-borda border-y border-borda">
       {eventos.map((evento) => {
         const { titulo, mudanca, autor } = descreverEvento(evento);
         const momento = momentoDoEvento(evento.created_at);
@@ -87,7 +88,9 @@ export const HistoricoDaConta: React.FC<HistoricoDaContaProps> = ({ usuarioId })
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-sm font-medium text-conteudo">{titulo}</span>
               {/* Sem data, não inventa: a coluna é anulável no banco. */}
-              <Rotulo>{momento ?? 'data não registrada'}</Rotulo>
+              <span className="text-xs text-conteudo-tenue">
+                {momento ?? 'data não registrada'}
+              </span>
             </div>
 
             {mudanca && (

@@ -41,6 +41,23 @@ const PONTO_PRIORIDADE: Record<PrioridadeEnum, string> = {
   [PrioridadeEnum.BAIXA]: 'bg-conteudo-tenue',
 };
 
+/**
+ * A mesma prioridade, na borda esquerda do cartão.
+ *
+ * É a marca que o quadro do HelpHS usa, e ela resolve um problema real: num
+ * quadro com vinte cartões, um ponto de 8px no canto superior direito não é
+ * lido de relance. Uma faixa de 4px na lateral é.
+ *
+ * O ponto continua ali, ao lado do protocolo, porque ele carrega o `title`
+ * com o nome da prioridade — a faixa é cor, e cor sozinha não informa.
+ */
+const BORDA_PRIORIDADE: Record<PrioridadeEnum, string> = {
+  [PrioridadeEnum.CRITICA]: 'border-l-perigo',
+  [PrioridadeEnum.ALTA]: 'border-l-alerta',
+  [PrioridadeEnum.MEDIA]: 'border-l-info',
+  [PrioridadeEnum.BAIXA]: 'border-l-borda',
+};
+
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   title,
   descricao,
@@ -57,36 +74,64 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   };
 
   return (
-    <div className="flex flex-col rounded-xl border border-borda bg-superficie-base/60">
+    <div className="flex h-full min-w-[268px] flex-col overflow-hidden rounded-xl border border-borda bg-superficie-elevada">
       {/* Cabeçalho */}
-      <div className="border-b border-borda px-4 py-3">
+      {/* A cor do status pinta a faixa de baixo, no lugar da régua cinza,
+          e tinge o fundo do cabeçalho em 5%. São seis colunas lado a lado: sem
+          nenhuma cor no topo, distinguir uma da outra exige ler o título. */}
+      <div
+        className="shrink-0 px-4 py-3"
+        style={{ backgroundColor: `${colorDot}0D` }}
+      >
         <div className="flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 font-semibold text-conteudo">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-conteudo">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: colorDot }}
             />
             {title}
           </h3>
-          <span className="rounded-full bg-superficie-elevada px-2 py-0.5 text-xs font-semibold text-conteudo-suave">
+          {/* O contador fica na superfície de card: a coluna já é a superfície
+              recuada, e uma pastilha da mesma cor do fundo não seria pastilha. */}
+          <span className="shrink-0 rounded-full bg-superficie px-2 py-0.5 text-xs font-semibold text-conteudo-suave">
             {items.length}
           </span>
         </div>
         <p className="mt-0.5 pl-4 text-xs text-conteudo-tenue">{descricao}</p>
       </div>
 
+      {/* A régua da coluna, na cor cheia do status. Substitui o
+          `border-b` cinza: é o que dá a faixa colorida no topo de cada
+          coluna do quadro de referência. */}
+      <div
+        aria-hidden="true"
+        className="h-0.5 shrink-0"
+        style={{ backgroundColor: colorDot }}
+      />
+
       {/* Cards */}
       {/* Teto proporcional à tela, não `calc(100vh - 400px)`.
           Aqueles 400px eram uma medida chutada do cabeçalho mais os filtros
           mais a barra de busca. Numa tela de 600px de altura sobravam 200px de
           coluna; abaixo de 400px o resultado é negativo, vira zero, e a coluna
-          deixa de mostrar qualquer card — sem erro, sem aviso.
-          Com `vh` o valor acompanha a tela e nunca chega a zero. O `main` já
-          rola por fora, então este teto serve só para manter o cabeçalho da
-          coluna à vista. */}
-      <div className="max-h-[60vh] space-y-2 overflow-y-auto p-3">
+          deixa de mostrar qualquer card — sem erro, sem aviso. O teto virou
+          `max-h-[60vh]`, que acompanhava a tela e nunca chegava a zero.
+
+          Agora não há teto nenhum: a coluna preenche a raia (`h-full`) e esta
+          lista fica com `min-h-0 flex-1`, ou seja, ela ocupa o que sobrar da
+          altura da coluna e rola por dentro. Some a conta e some junto o
+          efeito colateral do teto — com o quadro já limitado em altura pela
+          casca, `60vh` criava uma SEGUNDA barra de rolagem vertical dentro da
+          primeira, e deixava as seis colunas com alturas diferentes.
+
+          `min-h-0` não é enfeite: item de flex nasce com `min-height: auto` e
+          se recusa a encolher abaixo do próprio conteúdo. Sem ele, uma coluna
+          cheia empurra a altura da coluna inteira em vez de rolar. */}
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
         {items.length === 0 ? (
-          <p className="py-6 text-center text-sm text-conteudo-tenue">Nenhum chamado</p>
+          <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-borda py-10 text-sm text-conteudo-tenue">
+            Nenhum chamado
+          </div>
         ) : (
           items.map((chamado) => {
             const responsavel = chamado.tecnico_responsavel_id
@@ -99,9 +144,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 key={chamado.id}
                 type="button"
                 onClick={() => aoAbrir(chamado)}
-                className="w-full space-y-2 rounded-lg border border-borda bg-superficie p-3 text-left
-                           transition-all hover:border-info/50 hover:shadow-md
-                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
+                className={cn(
+                  'w-full space-y-2 rounded-lg border border-l-4 border-borda bg-superficie p-3 text-left',
+                  'shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal',
+                  BORDA_PRIORIDADE[chamado.prioridade]
+                )}
               >
                 {/* Protocolo e prioridade */}
                 <div className="flex items-center justify-between gap-2">
@@ -118,7 +166,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 </div>
 
                 {/* Título */}
-                <h4 className="line-clamp-2 font-semibold leading-snug text-conteudo">
+                <h4 className="line-clamp-2 text-sm font-medium leading-snug text-conteudo">
                   {chamado.titulo}
                 </h4>
 

@@ -40,7 +40,7 @@ export const NovidadesModal: React.FC<NovidadesModalProps> = ({
     descricao="Mudanças recentes no ChamadosHS"
     largura="md"
   >
-    <div className="space-y-6">
+    <div className="space-y-5">
       {NOVIDADES.map((versao) => (
         <section key={versao.versao} className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -57,7 +57,7 @@ export const NovidadesModal: React.FC<NovidadesModalProps> = ({
             {versao.itens.map((item, indice) => (
               <li
                 key={indice}
-                className="flex flex-col gap-1.5 rounded-lg border border-borda bg-superficie-base/50 px-4 py-3 sm:flex-row sm:items-start sm:gap-3"
+                className="flex flex-col gap-1.5 rounded-lg border border-borda bg-superficie-elevada px-4 py-3 sm:flex-row sm:items-start sm:gap-3"
               >
                 <span className="shrink-0">
                   <Badge variante={VARIANTE[item.tipo]}>{ROTULO[item.tipo]}</Badge>

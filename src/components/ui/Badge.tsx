@@ -24,10 +24,10 @@ interface BadgeProps {
  */
 const VARIANTES: Record<VarianteBadge, string> = {
   neutro: 'bg-superficie-elevada text-conteudo-suave border-borda',
-  info: 'bg-info/15 text-info-forte dark:text-info-suave border-info/30',
-  sucesso: 'bg-sucesso/15 text-sucesso-forte dark:text-sucesso-suave border-sucesso/30',
-  alerta: 'bg-alerta/15 text-alerta-forte dark:text-alerta-suave border-alerta/30',
-  perigo: 'bg-perigo/15 text-perigo-forte dark:text-perigo-suave border-perigo/30',
+  info: 'bg-info/20 text-info-forte dark:text-info-suave border-info/30',
+  sucesso: 'bg-sucesso/20 text-sucesso-forte dark:text-sucesso-suave border-sucesso/30',
+  alerta: 'bg-alerta/20 text-alerta-forte dark:text-alerta-suave border-alerta/30',
+  perigo: 'bg-perigo/20 text-perigo-forte dark:text-perigo-suave border-perigo/30',
 };
 
 export const Badge: React.FC<BadgeProps> = ({

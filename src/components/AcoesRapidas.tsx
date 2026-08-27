@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { chamadosService } from '../services/chamadoshsapi';
 import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
 import ContadorMinimo from './ContadorMinimo';
-import { Button, Rotulo, Textarea } from './ui';
+import { Button, RotuloDeCampo, Textarea } from './ui';
 import { Chamado, StatusEnum } from '../types/api';
 import type { PropsDeIcone } from './ui/icones';
 import { IconeConfereCirculo, IconeDesfazer, IconeIniciar, IconeRelogio } from './ui/icones';
@@ -111,20 +111,23 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
 
   if (resolvendo) {
     return (
-      <div className="space-y-2">
-        <Rotulo como="label" htmlFor="solucao-rapida" className="block">
-          Como foi resolvido
-        </Rotulo>
-        <Textarea
-          id="solucao-rapida"
-          rows={4}
-          value={solucao}
-          onChange={(e) => setSolucao(e.target.value)}
-          disabled={salvando}
-          placeholder="O que foi feito para resolver"
-          autoFocus
-        />
-        <ContadorMinimo valor={solucao} minimo={MINIMO_SOLUCAO} />
+      <div className="space-y-3">
+        {/* Rótulo, campo e contador são UM bloco: o `RotuloDeCampo` já traz a
+            própria folga abaixo, e deixá-lo no `space-y` do passo somava duas
+            distâncias entre a pergunta e o campo que a responde. */}
+        <div>
+          <RotuloDeCampo htmlFor="solucao-rapida">Como foi resolvido</RotuloDeCampo>
+          <Textarea
+            id="solucao-rapida"
+            rows={4}
+            value={solucao}
+            onChange={(e) => setSolucao(e.target.value)}
+            disabled={salvando}
+            placeholder="O que foi feito para resolver"
+            autoFocus
+          />
+          <ContadorMinimo valor={solucao} minimo={MINIMO_SOLUCAO} />
+        </div>
 
         <div className="flex gap-2">
           <Button
