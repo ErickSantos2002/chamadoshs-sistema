@@ -51,7 +51,22 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   temNovidade,
   versao,
 }) => {
-  const [recolhida, setRecolhida] = useState(false);
+  /**
+   * A barra começa recolhida, e isso não é preferência de estilo.
+   *
+   * A tela mais importante do sistema é o quadro de chamados numa TV da sala,
+   * em paisagem — a mesma que já obrigou a consertar o login cortado e que
+   * motivou o auto-refresh de 10 minutos. O quadro tem seis colunas de 268px
+   * no mínimo, e a barra aberta ocupa 256px: é quase uma coluna inteira
+   * empurrada para fora da tela, num painel onde ninguém está para arrastar
+   * a rolagem de lado.
+   *
+   * Recolhida ela mede 72px e mantém todos os ícones alcançáveis, então quem
+   * usa no desktop não perde caminho nenhum — é um clique para abrir, e a
+   * escolha vale enquanto a pessoa navega. Volta a recolher no recarregamento,
+   * que é justamente o que a TV precisa.
+   */
+  const [recolhida, setRecolhida] = useState(true);
   const [gavetaAberta, setGavetaAberta] = useState(false);
 
   return (

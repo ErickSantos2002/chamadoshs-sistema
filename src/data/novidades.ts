@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.7.2',
+    data: '2026-08-27',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'O menu lateral agora começa recolhido, mostrando só os ícones. Sobra largura para o quadro de chamados, que é o que fica na TV da sala — com o menu aberto, uma das colunas ficava para fora da tela. Um clique na seta abre o menu por inteiro quando você precisar.',
+      },
+    ],
+  },
+  {
     versao: '1.7.1',
     data: '2026-08-27',
     itens: [
