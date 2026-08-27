@@ -5,9 +5,14 @@ import { useTheme } from '../context/ThemeContext';
 import { useSaudeDoSistema } from '../hooks/useSaudeDoSistema';
 import { EstadoDoSistema, TEXTO_DO_ESTADO, descreverIdade } from '../lib/saude';
 import { useRelogio } from '../hooks/useRelogio';
-import { Button, Colchetes, Input, Rotulo, RotuloDeCampo } from '../components/ui';
+import { Button, Input, RotuloDeCampo } from '../components/ui';
 import logo from '../assets/logo.png';
-import { IconeAlerta, IconeUsuario } from '../components/ui/icones';
+import {
+  IconeAlerta,
+  IconeChamado,
+  IconeRelogio,
+  IconeTrilha,
+} from '../components/ui/icones';
 
 /**
  * Cor do ponto de estado. Verde só quando é verde de verdade — o ponto existe
@@ -22,6 +27,59 @@ const COR_DO_ESTADO: Record<EstadoDoSistema, string> = {
 
 const versao = typeof __VERSAO_APP__ === 'string' ? __VERSAO_APP__ : '';
 
+/** O que o sistema faz, dito para quem ainda não entrou. */
+const DESTAQUES = [
+  {
+    Icone: IconeChamado,
+    titulo: 'Abertura e acompanhamento',
+    texto: 'Registre um chamado e siga cada passo até a resolução.',
+  },
+  {
+    Icone: IconeRelogio,
+    titulo: 'Prazo à vista',
+    texto: 'O SLA aparece no cartão: dá para ver o que está no prazo e o que já estourou.',
+  },
+  {
+    Icone: IconeTrilha,
+    titulo: 'Trilha de auditoria',
+    texto: 'Toda alteração fica registrada, com quem fez e quando.',
+  },
+];
+
+/**
+ * Tela de entrada, no formato de duas colunas do HelpHS.
+ *
+ * ── O que saiu daqui ──────────────────────────────────────────────────
+ *
+ * Esta era a única tela com a fachada de console inteira: a malha de linhas, a
+ * vinheta, a varredura de inicialização e os colchetes de canto. Era bonita e
+ * era de outra família — o HelpHS abre com um painel de apresentação à
+ * esquerda e o formulário à direita, e é isso que faz as duas telas parecerem
+ * do mesmo produto. As quatro camadas saíram do CSS junto com esta reescrita,
+ * porque não sobrou nada usando nenhuma delas.
+ *
+ * ── O que ficou ───────────────────────────────────────────────────────
+ *
+ * Tudo que a tela sabia dizer. O indicador de saúde da API, a idade daquela
+ * leitura, a versão e a hora mudaram de lugar — desceram para o rodapé da
+ * coluna do formulário — mas continuam dizendo o mesmo.
+ *
+ * ── Tema ──────────────────────────────────────────────────────────────
+ *
+ * O login do HelpHS é escuro sempre, com hexadecimal cravado. Aqui ele segue
+ * o tema, pelos tokens: quem escolheu claro não é jogado numa tela escura só
+ * porque é a de entrada. Como o escuro é o padrão de quem nunca escolheu, na
+ * prática a maioria vê exatamente o que o HelpHS mostra.
+ *
+ * ── Por que `overflow-y-auto` aqui e `min-h-full` no miolo ────────────
+ *
+ * Centralizar com `items-center` num container que não rola parece igual
+ * enquanto a tela é alta o bastante — e corta pelos DOIS lados quando não é,
+ * porque o que sobra de um item centralizado transborda em cima e embaixo.
+ * Foi o que aconteceu numa TV em modo paisagem: a faixa de cima sumiu e a de
+ * baixo ficou pela metade, sem rolagem possível, já que o `body` tem
+ * `overflow: hidden` global.
+ */
 const Login: React.FC = () => {
   const { login, loading, error, user } = useAuth();
   const { setDarkModeOnLogin } = useTheme();
@@ -51,202 +109,198 @@ const Login: React.FC = () => {
   };
 
   return (
-    /* `overflow-y-auto` no container e `min-h-full` no miolo, em vez de
-       centralizar direto aqui.
-
-       Centralizar com `items-center` num container que não rola parece igual
-       enquanto a tela é alta o bastante — e corta pelos DOIS lados quando não
-       é, porque o que sobra de um item centralizado transborda em cima e
-       embaixo. Foi o que aconteceu numa TV em modo paisagem: a faixa de cima
-       sumiu e a de baixo ficou pela metade, sem rolagem possível, já que o
-       `body` tem `overflow: hidden` global.
-
-       Com esta combinação a tela centraliza quando cabe e rola quando não
-       cabe, que é o comportamento que se espera dos dois casos. */
-    <div className="fixed inset-0 overflow-y-auto bg-superficie-base">
-      {/* Duas camadas de fundo, estáticas. Elas não informam nada — o trabalho
-          delas é dar profundidade para o painel ter onde pousar. A maquete
-          fazia isso com linhas de log animadas em canvas; o mesmo efeito sai
-          de dois gradientes que o navegador pinta uma vez e esquece.
-
-          Ficam `fixed`, então não rolam junto e não entram na altura do
-          conteúdo. */}
-      <div aria-hidden="true" className="malha pointer-events-none fixed inset-0" />
-      <div aria-hidden="true" className="vinheta pointer-events-none fixed inset-0" />
-
-      <div className="flex min-h-full items-center justify-center p-4">
-      <div className="animate-subir relative w-full max-w-sm">
-        {/* Faixa de identificação. Diz em que sistema a pessoa está prestes a
-            entrar — o que importa em uma casa com mais de um sistema interno. */}
-        {/* A folga é grande porque o selo sobe 32px acima da borda do painel.
-            Com o espaçamento normal ele cobre o texto desta faixa — foi o que
-            aconteceu na primeira versão. */}
-        <div className="mb-10 flex items-center justify-between gap-3 alto:mb-11">
-          <Rotulo>ChamadosHS · Console de acesso</Rotulo>
-
-          {/* O estado vem do /api/v1/health, não é enfeite. Quando o banco cai
-              a API continua respondendo, e é isso que separa "não consigo
-              entrar porque o sistema caiu" de "não consigo entrar por outro
-              motivo" — a diferença entre esperar e abrir um chamado. */}
-          <span className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className={`h-1.5 w-1.5 rounded-full ${COR_DO_ESTADO[saude]} ${
-                saude === 'verificando' ? 'animate-pulse' : ''
-              }`}
-            />
-            <Rotulo>{TEXTO_DO_ESTADO[saude]}</Rotulo>
-          </span>
-        </div>
-
-        {/* O card era de vidro fosco — `backdrop-blur` sobre branco translúcido.
-            Aquilo dependia de haver textura atrás para borrar; sobre um fundo
-            chapado virava só um retângulo mais claro, e o desfoque não fazia
-            nada. Agora é a mesma superfície do resto do sistema. */}
-        {/* O gradiente vai da superfície elevada para a normal, de cima para
-            baixo. É o que separa "painel" de "retângulo": sem ele o card fica
-            chapado contra o fundo, que foi como a primeira versão ficou. */}
-        <div className="relative border border-borda bg-gradient-to-b from-superficie-elevada to-superficie px-8 pb-6 pt-12 shadow-2xl alto:pb-8 alto:pt-16">
-          {/* A varredura precisa de `overflow-hidden` para não escapar do
-              painel — mas o selo fica FORA dele, então o recorte não pode
-              morar no painel. Vive nesta camada própria. */}
+    <div className="fixed inset-0 overflow-y-auto">
+      <div className="flex min-h-full">
+        {/* ── Painel de apresentação ───────────────────────────────────
+            Some abaixo de `lg`: num celular ele empurraria o formulário
+            para baixo da dobra, e quem abre o login quer o formulário. */}
+        <aside className="relative hidden flex-col justify-between overflow-hidden bg-superficie px-14 py-12 lg:flex lg:w-3/5">
+          {/* Dois halos desfocados, como os do HelpHS. São decoração e nada
+              mais — daí `aria-hidden` e `pointer-events-none`. */}
           <span
             aria-hidden="true"
-            className="varredura pointer-events-none absolute inset-0 overflow-hidden"
+            className="pointer-events-none absolute -right-32 -top-32 h-[500px] w-[500px] rounded-full bg-sinal/20 blur-[120px]"
           />
-          <Colchetes variante="sinal" tamanho="md" animado />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-40 -left-20 h-[400px] w-[400px] rounded-full bg-sinal/10 blur-[100px]"
+          />
 
-          {/* O selo continua redondo: é o único elemento que não é canto, e
-              sim forma. Sobe metade da própria altura para furar a borda. */}
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-sinal/60 bg-superficie-elevada">
-              <IconeUsuario className="h-7 w-7 text-sinal" aria-hidden="true" />
+          <div className="relative z-10">
+            <img
+              src={logo}
+              alt="Health &amp; Safety"
+              className="h-14 w-auto object-contain"
+            />
+          </div>
+
+          <div className="relative z-10 space-y-10">
+            <div className="space-y-4">
+              <span className="inline-flex items-center gap-2 rounded-full border border-sinal/30 bg-sinal/10 px-3 py-1">
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 rounded-full bg-sinal"
+                />
+                <span className="text-xs font-medium text-sinal">
+                  Chamados internos — Health &amp; Safety
+                </span>
+              </span>
+
+              <h1 className="text-4xl font-bold leading-tight text-conteudo">
+                O chamado certo,
+                <br />
+                na mão de quem resolve.
+              </h1>
+
+              <p className="max-w-md text-base leading-relaxed text-conteudo-suave">
+                Abra, acompanhe e feche chamados da equipe num lugar só — com
+                prazo visível e histórico de tudo que aconteceu.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5">
+              {DESTAQUES.map(({ Icone, titulo, texto }) => (
+                <div key={titulo} className="flex items-start gap-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sinal/10">
+                    <Icone className="h-5 w-5 text-sinal" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-conteudo">{titulo}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-conteudo-tenue">
+                      {texto}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="mb-4 flex justify-center alto:mb-6">
-            <img src={logo} alt="Health &amp; Safety" className="max-h-[44px] object-contain alto:max-h-[64px]" />
-          </div>
+          <p className="relative z-10 text-xs text-conteudo-tenue">
+            © 2026 Health &amp; Safety Tech
+          </p>
+        </aside>
 
-          <div className="mb-4 text-center alto:mb-6">
-            <h1 className="text-xl font-bold text-conteudo">Bem-vindo</h1>
-            <Rotulo como="p" className="mt-1 block">
-              Identifique-se para continuar
-            </Rotulo>
-          </div>
-
-          <form onSubmit={enviar} className="flex flex-col gap-4">
-            {/* Rótulo de verdade, e não só placeholder: o placeholder some
-                quando a pessoa digita, levando junto a indicação do campo. */}
-            <div>
-              <RotuloDeCampo htmlFor="username">Usuário</RotuloDeCampo>
-              <Input
-                id="username"
-                type="text"
-                value={username}
-                autoComplete="username"
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={loading}
-                placeholder="seu usuário de rede"
-                // Monoespaçada porque login é identificador, não texto humano:
-                // aqui a distinção entre l, I e 1 vale mais que o desenho.
-                className="h-11 font-mono"
-                required
+        {/* ── Coluna do formulário ─────────────────────────────────── */}
+        <div className="flex flex-1 flex-col items-center justify-center bg-superficie-base px-6 py-12 lg:w-2/5">
+          <div className="w-full max-w-sm space-y-8">
+            {/* A marca só aparece aqui quando o painel da esquerda não está
+                na tela — senão o logo apareceria duas vezes. */}
+            <div className="flex justify-center lg:hidden">
+              <img
+                src={logo}
+                alt="Health &amp; Safety"
+                className="h-12 w-auto object-contain"
               />
             </div>
 
-            <div>
-              <RotuloDeCampo htmlFor="password">Senha</RotuloDeCampo>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                autoComplete="current-password"
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                placeholder="sua senha"
-                className="h-11 font-mono"
-                required
-              />
+            <div className="space-y-1 text-center lg:text-left">
+              <h2 className="text-2xl font-bold text-conteudo">Bem-vindo</h2>
+              <p className="text-sm text-conteudo-tenue">
+                Identifique-se para continuar no ChamadosHS.
+              </p>
             </div>
 
-            {error && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 border border-perigo/40 bg-perigo/10 px-3 py-2 text-sm text-perigo-forte dark:text-perigo-suave"
-              >
-                <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                {error}
+            <form onSubmit={enviar} className="space-y-5">
+              {/* Rótulo de verdade, e não só placeholder: o placeholder some
+                  quando a pessoa digita, levando junto a indicação do campo. */}
+              <div>
+                <RotuloDeCampo htmlFor="username">Usuário</RotuloDeCampo>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  autoComplete="username"
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={loading}
+                  placeholder="seu usuário de rede"
+                  // Monoespaçada porque login é identificador, não texto
+                  // humano: aqui a distinção entre l, I e 1 vale mais que o
+                  // desenho. Na senha não vale — ela aparece como pontos.
+                  className="font-mono"
+                  required
+                />
               </div>
-            )}
 
-            <Button
-              type="submit"
-              tamanho="lg"
-              carregando={loading}
-              className="mt-2 w-full font-mono uppercase tracking-[0.18em]"
-            >
-              {loading ? 'Autenticando' : 'Autenticar'}
-            </Button>
-          </form>
+              <div>
+                <RotuloDeCampo htmlFor="password">Senha</RotuloDeCampo>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  autoComplete="current-password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  placeholder="sua senha"
+                  required
+                />
+              </div>
+
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-lg border border-perigo/40 bg-perigo/10 px-3 py-2 text-sm text-perigo-forte dark:text-perigo-suave"
+                >
+                  <IconeAlerta
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {error}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                tamanho="lg"
+                carregando={loading}
+                className="w-full"
+              >
+                {loading ? 'Entrando…' : 'Entrar'}
+              </Button>
+            </form>
+
+            {/* ── O que o sistema sabe de si ─────────────────────────
+                O estado vem do /api/v1/health, e não é enfeite: quando o
+                banco cai a API continua respondendo, e é isso que separa
+                "não consigo entrar porque o sistema caiu" de "não consigo
+                entrar por outro motivo" — a diferença entre esperar e abrir
+                um chamado por outro caminho.
+
+                A maquete antiga trazia aqui protocolo TLS e nome do nó.
+                Numa tela de login, afirmar a topologia para quem ainda não
+                se identificou é entregar infraestrutura de graça. Ficou o
+                que o sistema sabe de si e pode provar. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-borda pt-5 text-xs text-conteudo-tenue">
+              <span className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className={`h-1.5 w-1.5 rounded-full ${COR_DO_ESTADO[saude]} ${
+                    saude === 'verificando' ? 'animate-pulse' : ''
+                  }`}
+                />
+                {TEXTO_DO_ESTADO[saude]}
+                {/* O ponto acima diz COMO está; isto diz DE QUANDO é essa
+                    informação. Indicador de saúde sem hora é o que continua
+                    verde vinte minutos depois de o sistema ter caído. */}
+                {verificadoEm && (
+                  <span className="text-conteudo-tenue/80">
+                    · {descreverIdade(agora - verificadoEm.getTime())}
+                  </span>
+                )}
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="font-mono">{versao || '—'}</span>
+                <span className="font-mono tabular-nums">
+                  {new Date(agora).toLocaleTimeString('pt-BR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}
+                </span>
+              </span>
+            </div>
+          </div>
         </div>
-
-        {/* Faixa inferior.
-            A maquete trazia aqui protocolo TLS, nome do nó e cronômetro de
-            sessão — três valores que eu havia cravado no HTML. Numa tela de
-            login, afirmar a topologia para quem ainda não se identificou é
-            entregar informação de infraestrutura de graça, e nenhum dos três
-            era verificável. Ficou o que o sistema sabe de si. */}
-        {/* Três células, como na maquete — mas com o terceiro campo dizendo a
-            verdade. Lá o rótulo era SESSÃO, sugerindo um cronômetro de sessão
-            que não existe numa tela de login: ninguém tem sessão antes de
-            entrar. A HORA anda a cada segundo do mesmo jeito, e é hora. */}
-        {/* Duas colunas no estreito, três a partir de `sm`. Com três, cada
-            célula fica com ~33% de um painel `max-w-sm`, e VERIFICADO — dez
-            caracteres em mono espaçado, sem ponto de quebra — para de caber
-            por volta de 350px e invade a coluna da hora. */}
-        <div className="mt-2 grid grid-cols-2 border border-borda alto:mt-3 sm:grid-cols-3">
-          <div className="border-r border-borda px-3 py-2">
-            <Rotulo como="p" className="block">
-              Versão
-            </Rotulo>
-            <p className="font-mono text-xs text-conteudo-suave">{versao || '—'}</p>
-          </div>
-          {/* O ponto de estado acima diz COMO está; aqui diz DE QUANDO é essa
-              informação. Indicador de saúde sem hora é o que continua verde
-              vinte minutos depois de o sistema ter caído. */}
-          <div className="px-3 py-2">
-            <Rotulo como="p" className="block">
-              Verificado
-            </Rotulo>
-            {/* Idade, não hora. A hora ficava imóvel 59 segundos de cada 60,
-                porque a sonda roda a cada minuto — a tela parecia congelada.
-                A idade anda a cada segundo E diz o que interessa ao lado de um
-                ponto verde: de quando é aquela leitura. */}
-            <p className="font-mono text-xs text-conteudo-suave">
-              {verificadoEm ? descreverIdade(agora - verificadoEm.getTime()) : '—'}
-            </p>
-          </div>
-
-          {/* O relógio da maquete, andando de segundo em segundo. Usa o mesmo
-              `useRelogio` que faz a idade acima avançar — um temporizador só
-              para os dois, e ele pausa junto quando a aba fica oculta. */}
-          {/* No estreito esta célula desce para uma linha própria, de largura
-              inteira: vira `border-t` no lugar do `border-l`. */}
-          <div className="col-span-2 border-t border-borda px-3 py-2 sm:col-span-1 sm:border-l sm:border-t-0">
-            <Rotulo como="p" className="block">
-              Hora
-            </Rotulo>
-            <p className="font-mono text-xs tabular-nums text-conteudo-suave">
-              {new Date(agora).toLocaleTimeString('pt-BR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })}
-            </p>
-          </div>
-        </div>
-      </div>
       </div>
     </div>
   );

@@ -19,8 +19,6 @@ export { MensagemDeErro, RotuloDeCampo } from './Campo';
 
 export { Card, CardHeader, CardBody } from './Card';
 
-export { Colchetes } from './Colchetes';
-
 export { Input } from './Input';
 
 export { Modal } from './Modal';

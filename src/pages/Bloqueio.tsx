@@ -39,12 +39,12 @@ const Bloqueio: React.FC<BloqueioProps> = ({
   const { user } = useAuth();
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-superficie-base">
+    <div className="flex min-h-full items-center justify-center px-4 py-10">
       <Helmet>
         <title>{area ? `${area} | ChamadosHS` : 'Sem acesso | ChamadosHS'}</title>
       </Helmet>
 
-      <div className="relative max-w-md border border-borda bg-superficie px-8 py-10 text-center">
+      <div className="relative w-full max-w-md rounded-xl border border-borda bg-superficie px-8 py-10 text-center">
         <IconeCadeado className="mx-auto h-8 w-8 text-conteudo-tenue" aria-hidden="true" />
 
         <Rotulo como="p" className="mt-4 block">

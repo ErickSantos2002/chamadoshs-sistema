@@ -161,57 +161,6 @@ body,
   }
 }
 
-/* ── Fundo de console ─────────────────────────────────────────────────
- *
- * Duas camadas estáticas, sem canvas e sem JavaScript.
- *
- * A maquete tinha linhas de log em deriva desenhadas em canvas. Ficava bonito
- * e custava um `requestAnimationFrame` rodando enquanto alguém digita a senha
- * — num notebook em bateria, para uma tela que dura cinco segundos. As duas
- * camadas abaixo dão a mesma sensação de profundidade e não custam quadro
- * nenhum depois de pintadas.
- *
- * A malha usa `--borda`, então ela funciona nos dois temas sem regra separada:
- * no escuro é o risco de um console, no claro é papel milimetrado.
- */
-.malha {
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      rgb(var(--borda) / 0.28) 0 1px,
-      transparent 1px 46px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgb(var(--borda) / 0.28) 0 1px,
-      transparent 1px 46px
-    );
-}
-
-/* Escurece as bordas e puxa o olho ao centro. Sem isto a malha compete com o
- * painel; com isto ela vira profundidade. */
-.vinheta {
-  background: radial-gradient(
-    ellipse 62% 58% at 50% 45%,
-    transparent 0%,
-    rgb(var(--superficie-base) / 0.86) 72%,
-    rgb(var(--superficie-base)) 100%
-  );
-}
-
-/* A varredura que percorre o painel uma vez, na entrada. É a "inicialização",
- * não um laço. */
-.varredura::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -2px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--sinal)), transparent);
-  @apply animate-varrer;
-}
-
 /* 🎯 Animação para tooltip do botão Central HS */
 @keyframes fadeIn {
   from {

@@ -6,7 +6,7 @@ import { Chamado, ChamadoCreate, PrioridadeEnum, SLAConfig } from '../types/api'
 import { EXPEDIENTE, formatarPrazo } from '../lib/prazo';
 import { corDaPrioridade } from '../lib/graficos';
 import { useTheme } from '../context/ThemeContext';
-import { Button, Input, RotuloDeCampo, Seletor, Textarea } from './ui';
+import { Button, Input, Rotulo, RotuloDeCampo, Seletor, Textarea } from './ui';
 import ContadorMinimo from './ContadorMinimo';
 import { IconeEscudoConfere, IconeRelogio } from './ui/icones';
 import {
@@ -221,12 +221,12 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       </div>
 
       {prazoEscolhido && (
-        <div className="rounded-lg border border-borda bg-superficie-base/50 px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-conteudo-tenue">
+        <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
+          <Rotulo como="p">
             O que a prioridade {prazoEscolhido.prioridade} compromete
-          </p>
+          </Rotulo>
 
-          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
             <span className="flex items-center gap-1.5 text-conteudo">
               <IconeRelogio className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
               <span className="text-conteudo-tenue">Alguém assume em até</span>

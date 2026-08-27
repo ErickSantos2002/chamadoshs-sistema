@@ -6,7 +6,7 @@ import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { PrioridadeEnum, TarefaRecorrente } from '../types/api';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
-import { Button, Input, Modal, Seletor } from '../components/ui';
+import { Badge, Button, Input, Modal, Seletor } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import { agruparPorColuna, estaNoFluxo } from '../lib/quadro';
@@ -204,11 +204,19 @@ const Chamados: React.FC = () => {
   // As cores de status e de prioridade agora vivem no KanbanColumn, mapeadas
   // para as cores de significado do tema.
 
+  /**
+   * A raia de cada coluna. Largura mínima de 268px — a mesma do quadro de
+   * referência —, e `flex-1` para as quatro colunas de fluxo ainda ocuparem a
+   * faixa inteira numa tela larga, como ocupavam na grade. Quando as seis não
+   * cabem, ninguém encolhe: o quadro rola de lado.
+   */
+  const raia = 'flex min-w-[268px] flex-1 flex-col';
+
   if (loading) {
     return (
-      <div className="min-h-full bg-superficie-base flex items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <IconeCarregando className="w-12 h-12 animate-spin text-info mx-auto mb-4" />
+          <IconeCarregando className="mx-auto mb-4 h-12 w-12 animate-spin text-info" />
           <p className="text-conteudo-suave">Carregando chamados...</p>
         </div>
       </div>
@@ -216,285 +224,300 @@ const Chamados: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-superficie-base transition-colors">
-      <div>
+    // O quadro ocupa a altura do `<main>` e rola por dentro; o fundo é da
+    // casca, a página não pinta o próprio.
+    <div className="flex h-full min-h-0 flex-col gap-5">
 
-        {/* Cabeçalho: título, busca, filtros e ação, numa faixa só.
-            Os filtros eram um painel que abria e fechava — escondido por
-            padrão, o que faz a pessoa esquecer que existe filtro aplicado. */}
-        <div className="mb-4 rounded-xl border border-borda bg-superficie p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-conteudo">Chamados</h1>
-              <p className="text-sm text-conteudo-tenue">
-                {filtradosNoFluxo === totalNoFluxo
-                  ? `${totalNoFluxo} chamados`
-                  : `${filtradosNoFluxo} de ${totalNoFluxo} chamados`}
-                {/* Contados à parte, e não somados ao número acima: são
-                    unidades diferentes. "141 chamados" é trabalho; os de fora
-                    do fluxo são registro. Somar os dois criaria um total que
-                    não corresponde a nada que alguém queira saber. */}
-                {foraDoFluxoNaTela > 0 && ` · ${foraDoFluxoNaTela} fora do fluxo`}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                type="search"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Título ou protocolo"
-                aria-label="Buscar chamado por título ou protocolo"
-                icone={<IconeBusca className="h-4 w-4" />}
-                className="w-56"
-              />
-
-              {/* O ponto colorido é a MESMA cor que a prioridade tem nos
-                  gráficos. Filtro e gráfico falando cores diferentes da mesma
-                  coisa é o tipo de detalhe que ensina a não confiar em nenhum
-                  dos dois. */}
-              <Seletor
-                rotulo="Filtrar por prioridade"
-                valor={filtroPrioridade}
-                aoMudar={(v) => setFiltroPrioridade(v as PrioridadeEnum | '')}
-                opcoes={[
-                  { valor: '', rotulo: 'Todas prioridades' },
-                  ...Object.values(PrioridadeEnum).map((p) => ({
-                    valor: p,
-                    rotulo: p,
-                    cor: corDaPrioridade(p, darkMode),
-                  })),
-                ]}
-                className="w-48"
-              />
-
-              <Seletor
-                rotulo="Filtrar por categoria"
-                valor={filtroCategoria === '' ? '' : String(filtroCategoria)}
-                aoMudar={(v) => setFiltroCategoria(v ? Number(v) : '')}
-                opcoes={[
-                  { valor: '', rotulo: 'Todas categorias' },
-                  ...categorias.map((categoria) => ({
-                    valor: String(categoria.id),
-                    rotulo: categoria.nome,
-                  })),
-                ]}
-                className="w-48"
-              />
-
-              {/* Não entra em `temFiltro` nem em "Limpar": não é recorte da
-                  lista, são duas colunas a mais. Limpar filtro fechando a
-                  coluna que a pessoa acabou de abrir seria surpresa, não
-                  limpeza.
-
-                  O rótulo nomeia as duas marcas em vez de resumi-las em "fora
-                  do fluxo": esse é vocabulário nosso, e quem abre chamado
-                  precisaria clicar para descobrir o que significa.
-
-                  O verbo fica. Tirá-lo encurtaria o botão e deixaria o estado
-                  por conta do aspecto aceso ou apagado — que é justamente o
-                  que ninguém lê num cabeçalho com outros quatro controles.
-                  "Mostrar" diz o que o clique faz, sem precisar interpretar
-                  tom de cor. */}
-              <Button
-                variante={mostrarForaDoFluxo ? 'secundario' : 'fantasma'}
-                tamanho="sm"
-                aria-pressed={mostrarForaDoFluxo}
-                onClick={() => setMostrarForaDoFluxo((antes) => !antes)}
-              >
-                <IconeArquivar className="h-4 w-4" aria-hidden="true" />
-                {mostrarForaDoFluxo
-                  ? 'Ocultar arquivados e cancelados'
-                  : 'Mostrar arquivados e cancelados'}
-              </Button>
-
-              {temFiltro && (
-                <Button variante="fantasma" tamanho="sm" onClick={limparFiltros}>
-                  Limpar
-                </Button>
-              )}
-
-              <Button onClick={() => setModalNovoAberto(true)}>
-                <IconeMais className="h-4 w-4" aria-hidden="true" />
-                Novo Chamado
-              </Button>
-            </div>
-          </div>
+      {/* Cabeçalho: título, busca, filtros e ação, numa faixa só.
+          Os filtros eram um painel que abria e fechava — escondido por
+          padrão, o que faz a pessoa esquecer que existe filtro aplicado. */}
+      <div className="flex shrink-0 flex-col gap-4 rounded-2xl border border-borda bg-superficie px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-extrabold tracking-tight text-conteudo">Chamados</h1>
+          <p className="mt-0.5 text-sm text-conteudo-tenue">
+            {filtradosNoFluxo === totalNoFluxo
+              ? `${totalNoFluxo} chamados`
+              : `${filtradosNoFluxo} de ${totalNoFluxo} chamados`}
+            {/* Contados à parte, e não somados ao número acima: são
+                unidades diferentes. "141 chamados" é trabalho; os de fora
+                do fluxo são registro. Somar os dois criaria um total que
+                não corresponde a nada que alguém queira saber. */}
+            {foraDoFluxoNaTela > 0 && ` · ${foraDoFluxoNaTela} fora do fluxo`}
+          </p>
         </div>
 
-        {/* Lembrete de tarefas recorrentes (só técnico/admin) */}
-        {(isAdmin || isTecnico) && (
-          <div className="mb-4 rounded-xl border border-borda bg-superficie p-5 shadow-sm transition-colors">
-            <div className="flex items-center mb-2">
-              <IconeAgenda className="w-5 h-5 mr-2 text-info" />
-              <h2 className="text-base font-semibold text-conteudo">
-                Tarefas recorrentes do dia
-              </h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="search"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Título ou protocolo"
+            aria-label="Buscar chamado por título ou protocolo"
+            icone={<IconeBusca className="h-4 w-4" />}
+            className="w-56"
+          />
+
+          {/* O ponto colorido é a MESMA cor que a prioridade tem nos
+              gráficos. Filtro e gráfico falando cores diferentes da mesma
+              coisa é o tipo de detalhe que ensina a não confiar em nenhum
+              dos dois. */}
+          <Seletor
+            rotulo="Filtrar por prioridade"
+            valor={filtroPrioridade}
+            aoMudar={(v) => setFiltroPrioridade(v as PrioridadeEnum | '')}
+            opcoes={[
+              { valor: '', rotulo: 'Todas prioridades' },
+              ...Object.values(PrioridadeEnum).map((p) => ({
+                valor: p,
+                rotulo: p,
+                cor: corDaPrioridade(p, darkMode),
+              })),
+            ]}
+            className="w-48"
+          />
+
+          <Seletor
+            rotulo="Filtrar por categoria"
+            valor={filtroCategoria === '' ? '' : String(filtroCategoria)}
+            aoMudar={(v) => setFiltroCategoria(v ? Number(v) : '')}
+            opcoes={[
+              { valor: '', rotulo: 'Todas categorias' },
+              ...categorias.map((categoria) => ({
+                valor: String(categoria.id),
+                rotulo: categoria.nome,
+              })),
+            ]}
+            className="w-48"
+          />
+
+          {/* Não entra em `temFiltro` nem em "Limpar": não é recorte da
+              lista, são duas colunas a mais. Limpar filtro fechando a
+              coluna que a pessoa acabou de abrir seria surpresa, não
+              limpeza.
+
+              O rótulo nomeia as duas marcas em vez de resumi-las em "fora
+              do fluxo": esse é vocabulário nosso, e quem abre chamado
+              precisaria clicar para descobrir o que significa.
+
+              O verbo fica. Tirá-lo encurtaria o botão e deixaria o estado
+              por conta do aspecto aceso ou apagado — que é justamente o
+              que ninguém lê num cabeçalho com outros quatro controles.
+              "Mostrar" diz o que o clique faz, sem precisar interpretar
+              tom de cor. */}
+          <Button
+            variante={mostrarForaDoFluxo ? 'secundario' : 'fantasma'}
+            tamanho="sm"
+            aria-pressed={mostrarForaDoFluxo}
+            onClick={() => setMostrarForaDoFluxo((antes) => !antes)}
+          >
+            <IconeArquivar className="h-4 w-4" aria-hidden="true" />
+            {mostrarForaDoFluxo
+              ? 'Ocultar arquivados e cancelados'
+              : 'Mostrar arquivados e cancelados'}
+          </Button>
+
+          {temFiltro && (
+            <Button variante="fantasma" tamanho="sm" onClick={limparFiltros}>
+              Limpar
+            </Button>
+          )}
+
+          <Button onClick={() => setModalNovoAberto(true)}>
+            <IconeMais className="h-4 w-4" aria-hidden="true" />
+            Novo Chamado
+          </Button>
+        </div>
+      </div>
+
+      {/* Lembrete de tarefas recorrentes (só técnico/admin) */}
+      {(isAdmin || isTecnico) && (
+        <div className="shrink-0 rounded-xl border border-borda bg-superficie p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <IconeAgenda className="h-4 w-4 text-info" />
+            <h2 className="text-sm font-semibold text-conteudo">
+              Tarefas recorrentes do dia
+            </h2>
+          </div>
+
+          {tarefasDoDia.length === 0 ? (
+            // O ✅ era um emoji: desenhado pelo sistema, colorido por conta
+            // própria e alheio ao tema. O ícone acompanha a cor do texto.
+            <p className="flex items-center gap-2 text-sm text-conteudo-tenue">
+              <IconeConfereCirculo className="h-4 w-4 shrink-0 text-sucesso" />
+              Nenhuma tarefa recorrente para hoje.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {tarefasDoDia.map((t) => {
+                const hoje = hojeYMD();
+                const pendente = t.proxima_data <= hoje;
+                const realizadaHoje =
+                  (t.ultima_execucao ?? '').slice(0, 10) === hoje;
+                const atrasada = t.proxima_data < hoje;
+                return (
+                  <li key={t.id} className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => navigate('/tarefas-recorrentes')}
+                      className={cn(
+                        'text-left text-sm font-medium transition-colors hover:text-info hover:underline',
+                        !pendente && realizadaHoje
+                          ? 'text-conteudo-tenue'
+                          : 'text-conteudo'
+                      )}
+                      title="Ir para Tarefas Recorrentes"
+                    >
+                      {t.titulo}
+                    </button>
+
+                    {/* Os selos são os mesmos do resto do sistema: fundo de
+                        significado a 20% e texto na cor cheia, desenhados
+                        pelo `Badge` em vez de repetidos à mão aqui. */}
+                    {pendente ? (
+                      atrasada ? (
+                        <Badge variante="perigo">
+                          Atrasada desde {formatarDataBR(t.proxima_data)}
+                        </Badge>
+                      ) : (
+                        <Badge variante="alerta">Hoje</Badge>
+                      )
+                    ) : (
+                      realizadaHoje && (
+                        <>
+                          <Badge variante="sucesso">
+                            <IconeConfereCirculo className="h-3 w-3" />
+                            Realizada
+                          </Badge>
+                          <span className="text-xs text-conteudo-tenue">
+                            Próxima: {formatarDataBR(t.proxima_data)}
+                          </span>
+                        </>
+                      )
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Mensagem de erro */}
+      {error && (
+        <div className="shrink-0 rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+          {error}
+        </div>
+      )}
+
+      {/* Kanban. Quatro colunas de fluxo; as duas de fora — arquivo e
+          cancelados — só entram quando pedidas. As duas só crescem, e sem
+          interruptor apertariam as outras quatro para sempre.
+
+          O quadro é uma moldura só, que preenche o que sobra da altura e rola
+          por dentro: `min-h-0` para o flex poder encolhê-la, `overflow-hidden`
+          para o canto arredondado cortar o conteúdo, e a rolagem lateral no
+          rolador de dentro. */}
+      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-borda">
+        <div className="h-full overflow-auto">
+          <div className="flex h-full min-w-max gap-4 p-4">
+
+            {/* === COLUNA ABERTO === */}
+            <div className={raia}>
+              <KanbanColumn
+                title="Aberto"
+                descricao="Aguardando atendimento"
+                colorDot={corDoStatus("Aberto", darkMode)}
+                items={chamadosPorColuna['Aberto']}
+                usuarios={usuarios}
+                categorias={categorias}
+                aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+                usuarioLogadoId={user?.id}
+              />
             </div>
 
-            {tarefasDoDia.length === 0 ? (
-              // O ✅ era um emoji: desenhado pelo sistema, colorido por conta
-              // própria e alheio ao tema. O ícone acompanha a cor do texto.
-              <p className="flex items-center gap-2 text-sm text-conteudo-tenue">
-                <IconeConfereCirculo className="h-4 w-4 shrink-0 text-sucesso" />
-                Nenhuma tarefa recorrente para hoje.
-              </p>
-            ) : (
-              <ul className="space-y-1.5">
-                {tarefasDoDia.map((t) => {
-                  const hoje = hojeYMD();
-                  const pendente = t.proxima_data <= hoje;
-                  const realizadaHoje =
-                    (t.ultima_execucao ?? '').slice(0, 10) === hoje;
-                  const atrasada = t.proxima_data < hoje;
-                  return (
-                    <li key={t.id} className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => navigate('/tarefas-recorrentes')}
-                        className={`text-sm font-medium hover:text-info hover:underline transition-colors text-left ${
-                          !pendente && realizadaHoje
-                            ? 'text-conteudo-tenue'
-                            : 'text-conteudo'
-                        }`}
-                        title="Ir para Tarefas Recorrentes"
-                      >
-                        {t.titulo}
-                      </button>
+            {/* === EM ANDAMENTO === */}
+            <div className={raia}>
+              <KanbanColumn
+                title="Em Andamento"
+                descricao="Técnico trabalhando no chamado"
+                colorDot={corDoStatus("Em Andamento", darkMode)}
+                items={chamadosPorColuna['Em Andamento']}
+                usuarios={usuarios}
+                categorias={categorias}
+                aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+                usuarioLogadoId={user?.id}
+              />
+            </div>
 
-                      {pendente ? (
-                        atrasada ? (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-perigo/15 text-perigo-forte dark:text-perigo-suave">
-                            Atrasada desde {formatarDataBR(t.proxima_data)}
-                          </span>
-                        ) : (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
-                            Hoje
-                          </span>
-                        )
-                      ) : (
-                        realizadaHoje && (
-                          <>
-                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-sucesso/15 text-sucesso-forte dark:text-sucesso-suave">
-                              <IconeConfereCirculo className="w-3 h-3" />
-                              Realizada
-                            </span>
-                            <span className="text-xs text-conteudo-tenue">
-                              Próxima: {formatarDataBR(t.proxima_data)}
-                            </span>
-                          </>
-                        )
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+            {/* === AGUARDANDO === */}
+            <div className={raia}>
+              <KanbanColumn
+                title="Aguardando"
+                descricao="Relógio de SLA pausado"
+                colorDot={corDoStatus("Aguardando", darkMode)}
+                items={chamadosPorColuna['Aguardando']}
+                usuarios={usuarios}
+                categorias={categorias}
+                aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+                usuarioLogadoId={user?.id}
+              />
+            </div>
+
+            {/* === RESOLVIDO (inclui Fechados) === */}
+            <div className={raia}>
+              <KanbanColumn
+                title="Resolvido"
+                descricao="Finalizado com sucesso"
+                colorDot={corDoStatus("Resolvido", darkMode)}
+                items={chamadosPorColuna['Resolvido']}
+                usuarios={usuarios}
+                categorias={categorias}
+                aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+                usuarioLogadoId={user?.id}
+              />
+            </div>
+
+            {/* === ARQUIVADO E CANCELADO ===
+                `corDoStatus` não conhece nenhum dos dois e devolve o cinza neutro
+                de fallback. É de propósito, por dois motivos que se somam: as
+                quatro cores de status passam pela conta de ΔE >= 20 do
+                `validar:paleta`, e cores novas teriam que ser calculadas contra
+                todas elas em quatro tipos de visão. E cinza neutro é o que "fora
+                do fluxo" significa — nenhum dos dois é etapa do atendimento.
+
+                O que separa as duas colunas é o texto, não a cor: o selo vermelho
+                "Cancelado" nos cards já dá o sinal de que ali houve interrupção,
+                e repeti-lo no ponto da coluna seria a mesma informação duas
+                vezes. */}
+            {mostrarColunasDeFora && (
+              <>
+                <div className={raia}>
+                  <KanbanColumn
+                    title="Arquivado"
+                    descricao="Fora do fluxo, guardado para consulta"
+                    colorDot={corDoStatus("Arquivado", darkMode)}
+                    items={chamadosPorColuna['arquivado']}
+                    usuarios={usuarios}
+                    categorias={categorias}
+                    aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+                    usuarioLogadoId={user?.id}
+                  />
+                </div>
+
+                <div className={raia}>
+                  <KanbanColumn
+                    title="Cancelado"
+                    descricao="Interrompido antes de ser resolvido"
+                    colorDot={corDoStatus("Cancelado", darkMode)}
+                    items={chamadosPorColuna['cancelado']}
+                    usuarios={usuarios}
+                    categorias={categorias}
+                    aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
+                    usuarioLogadoId={user?.id}
+                  />
+                </div>
+              </>
             )}
           </div>
-        )}
-
-        {/* Mensagem de erro */}
-        {error && (
-          <div className="mb-6 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-perigo-forte dark:text-perigo-suave">
-            {error}
-          </div>
-        )}
-
-
-        {/* Kanban. Quatro colunas de fluxo; as duas de fora — arquivo e
-            cancelados — só entram quando pedidas. As duas só crescem, e sem
-            interruptor apertariam as outras quatro para sempre. */}
-        <div
-          className={cn(
-            'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2',
-            mostrarColunasDeFora ? 'xl:grid-cols-6' : 'xl:grid-cols-4'
-          )}
-        >
-
-          {/* === COLUNA ABERTO === */}
-          <KanbanColumn
-            title="Aberto"
-            descricao="Aguardando atendimento"
-            colorDot={corDoStatus("Aberto", darkMode)}
-            items={chamadosPorColuna['Aberto']}
-            usuarios={usuarios}
-            categorias={categorias}
-            aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
-            usuarioLogadoId={user?.id}
-          />
-
-          {/* === EM ANDAMENTO === */}
-          <KanbanColumn
-            title="Em Andamento"
-            descricao="Técnico trabalhando no chamado"
-            colorDot={corDoStatus("Em Andamento", darkMode)}
-            items={chamadosPorColuna['Em Andamento']}
-            usuarios={usuarios}
-            categorias={categorias}
-            aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
-            usuarioLogadoId={user?.id}
-          />
-
-          {/* === AGUARDANDO === */}
-          <KanbanColumn
-            title="Aguardando"
-            descricao="Relógio de SLA pausado"
-            colorDot={corDoStatus("Aguardando", darkMode)}
-            items={chamadosPorColuna['Aguardando']}
-            usuarios={usuarios}
-            categorias={categorias}
-            aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
-            usuarioLogadoId={user?.id}
-          />
-
-          {/* === RESOLVIDO (inclui Fechados) === */}
-          <KanbanColumn
-            title="Resolvido"
-            descricao="Finalizado com sucesso"
-            colorDot={corDoStatus("Resolvido", darkMode)}
-            items={chamadosPorColuna['Resolvido']}
-            usuarios={usuarios}
-            categorias={categorias}
-            aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
-            usuarioLogadoId={user?.id}
-          />
-
-          {/* === ARQUIVADO E CANCELADO ===
-              `corDoStatus` não conhece nenhum dos dois e devolve o cinza neutro
-              de fallback. É de propósito, por dois motivos que se somam: as
-              quatro cores de status passam pela conta de ΔE >= 20 do
-              `validar:paleta`, e cores novas teriam que ser calculadas contra
-              todas elas em quatro tipos de visão. E cinza neutro é o que "fora
-              do fluxo" significa — nenhum dos dois é etapa do atendimento.
-
-              O que separa as duas colunas é o texto, não a cor: o selo vermelho
-              "Cancelado" nos cards já dá o sinal de que ali houve interrupção,
-              e repeti-lo no ponto da coluna seria a mesma informação duas
-              vezes. */}
-          {mostrarColunasDeFora && (
-            <>
-              <KanbanColumn
-                title="Arquivado"
-                descricao="Fora do fluxo, guardado para consulta"
-                colorDot={corDoStatus("Arquivado", darkMode)}
-                items={chamadosPorColuna['arquivado']}
-                usuarios={usuarios}
-                categorias={categorias}
-                aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
-                usuarioLogadoId={user?.id}
-              />
-
-              <KanbanColumn
-                title="Cancelado"
-                descricao="Interrompido antes de ser resolvido"
-                colorDot={corDoStatus("Cancelado", darkMode)}
-                items={chamadosPorColuna['cancelado']}
-                usuarios={usuarios}
-                categorias={categorias}
-                aoAbrir={(chamado) => setChamadoAberto(chamado.id)}
-                usuarioLogadoId={user?.id}
-              />
-            </>
-          )}
         </div>
       </div>
 

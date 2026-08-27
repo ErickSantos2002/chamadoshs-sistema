@@ -2,7 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
-import { Button, Modal, Seletor } from '../components/ui';
+import {
+  Badge,
+  Button,
+  Input,
+  Modal,
+  Rotulo,
+  RotuloDeCampo,
+  Seletor,
+  Textarea,
+} from '../components/ui';
 import { IconeAgenda, IconeApagar, IconeAtencao, IconeCarregando, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
 import {
   tarefasRecorrentesService,
@@ -401,12 +410,10 @@ const TarefasRecorrentes: React.FC = () => {
 
   if (!podeGerenciar) {
     return (
-      <div className="min-h-full bg-superficie-base flex items-center justify-center">
-        <div className="text-center">
-          <IconeAtencao className="w-12 h-12 text-alerta mx-auto mb-4" />
-          <p className="text-conteudo-suave text-lg">
-            Você não tem permissão para acessar Tarefas Recorrentes.
-          </p>
+      <div className="space-y-5">
+        <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-borda bg-superficie text-sm text-conteudo-tenue">
+          <IconeAtencao className="h-8 w-8 text-alerta" aria-hidden="true" />
+          <p>Você não tem permissão para acessar Tarefas Recorrentes.</p>
         </div>
       </div>
     );
@@ -417,182 +424,170 @@ const TarefasRecorrentes: React.FC = () => {
   // ========================================
 
   return (
-    <div className="min-h-full bg-superficie-base transition-colors">
-      <div>
-        {/* Cabeçalho */}
-        <div className="relative border border-borda bg-superficie transition-colors">
-          <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <IconeRepetir className="w-7 h-7 text-info" />
-              <div>
-                <h1 className="text-3xl font-bold text-conteudo tracking-tight">
-                  Tarefas Recorrentes
-                </h1>
-                <p className="text-conteudo-tenue text-sm mt-1">
-                  Rotinas que se repetem — registre cada realização e a próxima
-                  data avança sozinha.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={abrirCriar}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-info-forte transition-colors"
-            >
-              <IconeMais className="w-4 h-4" />
-              Nova tarefa
-            </button>
+    <div className="space-y-5">
+      {/* Cabeçalho */}
+      <div className="flex flex-col gap-4 rounded-2xl border border-borda bg-superficie px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <IconeRepetir className="h-7 w-7 shrink-0 text-info" aria-hidden="true" />
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-conteudo">
+              Tarefas Recorrentes
+            </h1>
+            <p className="mt-0.5 text-sm text-conteudo-tenue">
+              Rotinas que se repetem — registre cada realização e a próxima
+              data avança sozinha.
+            </p>
           </div>
         </div>
-
-        {/* Filtro */}
-        <div className="mt-6 mb-6 flex items-center gap-3">
-          <label className="inline-flex items-center gap-2 text-sm text-conteudo-suave cursor-pointer">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Filtro */}
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-conteudo-suave">
             <input
               type="checkbox"
               checked={mostrarInativas}
               onChange={(e) => setMostrarInativas(e.target.checked)}
-              className="w-4 h-4 accent-sinal"
+              className="h-4 w-4 accent-sinal"
             />
             Mostrar também as desativadas
           </label>
+          <Button onClick={abrirCriar}>
+            <IconeMais className="h-4 w-4" aria-hidden="true" />
+            Nova tarefa
+          </Button>
         </div>
+      </div>
 
-        {/* Lista */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <IconeCarregando className="w-10 h-10 animate-spin text-info" />
-          </div>
-        ) : tarefasOrdenadas.length === 0 ? (
-          <div className="relative border border-borda bg-superficie p-12 text-center">
-            <IconeRepetir className="w-12 h-12 text-conteudo-tenue mx-auto mb-4" />
-            <p className="text-conteudo-tenue text-lg">
-              Nenhuma tarefa recorrente cadastrada.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {tarefasOrdenadas.map((t) => {
-              const st = statusData(t.proxima_data);
-              return (
-                <div
-                  key={t.id}
-                  className={`relative border bg-superficie p-5 transition-colors ${
-                    t.ativo
-                      ? 'border-borda'
-                      : 'border-borda opacity-60'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="text-lg font-semibold text-conteudo truncate">
-                        {t.titulo}
-                      </h3>
-                      <p className="text-xs text-conteudo-tenue mt-0.5">
-                        {recorrenciaLabel(t)}
-                      </p>
-                    </div>
-                    {!t.ativo && (
-                      <span className="shrink-0 text-xs px-2 py-1 rounded-full bg-superficie-elevada text-conteudo-suave">
-                        Desativada
+      {/* Lista */}
+      {loading ? (
+        <div className="flex h-48 items-center justify-center rounded-xl border border-borda bg-superficie">
+          <IconeCarregando
+            className="h-8 w-8 animate-spin text-info"
+            aria-hidden="true"
+          />
+        </div>
+      ) : tarefasOrdenadas.length === 0 ? (
+        <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-borda bg-superficie text-sm text-conteudo-tenue">
+          <IconeRepetir className="h-8 w-8" aria-hidden="true" />
+          <p>Nenhuma tarefa recorrente cadastrada.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {tarefasOrdenadas.map((t) => {
+            const st = statusData(t.proxima_data);
+            return (
+              <div
+                key={t.id}
+                className={`rounded-xl border border-borda bg-superficie p-5 transition-colors ${
+                  t.ativo ? '' : 'opacity-60'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold text-conteudo">
+                      {t.titulo}
+                    </h3>
+                    <p className="mt-0.5 text-xs text-conteudo-tenue">
+                      {recorrenciaLabel(t)}
+                    </p>
+                  </div>
+                  {!t.ativo && <Badge className="shrink-0">Desativada</Badge>}
+                </div>
+
+                {t.descricao && (
+                  <p className="mt-2 line-clamp-2 text-sm text-conteudo-suave">
+                    {t.descricao}
+                  </p>
+                )}
+
+                {/* Metadados */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Badge variante="alerta">{t.prioridade}</Badge>
+                  {(t.categoria_nome || nomeCategoria(t.categoria_id)) && (
+                    <Badge variante="info">
+                      {t.categoria_nome || nomeCategoria(t.categoria_id)}
+                    </Badge>
+                  )}
+                  {(t.responsavel_nome || nomeUsuario(t.responsavel_id)) && (
+                    <Badge>
+                      Resp.: {t.responsavel_nome || nomeUsuario(t.responsavel_id)}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Próxima data + contador */}
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-borda pt-4">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <IconeAgenda
+                      className="h-4 w-4 shrink-0 text-conteudo-tenue"
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm text-conteudo-suave">
+                      Próxima: {formatarDataBR(t.proxima_data)}
+                    </span>
+                    {st && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${st.classe}`}
+                      >
+                        {st.label}
                       </span>
                     )}
                   </div>
+                  <span className="shrink-0 text-xs text-conteudo-tenue">
+                    {t.total_execucoes}{' '}
+                    {t.total_execucoes === 1 ? 'realização' : 'realizações'}
+                  </span>
+                </div>
 
-                  {t.descricao && (
-                    <p className="text-sm text-conteudo-suave mt-2 line-clamp-2">
-                      {t.descricao}
-                    </p>
+                {/* Ações.
+                    Antes eram seis botões do mesmo peso, cada um com sua cor:
+                    realizar a tarefa do dia disputava atenção com excluí-la.
+                    Agora só a ação principal é sólida, as de consulta ficam
+                    discretas, e a destrutiva sai do grupo — encostada na
+                    direita, para não ser clicada por vizinhança. */}
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-borda pt-4">
+                  {t.ativo && (
+                    <Button variante="sucesso" tamanho="sm" onClick={() => abrirRealizar(t)}>
+                      <IconeConfereCirculo className="h-4 w-4" aria-hidden="true" />
+                      Realizar
+                    </Button>
                   )}
 
-                  {/* Metadados */}
-                  <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                    <span className="px-2 py-1 rounded-full bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
-                      {t.prioridade}
-                    </span>
-                    {(t.categoria_nome || nomeCategoria(t.categoria_id)) && (
-                      <span className="px-2 py-1 rounded-full bg-info/15 text-info-forte dark:text-info-suave">
-                        {t.categoria_nome || nomeCategoria(t.categoria_id)}
-                      </span>
-                    )}
-                    {(t.responsavel_nome || nomeUsuario(t.responsavel_id)) && (
-                      <span className="px-2 py-1 rounded-full bg-superficie-elevada text-conteudo-suave">
-                        Resp.: {t.responsavel_nome || nomeUsuario(t.responsavel_id)}
-                      </span>
-                    )}
-                  </div>
+                  <Button variante="secundario" tamanho="sm" onClick={() => abrirDetalhes(t)}>
+                    <IconeInfo className="h-4 w-4" aria-hidden="true" />
+                    Detalhes
+                  </Button>
 
-                  {/* Próxima data + contador */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-borda">
-                    <div className="flex items-center gap-2">
-                      <IconeAgenda className="w-4 h-4 text-conteudo-tenue" />
-                      <span className="text-sm text-conteudo-suave">
-                        Próxima: {formatarDataBR(t.proxima_data)}
-                      </span>
-                      {st && (
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.classe}`}
-                        >
-                          {st.label}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-conteudo-tenue">
-                      {t.total_execucoes}{' '}
-                      {t.total_execucoes === 1 ? 'realização' : 'realizações'}
-                    </span>
-                  </div>
+                  <Button variante="secundario" tamanho="sm" onClick={() => abrirHistorico(t)}>
+                    <IconeHistorico className="h-4 w-4" aria-hidden="true" />
+                    Histórico
+                  </Button>
 
-                  {/* Ações.
-                      Antes eram seis botões do mesmo peso, cada um com sua cor:
-                      realizar a tarefa do dia disputava atenção com excluí-la.
-                      Agora só a ação principal é sólida, as de consulta ficam
-                      discretas, e a destrutiva sai do grupo — encostada na
-                      direita, para não ser clicada por vizinhança. */}
-                  <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-borda-suave pt-3">
-                    {t.ativo && (
-                      <Button variante="sucesso" tamanho="sm" onClick={() => abrirRealizar(t)}>
-                        <IconeConfereCirculo className="h-4 w-4" aria-hidden="true" />
-                        Realizar
-                      </Button>
-                    )}
+                  <Button variante="secundario" tamanho="sm" onClick={() => abrirEditar(t)}>
+                    <IconeEditar className="h-4 w-4" aria-hidden="true" />
+                    Editar
+                  </Button>
 
-                    <Button variante="secundario" tamanho="sm" onClick={() => abrirDetalhes(t)}>
-                      <IconeInfo className="h-4 w-4" aria-hidden="true" />
-                      Detalhes
-                    </Button>
+                  <Button variante="secundario" tamanho="sm" onClick={() => alternarAtivo(t)}>
+                    <IconeEnergia className="h-4 w-4" aria-hidden="true" />
+                    {t.ativo ? 'Desativar' : 'Reativar'}
+                  </Button>
 
-                    <Button variante="secundario" tamanho="sm" onClick={() => abrirHistorico(t)}>
-                      <IconeHistorico className="h-4 w-4" aria-hidden="true" />
-                      Histórico
-                    </Button>
-
-                    <Button variante="secundario" tamanho="sm" onClick={() => abrirEditar(t)}>
-                      <IconeEditar className="h-4 w-4" aria-hidden="true" />
-                      Editar
-                    </Button>
-
-                    <Button variante="secundario" tamanho="sm" onClick={() => alternarAtivo(t)}>
-                      <IconeEnergia className="h-4 w-4" aria-hidden="true" />
-                      {t.ativo ? 'Desativar' : 'Reativar'}
-                    </Button>
-
-                    <Button
-                      variante="secundario"
-                      tamanho="sm"
-                      onClick={() => excluir(t)}
-                      title={`Excluir ${t.titulo}`}
-                      className="ml-auto border-perigo/40 text-perigo hover:bg-perigo/10 hover:border-perigo/60"
-                    >
-                      <IconeApagar className="h-4 w-4" aria-hidden="true" />
-                      Excluir
-                    </Button>
-                  </div>
+                  <Button
+                    variante="secundario"
+                    tamanho="sm"
+                    onClick={() => excluir(t)}
+                    title={`Excluir ${t.titulo}`}
+                    className="ml-auto border-perigo/40 text-perigo hover:border-perigo/60 hover:bg-perigo/10"
+                  >
+                    <IconeApagar className="h-4 w-4" aria-hidden="true" />
+                    Excluir
+                  </Button>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* ==================== MODAL CRIAR/EDITAR ==================== */}
       {(modal === 'criar' || modal === 'editar') && (
@@ -603,50 +598,39 @@ const TarefasRecorrentes: React.FC = () => {
           largura="md"
         >
 
-              <form onSubmit={salvar} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <form onSubmit={salvar} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                    Título *
-                  </label>
-                  <input
+                  <RotuloDeCampo obrigatorio>Título</RotuloDeCampo>
+                  <Input
                     type="text"
                     value={form.titulo}
                     onChange={(e) => atualizarForm({ titulo: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     placeholder="Ex: Abertura de logs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                    Descrição
-                  </label>
-                  <textarea
+                  <RotuloDeCampo>Descrição</RotuloDeCampo>
+                  <Textarea
                     value={form.descricao}
                     onChange={(e) => atualizarForm({ descricao: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                    Instruções / procedimento
-                  </label>
-                  <textarea
+                  <RotuloDeCampo>Instruções / procedimento</RotuloDeCampo>
+                  <Textarea
                     value={form.instrucoes}
                     onChange={(e) => atualizarForm({ instrucoes: e.target.value })}
                     rows={8}
-                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     placeholder="Passo a passo de como executar"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                      Categoria
-                    </label>
+                    <RotuloDeCampo>Categoria</RotuloDeCampo>
                     <Seletor
                       rotulo="Categoria"
                       valor={String(form.categoria_id ?? '')}
@@ -658,9 +642,7 @@ const TarefasRecorrentes: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                      Responsável padrão
-                    </label>
+                    <RotuloDeCampo>Responsável padrão</RotuloDeCampo>
                     <Seletor
                       rotulo="Responsável padrão"
                       valor={String(form.responsavel_id ?? '')}
@@ -675,9 +657,7 @@ const TarefasRecorrentes: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                      Prioridade
-                    </label>
+                    <RotuloDeCampo>Prioridade</RotuloDeCampo>
                     <Seletor
                       rotulo="Prioridade"
                       valor={form.prioridade}
@@ -689,9 +669,7 @@ const TarefasRecorrentes: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                      Recorrência
-                    </label>
+                    <RotuloDeCampo>Recorrência</RotuloDeCampo>
                     <Seletor
                       rotulo="Recorrência"
                       valor={form.tipo_recorrencia}
@@ -711,9 +689,7 @@ const TarefasRecorrentes: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {form.tipo_recorrencia === 'semanal' && (
                     <div>
-                      <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                        Dia da semana
-                      </label>
+                      <RotuloDeCampo>Dia da semana</RotuloDeCampo>
                       <Seletor
                         rotulo="Dia da semana"
                         valor={String(form.dia_semana)}
@@ -727,10 +703,8 @@ const TarefasRecorrentes: React.FC = () => {
                   )}
                   {form.tipo_recorrencia === 'mensal' && (
                     <div>
-                      <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                        Dia do mês
-                      </label>
-                      <input
+                      <RotuloDeCampo>Dia do mês</RotuloDeCampo>
+                      <Input
                         type="number"
                         min={1}
                         max={31}
@@ -738,24 +712,20 @@ const TarefasRecorrentes: React.FC = () => {
                         onChange={(e) =>
                           atualizarForm({ dia_mes: Number(e.target.value) })
                         }
-                        className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                       />
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                      A cada (intervalo)
-                    </label>
-                    <input
+                    <RotuloDeCampo>A cada (intervalo)</RotuloDeCampo>
+                    <Input
                       type="number"
                       min={1}
                       value={form.intervalo}
                       onChange={(e) =>
                         atualizarForm({ intervalo: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                     />
-                    <p className="text-xs text-conteudo-tenue mt-1">
+                    <p className="mt-1 text-xs text-conteudo-tenue">
                       {form.tipo_recorrencia === 'diaria'
                         ? 'dias'
                         : form.tipo_recorrencia === 'semanal'
@@ -766,40 +736,35 @@ const TarefasRecorrentes: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
+                  <RotuloDeCampo>
                     Próxima data {modal === 'criar' && '(sugerida — pode ajustar)'}
-                  </label>
-                  <input
+                  </RotuloDeCampo>
+                  <Input
                     type="date"
                     value={form.proxima_data}
                     onChange={(e) => {
                       setProximaEditada(true);
                       setForm((a) => ({ ...a, proxima_data: e.target.value }));
                     }}
-                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-info"
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
+                <div className="flex justify-end gap-2 border-t border-borda pt-4">
+                  <Button
                     type="button"
+                    variante="secundario"
                     onClick={() => setModal(null)}
-                    className="px-4 py-2 rounded-lg bg-superficie-elevada text-conteudo-suave hover:bg-borda"
                   >
                     Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={salvando}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-info-forte disabled:opacity-60"
-                  >
+                  </Button>
+                  <Button type="submit" disabled={salvando}>
                     {salvando ? (
-                      <IconeCarregando className="w-4 h-4 animate-spin" />
+                      <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
                     ) : (
-                      <IconeSalvar className="w-4 h-4" />
+                      <IconeSalvar className="h-4 w-4" aria-hidden="true" />
                     )}
                     Salvar
-                  </button>
+                  </Button>
                 </div>
               </form>
         </Modal>
@@ -812,8 +777,27 @@ const TarefasRecorrentes: React.FC = () => {
           aoFechar={() => setModal(null)}
           titulo="Realizar tarefa"
           largura="sm"
+          rodape={
+            <>
+              <Button variante="secundario" onClick={() => setModal(null)}>
+                Cancelar
+              </Button>
+              <Button
+                variante="sucesso"
+                onClick={confirmarRealizar}
+                disabled={salvando}
+              >
+                {salvando ? (
+                  <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <IconeConfereCirculo className="h-4 w-4" aria-hidden="true" />
+                )}
+                Confirmar
+              </Button>
+            </>
+          }
         >
-              <div className="p-6 space-y-4">
+              <div className="space-y-4">
                 <div>
                   <p className="font-medium text-conteudo">
                     {selecionada.titulo}
@@ -823,14 +807,11 @@ const TarefasRecorrentes: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-conteudo-suave mb-1">
-                    Observação (opcional)
-                  </label>
-                  <textarea
+                  <RotuloDeCampo>Observação (opcional)</RotuloDeCampo>
+                  <Textarea
                     value={observacao}
                     onChange={(e) => setObservacao(e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border rounded-lg bg-superficie text-conteudo border-borda focus:outline-none focus:ring-2 focus:ring-sucesso"
                     placeholder="O que foi feito, alguma ocorrência..."
                   />
                 </div>
@@ -838,26 +819,6 @@ const TarefasRecorrentes: React.FC = () => {
                   Vai registrar você como responsável, com data e hora de agora, e
                   avançar a próxima data automaticamente.
                 </p>
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={() => setModal(null)}
-                    className="px-4 py-2 rounded-lg bg-superficie-elevada text-conteudo-suave hover:bg-borda"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={confirmarRealizar}
-                    disabled={salvando}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sucesso text-white font-medium hover:bg-sucesso-forte disabled:opacity-60"
-                  >
-                    {salvando ? (
-                      <IconeCarregando className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <IconeConfereCirculo className="w-4 h-4" />
-                    )}
-                    Confirmar
-                  </button>
-                </div>
               </div>
         </Modal>
       )}
@@ -870,42 +831,50 @@ const TarefasRecorrentes: React.FC = () => {
           titulo="Histórico — {selecionada.titulo}"
           largura="md"
         >
-              <div className="p-6 max-h-[70vh] overflow-y-auto">
-                {historico.length === 0 ? (
-                  <p className="text-center text-conteudo-tenue py-8">
-                    Nenhuma execução registrada ainda.
-                  </p>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead className="text-left text-xs uppercase text-conteudo-tenue border-b border-borda">
+              {historico.length === 0 ? (
+                <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
+                  Nenhuma execução registrada ainda.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b border-borda">
                       <tr>
-                        <th className="py-2 pr-4">Realizada em</th>
-                        <th className="py-2 pr-4">Quem</th>
-                        <th className="py-2 pr-4">Prevista</th>
-                        <th className="py-2">Observação</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                          Realizada em
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                          Quem
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                          Prevista
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                          Observação
+                        </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 divide-borda">
+                    <tbody>
                       {historico.map((e) => (
-                        <tr key={e.id}>
-                          <td className="py-2 pr-4 text-conteudo whitespace-nowrap">
+                        <tr key={e.id} className="border-b border-borda-suave">
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-conteudo">
                             {formatarDataHora(e.realizada_em)}
                           </td>
-                          <td className="py-2 pr-4 text-conteudo-suave">
+                          <td className="px-4 py-3 text-sm text-conteudo-suave">
                             {e.usuario_nome || nomeUsuario(e.usuario_id) || `#${e.usuario_id}`}
                           </td>
-                          <td className="py-2 pr-4 text-conteudo-tenue whitespace-nowrap">
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-conteudo-tenue">
                             {formatarDataBR(e.data_prevista)}
                           </td>
-                          <td className="py-2 text-conteudo-suave">
+                          <td className="px-4 py-3 text-sm text-conteudo-suave">
                             {e.observacao || '—'}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                )}
-              </div>
+                </div>
+              )}
         </Modal>
       )}
 
@@ -916,94 +885,84 @@ const TarefasRecorrentes: React.FC = () => {
           aoFechar={() => setModal(null)}
           titulo="Detalhes da tarefa"
           largura="sm"
+          rodape={
+            <>
+              <Button
+                variante="secundario"
+                onClick={() => abrirEditar(selecionada)}
+              >
+                <IconeEditar className="h-4 w-4" aria-hidden="true" />
+                Editar
+              </Button>
+              <Button onClick={() => setModal(null)}>Fechar</Button>
+            </>
+          }
         >
 
-              <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-5">
                 <div>
-                  <h3 className="text-lg font-semibold text-conteudo">
+                  <h3 className="text-base font-semibold text-conteudo">
                     {selecionada.titulo}
                   </h3>
-                  <p className="text-sm text-conteudo-tenue mt-0.5">
+                  <p className="mt-0.5 text-sm text-conteudo-tenue">
                     {recorrenciaLabel(selecionada)}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="px-2 py-1 rounded-full bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
-                    {selecionada.prioridade}
-                  </span>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variante="alerta">{selecionada.prioridade}</Badge>
                   {(selecionada.categoria_nome ||
                     nomeCategoria(selecionada.categoria_id)) && (
-                    <span className="px-2 py-1 rounded-full bg-info/15 text-info-forte dark:text-info-suave">
+                    <Badge variante="info">
                       {selecionada.categoria_nome ||
                         nomeCategoria(selecionada.categoria_id)}
-                    </span>
+                    </Badge>
                   )}
                   {(selecionada.responsavel_nome ||
                     nomeUsuario(selecionada.responsavel_id)) && (
-                    <span className="px-2 py-1 rounded-full bg-superficie-elevada text-conteudo-suave">
+                    <Badge>
                       Resp.:{' '}
                       {selecionada.responsavel_nome ||
                         nomeUsuario(selecionada.responsavel_id)}
-                    </span>
+                    </Badge>
                   )}
-                  <span
-                    className={`px-2 py-1 rounded-full ${
-                      selecionada.ativo
-                        ? 'bg-sucesso/15 text-sucesso-forte dark:text-sucesso-suave'
-                        : 'bg-superficie-elevada text-conteudo-suave'
-                    }`}
-                  >
+                  <Badge variante={selecionada.ativo ? 'sucesso' : 'neutro'}>
                     {selecionada.ativo ? 'Ativa' : 'Desativada'}
-                  </span>
+                  </Badge>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs uppercase text-conteudo-tenue">Próxima data</p>
-                    <p className="text-conteudo">
+                    <Rotulo como="p">Próxima data</Rotulo>
+                    <p className="mt-0.5 text-sm text-conteudo">
                       {formatarDataBR(selecionada.proxima_data)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase text-conteudo-tenue">Realizações</p>
-                    <p className="text-conteudo">
+                    <Rotulo como="p">Realizações</Rotulo>
+                    <p className="mt-0.5 text-sm text-conteudo">
                       {selecionada.total_execucoes}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-xs uppercase text-conteudo-tenue mb-1">Descrição</p>
-                  <p className="text-sm text-conteudo-suave whitespace-pre-wrap">
+                  <Rotulo como="p" className="mb-1 block">
+                    Descrição
+                  </Rotulo>
+                  <p className="whitespace-pre-wrap text-sm text-conteudo-suave">
                     {selecionada.descricao || '—'}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs uppercase text-conteudo-tenue mb-1 flex items-center gap-1.5">
-                    <IconeDocumento className="w-3.5 h-3.5" />
+                  <Rotulo como="p" className="mb-1 flex items-center gap-1.5">
+                    <IconeDocumento className="h-3.5 w-3.5" aria-hidden="true" />
                     Instruções / procedimento
-                  </p>
-                  <div className="text-sm text-conteudo-suave whitespace-pre-wrap rounded-lg bg-superficie-elevada border border-borda p-3">
+                  </Rotulo>
+                  <div className="whitespace-pre-wrap rounded-lg border border-borda bg-superficie-elevada p-3 text-sm text-conteudo-suave">
                     {selecionada.instrucoes || 'Sem instruções cadastradas.'}
                   </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    onClick={() => abrirEditar(selecionada)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-superficie-elevada text-conteudo-suave hover:bg-borda"
-                  >
-                    <IconeEditar className="w-4 h-4" />
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => setModal(null)}
-                    className="px-4 py-2 rounded-lg bg-info text-white font-medium hover:bg-info-forte"
-                  >
-                    Fechar
-                  </button>
                 </div>
               </div>
         </Modal>

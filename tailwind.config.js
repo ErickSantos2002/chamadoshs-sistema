@@ -126,47 +126,14 @@ module.exports = {
         ],
       },
 
-      // Ponto de corte por ALTURA, não por largura.
+      // Entradas. Todas rodam UMA vez: a diferença entre entrada e enfeite
+      // é essa — a entrada termina. O que fica em laço numa tela aberta o
+      // dia inteiro vira incômodo por volta das dez da manhã.
       //
-      // Os breakpoints do Tailwind são todos de largura, e largura não diz
-      // nada sobre o problema que apareceu: uma TV em paisagem é larguíssima
-      // e baixa. O login cabia folgado no notebook e era cortado lá.
-      //
-      // Espaçamento generoso passa a ser condicional: `alto:` só vale quando
-      // há altura para gastar.
-      screens: {
-        alto: { raw: '(min-height: 720px)' },
-      },
-
-      // As animações `blinkLight`/`blinkDark` saíram daqui junto com o único
-      // lugar que as usava: o "ACESSO NEGADO" piscando em vermelho da tela de
-      // bloqueio. Alarme para quem não fez nada errado ensina a ignorar alarme.
-      keyframes: {
-        // ── Entradas ────────────────────────────────────────────────
-        // Todas rodam UMA vez. A diferença entre entrada e enfeite é
-        // essa: a entrada termina. O que fica em laço numa tela aberta
-        // o dia inteiro vira incômodo por volta das dez da manhã.
-        subir: {
-          from: { opacity: "0", transform: "translateY(12px)" },
-          to: { opacity: "1", transform: "none" },
-        },
-        acender: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        varrer: {
-          "0%": { top: "-2px", opacity: "0" },
-          "15%": { opacity: "1" },
-          "85%": { opacity: "1" },
-          "100%": { top: "100%", opacity: "0" },
-        },
-      },
-
-      animation: {
-        subir: "subir .6s cubic-bezier(.2,.8,.2,1) both",
-        acender: "acender .5s ease-out .35s both",
-        varrer: "varrer 1.1s cubic-bezier(.4,0,.2,1) .25s 1 both",
-      },
+      // `varrer` saiu com a fachada de console do login, e `subir`/`acender`
+      // saíram junto: eram o painel entrando e os colchetes acendendo, e
+      // nenhum dos dois existe mais. Animação sem uso é convite para alguém
+      // reintroduzir o vocabulário antigo sem saber que ele foi retirado.
     },
 
     // ── Cantos ───────────────────────────────────────────────────────
