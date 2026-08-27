@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { chamadosService } from '../services/chamadoshsapi';
 import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
 import ContadorMinimo from './ContadorMinimo';
-import { Button, Rotulo, Textarea } from './ui';
+import { Button, RotuloDeCampo, Textarea } from './ui';
 import { Chamado, StatusEnum } from '../types/api';
 import type { PropsDeIcone } from './ui/icones';
 import { IconeConfereCirculo, IconeDesfazer, IconeIniciar, IconeRelogio } from './ui/icones';
@@ -112,9 +112,7 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
   if (resolvendo) {
     return (
       <div className="space-y-2">
-        <Rotulo como="label" htmlFor="solucao-rapida" className="block">
-          Como foi resolvido
-        </Rotulo>
+        <RotuloDeCampo htmlFor="solucao-rapida">Como foi resolvido</RotuloDeCampo>
         <Textarea
           id="solucao-rapida"
           rows={4}

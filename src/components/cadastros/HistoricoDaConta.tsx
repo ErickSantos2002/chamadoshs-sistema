@@ -7,7 +7,6 @@ import {
   TrilhaComFalha,
   TrilhaVazia,
 } from '../EstadosDaTrilha';
-import { Rotulo } from '../ui';
 import type { EventoDeAuditoria } from '../../types/api';
 
 interface HistoricoDaContaProps {
@@ -87,7 +86,9 @@ export const HistoricoDaConta: React.FC<HistoricoDaContaProps> = ({ usuarioId })
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-sm font-medium text-conteudo">{titulo}</span>
               {/* Sem data, não inventa: a coluna é anulável no banco. */}
-              <Rotulo>{momento ?? 'data não registrada'}</Rotulo>
+              <span className="text-xs text-conteudo-tenue">
+                {momento ?? 'data não registrada'}
+              </span>
             </div>
 
             {mudanca && (

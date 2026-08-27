@@ -9,7 +9,7 @@ import {
   TrilhaComFalha,
   TrilhaVazia,
 } from '../components/EstadosDaTrilha';
-import { Button, Colchetes, Rotulo, Seletor } from '../components/ui';
+import { Button, Colchetes, Rotulo, RotuloDeCampo, Seletor } from '../components/ui';
 import type { EventoDeAuditoria } from '../types/api';
 import { IconeRecarregar, IconeTrilha } from '../components/ui/icones';
 
@@ -175,9 +175,7 @@ const Auditoria: React.FC = () => {
                 um botão que carrega o próprio `aria-label`. Um `for` apontando
                 para nada é pior que nenhum — o leitor de tela anuncia o rótulo
                 e não encontra o campo. */}
-            <Rotulo como="label" className="mb-1.5 block">
-              Tipo de cadastro
-            </Rotulo>
+            <RotuloDeCampo>Tipo de cadastro</RotuloDeCampo>
             {ehAdministrador ? (
               <Seletor
                 rotulo="Tipo de cadastro"
@@ -206,9 +204,7 @@ const Auditoria: React.FC = () => {
           </div>
 
           <div>
-            <Rotulo como="label" className="mb-1.5 block">
-              Quem fez
-            </Rotulo>
+            <RotuloDeCampo>Quem fez</RotuloDeCampo>
             <Seletor
               rotulo="Quem fez"
               valor={atorId}
@@ -223,9 +219,7 @@ const Auditoria: React.FC = () => {
           </div>
 
           <div>
-            <Rotulo como="label" htmlFor="de" className="mb-1.5 block">
-              De
-            </Rotulo>
+            <RotuloDeCampo htmlFor="de">De</RotuloDeCampo>
             <input
               id="de"
               type="date"
@@ -237,9 +231,7 @@ const Auditoria: React.FC = () => {
           </div>
 
           <div>
-            <Rotulo como="label" htmlFor="ate" className="mb-1.5 block">
-              Até
-            </Rotulo>
+            <RotuloDeCampo htmlFor="ate">Até</RotuloDeCampo>
             <input
               id="ate"
               type="date"
@@ -319,7 +311,7 @@ const Auditoria: React.FC = () => {
                 {['Quando', 'Quem', 'O quê', 'Cadastro', 'Origem'].map((coluna) => (
                   <th
                     key={coluna}
-                    className="border-b border-borda px-4 py-2 text-left font-mono text-rotulo uppercase text-conteudo-tenue"
+                    className="border-b border-borda px-4 py-2 text-left text-xs font-medium text-conteudo-suave"
                   >
                     {coluna}
                   </th>

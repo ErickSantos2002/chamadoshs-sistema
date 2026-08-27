@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSaudeDoSistema } from '../hooks/useSaudeDoSistema';
 import { EstadoDoSistema, TEXTO_DO_ESTADO, descreverIdade } from '../lib/saude';
 import { useRelogio } from '../hooks/useRelogio';
-import { Button, Colchetes, Input, Rotulo } from '../components/ui';
+import { Button, Colchetes, Input, Rotulo, RotuloDeCampo } from '../components/ui';
 import logo from '../assets/logo.png';
 import { IconeAlerta, IconeUsuario } from '../components/ui/icones';
 
@@ -139,9 +139,7 @@ const Login: React.FC = () => {
             {/* Rótulo de verdade, e não só placeholder: o placeholder some
                 quando a pessoa digita, levando junto a indicação do campo. */}
             <div>
-              <Rotulo como="label" htmlFor="username" className="mb-1.5 block">
-                Usuário
-              </Rotulo>
+              <RotuloDeCampo htmlFor="username">Usuário</RotuloDeCampo>
               <Input
                 id="username"
                 type="text"
@@ -158,9 +156,7 @@ const Login: React.FC = () => {
             </div>
 
             <div>
-              <Rotulo como="label" htmlFor="password" className="mb-1.5 block">
-                Senha
-              </Rotulo>
+              <RotuloDeCampo htmlFor="password">Senha</RotuloDeCampo>
               <Input
                 id="password"
                 type="password"

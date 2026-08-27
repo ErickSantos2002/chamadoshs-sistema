@@ -138,13 +138,6 @@ module.exports = {
         alto: { raw: '(min-height: 720px)' },
       },
 
-      fontSize: {
-        // Tamanho dos rótulos monoespaçados. 11px, não os 9,6px da maquete:
-        // lá era textura de fundo, aqui carrega a palavra "PROTOCOLO" acima de
-        // um número que alguém precisa ler.
-        rotulo: ["0.6875rem", { lineHeight: "1rem", letterSpacing: "0.14em" }],
-      },
-
       // As animações `blinkLight`/`blinkDark` saíram daqui junto com o único
       // lugar que as usava: o "ACESSO NEGADO" piscando em vermelho da tela de
       // bloqueio. Alarme para quem não fez nada errado ensina a ignorar alarme.
