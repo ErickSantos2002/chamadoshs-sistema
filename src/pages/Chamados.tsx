@@ -9,6 +9,7 @@ import { KanbanColumn } from '../components/KanbanColumn';
 import { Badge, Button, Input, Modal, Seletor } from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
+import { ehDaPessoa, responsaveisDosChamados } from '../lib/pessoas';
 import { agruparPorColuna, estaNoFluxo } from '../lib/quadro';
 import { cn } from '../lib/utils';
 import NovoChamadoForm from '../components/NovoChamadoForm';
@@ -43,6 +44,16 @@ const Chamados: React.FC = () => {
   const [busca, setBusca] = useState('');
 
   /**
+   * Filtro por pessoa: o responsável do chamado. Só a equipe vê (ver
+   * `podeFiltrarPorPessoa` abaixo) — para quem abre chamado, o quadro já é o
+   * dos chamados dele, e um seletor de nomes a mais só ocuparia espaço.
+   *
+   * String, e não número, porque tem uma opção que não é id: "sem
+   * responsável". A regra de casamento vive em `lib/pessoas`, com teste.
+   */
+  const [filtroPessoa, setFiltroPessoa] = useState<string>('');
+
+  /**
    * Arquivado e cancelado não são etapas do atendimento e não podem disputar
    * espaço com o trabalho do dia: ficam atrás de um interruptor, desligado por
    * padrão. Um só, e não dois — são a mesma pergunta ("cadê o que saiu do
@@ -58,11 +69,14 @@ const Chamados: React.FC = () => {
   const [modalNovoAberto, setModalNovoAberto] = useState(false);
   const [chamadoAberto, setChamadoAberto] = useState<number | null>(null);
 
-  const temFiltro = Boolean(filtroPrioridade || filtroCategoria || busca);
+  const temFiltro = Boolean(
+    filtroPrioridade || filtroCategoria || filtroPessoa || busca
+  );
 
   const limparFiltros = () => {
     setFiltroPrioridade('');
     setFiltroCategoria('');
+    setFiltroPessoa('');
     setBusca('');
   };
 
@@ -75,6 +89,15 @@ const Chamados: React.FC = () => {
   // Permissões baseadas em role
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
+
+  /**
+   * Quem enxerga o filtro por pessoa. É pergunta de quem distribui e atende
+   * trabalho; quem só abre chamado está olhando um quadro que já é o dele.
+   *
+   * O filtro é de exibição, não de acesso: esconder o seletor não esconde
+   * chamado nenhum, e o que cada perfil pode ver quem decide é a API.
+   */
+  const podeFiltrarPorPessoa = isAdmin || isTecnico;
 
   // Forçar reload dos chamados quando a página é montada
   useEffect(() => {
@@ -148,11 +171,26 @@ const Chamados: React.FC = () => {
     [chamados, mostrarForaDoFluxo, buscando]
   );
 
+  /**
+   * Os nomes do seletor de pessoa, tirados dos chamados carregados — quem tem
+   * chamado aparece, quem não tem não ocupa linha. Regra e ordem em
+   * `lib/pessoas`, com teste.
+   *
+   * Sai de `chamados`, não de `chamadosNoEscopo`: a lista precisa ficar parada
+   * enquanto se mexe nos outros filtros. Uma lista de nomes que encolhe a cada
+   * clique faz a pessoa procurar um nome que estava ali agora há pouco.
+   */
+  const pessoas = useMemo(
+    () => responsaveisDosChamados(chamados, usuarios),
+    [chamados, usuarios]
+  );
+
   // Filtra os chamados localmente. A busca cobre título e protocolo: quem
   // lembra do assunto raramente lembra do número.
   const chamadosFiltrados = chamadosNoEscopo.filter((chamado) => {
     if (filtroPrioridade && chamado.prioridade !== filtroPrioridade) return false;
     if (filtroCategoria && chamado.categoria_id !== filtroCategoria) return false;
+    if (!ehDaPessoa(chamado, filtroPessoa)) return false;
 
     if (busca) {
       const termo = busca.toLowerCase();
@@ -289,6 +327,28 @@ const Chamados: React.FC = () => {
             ]}
             className="w-48"
           />
+
+          {/* Filtro por pessoa: o responsável, que é a inicial que o card
+              mostra no canto. Só para a equipe.
+
+              Fica ao lado dos outros recortes e não vira um painel à parte:
+              a pergunta "o que está com fulano" quase sempre vem junta de
+              "e é crítico?", e separar os dois cobraria dois lugares.
+
+              Some quando não há responsável nenhum nos chamados — um
+              seletor com uma opção só não é escolha, é enfeite. */}
+          {podeFiltrarPorPessoa && pessoas.length > 0 && (
+            <Seletor
+              rotulo="Filtrar por responsável"
+              valor={filtroPessoa}
+              aoMudar={setFiltroPessoa}
+              opcoes={[
+                { valor: '', rotulo: 'Todas as pessoas' },
+                ...pessoas,
+              ]}
+              className="w-48"
+            />
+          )}
 
           {/* Não entra em `temFiltro` nem em "Limpar": não é recorte da
               lista, são duas colunas a mais. Limpar filtro fechando a

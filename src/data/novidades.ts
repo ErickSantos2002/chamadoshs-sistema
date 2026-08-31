@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.7.3',
+    data: '2026-08-31',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'O quadro ganhou filtro por pessoa, ao lado dos de prioridade e categoria: escolha um nome e ficam só os chamados sob responsabilidade dele. Tem também "Sem responsável", para ver de uma vez o que ainda não está com ninguém. O filtro aparece para técnicos e administradores.',
+      },
+    ],
+  },
+  {
     versao: '1.7.2',
     data: '2026-08-27',
     itens: [
