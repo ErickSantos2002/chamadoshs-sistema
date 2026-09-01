@@ -257,6 +257,10 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       aberto={chamadoId !== null}
       aoFechar={aoFechar}
       largura="xl"
+      // Esta janela carrega trabalho não salvo — o campo de comentário e as
+      // ações de atendimento. Fechar no clique de fora custava o texto
+      // digitado, sem aviso e sem como recuperar. Sai pelo X ou pelo Esc.
+      fecharAoClicarFora={false}
       titulo={chamado ? chamado.titulo : 'Carregando…'}
       descricao={chamado?.protocolo}
       rodape={

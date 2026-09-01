@@ -12,6 +12,14 @@ interface ModalProps {
   /** Rodapé com as ações. Fica fixo enquanto o corpo rola. */
   rodape?: React.ReactNode;
   largura?: 'sm' | 'md' | 'lg' | 'xl';
+  /**
+   * Clicar no fundo fecha. Ligado por padrão.
+   *
+   * Desligue em janela que carrega trabalho não salvo: o clique no fundo é o
+   * gesto mais fácil de fazer sem querer que existe numa tela, e ali ele custa
+   * o que a pessoa tinha digitado. O X e o Esc continuam fechando.
+   */
+  fecharAoClicarFora?: boolean;
 }
 
 /**
@@ -46,7 +54,8 @@ const LARGURAS = {
  * - O corpo da página para de rolar enquanto está aberto, senão a rolagem do
  *   mouse "atravessa" o modal.
  * - Clique no fundo fecha, mas clique dentro não — o `stopPropagation` está no
- *   painel, não no fundo.
+ *   painel, não no fundo. Quem carrega trabalho não salvo desliga isso com
+ *   `fecharAoClicarFora={false}` e mantém X e Esc como saída.
  *
  * O corpo rola sozinho e o rodapé fica fixo: em formulário longo, o botão de
  * salvar precisa estar sempre visível.
@@ -59,6 +68,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   rodape,
   largura = 'md',
+  fecharAoClicarFora = true,
 }) => {
   const painelRef = useRef<HTMLDivElement>(null);
   const focoAnterior = useRef<HTMLElement | null>(null);
@@ -110,7 +120,9 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      onClick={aoFechar}
+      // `undefined`, e não uma função que não faz nada: sem manipulador, o
+      // React não registra o ouvinte no fundo.
+      onClick={fecharAoClicarFora ? aoFechar : undefined}
     >
       <div
         ref={painelRef}

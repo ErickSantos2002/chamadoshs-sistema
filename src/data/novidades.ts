@@ -29,6 +29,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.7.4',
+    data: '2026-09-01',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'A janela do chamado parou de fechar quando você clica fora dela. Antes, escorregar o mouse para o lado no meio de um comentário fechava tudo e o texto se perdia sem aviso. Agora ela sai pelo X, no canto, ou pela tecla Esc.',
+      },
+    ],
+  },
+  {
     versao: '1.7.3',
     data: '2026-08-31',
     itens: [
