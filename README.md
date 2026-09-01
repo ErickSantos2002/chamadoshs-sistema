@@ -31,6 +31,9 @@ alteração nos dois, e a ordem importa — veja [Deploy](#-deploy).
 - **React Router 6** — rotas, com carregamento sob demanda por página
 - **Axios** — cliente HTTP, com interceptors de autenticação
 - **Recharts** — gráficos do dashboard
+- **Plus Jakarta Sans** via `@fontsource` — a fonte vem **no bundle**, não do
+  CDN do Google. O sistema roda na rede interna, e `src/recursos-externos.test.ts`
+  reprova qualquer recurso vindo de fora
 - **Vitest** — testes
 - **Context API** para estado global — o projeto **não usa** React Query,
   Redux ou Zustand
@@ -50,8 +53,9 @@ npm run dev             # http://localhost:5173
 | Comando | O que faz |
 |---|---|
 | `npm run dev` | servidor de desenvolvimento |
-| `npm run build` | checa tipos e gera o bundle em `dist/` |
+| `npm run build` | valida a paleta, checa tipos e gera o bundle em `dist/` |
 | `npm run typecheck` | só a checagem de tipos |
+| `npm run validar:paleta` | contraste e distinção das cores (roda dentro do build) |
 | `npm test` | roda a suíte |
 | `npm run test:watch` | testes em modo observador |
 | `npm run preview` | serve o build local |
@@ -88,18 +92,34 @@ embutido no build, o front precisa ser reconstruído. Em Docker, ela é
 ```
 src/
 ├── pages/           uma tela por rota
-├── components/      componentes compartilhados
+├── components/
+│   ├── layout/      a casca: AppLayout, Sidebar, Topbar
+│   ├── ui/          kit de primitivos (Button, Badge, Modal, Seletor…)
 │   └── cadastros/   abas e modais da tela de Cadastros
 ├── context/         estado global (Auth, Chamados, Cadastros, Theme)
-├── hooks/           useAuth, useChamados, useUsuariosPorId
+├── hooks/           useAuth, useChamados, useUsuariosPorId…
+├── lib/             regras puras, cada uma com teste ao lado
+├── utils/           roleMapper, avaliacao, exclusao — quem pode o quê
 ├── services/
 │   ├── api.ts             instância Axios: token, renovação, tratamento de erro
 │   └── chamadoshsapi.ts   um serviço por recurso da API
 ├── types/           espelho TypeScript dos contratos da API
-├── utils/           roleMapper (perfis e permissões)
+├── data/            novidades.ts — o que aparece no aviso "O que há de novo?"
 ├── assets/
 └── styles/
 ```
+
+### `lib/` e `utils/` — por que existem
+
+Regra que decide alguma coisa não fica solta dentro de componente. Vai para
+`lib/` ou `utils/` como função pura, com teste ao lado. Alguns exemplos do que
+mora lá: em que coluna do quadro cada chamado cai (`quadro.ts`), quem pode
+excluir um chamado (`exclusao.ts`), as cores dos gráficos e dos status
+(`graficos.ts`), quais áreas o menu mostra (`navegacao.ts`).
+
+O motivo é concreto: a mesma regra já esteve escrita em dois lugares — na janela
+do chamado e na página inteira — e só uma das cópias recebeu manutenção. Dentro
+do JSX, nenhum teste alcança.
 
 ### Como os dados fluem
 
@@ -127,8 +147,15 @@ mudar do outro — ver `podeAtenderChamado` e `podeSerResponsavel` em
 | Abrir e comentar chamado | ✅ | ✅ | ✅ |
 | Ver todos os chamados | ✅ | ✅ | só os próprios |
 | Editar, arquivar, desarquivar | ✅ | ✅ | — |
+| **Excluir chamado** (só cancelado ou arquivado) | ✅ | — | — |
 | Tarefas recorrentes | ✅ | ✅ | — |
 | **Cadastros** (usuários, setores, categorias, SLA) | ✅ | — | — |
+
+A exclusão é a única ação sem volta do sistema: apaga o chamado junto com
+comentários, histórico e anexos, por cascata no banco, e não deixa registro do
+que foi apagado. Por isso é restrita a administrador, só alcança chamado que já
+saiu do fluxo, e a confirmação exige digitar o protocolo. A regra está em
+`src/utils/exclusao.ts`, com teste.
 
 **Contas de serviço** — painel de parede, login de integração — são marcadas no
 cadastro e não aparecem como técnico atribuível, embora continuem acessando o
@@ -146,9 +173,22 @@ sistema normalmente.
 npm test
 ```
 
-Cobrem hoje o `roleMapper` (perfis e o fallback para o menor privilégio), os
-interceptors do Axios (token, renovação, sessão expirada, permissão negada) e a
-paginação da listagem de usuários.
+**432 casos em 33 arquivos.** O teste fica ao lado do que ele cobre —
+`quadro.ts` e `quadro.test.ts` na mesma pasta.
+
+O que a suíte cobre, por natureza:
+
+| | |
+|---|---|
+| **Regras** | quem pode excluir, quem aparece como responsável, em que coluna cada chamado cai, quando pedir avaliação |
+| **Contratos** | os serviços chamam o endpoint certo, com o corpo certo — e não o endpoint restrito |
+| **Sessão** | token, renovação antes de vencer, sessão expirada, permissão negada |
+| **Aparência** | contraste e distinção das cores, nenhum elemento com dois fundos ou duas medidas disputando |
+| **Estrutura** | nenhum recurso vindo de fora da rede; menus montados de uma fonte só; modais com as ações no rodapé |
+
+Boa parte existe por causa de um defeito específico que já aconteceu, e o
+comentário no topo do arquivo conta qual foi. Isso é proposital: um teste sem
+essa história é apagado na primeira vez que atrapalha.
 
 Ao escrever teste novo, o critério é: **ele falha se o comportamento quebrar?**
 Vale checar quebrando o código de propósito e confirmando que a suíte acusa.
@@ -162,8 +202,10 @@ Imagem Docker (build Node → nginx) publicada no **Easypanel**. O deploy é
 
 **Checklist antes de subir:**
 
-- [ ] `npm run build` passa — inclui a checagem de tipos
+- [ ] `npm run build` passa — inclui a validação da paleta e a checagem de tipos
 - [ ] `npm test` passa
+- [ ] `package.json` e `src/data/novidades.ts` subiram juntos, com a mesma
+      versão (há teste que reprova se divergirem)
 - [ ] `VITE_API_URL` configurada como **build arg** no Easypanel
 - [ ] Se o contrato da API mudou, a alteração correspondente subiu no
       `chamadoshs-api`
