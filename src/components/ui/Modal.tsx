@@ -13,11 +13,16 @@ interface ModalProps {
   rodape?: React.ReactNode;
   largura?: 'sm' | 'md' | 'lg' | 'xl';
   /**
-   * Clicar no fundo fecha. Ligado por padrão.
+   * Clicar no fundo fecha. **Desligado** por padrão.
    *
-   * Desligue em janela que carrega trabalho não salvo: o clique no fundo é o
-   * gesto mais fácil de fazer sem querer que existe numa tela, e ali ele custa
-   * o que a pessoa tinha digitado. O X e o Esc continuam fechando.
+   * O padrão é esse porque todo modal deste sistema ou é formulário ou carrega
+   * trabalho em andamento, e o clique no fundo é o gesto mais fácil de fazer
+   * sem querer que existe numa tela — custava o que a pessoa tinha digitado,
+   * sem aviso e sem como recuperar.
+   *
+   * A prop sobrou para o caso de alguém precisar do comportamento antigo numa
+   * janela só de leitura. Hoje ninguém liga, e é bom que continue assim: uma
+   * janela que fecha diferente das outras é uma surpresa a cada uso.
    */
   fecharAoClicarFora?: boolean;
 }
@@ -53,9 +58,10 @@ const LARGURAS = {
  *   isso o Tab continua andando pela página atrás do modal.
  * - O corpo da página para de rolar enquanto está aberto, senão a rolagem do
  *   mouse "atravessa" o modal.
- * - Clique no fundo fecha, mas clique dentro não — o `stopPropagation` está no
- *   painel, não no fundo. Quem carrega trabalho não salvo desliga isso com
- *   `fecharAoClicarFora={false}` e mantém X e Esc como saída.
+ * - Clique no fundo NÃO fecha. Sai pelo X ou pelo Esc, os dois gestos que a
+ *   pessoa faz de propósito. Quem quiser o contrário pede
+ *   `fecharAoClicarFora`; o `stopPropagation` do painel continua ali para
+ *   esse caso.
  *
  * O corpo rola sozinho e o rodapé fica fixo: em formulário longo, o botão de
  * salvar precisa estar sempre visível.
@@ -68,7 +74,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   rodape,
   largura = 'md',
-  fecharAoClicarFora = true,
+  fecharAoClicarFora = false,
 }) => {
   const painelRef = useRef<HTMLDivElement>(null);
   const focoAnterior = useRef<HTMLElement | null>(null);

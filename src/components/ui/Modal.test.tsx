@@ -6,8 +6,8 @@ import { Modal } from './Modal';
 /**
  * Como o modal fecha, montado de verdade no jsdom.
  *
- * O defeito que motivou o arquivo: a janela do chamado fechava com um clique
- * fora dela. Quem estava escrevendo um comentário e escorregava o mouse para o
+ * O defeito que motivou o arquivo: as janelas fechavam com um clique fora
+ * delas. Quem estava escrevendo um comentário e escorregava o mouse para o
  * lado perdia o texto sem nenhum aviso — e o clique no fundo é o gesto mais
  * fácil de fazer sem querer que existe numa tela.
  *
@@ -58,39 +58,42 @@ afterEach(() => {
 });
 
 describe('Modal — fechar pelo fundo', () => {
-  it('fecha ao clicar no fundo, por padrão', () => {
-    montar();
-    clicar(fundo());
-
-    expect(aoFechar).toHaveBeenCalledTimes(1);
-  });
-
   /**
-   * A regressão que este caso existe para impedir. Sem a prop, todo modal
-   * fecha no clique de fora — e a janela do chamado, que carrega campo de
-   * comentário e ações de atendimento, perdia o que estava digitado.
+   * A regressão que este caso existe para impedir, e a razão de o padrão ser
+   * FECHADO: todo modal do sistema é formulário ou carrega trabalho em
+   * andamento. Um clique escapado no fundo apagava o que a pessoa tinha
+   * digitado, sem aviso e sem como recuperar.
    */
-  it('NÃO fecha ao clicar no fundo quando `fecharAoClicarFora` é falso', () => {
-    montar({ fecharAoClicarFora: false });
+  it('NÃO fecha ao clicar no fundo, por padrão', () => {
+    montar();
     clicar(fundo());
 
     expect(aoFechar).not.toHaveBeenCalled();
   });
 
-  it('o X continua fechando com a prop desligada — é a saída que sobra', () => {
-    montar({ fecharAoClicarFora: false });
+  it('o X fecha — é a saída principal', () => {
+    montar();
     clicar(botaoFechar());
 
     expect(aoFechar).toHaveBeenCalledTimes(1);
   });
 
-  // Clique DENTRO do painel nunca fechou, e não é isso que a prop muda.
-  it('clicar dentro do painel não fecha, com a prop ligada ou desligada', () => {
+  // A prop continua existindo para quem quiser o comportamento antigo. Hoje
+  // ninguém pede, e é de propósito que o padrão não dependa disso.
+  it('fecha no fundo quando `fecharAoClicarFora` é pedido explicitamente', () => {
+    montar({ fecharAoClicarFora: true });
+    clicar(fundo());
+
+    expect(aoFechar).toHaveBeenCalledTimes(1);
+  });
+
+  // Clique DENTRO do painel nunca fechou, nos dois modos.
+  it('clicar dentro do painel não fecha, nos dois modos', () => {
     montar();
     clicar(painel());
     expect(aoFechar).not.toHaveBeenCalled();
 
-    montar({ fecharAoClicarFora: false });
+    montar({ fecharAoClicarFora: true });
     clicar(painel());
     expect(aoFechar).not.toHaveBeenCalled();
   });
@@ -103,23 +106,16 @@ describe('Modal — fechar pelo teclado', () => {
     });
   };
 
-  it('Esc fecha', () => {
-    montar();
-    apertarEsc();
-
-    expect(aoFechar).toHaveBeenCalledTimes(1);
-  });
-
   /**
-   * Esc continua fechando MESMO com o fundo bloqueado, e é deliberado.
+   * Esc fecha, e é deliberado que ele tenha sobrevivido ao bloqueio do fundo.
    *
    * Bloquear o fundo protege contra o clique acidental; tirar o Esc junto
    * deixaria quem usa teclado sem saída nenhuma a não ser caçar o X com o
    * mouse — que é o oposto do que o componente promete no próprio cabeçalho.
    * Um é gesto que se faz sem querer, o outro é intenção declarada.
    */
-  it('Esc fecha mesmo com o fundo bloqueado', () => {
-    montar({ fecharAoClicarFora: false });
+  it('Esc fecha, com o fundo bloqueado por padrão', () => {
+    montar();
     apertarEsc();
 
     expect(aoFechar).toHaveBeenCalledTimes(1);

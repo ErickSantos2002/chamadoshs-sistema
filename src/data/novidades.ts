@@ -35,7 +35,7 @@ export const NOVIDADES: VersaoNovidade[] = [
       {
         tipo: 'corrigido',
         texto:
-          'A janela do chamado parou de fechar quando você clica fora dela. Antes, escorregar o mouse para o lado no meio de um comentário fechava tudo e o texto se perdia sem aviso. Agora ela sai pelo X, no canto, ou pela tecla Esc.',
+          'As janelas do sistema pararam de fechar quando você clica fora delas — todas, do chamado ao cadastro. Antes, escorregar o mouse para o lado no meio de um formulário fechava tudo e o que você tinha digitado se perdia sem aviso. Agora elas saem pelo X, no canto, ou pela tecla Esc.',
       },
     ],
   },
