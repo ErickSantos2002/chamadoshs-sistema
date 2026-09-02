@@ -337,6 +337,180 @@ function exigirSemModificadorDeOpacidade() {
   );
 }
 
+
+// ──────────────────────────────────────────────────────────────────────
+// Fundo de cor cheia com texto branco cravado — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Doze pares que reprovam hoje, e um mecanismo para eles só diminuírem.
+ *
+ * ── O problema que isto guarda ────────────────────────────────────────
+ *
+ * `bg-sucesso text-white` dá 2,54:1. `bg-perigo text-white`, 3,76:1.
+ * `bg-sinal text-white`, 2,69:1 no tema escuro. São classes escritas à mão em
+ * página, e a Fase 7 consertou o `Button` sem alcançar nenhuma delas —
+ * corrigir o primitivo não alcança quem não o usa.
+ *
+ * A lista com arquivo e linha está em
+ * `docs/design-system-migration/fase-7/contraste-fundo-cheio.md`. Elas saem
+ * nas Fases 11–16, por tela, como a §25 manda.
+ *
+ * ── Por que uma catraca, e não uma lista de exceção ───────────────────
+ *
+ * Lista de exceção costuma sobreviver ao problema que a criou: nasce como
+ * "os que já existiam", e em seis meses é uma permissão. Esta não consegue,
+ * porque reprova nos DOIS sentidos:
+ *
+ *   apareceu par novo   -> falha (é o que qualquer guarda faz)
+ *   sumiu par da lista  -> TAMBÉM falha, pedindo para baixar o número
+ *
+ * O segundo é o que impede o apodrecimento. Consertar uma tela obriga a
+ * mexer aqui, e o número só anda para baixo. Quando chegar a zero, o bloco
+ * inteiro sai e sobra a varredura, que aí passa a reprovar qualquer par.
+ *
+ * ── A chave é arquivo + fundo + estado, sem linha ─────────────────────
+ *
+ * Número de linha muda a cada edição acima dele, e uma catraca que grita por
+ * causa de uma linha em branco é uma catraca que alguém desliga.
+ */
+const PARES_CONHECIDOS = new Map([
+  ['src/components/cadastros/CategoriasTab.tsx  bg-perigo  repouso', 1],
+  ['src/pages/ChamadoDetalhes.tsx  bg-info  repouso', 3],
+  ['src/pages/ChamadoDetalhes.tsx  bg-perigo  repouso', 3],
+  ['src/pages/ChamadoDetalhes.tsx  bg-sinal  repouso', 3],
+  ['src/pages/ChamadoDetalhes.tsx  bg-sucesso  repouso', 2],
+]);
+
+/** Os fundos de cor cheia que podem carregar texto, e de onde sai o valor. */
+const FUNDOS_CHEIOS = {
+  'bg-sinal': 'sinal',
+  'bg-sucesso': 'sucesso',
+  'bg-sucesso-forte': 'sucesso-forte',
+  'bg-perigo': 'perigo',
+  'bg-perigo-forte': 'perigo-forte',
+  'bg-alerta': 'alerta',
+  'bg-alerta-forte': 'alerta-forte',
+  'bg-info': 'info',
+  'bg-info-forte': 'info-forte',
+};
+
+const BRANCO = [255, 255, 255];
+
+/**
+ * Varre `src/` atrás de fundo de cor cheia com `text-white` na mesma lista de
+ * classes, e no MESMO estado.
+ *
+ * Quatro armadilhas, todas encontradas na prática, três delas por mim:
+ *
+ * 1. Filtrar diretório. A primeira varredura pulava `components/ui/`, e o pior
+ *    caso de todos estava em `components/layout/` — o link de pular para o
+ *    conteúdo.
+ * 2. Casar linha a linha. `className` quebra em várias linhas o tempo todo.
+ * 3. Ignorar o estado. `hover:bg-perigo-forte` casado com um `text-white` de
+ *    repouso troca 3,76:1 por 6,47:1 e transforma reprovação em aprovação.
+ * 4. Parear ramos de ternário. Juntar as strings de um `cn(...)` põe lado a
+ *    lado classes mutuamente exclusivas e INVENTA reprovação — a sessão do
+ *    HelpHS produziu seis de 1,00:1 assim. Por isso o pareamento acontece
+ *    dentro de UM literal, nunca entre literais.
+ *
+ * O preço da 4 é subcontar quando o fundo está no literal base e o texto num
+ * condicional. Subcontar é melhor que inventar: um número a menos é uma
+ * tarefa esquecida, um número inventado é uma tarefa que não existe.
+ */
+function varrerFundoCheio() {
+  // Lidos uma vez, e não a cada par encontrado.
+  const css = fs.readFileSync(CSS, 'utf8');
+  const NO_CLARO = tokens(css, ':root');
+  const NO_ESCURO = tokens(css, '.dark');
+
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx?$/.test(nome) && !/\.test\.tsx?$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const encontrados = new Map();
+
+  for (const arquivo of arquivos) {
+    const txt = fs.readFileSync(arquivo, 'utf8');
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+
+    for (const m of txt.matchAll(/(["'`])((?:(?!\1)[\s\S]){0,600}?)\1/g)) {
+      const lista = m[2];
+      const brancos = new Set(
+        [...lista.matchAll(/(?:^|\s)((?:[\w-]+:)*)text-white(?![-\w])/g)].map((x) => x[1])
+      );
+      if (!brancos.size) continue;
+
+      for (const fm of lista.matchAll(/(?:^|\s)((?:[\w-]+:)*)(bg-[\w-]+)(?![-\w/])/g)) {
+        const estado = fm[1];
+        const fundo = fm[2];
+        const token = FUNDOS_CHEIOS[fundo];
+        if (!token) continue;
+        if (!brancos.has(estado) && !brancos.has('')) continue;
+
+        // O `.dark` NÃO redeclara as cores de significado, de propósito:
+        // erro é vermelho nos dois temas. Sem o fallback para `:root` a
+        // busca devolve `undefined` e a conta estoura — foi o que aconteceu.
+        const claro = contraste(NO_CLARO[token], BRANCO);
+        const escuro = contraste(NO_ESCURO[token] ?? NO_CLARO[token], BRANCO);
+        if (claro >= PISO_TEXTO && escuro >= PISO_TEXTO) continue;
+
+        const chave = `${rel}  ${fundo}  ${estado || 'repouso'}`;
+        encontrados.set(chave, (encontrados.get(chave) || 0) + 1);
+      }
+    }
+  }
+  return encontrados;
+}
+
+function exigirCatracaDeFundoCheio() {
+  const achados = varrerFundoCheio();
+  const chaves = [...new Set([...achados.keys(), ...PARES_CONHECIDOS.keys()])].sort();
+
+  const novos = [];
+  const consertados = [];
+  for (const k of chaves) {
+    const agora = achados.get(k) || 0;
+    const base = PARES_CONHECIDOS.get(k) || 0;
+    if (agora > base) novos.push(`${k}  ->  ${base} na linha de base, ${agora} agora`);
+    else if (agora < base) consertados.push({ k, agora, base });
+  }
+
+  if (novos.length) {
+    falhas.push(
+      'fundo de cor cheia com texto branco, PAR NOVO (piso 4,5:1):\n      ' +
+        novos.join('\n      ') +
+        '\n      Use o Button, ou o degrau de acao da E2 (--action-danger / --action-success).'
+    );
+  }
+
+  if (consertados.length) {
+    const linhas = chaves
+      .map((k) => ({ k, n: achados.get(k) || 0 }))
+      .filter((x) => x.n > 0)
+      .map((x) => `  ['${x.k}', ${x.n}],`);
+    falhas.push(
+      'a catraca precisa descer — par(es) consertado(s), atualize PARES_CONHECIDOS em\n' +
+        '      scripts/validar-paleta.js. A lista inteira, ja pronta:\n' +
+        (linhas.length ? linhas.join('\n') : '  (vazia — apague o bloco inteiro e faca a varredura reprovar sempre)')
+    );
+  }
+
+  const total = [...achados.values()].reduce((a, b) => a + b, 0);
+  linhas.push(
+    `\n=== catraca — fundo de cor cheia com texto branco ===` +
+      `\n  ${total} par(es) abaixo de ${PISO_TEXTO}:1, linha de base ${[...PARES_CONHECIDOS.values()].reduce((a, b) => a + b, 0)}`
+  );
+}
+
 function main() {
   const css = fs.readFileSync(CSS, 'utf8');
   const graficos = fs.readFileSync(GRAFICOS, 'utf8');
@@ -378,6 +552,7 @@ function main() {
   }
 
   exigirSemModificadorDeOpacidade();
+  exigirCatracaDeFundoCheio();
 
   console.log(linhas.join('\n'));
 
