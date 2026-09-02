@@ -76,9 +76,11 @@
  * O projeto tem três (`conteudo`, `-suave`, `-tenue`) e o pacote tem quatro
  * (`heading`, `body`, `muted`, `faint`). O encaixe está abaixo, e o degrau que
  * sobra é `--text-faint`: ele reprova em 4,5:1 nos DOIS temas (2,56 no claro,
- * 3,36 no escuro), então fica reservado a elemento não textual. É a decisão
- * D4-a, e é o que mantém `npm run validar:paleta` verde — ele roda dentro do
- * `npm run build` e falha se alguém baixar um valor.
+ * 3,36 no escuro), então fica reservado a placeholder, ícone decorativo e
+ * texto não informativo — onde reprovar é aceitável porque nada se perde ao
+ * não ler. É a decisão D4-a, na redação do D9, e é o que mantém
+ * `npm run validar:paleta` verde — ele roda dentro do `npm run build` e falha
+ * se alguém baixar um valor.
  *
  * A classe `dark` é aplicada no <html> pelo ThemeContext.
  */

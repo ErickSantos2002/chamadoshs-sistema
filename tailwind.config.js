@@ -111,8 +111,11 @@ module.exports = {
           heading: "var(--text-heading)",
           body: "var(--text-body)",
           muted: "var(--text-muted)",
-          // Reprova em 4,5:1 nos dois temas — só elemento NÃO textual
-          // (decisão D4-a). Texto terciário usa `conteudo-tenue`.
+          // Reprova em 4,5:1 nos dois temas (2,56 no claro, 3,36 no escuro):
+          // só PLACEHOLDER, ÍCONE DECORATIVO e TEXTO NÃO INFORMATIVO, onde
+          // reprovar é aceitável porque nada se perde ao não ler. Rótulo que
+          // NOMEIA um grupo não é disso. Decisão D4-a, na redação do D9.
+          // Texto terciário usa `conteudo-tenue`.
           faint: "var(--text-faint)",
         },
 
