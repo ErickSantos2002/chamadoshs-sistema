@@ -55,13 +55,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   <>
     {/* Fundo escuro da gaveta. Só existe no celular, e só com ela aberta.
         A cor é `--overlay`, do pacote: preto a 60%. Era `bg-black/50` — preto
-        cravado, e dez pontos mais claro que o do design system. */}
+        cravado, e dez pontos mais claro que o do design system.
+
+        Em VALOR ARBITRÁRIO, e não pela classe utilitária do token — regra
+        (d) do D8-a. A classe utilitária passa pelo `color-mix`, que exige
+        Chrome 111+; abaixo disso a declaração é inválida em tempo de valor
+        computado e a propriedade cai para o INICIAL, que em
+        `background-color` é transparente. O véu sumiria sem um erro sequer, e
+        a gaveta abriria sobre a tela sem escurecer nada. Aqui o token vai
+        direto e vale em qualquer navegador. */}
     {gavetaAberta && (
       <div
         role="button"
         tabIndex={0}
         aria-label="Fechar menu"
-        className="fixed inset-0 z-[35] bg-overlay md:hidden"
+        className="fixed inset-0 z-[35] bg-[var(--overlay)] md:hidden"
         onClick={aoFecharGaveta}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') aoFecharGaveta();
@@ -147,12 +155,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             // o mesmo azul, mas a 10% escritos à mão. A tinta é
                             // token, tem valor próprio no tema escuro e não
                             // depende de o Tailwind aceitar opacidade no nome.
-                            'bg-action-tint text-action',
+                            //
+                            // Em VALOR ARBITRÁRIO, e não pelas classes
+                            // utilitárias dos dois tokens — regra (d) do
+                            // D8-a. Elas passam pelo `color-mix`, e abaixo do
+                            // piso de browser o item selecionado perderia
+                            // fundo E cor de uma vez: ficaria indistinguível
+                            // dos outros, numa barra em que a única pista do
+                            // "você está aqui" é essa.
+                            'bg-[var(--action-tint)] text-[var(--action)]',
                             // A barra à esquerda entra por dentro do padding,
                             // e não por fora: somada ao `px-3`, ela empurraria
                             // o ícone 2px para a direita só no item ativo.
                             !recolhida &&
-                              'border-l-2 border-action pl-[calc(0.75rem-2px)]',
+                              'border-l-2 border-[var(--action)] pl-[calc(0.75rem-2px)]',
                           ]
                         : [
                             !recolhida &&

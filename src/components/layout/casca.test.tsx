@@ -57,14 +57,23 @@ describe('barra lateral', () => {
     expect(fechada).toContain('w-64');
     expect(fechada).toContain('-translate-x-full');
     // Fechada não desenha o fundo escuro — ele cobriria a tela inteira.
-    // O nome mudou na Fase 5: `bg-black/50` virou `bg-overlay`, que é o
-    // `--overlay` do pacote — preto a 60%, e não a 50% cravados. O que este
-    // caso trava é o mesmo de antes: o fundo só existe com a gaveta aberta.
-    expect(fechada).not.toContain('bg-overlay');
+    //
+    // O nome já mudou duas vezes e a asserção nunca mudou de assunto: era
+    // preto cravado a 50%, virou a classe utilitária do `--overlay` na Fase 5
+    // (o token do pacote, preto a 60%) e agora é o mesmo token em valor
+    // arbitrário, sem passar pelo `color-mix` — regra (d) do D8-a, para o véu
+    // não sumir abaixo do piso de browser. O que este caso trava continua
+    // sendo: o fundo só existe com a gaveta aberta.
+    //
+    // Os nomes de classe não aparecem escritos por extenso nestes comentários
+    // de propósito: o extractor do Tailwind lê o arquivo inteiro, comentário
+    // incluído, e geraria a regra antiga como CSS morto — o suficiente para
+    // quem auditar achar que a troca não foi feita.
+    expect(fechada).not.toContain('bg-[var(--overlay)]');
 
     const aberta = barra({ gavetaAberta: true });
     expect(aberta).toContain('translate-x-0');
-    expect(aberta).toContain('bg-overlay');
+    expect(aberta).toContain('bg-[var(--overlay)]');
   });
 
   it('mostra as cinco áreas do sistema, agrupadas', () => {
@@ -228,7 +237,7 @@ describe('casca', () => {
     expect(padrao).toContain('md:w-[72px]');
     expect(padrao).not.toContain('md:w-64');
     expect(padrao).toContain('-translate-x-full');
-    expect(padrao).not.toContain('bg-overlay');
+    expect(padrao).not.toContain('bg-[var(--overlay)]');
   });
 
   it('a galeria consegue abrir a barra', () => {
@@ -240,7 +249,7 @@ describe('casca', () => {
   it('a galeria consegue abrir a gaveta', () => {
     const comGaveta = cascaCom({ gavetaAbertaInicial: true });
     expect(comGaveta).toContain('translate-x-0');
-    expect(comGaveta).toContain('bg-overlay');
+    expect(comGaveta).toContain('bg-[var(--overlay)]');
   });
 
   /**

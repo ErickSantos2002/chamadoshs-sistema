@@ -181,11 +181,18 @@ export const Topbar: React.FC<TopbarProps> = ({
               <IconeLua className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="flex-1 text-left">Modo escuro</span>
               {/* Interruptor. O trilho é `primary` e não `sinal` porque aqui
-                  ele é PREENCHIMENTO, não texto: é o mesmo azul do HelpHS. */}
+                  ele é PREENCHIMENTO, não texto: é o mesmo azul do HelpHS.
+
+                  Em VALOR ARBITRÁRIO, e não pela classe utilitária do
+                  degrau — regra (d) do D8-a. Abaixo do piso do `color-mix` o
+                  trilho ficaria transparente e o interruptor perderia o
+                  estado: com o botão à direita e sem trilho, ninguém sabe se
+                  está ligado. O estado continua legível por `aria-pressed`,
+                  que não muda; o que se perde é a leitura visual. */}
               <span
                 className={cn(
                   'relative h-5 w-9 rounded-full transition-colors duration-200',
-                  darkMode ? 'bg-primary' : 'bg-borda'
+                  darkMode ? 'bg-[var(--color-primary-500)]' : 'bg-borda'
                 )}
               >
                 <span

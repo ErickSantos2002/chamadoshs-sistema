@@ -16,6 +16,35 @@ os desvios listados abaixo → conferir os hashes → rodar `npm run build`.
 
 **Não editar os arquivos desta pasta.** Eles são cópia; a fonte é o pacote.
 
+## Piso de navegador
+
+**Chrome/Edge 111 · Firefox 113 · Safari 16.2**
+
+É a regra **(c)** do D8-a em `COMPARTILHADO/DECISOES.md`, e vale para os dois
+repositórios que consomem o pacote.
+
+O piso é do `color-mix()`, e ele entrou porque é como `tailwind.config.js`
+declara as cores do pacote — a única forma que preserva o modificador de
+opacidade sem duplicar o valor da cor num arquivo local (decisão D1). Com
+`var(--token)` puro, **31** utilitários com modificador simplesmente não eram
+gerados, sem erro de lint, de tipo, de teste ou de build.
+
+Declarado em `vite.config.ts`, em `build.target`. Antes disso o padrão que o
+Vite 7 resolvia aqui era `chrome107 / edge107 / firefox104 / safari16` —
+**abaixo** do piso em toda linha, e nada na cadeia avisava.
+
+A declaração **não conserta** quem estiver abaixo: o esbuild não sabe rebaixar
+`color-mix`, não tenta e não avisa. Ela existe para o alvo parar de mentir e
+para haver um lugar só a mexer se o piso mudar.
+
+Abaixo do piso a falha é **calada e parcial**: a declaração é inválida em tempo
+de valor computado e a propriedade cai para `unset`, não para a declaração
+anterior — fallback antes não cobre, só `@supports` cobriria, e o operador
+decidiu não usar. Os três elementos que perderiam FUNÇÃO, e não só beleza —
+véu da gaveta, item ativo da barra e trilho do interruptor de tema — usam o
+token direto e não dependem do `color-mix`. É a regra **(d)** do D8-a, e o que
+ela não cobre está listado lá.
+
 ## Hashes (SHA-256)
 
 Conferidos com `sha256sum` em 02/09/2026, **depois** de tirar o cabeçalho de
