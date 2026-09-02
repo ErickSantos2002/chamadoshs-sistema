@@ -218,6 +218,29 @@ pacote, mantido; registrado aqui para não passar por descuido.
 
 ### D5-a — Texto do botão primário no tema escuro
 
+> **ENCERRADO em 02/09/2026 pela emenda E1 do pacote.** O token passou a ser
+> redefinido no `.dark` (`--color-primary-900`), então o desvio local saiu e os
+> três lugares que o aplicavam passaram a usar `--text-on-primary` direto:
+> `ui/Button.tsx`, `pages/Dashboard.tsx` e `pages/NotFound.tsx`. Com isso o
+> projeto ficou com **zero classes `dark:` de utilitário**.
+>
+> Medido depois da emenda, nos quatro estados:
+>
+> | | repouso | hover |
+> |---|---:|---:|
+> | claro | 5,29:1 ✅ | 4,53:1 ✅ |
+> | escuro | 5,11:1 ✅ | 6,19:1 ✅ |
+>
+> O desvio local dava mais no escuro (6,47 e 7,83), mas a §2.1 é clara: token
+> vence componente, e o do pacote mantém a família azul do botão em vez de
+> pintar o texto com a cor de fundo da página.
+>
+> **Anotado:** o 4,53:1 do hover no claro é 0,03 acima do piso. Não é novo — já
+> era assim antes —, mas é o número que quebra primeiro se alguém mexer no
+> `brightness-110` ou no degrau de `--sinal`.
+>
+> O texto abaixo fica como registro do que motivou a emenda.
+
 **O que muda:** o botão primário usa `--bg-base` (navy) como cor de texto no
 escuro, e não `--text-on-primary` (branco).
 

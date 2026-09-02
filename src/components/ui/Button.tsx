@@ -18,18 +18,30 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 const VARIANTES: Record<VarianteBotao, string> = {
   // A cor de ação do design system (`--action` = `--sinal`).
   //
-  // O texto NÃO é branco nos dois temas, e este é um desvio deliberado do
-  // pacote — decisão D5-a, registrada em `src/design-system/VERSION.md`.
-  // `DS/components/core/Button.jsx` usa `--text-on-primary` (branco) sempre,
-  // mas no escuro `--action` é `#47A6E1` e branco sobre ele dá **2,69:1**:
-  // reprova em AA. O navy do fundo dá **6,47:1**.
+  // A cor do texto sai do token `--text-on-primary`, e não de um par
+  // `text-white dark:…` escrito aqui. Foi o desvio D5-a, e ele ENCERROU em
+  // 02/09/2026: o token era declarado só em `:root`, como branco, e não era
+  // redefinido no `.dark` — no escuro `--action` é `#47A6E1` e branco sobre
+  // ele dá 2,69:1, que reprova AA. A emenda E1 do pacote corrigiu na raiz.
   //
-  // A causa está no token, não aqui: `--text-on-primary` é declarado em
-  // `:root` como branco e não é redefinido no `.dark`. Pela seção 2.1, token
-  // vence componente — e este token está incompleto para o tema escuro. A
-  // sugerir ao design system.
+  // Medido nos quatro estados, depois da emenda:
+  //
+  //   claro  repouso 5,29:1   hover 4,53:1
+  //   escuro repouso 5,11:1   hover 6,19:1
+  //
+  // O desvio local dava mais no escuro (6,47 e 7,83), mas a seção 2.1 é clara:
+  // token vence componente. Os dois passam, e o do pacote mantém a família
+  // azul do botão em vez de pintar o texto com a cor de fundo da página.
+  //
+  // ATENÇÃO ao 4,53:1 do hover no tema claro: é 0,03 acima do piso. Não é
+  // novo — já era assim antes desta troca —, mas é o número que quebra
+  // primeiro se alguém mexer no `brightness-110` ou no degrau de `--sinal`.
+  //
+  // Em valor arbitrário, e não por classe utilitária, pelo mesmo motivo da
+  // regra (d) do D8-a: a classe passaria pelo `color-mix`, e abaixo do piso
+  // de navegador `color` cai para `inherit` — texto escuro sobre botão azul.
   primario:
-    'bg-sinal text-white dark:text-superficie-base hover:brightness-110 focus-visible:ring-sinal',
+    'bg-sinal text-[var(--text-on-primary)] hover:brightness-110 focus-visible:ring-sinal',
   secundario:
     'bg-superficie-elevada text-conteudo border border-borda hover:bg-borda focus-visible:ring-borda',
   // Para concluir algo — registrar execução, marcar como feito. É o mesmo verde

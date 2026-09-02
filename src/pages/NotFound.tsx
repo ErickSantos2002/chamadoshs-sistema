@@ -11,7 +11,7 @@ const NotFound: React.FC = () => {
 
         <Link
           to="/dashboard"
-          className="mt-6 inline-flex items-center justify-center rounded-lg bg-sinal px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-110 dark:text-superficie-base"
+          className="mt-6 inline-flex items-center justify-center rounded-lg bg-sinal px-4 py-2 text-sm font-semibold text-[var(--text-on-primary)] transition-colors hover:brightness-110"
         >
           Voltar ao Dashboard
         </Link>

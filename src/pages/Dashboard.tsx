@@ -493,7 +493,7 @@ const Dashboard: React.FC = () => {
                   onClick={() => aplicarPreset(p.key)}
                   className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                     presetAtivo === p.key
-                      ? 'border-transparent bg-sinal text-white dark:text-superficie-base'
+                      ? 'border-transparent bg-sinal text-[var(--text-on-primary)]'
                       : 'border-borda bg-superficie-elevada text-conteudo-suave hover:text-conteudo'
                   }`}
                 >
