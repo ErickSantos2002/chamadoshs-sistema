@@ -208,3 +208,110 @@ O que **não** está coberto por teste nem por screenshot é o resultado visual 
 troca de `--text-body` para `--text-muted` no item inativo da barra: é meio
 degrau mais claro, e só o olho decide se ficou apagado demais. Está na lista da
 decisão 2.
+
+---
+
+# Adendo — as três decisões, resolvidas
+
+02/09/2026, mesmo dia, depois do retorno do operador. O corpo do relatório acima
+não foi reescrito: ele registra o estado em que o checkpoint parou, e este
+adendo registra o que aconteceu depois.
+
+## Decisão 1 — o `<h1>` da topbar → **prop opcional, vazia** (nem (a) nem (b))
+
+O relatório recomendava **(b)**: `<h1>` na topbar agora e os onze cabeçalhos de
+página ajustados no mesmo commit. O operador ficou com o caminho do HelpHS, que
+é o **D8** de `COMPARTILHADO/DECISOES.md`, e é uma terceira saída que o
+relatório não tinha posto na mesa.
+
+`Topbar` e `AppLayout` ganharam a prop opcional `pageTitle`. Ela **nasce vazia**
+e nada a passa hoje. Sem ela a topbar não desenha cabeçalho nenhum — nem um
+`<h1>` vazio, que leitor de tela anuncia como cabeçalho sem nome. Cada tela
+passa a preencher no commit em que for migrada (Fases 11–16), soltando no mesmo
+commit o `<h1>` que tem hoje. É a troca dentro do mesmo commit que garante que
+nunca haja dois nem zero. A Fase 20 confere.
+
+Custa menos que o (b) e não mexe em onze páginas fora da ordem das fases; em
+troca, a topbar só bate com a §9 quando a última tela migrar. Dois testes novos
+travam as duas pontas.
+
+Commit `f5e5336`. A prop, preenchida, está fotografada em
+`screenshots/chamadoshs-casca-topbar-menu-*.png`.
+
+## Decisão 2 — screenshots da casca → **feitos**, por uma galeria de DEV
+
+O relatório dava duas saídas: (a) subir o ambiente e dirigir o navegador, ou
+(b) registrar como limitação. O operador escolheu uma terceira: uma **galeria de
+desenvolvimento** que monta a casca de verdade sem token, sem API e sem rede,
+com o estado escolhido pela URL.
+
+As **oito** imagens que a §26 pedia estão em `screenshots/`, nas resoluções que
+a §28 exige (1366×768 e 390×844), com o índice, os endereços para refazer cada
+uma e as limitações em `screenshots/LEIA-ME.md`.
+
+A galeria (`/dev/galeria`) só existe sob `import.meta.env.DEV`: depois do
+`npm run build`, nenhum arquivo de `dist/` contém a palavra "galeria".
+
+Fica **fechada** a linha "Screenshot da casca nos dois temas e nos dois
+sistemas: ❌ não feito" da tabela de evidências — para o ChamadosHS. O HelpHS
+segue com a limitação do D6.
+
+**Continua em aberto**, e não deve ser lido como cumprido: a §28 pede
+**antes/depois**, e o "antes" não existe para tela autenticada, pelo mesmo
+motivo. Estas oito são o depois.
+
+Uma coisa que só o olho decidia e agora está decidida: o item inativo da barra
+lateral em `--text-muted` em vez de `--text-body`. Está nas quatro imagens de
+1366px e não ficou apagado demais.
+
+## Decisão 3 — o `color-mix` do D1 → **aplicado** (a), e o D7 fica desatualizado
+
+O relatório recomendava **(a)**, e é o que o operador mandou fazer.
+
+A medição refeita foi bem mais ampla do que a do relatório: não eram três
+classes, eram **31** — todas as cores do pacote. Numa sonda com uma classe com
+modificador para cada cor declarada em `theme.extend.colors`, 6 de 37 eram
+geradas antes e 37 de 37 depois. As 6 que já funcionavam eram as da ponte em
+português (D3-a), que não foi tocada.
+
+Isso derruba o argumento do **[HelpHS] D7**, que tinha tirado o D1 de "vale para
+os dois" dizendo que a ponte daqui já cumpria o invariante. Ela cumpria **só
+para os nomes em português** — não para os nomes do pacote, que é justamente o
+vocabulário para onde as Fases 11–16 migram. O D1 volta a valer para os dois
+repositórios. Registrado como **D8-a** em `COMPARTILHADO/DECISOES.md`.
+
+Prova no CSS compilado do projeto, não só na sonda — `dist/assets/index-*.css`
+traz `color-mix` em 9 regras (14 ocorrências com as variantes `:hover`).
+
+**Duas coisas que a auditoria pegou depois de aplicado**, ambas confirmadas por
+medição no Chrome e escritas por extenso no D8-a:
+
+1. Em **sete** tokens que já carregam alfa próprio (`--overlay`, os cinco
+   `--tint-*` e o `--action-tint` no escuro) o modificador **multiplica** em vez
+   de definir: `bg-tint-danger/10` sai em alfa 0,015, não 0,10. Não é
+   regressão — a classe não existia antes —, mas é armadilha, porque
+   `bg-perigo/10` (a ponte) **define**. Regra de uso escrita no
+   `tailwind.config.js`: nesses sete, sem modificador.
+2. Abaixo do piso do `color-mix` (Chrome/Edge 107–110, Firefox 104–112, Safari
+   16.0–16.1) a falha é **calada e parcial**, e um fallback antes da declaração
+   **não** cobre — medido: cai para `unset`, não para a declaração anterior. O
+   `build.target` que o Vite 7.3.6 resolve por padrão aqui é
+   `chrome107/edge107/firefox104/safari16`, ou seja, abaixo do piso, e nada na
+   cadeia avisa.
+
+## O que este adendo NÃO fecha
+
+Segue tudo o que a tabela "Divergências restantes" lista, menos a linha do
+`<h1>`. Em especial:
+
+- **`typography.css` diferente do HelpHS (D1-a).** Nesta rodada foi preparado o
+  material para resolver na raiz, no pacote, em vez de repetir o desvio nos
+  dois consumidores: `COMPARTILHADO/emendas-pacote/` traz o `typography.css`
+  com bloco `@font-face` auto-hospedado (seis pesos, `latin` e `latin-ext` com
+  `unicode-range`) e os doze `.woff2`. **Nada foi aplicado**: o `@fontsource` e
+  os `@import` de `styles/index.css` continuam no lugar de propósito, para não
+  haver uma janela sem fonte. A remoção vira commit próprio depois que o pacote
+  for emendado e recopiado.
+- 14 cores do Recharts como literal (Fase 9 ou 13).
+- Ponte em português de pé (D3-a, Fases 11–16).
+- `Rotulo` e `Colchetes` (Fase 7), login sem malha e vinheta (Fase 16).
