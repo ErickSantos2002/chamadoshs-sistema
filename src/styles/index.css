@@ -8,37 +8,17 @@
  * `DS/guidelines/adocao.md` — as CSS variables precisam existir quando o
  * `theme.extend` de `tailwind.config.js` as referencia.
  *
- * Um único desvio local, autorizado e registrado em `design-system/VERSION.md`:
- * o `@import` do Google Fonts em `tokens/typography.css` está comentado, pelo
- * motivo descrito no bloco de fonte logo abaixo. */
+ * **Sem desvio local.** Até 02/09/2026 havia um: o `@import` do Google Fonts
+ * em `tokens/typography.css` ficava comentado e a fonte vinha de um pacote npm
+ * importado logo abaixo. A emenda E3 levou a auto-hospedagem para dentro do
+ * próprio pacote, então os sete arquivos voltaram a ser cópia crua e o desvio
+ * deixou de existir. Ver `design-system/VERSION.md` e
+ * `design-system/EMENDAS.md`.
+ *
+ * A fonte entra por aqui: `styles.css` importa `tokens/typography.css`, que
+ * traz as doze regras `@font-face` apontando para `../design-system/fonts/`.
+ * Não há mais nada a importar neste arquivo. */
 @import '../design-system/styles.css';
-
-/* ── Fonte ───────────────────────────────────────────────────────
- *
- * Plus Jakarta Sans, que é a fonte oficial do design system — e o que mais faz
- * duas telas parecerem do mesmo sistema, antes mesmo da cor.
- *
- * Vem do pacote `@fontsource/plus-jakarta-sans`, ou seja: os `.woff2` entram
- * no bundle e são servidos pelo nginx do próprio ChamadosHS.
- *
- * O token do design system carrega a mesma fonte do CDN do Google. Aqui isso
- * não serve: o sistema roda na rede interna da HS, e
- * `src/recursos-externos.test.ts` existe justamente porque já houve 12 ícones
- * vindos de `img.icons8.com`. Se o provedor cair ou o IP da empresa for
- * bloqueado, a tipografia inteira some sem ninguém ter tocado em código — e o
- * `font-display: swap` do Google garante que ela some em silêncio, caindo na
- * fonte do sistema.
- *
- * São os mesmos seis pesos que o token pede (300 a 800), só no subconjunto
- * latino: ~76 KB no total, e o latino básico já cobre todo acento do
- * português. A família e a pilha de reserva continuam saindo de
- * `--font-sans`, no token — só a origem do arquivo muda. */
-@import '@fontsource/plus-jakarta-sans/latin-300.css';
-@import '@fontsource/plus-jakarta-sans/latin-400.css';
-@import '@fontsource/plus-jakarta-sans/latin-500.css';
-@import '@fontsource/plus-jakarta-sans/latin-600.css';
-@import '@fontsource/plus-jakarta-sans/latin-700.css';
-@import '@fontsource/plus-jakarta-sans/latin-800.css';
 
 @tailwind base;
 @tailwind components;
