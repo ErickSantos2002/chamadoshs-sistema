@@ -1,2 +1,12 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Tokens do design system: LF sempre, em qualquer plataforma.
+#
+# A secao 5.2 do prompt de adocao exige que estes arquivos sejam identicos
+# BYTE A BYTE entre o ChamadosHS e o HelpHS, e `src/design-system/VERSION.md`
+# publica o SHA-256 de cada um para essa conferencia. Com `text=auto` e
+# `core.autocrlf=true` — que e o padrao das maquinas Windows do time — o
+# checkout converteria LF para CRLF e todo hash mudaria, fazendo a conferencia
+# entre os dois repositorios falhar sem que ninguem tivesse editado nada.
+src/design-system/** text eol=lf
