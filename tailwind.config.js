@@ -1,47 +1,91 @@
 /** @type {import('tailwindcss').Config} */
+
+/* Mapeia o Tailwind sobre os tokens do design system oficial da Health &
+ * Safety (`src/design-system/`, export de 02/09/2026), conforme o passo 2 de
+ * `DS/guidelines/adocao.md`.
+ *
+ * Nenhum valor de cor mora aqui. Todos apontam para uma CSS variable, e as
+ * variables vêm do pacote. Trocar uma cor do sistema é recopiar o token, não
+ * editar este arquivo. */
+
 module.exports = {
-  darkMode: "class", // 🔥 habilita suporte ao modo escuro baseado em classe
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  // A safelist tinha classes da paleta antiga, que saíram com ela. Só entra
-  // aqui classe montada em tempo de execução, que o Tailwind não enxerga no
-  // código-fonte — hoje não há nenhuma.
+  darkMode: "class", // classe `dark` no <html>, aplicada pelo ThemeContext
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  // Só entra aqui classe montada em tempo de execução, que o Tailwind não
+  // enxerga no código-fonte — hoje não há nenhuma.
   safelist: [],
   theme: {
     extend: {
       colors: {
         // ── Rampa da marca ──────────────────────────────────────────
-        // A escala `sky` do HelpHS, copiada valor a valor: é o que dá a
-        // identidade de família entre os dois sistemas.
+        // O azul do logo H&S, medido do arquivo: #1F89CA, matiz 203°.
+        // Substitui a rampa `sky` (#0EA5E9) que estava aqui — ela era a cor
+        // do HelpHS antes de o design system existir, e o pacote unificou as
+        // duas famílias nesta.
         //
-        // Cuidado de uso: `primary` (#0EA5E9) dá 2,77:1 sobre branco. Serve
-        // para PREENCHIMENTO — fundo de botão, trilho de interruptor, ponto —
-        // não para texto sobre superfície clara. Texto usa `sinal`, que é a
-        // mesma família ajustada por tema e validada em 4,5:1.
+        // Cuidado de uso, gravado em `tokens/colors.css`: o 500 dá 3,83:1 no
+        // branco. Serve para PREENCHIMENTO — logo, superfície de marca,
+        // borda, barra de gráfico, trilho de interruptor — nunca para texto.
+        // Quem carrega texto é `action`, abaixo.
         primary: {
-          DEFAULT: "#0ea5e9",
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
+          DEFAULT: "var(--color-primary-500)",
+          50: "var(--color-primary-50)",
+          100: "var(--color-primary-100)",
+          200: "var(--color-primary-200)",
+          300: "var(--color-primary-300)",
+          400: "var(--color-primary-400)",
+          500: "var(--color-primary-500)",
+          600: "var(--color-primary-600)",
+          700: "var(--color-primary-700)",
+          800: "var(--color-primary-800)",
+          900: "var(--color-primary-900)",
         },
 
-        // ── Tokens semânticos ────────────────────────────────────────
-        // Nomeados pelo PAPEL, não pela cor: `superficie` continua fazendo
-        // sentido se o fundo virar azul, `mediumGray` não.
+        // ── Nomes do pacote ─────────────────────────────────────────
+        // O vocabulário oficial, disponível a partir de agora. As telas
+        // migram para cá tela a tela nas Fases 11–16.
+        action: {
+          DEFAULT: "var(--action)",
+          hover: "var(--action-hover)",
+          tint: "var(--action-tint)",
+        },
+        surface: {
+          DEFAULT: "var(--surface)",
+          base: "var(--bg-base)",
+          elevated: "var(--surface-elevated)",
+        },
+        // Fundo de badge, aviso e chip: a cor de significado a 15% de
+        // opacidade, com o par `on-tint` por cima. É o que faz o selo
+        // funcionar nos dois temas sem uma regra `dark:` separada.
+        tint: {
+          primary: "var(--tint-primary)",
+          success: "var(--tint-success)",
+          danger: "var(--tint-danger)",
+          warning: "var(--tint-warning)",
+          info: "var(--tint-info)",
+          neutral: "var(--tint-neutral)",
+        },
+        "on-tint": {
+          primary: "var(--on-tint-primary)",
+          success: "var(--on-tint-success)",
+          danger: "var(--on-tint-danger)",
+          warning: "var(--on-tint-warning)",
+          info: "var(--on-tint-info)",
+          neutral: "var(--on-tint-neutral)",
+        },
+
+        // ── Ponte (temporária — decisão D3-a) ───────────────────────
+        // Os nomes em português que as telas já usam, no formato de canais
+        // "R G B" que o Tailwind exige para aplicar opacidade
+        // (`bg-perigo/10`, `bg-sinal/10`, `border-sucesso/30` — 78 usos).
         //
-        // Os valores vivem em CSS variables (styles/index.css) e trocam
-        // sozinhos entre claro e escuro — a classe não precisa de `dark:`.
-        // Formato "R G B" sem vírgula porque é o que o Tailwind exige para
-        // conseguir aplicar opacidade (bg-superficie/50).
+        // Os VALORES são os mesmos do pacote: `src/styles/index.css` declara
+        // cada canal com o token de origem no comentário ao lado. Isto não é
+        // uma segunda paleta, é a mesma escrita noutro formato.
+        //
+        // Cada chave em inglês abaixo (`muted`, `strong`, `heading`, `faint`)
+        // é o nome do pacote apontando direto para o token, sem passar pela
+        // ponte — quem escrever tela nova já pode usar esses.
         superficie: {
           DEFAULT: "rgb(var(--superficie) / <alpha-value>)",
           base: "rgb(var(--superficie-base) / <alpha-value>)",
@@ -50,109 +94,97 @@ module.exports = {
         borda: {
           DEFAULT: "rgb(var(--borda) / <alpha-value>)",
           suave: "rgb(var(--borda-suave) / <alpha-value>)",
-          // Traço mais presente: colchete de HUD, régua de seção, scrollbar.
+          // Traço mais presente: colchete de painel, régua de seção, scrollbar.
           forte: "rgb(var(--borda-forte) / <alpha-value>)",
+          muted: "var(--border-muted)",
+          strong: "var(--border-strong)",
         },
         conteudo: {
           DEFAULT: "rgb(var(--conteudo) / <alpha-value>)",
           suave: "rgb(var(--conteudo-suave) / <alpha-value>)",
           tenue: "rgb(var(--conteudo-tenue) / <alpha-value>)",
+          heading: "var(--text-heading)",
+          body: "var(--text-body)",
+          muted: "var(--text-muted)",
+          // Reprova em 4,5:1 nos dois temas — só elemento NÃO textual
+          // (decisão D4-a). Texto terciário usa `conteudo-tenue`.
+          faint: "var(--text-faint)",
         },
 
         // A cor de sinal. Marca o que está ativo, focado ou selecionado, e
         // nada além disso — no instante em que virar cor decorativa, para de
-        // significar qualquer coisa. Deriva do azul da marca (#1F89CA,
-        // matiz 203°), escurecido no tema claro e clareado no escuro.
+        // significar qualquer coisa. É o `--action` do pacote.
         sinal: "rgb(var(--sinal) / <alpha-value>)",
 
         // Cores de significado. Existem em variantes fixas porque o
-        // significado não muda com o tema: erro é vermelho nos dois.
+        // significado não muda com o tema: erro é vermelho nos dois. Os três
+        // degraus são o 500/700/400 do pacote — já eram, valor a valor, antes
+        // desta migração.
         sucesso: {
-          DEFAULT: "#10B981",
-          forte: "#047857",
-          suave: "#34D399",
+          DEFAULT: "rgb(var(--sucesso) / <alpha-value>)",
+          forte: "rgb(var(--sucesso-forte) / <alpha-value>)",
+          suave: "rgb(var(--sucesso-suave) / <alpha-value>)",
         },
         perigo: {
-          DEFAULT: "#EF4444",
-          forte: "#B91C1C",
-          suave: "#F87171",
+          DEFAULT: "rgb(var(--perigo) / <alpha-value>)",
+          forte: "rgb(var(--perigo-forte) / <alpha-value>)",
+          suave: "rgb(var(--perigo-suave) / <alpha-value>)",
         },
         alerta: {
-          DEFAULT: "#F59E0B",
-          forte: "#B45309",
-          suave: "#FBBF24",
+          DEFAULT: "rgb(var(--alerta) / <alpha-value>)",
+          forte: "rgb(var(--alerta-forte) / <alpha-value>)",
+          suave: "rgb(var(--alerta-suave) / <alpha-value>)",
         },
         info: {
-          DEFAULT: "#3B82F6",
-          forte: "#1D4ED8",
-          suave: "#60A5FA",
+          DEFAULT: "rgb(var(--info) / <alpha-value>)",
+          forte: "rgb(var(--info-forte) / <alpha-value>)",
+          suave: "rgb(var(--info-suave) / <alpha-value>)",
         },
       },
 
       fontFamily: {
+        // As duas pilhas saem do token, e não de uma lista escrita aqui: uma
+        // segunda cópia só pode divergir da primeira.
+        sans: ["var(--font-sans)"],
         // Monoespaçada para dado de MÁQUINA: protocolo, data, contador,
-        // rótulo de campo. É ela que faz a tela parecer console.
+        // rótulo estrutural, cabeçalho de tabela.
         //
         // Não serve para texto humano — título, descrição e comentário
         // continuam em sans. Descrição de chamado em monoespaçada pequena é
         // o caminho mais curto para o usuário reclamar da tela nova.
-        mono: [
-          "ui-monospace",
-          "Cascadia Mono",
-          "Segoe UI Mono",
-          "SF Mono",
-          "Menlo",
-          "Consolas",
-          "monospace",
-        ],
-        // A fonte do HelpHS. Hospedada no próprio bundle
-        // (`@fontsource/plus-jakarta-sans`, importada em styles/index.css) e
-        // NÃO no CDN do Google, que é como o HelpHS carrega: o ChamadosHS roda
-        // na rede interna, e `src/recursos-externos.test.ts` existe justamente
-        // para impedir que a interface dependa de servidor de terceiro.
-        //
-        // A pilha de sistema fica de reserva, para o intervalo do carregamento
-        // e para o caso de a fonte não chegar.
-        sans: [
-          "Plus Jakarta Sans",
-          "ui-sans-serif",
-          "system-ui",
-          "-apple-system",
-          "Segoe UI",
-          "Roboto",
-          "Helvetica Neue",
-          "Arial",
-          "sans-serif",
-        ],
+        mono: ["var(--font-mono)"],
       },
-
-      // Entradas. Todas rodam UMA vez: a diferença entre entrada e enfeite
-      // é essa — a entrada termina. O que fica em laço numa tela aberta o
-      // dia inteiro vira incômodo por volta das dez da manhã.
-      //
-      // `varrer` saiu com a fachada de console do login, e `subir`/`acender`
-      // saíram junto: eram o painel entrando e os colchetes acendendo, e
-      // nenhum dos dois existe mais. Animação sem uso é convite para alguém
-      // reintroduzir o vocabulário antigo sem saber que ele foi retirado.
     },
 
     // ── Cantos ───────────────────────────────────────────────────────
     //
-    // A escala PADRÃO do Tailwind, de volta.
+    // Canto RETO, em tudo. É a pele de console do ChamadosHS, a exceção
+    // documentada na seção 8.1 do prompt mestre e em `DS/readme.md`
+    // (Fundamentos visuais → Cantos: "ChamadosHS: reto, em tudo"). O
+    // `--radius-none` de `tokens/shape.css` existe para isto.
     //
-    // Da 1.4 até a 1.6.20 ela era zerada: canto reto era o traço que mais
-    // lia como console, e zerar a escala aplicava isso às 112 classes
-    // `rounded-*` já escritas sem um diff de 200 linhas.
+    // Zerar a ESCALA, e não reescrever as telas, é o que aplica a decisão às
+    // 112 classes `rounded-*` já escritas em 25 arquivos sem um diff de 200
+    // linhas. Foi assim da 1.4 até a 1.6.20; a 1.7.0 devolveu a escala padrão
+    // ao portar o visual do HelpHS, e a decisão D2-a de 02/09/2026 traz a
+    // pele de console de volta.
     //
-    // O alvo visual agora é o HelpHS, que não sobrescreve a escala. Voltar
-    // ao padrão usa a mesma alavanca na direção contrária: as mesmas 112
-    // ocorrências em 25 arquivos passam a arredondar de novo, com
-    // `rounded-lg` = 8px e `rounded-xl` = 12px, que são exatamente os
-    // valores que o HelpHS usa em botão, card, input e dropdown.
-    //
-    // Não há bloco `borderRadius` aqui de propósito: escrever os mesmos
-    // valores do padrão seria uma cópia que só pode divergir.
-
+    // `full` continua sendo círculo de verdade porque avatar, ponto de status
+    // e o anel do spinner são círculo por natureza, não canto arredondado —
+    // um spinner quadrado que gira não é um canto reto, é um defeito. Badge e
+    // chip, que a seção 8.1 lista como retos, deixam de usar `rounded-full` na
+    // Fase 7.
+    borderRadius: {
+      none: "var(--radius-none)",
+      sm: "var(--radius-none)",
+      DEFAULT: "var(--radius-none)",
+      md: "var(--radius-none)",
+      lg: "var(--radius-none)",
+      xl: "var(--radius-none)",
+      "2xl": "var(--radius-none)",
+      "3xl": "var(--radius-none)",
+      full: "var(--radius-full)",
+    },
   },
   plugins: [],
 };

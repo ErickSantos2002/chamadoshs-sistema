@@ -149,22 +149,32 @@ export function corDoStatus(status: string, escuro: boolean): string {
  */
 export function estiloDoGrafico(escuro: boolean) {
   return {
-    // Os mesmos tokens de `styles/index.css`, em hexadecimal porque o Recharts
-    // recebe cor como string em JS e não enxerga classe do Tailwind.
+    // Hexadecimal, e não `var(--token)`, porque o Recharts escreve estes
+    // valores em ATRIBUTO de SVG (`stroke=`, `fill=`) e não em estilo — e
+    // atributo com `var()` não resolve em todo navegador.
     //
-    // É uma CÓPIA, e cópia diverge: quando a paleta mudou para a do HelpHS,
-    // estes valores ficaram para trás — a grade continuou no cinza-azulado
-    // antigo dentro de cards que já eram slate. Se mexer nos tokens, mexa aqui.
-    grade: escuro ? '#1E3A5F' : '#E2E8F0', // --borda
-    eixo: escuro ? '#818FA3' : '#5E6E84', // --conteudo-tenue
-    texto: escuro ? '#94A3B8' : '#475569', // --conteudo-suave
+    // A seção 5.4 de `DS/guidelines/adocao.md` prevê exatamente este caso:
+    // onde a biblioteca não aceita a variável, o objeto pode ser "gerado a
+    // partir dos mesmos valores com comentário apontando o token de origem".
+    // É o que está abaixo — cada linha nomeia o token do design system de que
+    // saiu, e os dois têm de bater.
+    //
+    // Esta cópia JÁ divergiu uma vez: quando a paleta mudou, a grade ficou no
+    // cinza-azulado antigo dentro de cards que já eram slate. Se mexer nos
+    // tokens, mexa aqui.
+    grade: escuro ? '#1E3A5F' : '#E2E8F0', // --border-color  (#1E3A5F / slate-200)
+    eixo: escuro ? '#94A3B8' : '#64748B', // --text-muted    (slate-400 / slate-500)
+    texto: escuro ? '#E2E8F0' : '#1E293B', // --text-body     (slate-200 / slate-800)
     dica: {
       // No escuro a dica sobe para a superfície elevada, senão ela se confunde
       // com o card por onde passa; no claro o branco já contrasta com a página.
-      backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF',
-      border: `1px solid ${escuro ? '#1E3A5F' : '#E2E8F0'}`,
-      borderRadius: '8px',
-      color: escuro ? '#F1F5F9' : '#0F172A',
+      backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF', // --surface-elevated / --surface
+      border: `1px solid ${escuro ? '#1E3A5F' : '#E2E8F0'}`, // --border-color
+      // Reto, como o resto da interface — a pele de console do ChamadosHS
+      // (`--radius-none`). O Recharts desenha a dica em estilo inline, fora do
+      // alcance do Tailwind, então o canto precisa ser dito aqui à mão.
+      borderRadius: '0px',
+      color: escuro ? '#F1F5F9' : '#0F172A', // --text-heading (slate-100 / slate-900)
       padding: '8px 12px',
       boxShadow: '0 4px 14px rgb(0 0 0 / 0.25)',
     },

@@ -30,8 +30,20 @@ const AvisosFlutuantes: React.FC = () => (
         color: 'var(--toast-color)',
         border: '1px solid var(--toast-border)',
       },
-      success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-      error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+      // O ícone sai do token de significado do design system, como o resto do
+      // toast. Eram quatro hexadecimais cravados — os últimos do arquivo.
+      success: {
+        iconTheme: {
+          primary: 'var(--color-success-500)',
+          secondary: 'var(--color-white)',
+        },
+      },
+      error: {
+        iconTheme: {
+          primary: 'var(--color-danger-500)',
+          secondary: 'var(--color-white)',
+        },
+      },
     }}
   />
 );
