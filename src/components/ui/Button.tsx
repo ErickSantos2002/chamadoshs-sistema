@@ -46,8 +46,34 @@ const VARIANTES: Record<VarianteBotao, string> = {
     'bg-superficie-elevada text-conteudo border border-borda hover:bg-borda focus-visible:ring-borda',
   // Para concluir algo — registrar execução, marcar como feito. É o mesmo verde
   // de "no prazo" e "resolvido": a cor já carrega esse significado no sistema.
-  sucesso: 'bg-sucesso text-white hover:bg-sucesso-forte focus-visible:ring-sucesso',
-  perigo: 'bg-perigo text-white hover:bg-perigo-forte focus-visible:ring-perigo',
+  //
+  // ── Por que o degrau NÃO é o 500 ──────────────────────────────────────
+  //
+  // Era `bg-sucesso` e `bg-perigo`, que são o degrau 500 da rampa, com texto
+  // branco. Medido: **2,54:1** no verde e **3,76:1** no vermelho — os dois
+  // reprovam a §21, nos DOIS temas. Um botão que apaga alguma coisa não pode
+  // ter o rótulo ilegível.
+  //
+  // Não é defeito daqui: `DS/components/core/Button.jsx` mandava a mesma coisa,
+  // e a emenda E2 do pacote criou os degraus de AÇÃO que faltavam, do mesmo
+  // jeito que `--action` já existia separado de `--color-primary-500`. Medido
+  // depois, com os tokens da E2:
+  //
+  //   perigo   repouso 4,83:1   hover 6,47:1
+  //   sucesso  repouso 5,48:1   hover 7,68:1
+  //
+  // O anel de foco de cada variante fica como está NESTE commit e sai no
+  // seguinte: medido, `ring-sucesso` dá 2,54:1 e `ring-borda` 1,23:1 contra o
+  // próprio `ring-offset`, e o piso de indicador de foco é 3:1. É defeito de
+  // outro assunto — cor de foco, não cor de ação — e vai num commit próprio.
+  //
+  // Em valor arbitrário pelo motivo da regra (d) do D8-a: abaixo do piso de
+  // navegador a classe utilitária cairia para transparente, e um botão de
+  // apagar invisível é pior do que um mal contrastado.
+  sucesso:
+    'bg-[var(--action-success)] text-[var(--text-on-success)] hover:bg-[var(--action-success-hover)] focus-visible:ring-sucesso',
+  perigo:
+    'bg-[var(--action-danger)] text-[var(--text-on-danger)] hover:bg-[var(--action-danger-hover)] focus-visible:ring-perigo',
   fantasma: 'text-conteudo-suave hover:bg-superficie-elevada focus-visible:ring-borda',
 };
 
