@@ -45,20 +45,65 @@ véu da gaveta, item ativo da barra e trilho do interruptor de tema — usam o
 token direto e não dependem do `color-mix`. É a regra **(d)** do D8-a, e o que
 ela não cobre está listado lá.
 
+## Emendas do pacote aplicadas nesta cópia
+
+O pacote foi **emendado** em 02/09/2026, em três pontos, todos registrados em
+`design-system/EMENDAS.md` com hash antes e depois. Esta cópia é a do pacote
+**já emendado** — por isso os hashes abaixo não são mais os do export original.
+
+| | O que | Arquivo | Escrita por |
+|---|---|---|---|
+| **E1** | `.dark` ganha `--text-on-primary`: branco sobre `--action` no escuro dava 2,69:1 | `tokens/colors.css` | HelpHS |
+| **E2** | botões `danger`/`success` ganham degrau de ação; `--on-tint-warning` e `--on-tint-neutral` passam a AA | `tokens/colors.css` | HelpHS |
+| **E3** | a fonte passa a ser servida pelo pacote — 12 `@font-face` e `fonts/` | `tokens/typography.css` + `fonts/` | ChamadosHS |
+
+O que cada uma significa aqui:
+
+- **E1 fecha o D5-a.** A exceção local do botão primário no escuro deixa de ser
+  necessária: o token resolve sozinho. Ver a seção do D5-a abaixo.
+- **E2 muda a conclusão do D4-a** no caso de fronteira do `--on-tint-warning`.
+  O valor não foi "mantido": foi corrigido na raiz. Ver a seção do D4-a.
+- **E3 fecha o D1-a.** O desvio local do `@import` deixa de existir: este
+  `typography.css` é o do pacote, sem uma vírgula de diferença.
+
 ## Hashes (SHA-256)
 
-Conferidos com `sha256sum` em 02/09/2026, **depois** de tirar o cabeçalho de
-origem (ver logo abaixo).
+Conferidos com `Get-FileHash` em 02/09/2026, na recópia do pacote emendado
+(E1+E2+E3), e comparados com `Compare-Object` contra o pacote: **19 arquivos,
+sem diferença**.
 
 ```
 1EF6324844AA066488F0D8A015B39E3CA0756C629512FCE4E1BD95CA8B93B9B2  styles.css
 BDD047CE432E74B33FA7F752DA08CF025419E83EA18485BD947C889C0AC1C221  tokens/base.css
-63D960841590A2CB4DF3819E2CB4A55439C893578ABFE68C00927A7ABA0F307D  tokens/colors.css
+696ABC6D1C468B17D4510B106517AEF37704663E06E008C38FC109FEEC2A5618  tokens/colors.css      <- E1+E2
 C70D51A982AE0B91BD53ECE150D8D16E0E70BEF9CA59586541A9A7177228478E  tokens/motion.css
 7BCFBBC585D3EA8C7F689A27EEB3AE13DE0C2A9DCC3C6CC0C8F41D440D193F7D  tokens/shape.css
 C093B261C6893A893A418CDF64798555326D4586A8ADB37CC7ECA457FABAE420  tokens/spacing.css
-BD819C48CF0264A48CA8F509A9BAF18E226ADFA8F52C1E2B6CB888BE6C0EECBF  tokens/typography.css
+1DD9B29E47D31005DA89BBE96F1C7883A89371173E0FA8862D868480EEE839C9  tokens/typography.css  <- E3
 ```
+
+E os doze arquivos de fonte, que a **E3** trouxe (diretório novo):
+
+```
+740D9B0F5A33987E21ACFF7E20BBD4C02BF40E470CDA58B761127D159C7941A7  fonts/plus-jakarta-sans-latin-300-normal.woff2
+221A4135D06A4B33ABBD535E9A0DA4E565D19545DDD9267C4E678A916D54D9B6  fonts/plus-jakarta-sans-latin-400-normal.woff2
+BAD081C8DBC15AED6C5E4CDE5461914F7B3BDC295B7A7AED177E4BEDDB79BFFA  fonts/plus-jakarta-sans-latin-500-normal.woff2
+8872BB5C9111DF9BD3162C2394AEE6354D782B13408A4DD5BBF65C48207206E6  fonts/plus-jakarta-sans-latin-600-normal.woff2
+2050755BF475817C96AC7D914C7F07CC3C2D11FF4B3FB4747B8D41DE584AAD17  fonts/plus-jakarta-sans-latin-700-normal.woff2
+5F301A8EF9C266C8B596E6793D3CC826DAEFF9849C5AF035F5386439137955AD  fonts/plus-jakarta-sans-latin-800-normal.woff2
+3BFBC7278A6723BC895A1C088F8C216A79C21A9C5C227C7B6ED194C58E12FB53  fonts/plus-jakarta-sans-latin-ext-300-normal.woff2
+65B5680BF2BA9C6C42AF74DDD2E8AADDE93AF7C523454EBB3D4E32FDBA3F94DB  fonts/plus-jakarta-sans-latin-ext-400-normal.woff2
+D1584F50C388CAE7E570BED35BE331FA4A9AFD6832EF45A32FA8BF81930E6DB9  fonts/plus-jakarta-sans-latin-ext-500-normal.woff2
+080A1FEA8589C2BD4FA08750D0D99B3388BE63DF8C41A649DE05CB2DDA1EC007  fonts/plus-jakarta-sans-latin-ext-600-normal.woff2
+B202EC87899E78825DB955E6AB43858B88C0CD444ABE2DFAC2E763F837B8F234  fonts/plus-jakarta-sans-latin-ext-700-normal.woff2
+7C27E3FD36E9C1D6A2F354943B32993B01DC0B1E64E8275BDD5122B260CA6A24  fonts/plus-jakarta-sans-latin-ext-800-normal.woff2
+```
+
+**`.gitattributes`:** `*.woff2 binary`, e a linha vem **depois** de
+`src/design-system/** text eol=lf` de propósito — em `.gitattributes` vence a
+última regra que casa. Sem isso o Git trataria a fonte como texto, converteria
+fim de linha dentro do binário e a corromperia no checkout, sem quebrar build
+nenhum: o browser é que se recusaria a desenhar e cairia na fonte do sistema.
 
 **Sem cabeçalho de origem.** A §5.2 manda acrescentar um comentário de origem no
 topo de cada arquivo copiado; a §33 e o D3 de `COMPARTILHADO/DECISOES.md` mandam
@@ -67,25 +112,22 @@ comentário muda o hash de todos os sete. **O hash vence**, como o D3 decidiu pa
 os dois repositórios: aqui ficam cópias cruas, e o aviso "não editar aqui" mora
 neste `VERSION.md`. O cabeçalho existiu entre a Fase 1 e a Fase 3, e saiu.
 
-Conferência de 02/09/2026, com `diff -rq`:
+Conferência de 02/09/2026, com `Compare-Object` por arquivo + hash:
 
 ```
-contra DS/ (o pacote)
-  styles.css · tokens/base.css · colors.css · motion.css · shape.css · spacing.css
-                           IDENTICOS byte a byte
-  tokens/typography.css    difere  <- desvio D1-a, abaixo
-
-contra HelpHS/frontend/src/design-system/
-  os seis acima            IDENTICOS byte a byte
-  tokens/typography.css    difere HOJE; some quando o HelpHS aplicar o D1-a
-  VERSION.md               difere por natureza: e o registro local de cada repo
+contra design-system/ (o pacote emendado)
+  19 arquivos: styles.css, os seis tokens/*.css e os doze fonts/*.woff2
+  Compare-Object por Arquivo+Hash  ->  SEM DIFERENCA
 ```
 
-> **O que falta para o `diff -r` fechar.** Só `typography.css`. Em 02/09/2026 o
-> D1-a deixou de ser exceção local e virou decisão dos dois repositórios: o
-> HelpHS passa a auto-hospedar a fonte, com o mesmo conteúdo deste arquivo, cujo
-> hash é `BD819C48…`. Enquanto isso não acontece, o do HelpHS segue em
-> `99D1A02B…`, que é o do pacote. Registrado em `COMPARTILHADO/DECISOES.md`.
+**Não há mais desvio local nos sete arquivos.** O D1-a, que era o último, foi
+resolvido na raiz pela E3. Esta cópia é o pacote, byte a byte.
+
+> **Para o HelpHS:** os sete arquivos e o `fonts/` aqui são os do pacote
+> emendado. `typography.css` fecha em `1DD9B29E…` e `colors.css` em
+> `696ABC6D…`. Quem estiver com `99D1A02B…` ou `63D96084…` está desatualizado,
+> não divergente. O `VERSION.md` continua diferindo por natureza — é o registro
+> local de cada repositório.
 
 ---
 
@@ -95,6 +137,17 @@ Cada um foi decidido em 02/09/2026 e nada além destes é desvio. Se algo mais
 divergir do pacote, é defeito, não exceção.
 
 ### D1-a — `tokens/typography.css`: `@import` do Google Fonts comentado
+
+> **ENCERRADO em 02/09/2026 pela emenda E3 do pacote.** Não é mais desvio: a
+> auto-hospedagem passou a ser do pacote, e este arquivo voltou a ser cópia
+> crua (`1DD9B29E…`). O texto abaixo fica como registro do que motivou a
+> emenda — é o argumento que a E3 usa.
+>
+> O que ainda falta daqui, e sai em commit próprio: os seis `@import` de
+> `@fontsource/plus-jakarta-sans` em `src/styles/index.css` e a dependência no
+> `package.json`. Enquanto os dois coexistem, a fonte é carregada duas vezes —
+> do mesmo bundle, sem sair para a rede. A ordem é essa de propósito: o
+> contrário abriria uma janela sem fonte nenhuma.
 
 **O que muda:** uma linha, comentada. O original é
 
