@@ -4,10 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ChamadosHS</title>
-    <link rel="icon" type="image/svg+xml" href="/src/assets/HS2.ico" />
+    <!-- O favicon oficial da marca. `src/assets/HS2.ico` e byte a byte o
+         `DS/assets/favicon-hs.ico` do pacote (SHA-256 0580A34C5F4910E0…) — o
+         pacote o recebeu deste repositorio. O `type` dizia `image/svg+xml`
+         num arquivo `.ico`. -->
+    <link rel="icon" type="image/x-icon" href="/src/assets/HS2.ico" />
     <link rel="stylesheet" href="/src/styles/index.css" />
   </head>
-  <body class="bg-gray-100">
+  <!-- Sem classe de fundo aqui: `bg-gray-100` era cinza cravado da paleta
+       padrao do Tailwind, sobrepondo o `--bg-base` que `tokens/base.css`
+       define no `body`. Como utilitario, ele vencia o token. -->
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
