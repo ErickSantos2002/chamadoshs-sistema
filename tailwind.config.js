@@ -49,6 +49,11 @@ module.exports = {
           hover: "var(--action-hover)",
           tint: "var(--action-tint)",
         },
+        // O fundo do que fica ATRAS — gaveta no celular, modal em qualquer
+        // largura. Preto a 60%, valor do pacote. A gaveta escrevia
+        // `bg-black/50`: preto cravado, e 10 pontos mais claro que o do
+        // design system.
+        overlay: "var(--overlay)",
         surface: {
           DEFAULT: "var(--surface)",
           base: "var(--bg-base)",

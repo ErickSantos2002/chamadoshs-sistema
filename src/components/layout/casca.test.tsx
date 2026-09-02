@@ -57,11 +57,14 @@ describe('barra lateral', () => {
     expect(fechada).toContain('w-64');
     expect(fechada).toContain('-translate-x-full');
     // Fechada não desenha o fundo escuro — ele cobriria a tela inteira.
-    expect(fechada).not.toContain('bg-black/50');
+    // O nome mudou na Fase 5: `bg-black/50` virou `bg-overlay`, que é o
+    // `--overlay` do pacote — preto a 60%, e não a 50% cravados. O que este
+    // caso trava é o mesmo de antes: o fundo só existe com a gaveta aberta.
+    expect(fechada).not.toContain('bg-overlay');
 
     const aberta = barra({ gavetaAberta: true });
     expect(aberta).toContain('translate-x-0');
-    expect(aberta).toContain('bg-black/50');
+    expect(aberta).toContain('bg-overlay');
   });
 
   it('mostra as cinco áreas do sistema, agrupadas', () => {
@@ -85,6 +88,12 @@ describe('barra lateral', () => {
 
     for (const item of ITENS_DO_MENU) {
       expect(html, `${item.label} sumiu no modo recolhido`).toContain(item.label);
+      // O balão de hover é visual: não existe para quem chega pelo teclado
+      // nem para leitor de tela em varredura. O `title` existe para os dois,
+      // e é o que a `AppShell.jsx` do pacote põe no item recolhido.
+      expect(html, `${item.label} sem title no modo recolhido`).toContain(
+        `title="${item.label}"`
+      );
     }
     expect(html).toContain('group-hover:opacity-100');
   });

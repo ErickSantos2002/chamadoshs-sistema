@@ -39,8 +39,10 @@ interface SidebarProps {
  *   md+ recolhida  72px, só ícone, o rótulo vira tooltip ao lado
  *   abaixo de md   gaveta w-64 por cima do conteúdo, com fundo escuro atrás
  *
- * A transição é só de `width`, e não `all`: animar cor junto faz a barra
- * "acender" no meio do movimento.
+ * A transição é de `width` e de `transform`, e não de `all`: animar cor junto
+ * faz a barra "acender" no meio do movimento. O `transform` entrou na Fase 5 —
+ * sem ele a gaveta do celular aparecia de uma vez, e a §9 pede que ela abra em
+ * `--duration-drawer`, que são os mesmos 300ms da largura.
  */
 export const Sidebar: React.FC<SidebarProps> = ({
   recolhida,
@@ -51,13 +53,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   versao,
 }) => (
   <>
-    {/* Fundo escuro da gaveta. Só existe no celular, e só com ela aberta. */}
+    {/* Fundo escuro da gaveta. Só existe no celular, e só com ela aberta.
+        A cor é `--overlay`, do pacote: preto a 60%. Era `bg-black/50` — preto
+        cravado, e dez pontos mais claro que o do design system. */}
     {gavetaAberta && (
       <div
         role="button"
         tabIndex={0}
         aria-label="Fechar menu"
-        className="fixed inset-0 z-[35] bg-black/50 md:hidden"
+        className="fixed inset-0 z-[35] bg-overlay md:hidden"
         onClick={aoFecharGaveta}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') aoFecharGaveta();
@@ -70,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className={cn(
         'fixed inset-y-0 left-0 z-40 flex flex-col',
         'border-r border-borda bg-superficie',
-        'overflow-hidden transition-[width] duration-300 ease-in-out',
+        'overflow-hidden transition-[width,transform] duration-300 ease-in-out',
         // Desktop: a largura sai do estado de recolhida.
         recolhida ? 'md:w-[72px]' : 'md:w-64',
         // Mobile: gaveta, sempre na largura cheia.
@@ -94,14 +98,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex items-center"
         >
           {recolhida ? (
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sinal/10">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-action-tint">
               <img src={icone} alt="" className="h-5 w-5 object-contain" />
             </span>
           ) : (
             <img
               src={logo}
               alt="Health &amp; Safety"
-              className="h-8 w-auto object-contain"
+              className="h-7 w-auto object-contain"
             />
           )}
         </Link>
@@ -127,23 +131,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   to={to}
                   end
                   onClick={aoFecharGaveta}
+                  /* Recolhida, o nome também vai para o `title` — é o que a
+                     `AppShell.jsx:101` faz. O balão abaixo é visual e não
+                     alcança quem navega por teclado nem leitor de tela em
+                     modo de varredura; o `title` alcança. */
+                  title={recolhida ? label : undefined}
                   className={({ isActive }) =>
                     cn(
-                      'group relative flex items-center rounded-lg text-sm font-medium transition-all duration-150',
+                      'group relative flex items-center rounded-lg text-sm font-medium transition-colors',
                       recolhida ? 'mx-1 justify-center px-0 py-2.5' : 'gap-3 px-3 py-2',
                       isActive
                         ? [
-                            'bg-sinal/10 text-sinal',
+                            // Tinta e cor do pacote, como em
+                            // `AppShell.jsx:114`. Era `bg-sinal/10 text-sinal`:
+                            // o mesmo azul, mas a 10% escritos à mão. A tinta é
+                            // token, tem valor próprio no tema escuro e não
+                            // depende de o Tailwind aceitar opacidade no nome.
+                            'bg-action-tint text-action',
                             // A barra à esquerda entra por dentro do padding,
                             // e não por fora: somada ao `px-3`, ela empurraria
                             // o ícone 2px para a direita só no item ativo.
                             !recolhida &&
-                              'border-l-2 border-sinal pl-[calc(0.75rem-2px)]',
+                              'border-l-2 border-action pl-[calc(0.75rem-2px)]',
                           ]
                         : [
                             !recolhida &&
                               'border-l-2 border-transparent pl-[calc(0.75rem-2px)]',
-                            'text-conteudo-suave hover:bg-superficie-elevada hover:text-conteudo',
+                            // Inativo é `--text-muted`, como a §9 pede. Era
+                            // `--text-body`, um degrau escuro demais: o que
+                            // não está selecionado disputava atenção com o que
+                            // está.
+                            'text-conteudo-tenue hover:bg-superficie-elevada hover:text-conteudo',
                           ]
                     )
                   }
@@ -175,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={aoAbrirNovidades}
-              className="flex items-center gap-1.5 rounded-lg text-xs font-medium text-conteudo-suave transition-colors hover:text-sinal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal"
+              className="flex items-center gap-1.5 rounded-lg text-xs font-medium text-conteudo-tenue transition-colors hover:text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal"
             >
               ChamadosHS {versao}
               {temNovidade && (
