@@ -411,8 +411,22 @@ const BRANCO = [255, 255, 255];
  *    repouso troca 3,76:1 por 6,47:1 e transforma reprovação em aprovação.
  * 4. Parear ramos de ternário. Juntar as strings de um `cn(...)` põe lado a
  *    lado classes mutuamente exclusivas e INVENTA reprovação — a sessão do
- *    HelpHS produziu seis de 1,00:1 assim. Por isso o pareamento acontece
- *    dentro de UM literal, nunca entre literais.
+ *    HelpHS produziu seis de 1,00:1 assim.
+ *
+ *    Casar "dentro de um literal" NÃO basta, e eu achei que bastasse: um
+ *    template com `${cond ? 'A' : 'B'}` É um literal só, e os dois ramos
+ *    ficam dentro dele. Foi assim que `Dashboard.tsx` apareceu com
+ *    `bg-sinal` de um ramo pareado com `text-conteudo-suave` do outro, em
+ *    2,18:1 — que não existe em pixel nenhum. Por isso o conteúdo de cada
+ *    `${...}` é recortado antes, e as strings de dentro dele são lidas
+ *    separadamente.
+ *
+ * 5. Ignorar que o estado também troca o TEXTO. `text-conteudo-tenue
+ *    hover:bg-superficie-elevada hover:text-conteudo` não põe o texto tênue
+ *    sobre o fundo elevado: no hover valem os dois `hover:`. Parear o texto
+ *    base com o fundo de hover inventa uma combinação que a CSS nunca produz.
+ *    O texto que vale num estado é o daquele estado; o base só entra quando o
+ *    estado não declara texto próprio.
  *
  * O preço da 4 é subcontar quando o fundo está no literal base e o texto num
  * condicional. Subcontar é melhor que inventar: um número a menos é uma
@@ -443,18 +457,38 @@ function varrerFundoCheio() {
     const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
 
     for (const m of txt.matchAll(/(["'`])((?:(?!\1)[\s\S]){0,600}?)\1/g)) {
-      const lista = m[2];
-      const brancos = new Set(
-        [...lista.matchAll(/(?:^|\s)((?:[\w-]+:)*)text-white(?![-\w])/g)].map((x) => x[1])
-      );
-      if (!brancos.size) continue;
+      // Armadilha 4: um `${...}` dentro de um template junta ramos de
+      // ternario no MESMO literal. O conteudo da interpolacao vira separador;
+      // as strings de dentro dela sao lidas por conta propria, porque o
+      // matchAll continua correndo o arquivo inteiro.
+      for (const lista of m[2].split(/\$\{[\s\S]*?\}/)) {
+        // `text-` não é só cor: `text-xs`, `text-left` e `text-nowrap` usam o
+        // mesmo prefixo. Sem este filtro, "o texto deste estado" devolvia o
+        // TAMANHO da fonte e o pareamento parava de achar qualquer coisa —
+        // uma catraca que zera sozinha é pior que catraca nenhuma, porque
+        // parece conserto.
+        const NAO_E_COR =
+          /^text-(?:\d?xs|sm|base|lg|\d?xl|left|center|right|justify|start|end|wrap|nowrap|balance|pretty|ellipsis|clip|opacity-\d+)$/;
+        const textos = [
+          ...lista.matchAll(/(?:^|\s)((?:[\w-]+:)*)(text-[\w-]+)(?![-\w/])/g),
+        ].filter((x) => !NAO_E_COR.test(x[2]));
+        if (!textos.length) continue;
+
+        // Armadilha 5: num estado vale o texto DAQUELE estado; o base so
+        // entra quando o estado nao declara o proprio.
+        const textoDoEstado = (estado) => {
+          const proprio = textos.find((x) => x[1] === estado);
+          if (proprio) return proprio[2];
+          const base = textos.find((x) => x[1] === '');
+          return base ? base[2] : null;
+        };
 
       for (const fm of lista.matchAll(/(?:^|\s)((?:[\w-]+:)*)(bg-[\w-]+)(?![-\w/])/g)) {
         const estado = fm[1];
         const fundo = fm[2];
         const token = FUNDOS_CHEIOS[fundo];
         if (!token) continue;
-        if (!brancos.has(estado) && !brancos.has('')) continue;
+        if (textoDoEstado(estado) !== 'text-white') continue;
 
         // O `.dark` NÃO redeclara as cores de significado, de propósito:
         // erro é vermelho nos dois temas. Sem o fallback para `:root` a
@@ -465,6 +499,7 @@ function varrerFundoCheio() {
 
         const chave = `${rel}  ${fundo}  ${estado || 'repouso'}`;
         encontrados.set(chave, (encontrados.get(chave) || 0) + 1);
+      }
       }
     }
   }
