@@ -69,9 +69,33 @@ describe('cantos', () => {
     ).toContain('rounded-xl');
   });
 
-  it('selo e avatar são redondos', () => {
-    expect(comTema(<Badge>Aberto</Badge>)).toContain('rounded-full');
+  /**
+   * O avatar é redondo; o selo NÃO é.
+   *
+   * Este caso já travou os dois juntos, e estava errado no selo desde a
+   * decisão D2-a: a §8.1 lista badge e chip entre o que é reto no ChamadosHS.
+   * O avatar continua `rounded-full` porque é círculo de verdade — a mesma
+   * exceção do ponto de status e do anel do spinner.
+   */
+  it('o avatar é redondo', () => {
     expect(comTema(<Avatar nome="Rickelme David" />)).toContain('rounded-full');
+  });
+
+  it('o selo é reto, como o resto do sistema', () => {
+    expect(comTema(<Badge>Aberto</Badge>)).not.toContain('rounded-full');
+  });
+
+  /**
+   * O fundo do selo é o alias de tinta do pacote, SEM modificador de
+   * opacidade — regra (a) do D8-a. Com modificador o alfa seria multiplicado
+   * (0,15 × 0,20 = 0,03) e o selo sairia quase sem fundo; `validar:paleta`
+   * derruba o build se alguém escrever isso.
+   */
+  it('o selo usa a tinta do pacote, sem modificador', () => {
+    const html = comTema(<Badge variante="perigo">Cancelado</Badge>);
+    expect(html).toContain('bg-tint-danger');
+    expect(html).not.toContain('bg-tint-danger/');
+    expect(html).not.toContain('bg-perigo/20');
   });
 });
 
