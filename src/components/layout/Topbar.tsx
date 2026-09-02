@@ -74,7 +74,7 @@ export const Topbar: React.FC<TopbarProps> = ({
     'rounded-lg p-2 text-conteudo-suave transition-colors hover:bg-superficie-elevada hover:text-conteudo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal';
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-borda bg-superficie px-4 md:px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-borda bg-superficie px-4 md:px-6">
       {/* Os dois botões são o mesmo desenho e fazem coisas diferentes conforme
           a largura: no desktop recolhe a barra, no celular abre a gaveta. */}
       <div className="flex items-center gap-1">
@@ -117,7 +117,7 @@ export const Topbar: React.FC<TopbarProps> = ({
         >
           <Avatar nome={user?.username} className="h-8 w-8 text-xs" />
           <span className="hidden text-left md:block">
-            <span className="block text-sm font-medium leading-tight text-conteudo">
+            <span className="block text-sm font-medium leading-tight text-conteudo-suave">
               {user?.username}
             </span>
             <span className="block text-xs leading-tight text-conteudo-tenue">
