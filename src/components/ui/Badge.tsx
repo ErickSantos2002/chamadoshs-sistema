@@ -36,14 +36,22 @@ interface BadgeProps {
  * se alguém tentar.
  *
  * Medido em todas as combinações reais (quatro variantes × três superfícies ×
- * dois temas): a troca MELHORA as 24, entre 0,2 e 0,7 ponto.
+ * dois temas): a troca MELHORA as 24, entre 0,2 e 0,7 ponto. Amostra, claro
+ * sobre `--surface`: info 5,31 → 5,64, sucesso 4,54 → 4,76, alerta
+ * 6,08 → 6,32, perigo 4,97 → 5,32.
+ *
+ * A composição do alfa é feita em ponto flutuante, sem arredondar por canal —
+ * é o que o navegador faz, e é o método que a sessão do HelpHS usa, para os
+ * números dos dois repositórios serem comparáveis. Arredondando para inteiro
+ * a diferença fica em até 0,02 e não muda veredito nenhum; fica dito porque
+ * uma tabela de contraste sem o método é um número sem procedência.
  *
  * ── Três casos continuam reprovando, e o defeito é do pacote ─────────
  *
  * Sobre `--surface-elevated`, mesmo depois da troca:
  *
  *   claro   sucesso  4,39:1
- *   escuro  info     4,42:1
+ *   escuro  info     4,40:1
  *   escuro  perigo   4,38:1
  *
  * Não é teórico: `ChamadoModal.tsx:356` põe os selos de status, prioridade e

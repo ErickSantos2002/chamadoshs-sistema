@@ -65,6 +65,19 @@ const VARIANTES: Record<VarianteBotao, string> = {
   // Em valor arbitrário pelo motivo da regra (d) do D8-a: abaixo do piso de
   // navegador a classe utilitária cairia para transparente, e um botão de
   // apagar invisível é pior do que um mal contrastado.
+  //
+  // ── O que este conserto NÃO alcança ───────────────────────────────────
+  //
+  // Seis botões não passam por aqui: são `<button>` escritos à mão, com
+  // `bg-sucesso`/`bg-perigo` e texto branco, e continuam nos 2,54:1 e 3,76:1
+  // que este componente acabou de deixar para trás —
+  // `ChamadoDetalhes.tsx:726, :762, :1285, :1356, :1432` e
+  // `cadastros/CategoriasTab.tsx:324`.
+  //
+  // É código de PÁGINA, que a §25 põe nas Fases 11–16, e por isso não entra
+  // nesta fase. Fica escrito aqui para ninguém ler "botão semântico
+  // corrigido" e concluir que o sistema inteiro está: corrigir o primitivo
+  // não alcança quem não o usa.
   sucesso:
     'bg-[var(--action-success)] text-[var(--text-on-success)] hover:bg-[var(--action-success-hover)]',
   perigo:
