@@ -99,3 +99,86 @@ resolvida de uma vez, na fase dela.
 O conserto de cada um é o mesmo que a Fase 7 já fez no `Button`: trocar o
 degrau 500 pelo degrau de ação da E2, ou simplesmente **usar o `Button`**, que
 é o que a maioria deveria estar fazendo.
+
+---
+
+# Segunda varredura: texto COLORIDO sobre fundo colorido
+
+02/09/2026, depois que a sessão do HelpHS perguntou se eu cobria este caso. Eu
+não cobria — só procurava `text-white`.
+
+## O que ela achou, e o que corrigi
+
+Dez pares abaixo de 4,5:1. Dois eram de casca ou primitivo e saíram agora:
+
+**`Topbar.tsx` — o item "Sair" do menu do usuário.** Era `text-perigo`, o degrau
+500 cru, e reprovava nas **quatro** combinações:
+
+| texto | sobre `--surface` | sobre `--surface-elevated` |
+|---|---|---|
+| `text-perigo` (antes) | 3,76 · 4,25 | 3,44 · 3,60 |
+| `--on-tint-danger` (agora) | 6,47 · 5,78 | 5,91 · 4,90 |
+
+*(claro · escuro)*
+
+**`perigo-forte` seria o palpite óbvio e é o errado:** 6,47 no claro e **2,47 no
+escuro**, porque é degrau fixo. Quem resolve é o token que inverte por tema —
+700 no claro, 400 no escuro. É a mesma lição do D5-a, num terceiro lugar.
+
+**`ui/Avatar.tsx` — o avatar sem cor derivada.** Era `text-conteudo-tenue`
+(`--text-muted`) sobre `--surface-elevated`: 4,34:1. É **exatamente** o número
+que a emenda E2 corrigiu no `--on-tint-neutral`, no mesmo par de superfície e
+texto. O avatar tinha ficado para trás por usar o token de texto direto em vez
+do par `on-tint`. Agora 6,92:1.
+
+## Os sete que restam
+
+Todos `--text-muted` sobre `--surface-elevated`, 4,34:1 no tema claro, todos em
+código de página:
+
+```
+components/Avaliacao.tsx:113, :145
+components/cadastros/CategoriasTab.tsx:282
+components/cadastros/SetoresTab.tsx:293
+components/cadastros/UsuariosTab.tsx:213, :377
+pages/Auditoria.tsx:345
+```
+
+São chips de contagem — "3 avaliações", "12 usuários". O conserto é o mesmo do
+avatar: `--on-tint-neutral` no lugar de `--text-muted`, porque o fundo já é
+`--tint-neutral` com outro nome.
+
+## Isto expõe um furo na tabela do D4-a
+
+O D4-a publica **4,76:1** para `--conteudo-tenue`. Esse número é contra
+`--surface` (branco). Contra `--surface-elevated` (slate-100) o mesmo token dá
+**4,34:1** e reprova.
+
+Não é erro de conta: é a tabela ter medido **uma** superfície onde existem três.
+É a mesma falha que a E2 encontrou no `--on-tint-warning` — que o D4-a tinha
+registrado como "caso de fronteira, 0,02 abaixo do piso" medindo só sobre
+branco, quando reprovava nas três.
+
+**Regra que sai daí, e que vale para os dois repositórios:** contraste de token
+de texto se mede contra **todas** as superfícies onde ele pode assentar —
+`--surface`, `--bg-base` e `--surface-elevated` —, não contra a mais clara.
+
+E alcança o pacote: a sessão do HelpHS achou o mesmo par `--text-muted` +
+`--surface-elevated` dentro do **`Button.jsx` do pacote**, na variante `ghost`.
+São três usos do mesmo par ruim no pacote — ghost do Button, sexto par do
+Avatar, e o `muted` do Badge — e a E2 corrigiu o token sem varrer quem o usa.
+
+*(O `fantasma` daqui escapou por acaso: usa `--text-body`, não `--text-muted`.
+Alinhar ao pacote pela §2.1 introduziria o defeito.)*
+
+## O que esta varredura NÃO vê
+
+**Fundo declarado no ancestral.** Ela pareia fundo e texto no MESMO elemento. O
+"Sair" ilustra: em repouso o fundo vem do painel do menu, num elemento acima, e
+por isso os 3,76:1 de repouso não apareceram — só o hover, que declara o próprio
+fundo. Foi assim também que o caso dos selos no `<aside>` do `ChamadoModal`
+precisou ser achado a olho.
+
+Quem quiser fechar esse buraco precisa resolver a árvore, não a lista de
+classes. Enquanto isso: **varredura acha o que está no mesmo elemento; o resto
+continua sendo trabalho de ler o JSX.**

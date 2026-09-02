@@ -208,7 +208,18 @@ export const Topbar: React.FC<TopbarProps> = ({
               <button
                 type="button"
                 role="menuitem"
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-perigo transition-colors hover:bg-superficie-elevada"
+                // Vermelho do par `on-tint`, e não o degrau 500 cru.
+                // Medido nas quatro combinações — o item repousa sobre
+                // `--surface` e passa a `--surface-elevated` no hover:
+                //
+                //   text-perigo (o de antes)   3,76 · 4,25 · 3,44 · 3,60   todas reprovam
+                //   --on-tint-danger           6,47 · 5,78 · 5,91 · 4,90   todas passam
+                //
+                // `perigo-forte` seria o palpite óbvio e é o errado: dá
+                // 6,47 no claro e **2,47 no escuro**, porque é degrau fixo.
+                // Quem resolve é o token que inverte por tema — 700 no
+                // claro, 400 no escuro. É a mesma lição do D5-a.
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-on-tint-danger transition-colors hover:bg-superficie-elevada"
                 onClick={sair}
               >
                 <IconeSair className="h-4 w-4 shrink-0" aria-hidden="true" />

@@ -56,7 +56,13 @@ export const Avatar: React.FC<AvatarProps> = ({ nome, title, className }) => {
       className={cn(
         'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
         'text-[10px] font-medium leading-none',
-        !cor && 'bg-superficie-elevada text-conteudo-tenue',
+        // O ramo sem cor: `--on-tint-neutral` e não `--text-muted`.
+        //
+        // São a MESMA superfície — `--tint-neutral` é `--surface-elevated` —
+        // e a emenda E2 do pacote levou o par de 4,34:1 para 6,92:1 no claro
+        // exatamente por causa disso. O avatar ficou para trás porque usa o
+        // token de texto direto, e não o par `on-tint`.
+        !cor && 'bg-superficie-elevada text-on-tint-neutral',
         className
       )}
     >
