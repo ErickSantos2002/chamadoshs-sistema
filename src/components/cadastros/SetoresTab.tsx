@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
-import { Button, Input } from '../ui';
+import { BotaoDeAcao, Button, Input } from '../ui';
 import SetorModal from './SetorModal';
 import { IconeAlerta, IconeBusca, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor } from '../ui/icones';
 import type {
@@ -304,24 +304,26 @@ const SetoresTab: React.FC = () => {
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
                     <div className="flex items-center justify-end gap-1">
-                      {/* Visualizar sempre disponível */}
-                      <button
+                      {/* Visualizar sempre disponível. Tom neutro: ler não
+                          altera nada, e não precisa da cor de quem altera. */}
+                      <BotaoDeAcao
+                        titulo="Visualizar"
+                        descricao={`Visualizar ${setor.nome}`}
                         onClick={() => handleVisualizarSetor(setor)}
-                        className="rounded-lg p-2 text-conteudo-suave transition-colors hover:bg-superficie-elevada"
-                        aria-label="Visualizar setor"
                       >
-                        <IconeOlho className="h-4 w-4 text-info-forte dark:text-info-suave" />
-                      </button>
+                        <IconeOlho className="h-4 w-4" />
+                      </BotaoDeAcao>
 
                       {/* Editar - apenas para admin/gerente */}
                       {podeEditar && (
-                        <button
+                        <BotaoDeAcao
+                          tom="info"
+                          titulo="Editar"
+                          descricao={`Editar ${setor.nome}`}
                           onClick={() => handleEditarSetor(setor)}
-                          className="rounded-lg p-2 text-info-forte transition-colors hover:bg-info/10 dark:text-info-suave"
-                          aria-label="Editar setor"
                         >
-                          <IconeEditar className="h-4 w-4 text-alerta-forte dark:text-alerta-suave" />
-                        </button>
+                          <IconeEditar className="h-4 w-4" />
+                        </BotaoDeAcao>
                       )}
 
                       {/* Desativar ou reativar. O rótulo diz o que a API faz:
@@ -329,14 +331,14 @@ const SetoresTab: React.FC = () => {
                           os usuários que já apontam para ele. */}
                       {podeExcluir && (
                         !setor.ativo ? (
-                          <button
+                          <BotaoDeAcao
+                            tom="sucesso"
+                            titulo="Reativar"
+                            descricao={`Reativar ${setor.nome}`}
                             onClick={() => handleReativarSetor(setor)}
-                            className="rounded-lg p-2 text-sucesso-forte transition-colors hover:bg-sucesso/10 dark:text-sucesso-suave"
-                            aria-label={`Reativar ${setor.nome}`}
-                            title="Reativar"
                           >
                             <IconeDesfazer className="h-4 w-4" />
-                          </button>
+                          </BotaoDeAcao>
                         ) : confirmDelete === setor.id ? (
                           <div className="flex items-center gap-2">
                             <button
@@ -359,14 +361,14 @@ const SetoresTab: React.FC = () => {
                           // verdade — assim o ícone informa a diferença. Âmbar
                           // em vez de vermelho pelo mesmo motivo: vermelho
                           // promete irreversível.
-                          <button
+                          <BotaoDeAcao
+                            tom="alerta"
+                            titulo="Desativar"
+                            descricao={`Desativar ${setor.nome}`}
                             onClick={() => handleDesativarSetor(setor.id)}
-                            className="rounded-lg p-2 text-alerta-forte transition-colors hover:bg-alerta/10 dark:text-alerta-suave"
-                            aria-label={`Desativar ${setor.nome}`}
-                            title="Desativar"
                           >
                             <IconeEnergia className="h-4 w-4" />
-                          </button>
+                          </BotaoDeAcao>
                         )
                       )}
                     </div>

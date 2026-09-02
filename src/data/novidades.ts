@@ -30,6 +30,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.7.6',
+    data: '2026-09-02',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Nas telas de Cadastros, os botõezinhos no fim de cada linha agora dizem o que fazem: passe o mouse por cima e aparece "Visualizar", "Editar", "Resetar senha", "Desativar". Antes eram quatro ícones quase da mesma cor amarela, sem nenhuma explicação — dava para clicar no errado.',
+      },
+    ],
+  },
+  {
     versao: '1.7.5',
     data: '2026-09-02',
     itens: [

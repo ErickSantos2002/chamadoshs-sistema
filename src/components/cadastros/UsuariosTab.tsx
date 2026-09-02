@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Button, Input, Modal, RotuloDeCampo } from '../ui';
+import { BotaoDeAcao, Button, Input, Modal, RotuloDeCampo } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
@@ -398,35 +398,39 @@ const UsuariosTab: React.FC = () => {
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
                     <div className="flex items-center justify-end gap-1">
-                      {/* Visualizar sempre disponível */}
-                      <button
+                      {/* Visualizar sempre disponível. Tom neutro: ler não
+                          altera nada, e não precisa da cor de quem altera. */}
+                      <BotaoDeAcao
+                        titulo="Visualizar"
+                        descricao={`Visualizar ${usuario.nome}`}
                         onClick={() => handleVisualizarUsuario(usuario)}
-                        className="rounded-lg p-2 text-conteudo-suave transition-colors hover:bg-superficie-elevada"
-                        aria-label="Visualizar usuário"
                       >
-                        <IconeOlho className="h-4 w-4 text-info-forte dark:text-info-suave" />
-                      </button>
+                        <IconeOlho className="h-4 w-4" />
+                      </BotaoDeAcao>
 
                       {/* Editar - apenas admin */}
                       {isAdmin && (
-                        <button
+                        <BotaoDeAcao
+                          tom="info"
+                          titulo="Editar"
+                          descricao={`Editar ${usuario.nome}`}
                           onClick={() => handleEditarUsuario(usuario)}
-                          className="rounded-lg p-2 text-info-forte transition-colors hover:bg-info/10 dark:text-info-suave"
-                          aria-label="Editar usuário"
                         >
-                          <IconeEditar className="h-4 w-4 text-alerta-forte dark:text-alerta-suave" />
-                        </button>
+                          <IconeEditar className="h-4 w-4" />
+                        </BotaoDeAcao>
                       )}
 
-                      {/* Reset senha - apenas admin */}
+                      {/* Reset senha - apenas admin. Âmbar: a pessoa perde a
+                          senha que usava e precisa ser avisada. */}
                       {isAdmin && (
-                        <button
+                        <BotaoDeAcao
+                          tom="alerta"
+                          titulo="Resetar senha"
+                          descricao={`Resetar a senha de ${usuario.nome}`}
                           onClick={() => setResetPasswordFor(usuario)}
-                          className="rounded-lg p-2 text-alerta-forte transition-colors hover:bg-alerta/10 dark:text-alerta-suave"
-                          aria-label="Resetar senha"
                         >
                           <IconeChave className="h-4 w-4" />
-                        </button>
+                        </BotaoDeAcao>
                       )}
 
                       {/* Desativar ou reativar — apenas admin, e não em si mesmo.
@@ -435,14 +439,14 @@ const UsuariosTab: React.FC = () => {
                           referenciando um registro que existe. */}
                       {isAdmin && usuario.id !== Number(user?.id) && (
                         !usuario.ativo ? (
-                          <button
+                          <BotaoDeAcao
+                            tom="sucesso"
+                            titulo="Reativar"
+                            descricao={`Reativar ${usuario.nome}`}
                             onClick={() => handleReativarUsuario(usuario)}
-                            className="rounded-lg p-2 text-sucesso-forte transition-colors hover:bg-sucesso/10 dark:text-sucesso-suave"
-                            aria-label={`Reativar ${usuario.nome}`}
-                            title="Reativar"
                           >
                             <IconeDesfazer className="h-4 w-4" />
-                          </button>
+                          </BotaoDeAcao>
                         ) : confirmDelete === usuario.id ? (
                           <div className="flex items-center gap-2">
                             <button
@@ -465,14 +469,14 @@ const UsuariosTab: React.FC = () => {
                           // verdade — assim o ícone informa a diferença. Âmbar
                           // em vez de vermelho pelo mesmo motivo: vermelho
                           // promete irreversível.
-                          <button
+                          <BotaoDeAcao
+                            tom="alerta"
+                            titulo="Desativar"
+                            descricao={`Desativar ${usuario.nome}`}
                             onClick={() => handleDesativarUsuario(usuario.id)}
-                            className="rounded-lg p-2 text-alerta-forte transition-colors hover:bg-alerta/10 dark:text-alerta-suave"
-                            aria-label={`Desativar ${usuario.nome}`}
-                            title="Desativar"
                           >
                             <IconeEnergia className="h-4 w-4" />
-                          </button>
+                          </BotaoDeAcao>
                         )
                       )}
                     </div>

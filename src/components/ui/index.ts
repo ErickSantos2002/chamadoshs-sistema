@@ -10,6 +10,11 @@ export { Avatar } from './Avatar';
 export { Badge } from './Badge';
 export type { VarianteBadge } from './Badge';
 
+// Ícone de ação das tabelas de cadastro. `titulo` é obrigatório: é assim que
+// o compilador garante que nenhum desses botões fique sem tooltip.
+export { BotaoDeAcao } from './BotaoDeAcao';
+export type { TomDeAcao } from './BotaoDeAcao';
+
 export { Button } from './Button';
 export type { VarianteBotao, TamanhoBotao } from './Button';
 
