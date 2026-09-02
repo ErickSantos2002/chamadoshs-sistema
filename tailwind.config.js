@@ -8,6 +8,57 @@
  * variables vêm do pacote. Trocar uma cor do sistema é recopiar o token, não
  * editar este arquivo. */
 
+/* Declara uma cor de token de um jeito que o Tailwind consiga aplicar
+ * opacidade por cima. É a decisão D1 de `COMPARTILHADO/DECISOES.md`.
+ *
+ * O bloco `theme.extend` de `DS/guidelines/adocao.md` escreve `var(--action)`
+ * puro, e isso APAGA EM SILÊNCIO todo utilitário com modificador: o Tailwind
+ * não consegue injetar o alfa dentro de um `var()` opaco, então simplesmente
+ * não gera a classe. Sem erro de lint, de tipo, de teste ou de build. Medido
+ * aqui com o Tailwind 3.4.17: das 37 classes com modificador de uma sonda, 6
+ * eram geradas antes e 37 depois — as 31 que faltavam eram TODAS as cores do
+ * pacote, incluindo o `bg-action/10` que as Fases 11–16 vão escrever.
+ *
+ * ── ATENÇÃO: em sete tokens o modificador MULTIPLICA, não define ─────
+ *
+ * Sete tokens do pacote já carregam alfa próprio: `--overlay` (0,6),
+ * `--tint-primary`, `--tint-success`, `--tint-danger`, `--tint-warning` e
+ * `--tint-info` (0,15 nos dois temas), e `--action-tint` (opaco no claro,
+ * 0,15 no escuro). Neles o `color-mix` compõe em cima do que já existe:
+ *
+ *   bg-tint-danger      -> alfa 0,15   (o valor do pacote, correto)
+ *   bg-tint-danger/10   -> alfa 0,015  <- 0,15 x 0,10, quase invisível
+ *   bg-overlay/50       -> alfa 0,30   <- 0,6 x 0,5
+ *
+ * Medido no Chrome, não deduzido. Isto NÃO é regressão — antes essas classes
+ * não existiam —, mas é uma armadilha nova: a ponte em português DEFINE o
+ * alfa (`bg-perigo/10` = 0,10, porque `--perigo` são só canais), e as duas
+ * sintaxes são idênticas. `bg-perigo/10` e `bg-tint-danger/10` querem dizer
+ * coisas diferentes.
+ *
+ * REGRA DE USO: nos sete tokens acima, escreva SEM modificador. Eles já são
+ * "a cor a 15%" — pedir 10% de 15% não é uma decisão de design, é um engano.
+ * Para outra opacidade, use a cor cheia: `bg-perigo/10` hoje,
+ * `bg-[rgb(var(--perigo)/0.1)]` depois que a ponte sair.
+ *
+ * Nos demais 29 nomes, que são opacos, o modificador define o alfa como
+ * sempre fez: `bg-action/10` é o `--action` a 10%.
+ *
+ * A forma abaixo, expandida, é:
+ *
+ *   color-mix(in srgb, var(--action) calc(<alpha-value> * 100%), transparent)
+ *
+ * Lê o token do pacote direto, sem copiar valor para lugar nenhum (a §5.4
+ * proíbe a segunda fonte de verdade). Custo: Chrome 111+, Safari 16.2+,
+ * Firefox 113+ — que é o piso do `color-mix`.
+ *
+ * Não se aplica à ponte em português logo abaixo (`--superficie`, `--sinal`,
+ * as cores de significado): aquela já está em canais `R G B` e usa
+ * `rgb(var(--x) / <alpha-value>)`, que resolve o mesmo problema por outro
+ * caminho. É a decisão D3-a, temporária, que morre nas Fases 11–16. */
+const corDeToken = (token) =>
+  `color-mix(in srgb, var(${token}) calc(<alpha-value> * 100%), transparent)`;
+
 module.exports = {
   darkMode: "class", // classe `dark` no <html>, aplicada pelo ThemeContext
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
@@ -28,55 +79,55 @@ module.exports = {
         // borda, barra de gráfico, trilho de interruptor — nunca para texto.
         // Quem carrega texto é `action`, abaixo.
         primary: {
-          DEFAULT: "var(--color-primary-500)",
-          50: "var(--color-primary-50)",
-          100: "var(--color-primary-100)",
-          200: "var(--color-primary-200)",
-          300: "var(--color-primary-300)",
-          400: "var(--color-primary-400)",
-          500: "var(--color-primary-500)",
-          600: "var(--color-primary-600)",
-          700: "var(--color-primary-700)",
-          800: "var(--color-primary-800)",
-          900: "var(--color-primary-900)",
+          DEFAULT: corDeToken("--color-primary-500"),
+          50: corDeToken("--color-primary-50"),
+          100: corDeToken("--color-primary-100"),
+          200: corDeToken("--color-primary-200"),
+          300: corDeToken("--color-primary-300"),
+          400: corDeToken("--color-primary-400"),
+          500: corDeToken("--color-primary-500"),
+          600: corDeToken("--color-primary-600"),
+          700: corDeToken("--color-primary-700"),
+          800: corDeToken("--color-primary-800"),
+          900: corDeToken("--color-primary-900"),
         },
 
         // ── Nomes do pacote ─────────────────────────────────────────
         // O vocabulário oficial, disponível a partir de agora. As telas
         // migram para cá tela a tela nas Fases 11–16.
         action: {
-          DEFAULT: "var(--action)",
-          hover: "var(--action-hover)",
-          tint: "var(--action-tint)",
+          DEFAULT: corDeToken("--action"),
+          hover: corDeToken("--action-hover"),
+          tint: corDeToken("--action-tint"),
         },
         // O fundo do que fica ATRAS — gaveta no celular, modal em qualquer
         // largura. Preto a 60%, valor do pacote. A gaveta escrevia
         // `bg-black/50`: preto cravado, e 10 pontos mais claro que o do
         // design system.
-        overlay: "var(--overlay)",
+        overlay: corDeToken("--overlay"),
         surface: {
-          DEFAULT: "var(--surface)",
-          base: "var(--bg-base)",
-          elevated: "var(--surface-elevated)",
+          DEFAULT: corDeToken("--surface"),
+          base: corDeToken("--bg-base"),
+          elevated: corDeToken("--surface-elevated"),
         },
         // Fundo de badge, aviso e chip: a cor de significado a 15% de
         // opacidade, com o par `on-tint` por cima. É o que faz o selo
         // funcionar nos dois temas sem uma regra `dark:` separada.
         tint: {
-          primary: "var(--tint-primary)",
-          success: "var(--tint-success)",
-          danger: "var(--tint-danger)",
-          warning: "var(--tint-warning)",
-          info: "var(--tint-info)",
-          neutral: "var(--tint-neutral)",
+          primary: corDeToken("--tint-primary"),
+          success: corDeToken("--tint-success"),
+          danger: corDeToken("--tint-danger"),
+          warning: corDeToken("--tint-warning"),
+          info: corDeToken("--tint-info"),
+          neutral: corDeToken("--tint-neutral"),
         },
         "on-tint": {
-          primary: "var(--on-tint-primary)",
-          success: "var(--on-tint-success)",
-          danger: "var(--on-tint-danger)",
-          warning: "var(--on-tint-warning)",
-          info: "var(--on-tint-info)",
-          neutral: "var(--on-tint-neutral)",
+          primary: corDeToken("--on-tint-primary"),
+          success: corDeToken("--on-tint-success"),
+          danger: corDeToken("--on-tint-danger"),
+          warning: corDeToken("--on-tint-warning"),
+          info: corDeToken("--on-tint-info"),
+          neutral: corDeToken("--on-tint-neutral"),
         },
 
         // ── Ponte (temporária — decisão D3-a) ───────────────────────
@@ -101,22 +152,22 @@ module.exports = {
           suave: "rgb(var(--borda-suave) / <alpha-value>)",
           // Traço mais presente: colchete de painel, régua de seção, scrollbar.
           forte: "rgb(var(--borda-forte) / <alpha-value>)",
-          muted: "var(--border-muted)",
-          strong: "var(--border-strong)",
+          muted: corDeToken("--border-muted"),
+          strong: corDeToken("--border-strong"),
         },
         conteudo: {
           DEFAULT: "rgb(var(--conteudo) / <alpha-value>)",
           suave: "rgb(var(--conteudo-suave) / <alpha-value>)",
           tenue: "rgb(var(--conteudo-tenue) / <alpha-value>)",
-          heading: "var(--text-heading)",
-          body: "var(--text-body)",
-          muted: "var(--text-muted)",
+          heading: corDeToken("--text-heading"),
+          body: corDeToken("--text-body"),
+          muted: corDeToken("--text-muted"),
           // Reprova em 4,5:1 nos dois temas (2,56 no claro, 3,36 no escuro):
           // só PLACEHOLDER, ÍCONE DECORATIVO e TEXTO NÃO INFORMATIVO, onde
           // reprovar é aceitável porque nada se perde ao não ler. Rótulo que
           // NOMEIA um grupo não é disso. Decisão D4-a, na redação do D9.
           // Texto terciário usa `conteudo-tenue`.
-          faint: "var(--text-faint)",
+          faint: corDeToken("--text-faint"),
         },
 
         // A cor de sinal. Marca o que está ativo, focado ou selecionado, e
