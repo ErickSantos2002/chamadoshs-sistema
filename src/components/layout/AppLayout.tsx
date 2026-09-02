@@ -5,6 +5,14 @@ import { Topbar } from './Topbar';
 interface AppLayoutProps {
   /** A página atual. */
   children: React.ReactNode;
+  /**
+   * O título que vai para o `<h1>` da faixa do topo. Repassado sem tocar.
+   *
+   * Nasce vazio de propósito — ver o comentário da prop em `Topbar.tsx`. Nada
+   * o passa hoje, `App.tsx` inclusive: quem começa a preencher é cada página,
+   * no commit em que for migrada nas Fases 11–16.
+   */
+  pageTitle?: string;
   aoAbrirNovidades: () => void;
   temNovidade: boolean;
   versao: string;
@@ -47,6 +55,7 @@ interface AppLayoutProps {
  */
 export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
+  pageTitle,
   aoAbrirNovidades,
   temNovidade,
   versao,
@@ -96,6 +105,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           quadro. É o padrão de flexbox que morde em toda tela com tabela. */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar
+          pageTitle={pageTitle}
           aoAbrirGaveta={() => setGavetaAberta(true)}
           aoAlternarRecolhida={() => setRecolhida((v) => !v)}
           recolhida={recolhida}

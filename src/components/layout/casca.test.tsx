@@ -106,9 +106,10 @@ describe('barra lateral', () => {
 });
 
 describe('faixa do topo', () => {
-  const topo = (recolhida = false) =>
+  const topo = (recolhida = false, pageTitle?: string) =>
     casca(
       <Topbar
+        pageTitle={pageTitle}
         aoAbrirGaveta={() => {}}
         aoAlternarRecolhida={() => {}}
         recolhida={recolhida}
@@ -130,6 +131,28 @@ describe('faixa do topo', () => {
    */
   it('não tem sino de notificações', () => {
     expect(topo().toLowerCase()).not.toContain('notifica');
+  });
+
+  /**
+   * O `<h1>` da §9 — e o meio-termo entre não ter título nenhum e ter dois.
+   *
+   * As onze páginas desenham o próprio `<h1>` hoje. A prop nasce vazia e cada
+   * tela a preenche no commit em que for migrada, soltando o seu no mesmo
+   * commit (decisão D8, comum ao HelpHS). Estes dois casos travam as duas
+   * pontas: sem a prop, a topbar NÃO desenha cabeçalho — nem sequer um vazio,
+   * que leitor de tela anuncia como cabeçalho sem nome; com ela, desenha um
+   * `<h1>` de verdade, com o texto que recebeu.
+   */
+  it('sem pageTitle não desenha cabeçalho nenhum', () => {
+    expect(topo()).not.toContain('<h1');
+  });
+
+  it('com pageTitle desenha o h1 da página, e um só', () => {
+    const html = topo(false, 'Chamados');
+    // `split` em vez de regex: um `\b` escrito aqui ja virou caractere de
+    // backspace uma vez, e o teste passou a nao casar com nada.
+    expect(html.split('<h1').length - 1).toBe(1);
+    expect(html).toContain('Chamados');
   });
 });
 

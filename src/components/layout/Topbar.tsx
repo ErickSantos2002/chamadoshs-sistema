@@ -7,6 +7,25 @@ import { Avatar } from '../ui';
 import { IconeLua, IconeMenu, IconeSair, IconeSeta } from '../ui/icones';
 
 interface TopbarProps {
+  /**
+   * O título da página, no `<h1>` que a §9 põe aqui.
+   *
+   * **Nasce vazia e continua vazia até a Fase 11.** As onze páginas desenham o
+   * próprio `<h1>` hoje; preencher isto agora daria DOIS `<h1>` na mesma
+   * página, que é pior de ouvir num leitor de tela do que o estado atual.
+   *
+   * Cada tela passa a preencher no commit em que for migrada (Fases 11–16),
+   * **soltando no mesmo commit o `<h1>` que tem hoje e rebaixando o cabeçalho
+   * próprio para `<h2>`**. É a troca dentro do mesmo commit que garante que
+   * nunca haja dois nem zero. A Fase 20 confere: nenhuma página com `<h1>`
+   * dentro do `<main>`, todas com `pageTitle`.
+   *
+   * O texto é o que a página já mostra — migrar não é oportunidade de
+   * reescrever rótulo (§30).
+   *
+   * Mesma decisão do HelpHS: D8 de `COMPARTILHADO/DECISOES.md`.
+   */
+  pageTitle?: string;
   /** Abre a gaveta no celular. */
   aoAbrirGaveta: () => void;
   /** Recolhe ou devolve a barra lateral no desktop. */
@@ -32,6 +51,7 @@ interface TopbarProps {
  * para o que é da pessoa, e que existe em toda largura de tela.
  */
 export const Topbar: React.FC<TopbarProps> = ({
+  pageTitle,
   aoAbrirGaveta,
   aoAlternarRecolhida,
   recolhida,
@@ -100,7 +120,16 @@ export const Topbar: React.FC<TopbarProps> = ({
         </button>
       </div>
 
-      <div className="flex-1" />
+      {/* Vazia, um espaçador; preenchida, o `<h1>` da §9. Não desenho um
+          `<h1>` vazio: cabeçalho sem texto é ruído para leitor de tela, e a
+          página ainda tem o dela. */}
+      {pageTitle ? (
+        <h1 className="min-w-0 flex-1 truncate text-base font-semibold text-conteudo">
+          {pageTitle}
+        </h1>
+      ) : (
+        <div className="flex-1" />
+      )}
 
       <div className="relative flex items-center gap-2" ref={menuRef}>
         <button
