@@ -100,9 +100,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {/* Primeiro elemento focável da página: quem navega por teclado pula a
           lista inteira de áreas em vez de tabular por ela em toda troca de
           tela. Invisível até receber foco. */}
+      {/* A cor do texto sai de `--text-on-primary`, e não de um branco cravado.
+          Medido: branco sobre `--sinal` dá 5,29:1 no tema claro e **2,69:1 no
+          escuro**, onde `--sinal` inverte para o degrau claro da rampa. Era o
+          mesmo defeito do D5-a, no elemento onde ele custa mais caro: este
+          link é o PRIMEIRO foco de toda página, e existe para quem navega por
+          teclado — a única pessoa que o vê era a que não conseguia lê-lo.
+
+          Passou pelo Checkpoint 1 porque a conferência da §26 mediu o token
+          `--action`, não as classes que as telas escrevem por cima dele.
+
+          Com o token: 5,29:1 no claro e 5,11:1 no escuro. */}
       <a
         href="#conteudo-principal"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-sinal focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-sinal focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-[var(--text-on-primary)]"
       >
         Pular para o conteúdo principal
       </a>
