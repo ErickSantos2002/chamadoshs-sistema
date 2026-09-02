@@ -31,6 +31,10 @@
  *    três formas de daltonismo. Duas categorias vizinhas com a mesma
  *    aparência não são uma paleta, são uma cor só.
  *
+ * 4. Que ninguém escreva modificador de opacidade sobre um token que JÁ tem
+ *    alfa próprio — a regra (a′) do D8-a. É o mesmo modo de falha das outras
+ *    três: não quebra nada, só fica errado na tela.
+ *
  * A simulação usa as matrizes de Machado, Oliveira e Fernandes (2009),
  * aplicadas em RGB linear. A distância é ΔE*ab (CIE76) em Lab D65 — mais
  * grosseira que a CIEDE2000, e escolhida por isso: o limiar fica folgado o
@@ -45,6 +49,26 @@ const path = require('node:path');
 const RAIZ = path.join(__dirname, '..');
 const CSS = path.join(RAIZ, 'src', 'styles', 'index.css');
 const GRAFICOS = path.join(RAIZ, 'src', 'lib', 'graficos.ts');
+const FONTE = path.join(RAIZ, 'src');
+
+/**
+ * Os sete tokens do pacote que JÁ carregam alfa próprio.
+ *
+ * Neles o `color-mix` do `tailwind.config.js` compõe em cima do que existe, e
+ * o modificador MULTIPLICA em vez de definir: `bg-tint-danger/10` sai em alfa
+ * 0,015, não 0,10 — praticamente invisível. Medido no Chrome.
+ *
+ * `tint-neutral` NÃO entra: é `var(--surface-elevated)`, opaco nos dois temas.
+ */
+const COM_ALFA = [
+  'overlay',
+  'action-tint',
+  'tint-primary',
+  'tint-success',
+  'tint-danger',
+  'tint-warning',
+  'tint-info',
+];
 
 /** Piso de contraste para texto (WCAG 2.1 AA). */
 const PISO_TEXTO = 4.5;
@@ -250,6 +274,69 @@ function exigirSeparacao(rotulo, cores) {
   ruins.forEach((r) => linhas.push(`         ${r}`));
 }
 
+/**
+ * Regra (a′) do D8-a: modificador de opacidade nunca vai nos sete acima.
+ *
+ * ── Por que isto é um teste e não uma convenção ───────────────────────
+ *
+ * A armadilha é que a sintaxe é IDÊNTICA à que funciona. `bg-perigo/10` vem
+ * da ponte em canais `R G B` e DEFINE o alfa em 0,10; `bg-tint-danger/10` vem
+ * do `color-mix` e MULTIPLICA, dando 0,015. Escritas lado a lado, ninguém vê
+ * diferença — e as duas convivem dentro da mesma chave do `tailwind.config`.
+ *
+ * Quem escrever isso não recebe erro de lint, de tipo, de teste nem de build.
+ * Recebe um selo com fundo invisível, e o conserto intuitivo — subir para /20,
+ * /30, /50 — continua multiplicando e nunca chega nos 15% do pacote.
+ *
+ * Esses sete já SÃO "a cor a 15%". Para outra opacidade, use a cor cheia.
+ */
+function exigirSemModificadorDeOpacidade() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        // A cópia do pacote não é código nosso, e não escreve classe do
+        // Tailwind — varrê-la só traria ruído.
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.(tsx?|css|html)$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  // `bg-tint-danger/10`, `hover:bg-overlay/50`, `bg-action-tint/[.15]` — o que
+  // importa é o nome do token seguido de barra. O prefixo de variante não
+  // muda nada, então nem entra no padrão.
+  const alvo = new RegExp(
+    '[a-z-]+-(' + COM_ALFA.join('|') + ')/(\\[[^\\]]+\\]|[0-9]+)',
+    'g'
+  );
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const conteudo = fs.readFileSync(arquivo, 'utf8');
+    conteudo.split('\n').forEach((linha, i) => {
+      for (const m of linha.match(alvo) ?? []) {
+        const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+        achados.push(`${rel}:${i + 1}  ${m}`);
+      }
+    });
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `modificador de opacidade em token que já tem alfa (regra a′ do D8-a): ` +
+        `${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== regra (a′) — modificador de opacidade nos ${COM_ALFA.length} tokens com alfa ===` +
+      `\n  ${arquivos.length} arquivos varridos, ${achados.length} ocorrência(s)`
+  );
+}
+
 function main() {
   const css = fs.readFileSync(CSS, 'utf8');
   const graficos = fs.readFileSync(GRAFICOS, 'utf8');
@@ -289,6 +376,8 @@ function main() {
     exigirSeparacao('status entre si', status);
     exigirSeparacao('prioridades entre si', prioridades);
   }
+
+  exigirSemModificadorDeOpacidade();
 
   console.log(linhas.join('\n'));
 
