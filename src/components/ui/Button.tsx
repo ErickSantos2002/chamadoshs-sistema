@@ -41,9 +41,9 @@ const VARIANTES: Record<VarianteBotao, string> = {
   // regra (d) do D8-a: a classe passaria pelo `color-mix`, e abaixo do piso
   // de navegador `color` cai para `inherit` — texto escuro sobre botão azul.
   primario:
-    'bg-sinal text-[var(--text-on-primary)] hover:brightness-110 focus-visible:ring-sinal',
+    'bg-sinal text-[var(--text-on-primary)] hover:brightness-110',
   secundario:
-    'bg-superficie-elevada text-conteudo border border-borda hover:bg-borda focus-visible:ring-borda',
+    'bg-superficie-elevada text-conteudo border border-borda hover:bg-borda',
   // Para concluir algo — registrar execução, marcar como feito. É o mesmo verde
   // de "no prazo" e "resolvido": a cor já carrega esse significado no sistema.
   //
@@ -62,19 +62,14 @@ const VARIANTES: Record<VarianteBotao, string> = {
   //   perigo   repouso 4,83:1   hover 6,47:1
   //   sucesso  repouso 5,48:1   hover 7,68:1
   //
-  // O anel de foco de cada variante fica como está NESTE commit e sai no
-  // seguinte: medido, `ring-sucesso` dá 2,54:1 e `ring-borda` 1,23:1 contra o
-  // próprio `ring-offset`, e o piso de indicador de foco é 3:1. É defeito de
-  // outro assunto — cor de foco, não cor de ação — e vai num commit próprio.
-  //
   // Em valor arbitrário pelo motivo da regra (d) do D8-a: abaixo do piso de
   // navegador a classe utilitária cairia para transparente, e um botão de
   // apagar invisível é pior do que um mal contrastado.
   sucesso:
-    'bg-[var(--action-success)] text-[var(--text-on-success)] hover:bg-[var(--action-success-hover)] focus-visible:ring-sucesso',
+    'bg-[var(--action-success)] text-[var(--text-on-success)] hover:bg-[var(--action-success-hover)]',
   perigo:
-    'bg-[var(--action-danger)] text-[var(--text-on-danger)] hover:bg-[var(--action-danger-hover)] focus-visible:ring-perigo',
-  fantasma: 'text-conteudo-suave hover:bg-superficie-elevada focus-visible:ring-borda',
+    'bg-[var(--action-danger)] text-[var(--text-on-danger)] hover:bg-[var(--action-danger-hover)]',
+  fantasma: 'text-conteudo-suave hover:bg-superficie-elevada',
 };
 
 const TAMANHOS: Record<TamanhoBotao, string> = {
@@ -107,7 +102,26 @@ export const Button: React.FC<ButtonProps> = ({
     className={cn(
       'inline-flex items-center justify-center gap-2 rounded-lg font-medium',
       'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-      'focus-visible:ring-offset-superficie',
+      // O anel de foco é UM só, e não um por variante.
+      //
+      // Cada variante trazia a própria cor, e três das cinco eram invisíveis.
+      // Medido contra o `ring-offset-superficie` que esta mesma linha declara,
+      // claro | escuro:
+      //
+      //   ring-borda    1,23:1 | 1,39:1   secundário e fantasma — 27 dos 51 usos
+      //   ring-sucesso  2,54:1 | 6,30:1   reprovava no claro
+      //   ring-perigo   3,76:1 | 4,25:1   passava raspando
+      //   ring-sinal    5,29:1 | 5,95:1   só o primário estava certo
+      //
+      // O piso de indicador de foco é 3:1 — é elemento não textual, e a §21 o
+      // exige visível. `--focus-ring` é o token que o pacote reserva para
+      // exatamente isto, dá 5,29:1 e 5,95:1, e é o mesmo nas cinco variantes:
+      // quem navega por teclado não deveria descobrir o botão pela cor dele.
+      //
+      // Em valor arbitrário pela regra (d) do D8-a: anel de foco que cai para
+      // transparente abaixo do piso de navegador é perda de função, não de
+      // acabamento — some a única pista de onde o teclado está.
+      'focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-superficie',
       'disabled:opacity-50 disabled:cursor-not-allowed',
       VARIANTES[variante],
       TAMANHOS[tamanho],
