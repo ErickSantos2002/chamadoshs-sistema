@@ -18,37 +18,45 @@ os desvios listados abaixo → conferir os hashes → rodar `npm run build`.
 
 ## Hashes (SHA-256)
 
-Conferidos com `Get-FileHash -Algorithm SHA256` em 02/09/2026.
+Conferidos com `sha256sum` em 02/09/2026, **depois** de tirar o cabeçalho de
+origem (ver logo abaixo).
 
 ```
-3D4FEED0E3300C5F5CC7D7CDE0D26BFBAC433954917F51862653B0297F9743BB  styles.css
-4CF24B587B1392FD5C2080C983D83F191A23C97DF9E116FE29E18D23A920FC27  tokens/base.css
-893461E5DFE113B8E0BC555FE9EF5CD364275F23301DE3FDE620355552F20072  tokens/colors.css
-56E3AA0451F158A1C6FA854DA2BC8CA58A8BC00AC15491F7E144EBDE0F3725E3  tokens/motion.css
-5F5B6ADC9255A8DAF2C570776FF2ECA4814A74DB36B68ECE97D1641ADCFCEE86  tokens/shape.css
-7EA1E828E395EA34A38B8BB8C8EC9CEC1A943A3DAE99FB10DD4AEAF685921D1A  tokens/spacing.css
-82E8408799D75DBFA24EF4204A5B844EFDEE98EDEB80C8D652CBE49FE9E7AF81  tokens/typography.css
+1EF6324844AA066488F0D8A015B39E3CA0756C629512FCE4E1BD95CA8B93B9B2  styles.css
+BDD047CE432E74B33FA7F752DA08CF025419E83EA18485BD947C889C0AC1C221  tokens/base.css
+63D960841590A2CB4DF3819E2CB4A55439C893578ABFE68C00927A7ABA0F307D  tokens/colors.css
+C70D51A982AE0B91BD53ECE150D8D16E0E70BEF9CA59586541A9A7177228478E  tokens/motion.css
+7BCFBBC585D3EA8C7F689A27EEB3AE13DE0C2A9DCC3C6CC0C8F41D440D193F7D  tokens/shape.css
+C093B261C6893A893A418CDF64798555326D4586A8ADB37CC7ECA457FABAE420  tokens/spacing.css
+BD819C48CF0264A48CA8F509A9BAF18E226ADFA8F52C1E2B6CB888BE6C0EECBF  tokens/typography.css
 ```
 
-Conferência contra o pacote original, com `Compare-Object` ignorando o cabeçalho
-de origem que a §5.2 manda acrescentar:
+**Sem cabeçalho de origem.** A §5.2 manda acrescentar um comentário de origem no
+topo de cada arquivo copiado; a §33 e o D3 de `COMPARTILHADO/DECISOES.md` mandam
+conferir o SHA-256 da cópia contra o pacote. As duas coisas não cabem juntas — o
+comentário muda o hash de todos os sete. **O hash vence**, como o D3 decidiu para
+os dois repositórios: aqui ficam cópias cruas, e o aviso "não editar aqui" mora
+neste `VERSION.md`. O cabeçalho existiu entre a Fase 1 e a Fase 3, e saiu.
+
+Conferência de 02/09/2026, com `diff -rq`:
 
 ```
-styles.css               IDENTICO ao pacote
-tokens/colors.css        IDENTICO ao pacote
-tokens/spacing.css       IDENTICO ao pacote
-tokens/shape.css         IDENTICO ao pacote
-tokens/motion.css        IDENTICO ao pacote
-tokens/base.css          IDENTICO ao pacote
-tokens/typography.css    22 linhas de diferença  ← desvio D1-a, abaixo
+contra DS/ (o pacote)
+  styles.css · tokens/base.css · colors.css · motion.css · shape.css · spacing.css
+                           IDENTICOS byte a byte
+  tokens/typography.css    difere  <- desvio D1-a, abaixo
+
+contra HelpHS/frontend/src/design-system/
+  os seis acima            IDENTICOS byte a byte
+  tokens/typography.css    difere HOJE; some quando o HelpHS aplicar o D1-a
+  VERSION.md               difere por natureza: e o registro local de cada repo
 ```
 
-> **Pendência entre repositórios.** A §5.2 pede que os arquivos sejam idênticos
-> byte a byte **nos dois repositórios**. Por causa do desvio D1-a, o
-> `typography.css` daqui só será idêntico ao do HelpHS se o HelpHS também
-> passar a auto-hospedar a fonte. Os outros seis já devem bater — os hashes
-> acima existem para a sessão do HelpHS conferir. Decisão pendente, registrada
-> em `COMPARTILHADO/DECISOES.md`.
+> **O que falta para o `diff -r` fechar.** Só `typography.css`. Em 02/09/2026 o
+> D1-a deixou de ser exceção local e virou decisão dos dois repositórios: o
+> HelpHS passa a auto-hospedar a fonte, com o mesmo conteúdo deste arquivo, cujo
+> hash é `BD819C48…`. Enquanto isso não acontece, o do HelpHS segue em
+> `99D1A02B…`, que é o do pacote. Registrado em `COMPARTILHADO/DECISOES.md`.
 
 ---
 
@@ -78,6 +86,14 @@ latino), importada em `src/styles/index.css`. O valor de `--font-sans` não muda
 
 **Amparo:** §11 do prompt mestre — *"Se houver política de não usar CDN externo,
 pare e pergunte antes de baixar arquivos de fonte."* Perguntado e decidido.
+
+**Escopo — vale para os dois repositórios.** Confirmado pelo operador em
+02/09/2026: o desvio fica, e deixa de ser exceção só daqui. O HelpHS aplica o
+mesmo conteúdo de `tokens/typography.css`, e então os sete arquivos voltam a ser
+idênticos byte a byte dos dois lados, como a §5.2 pede. A alternativa — reverter
+para o `@import` do Google — traria a fonte de servidor de terceiro **além** do
+bundle, porque o Vite mantém URL externa como está: dois carregamentos da mesma
+fonte, contra o objetivo declarado da Fase 2.
 
 ### D3-a — Camada de ponte em `src/styles/index.css` (**temporária**)
 
