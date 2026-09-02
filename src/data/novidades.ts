@@ -9,8 +9,9 @@
  * Regra prática para saber se uma entrada pertence a este arquivo: se o
  * colaborador não perceberia a diferença sem ler o texto, ela não entra.
  *
- * A versão precisa bater com a do `package.json` — é ela que decide quando o
- * aviso abre sozinho.
+ * A versão precisa bater com a do `package.json` — é a diferença entre as duas
+ * que acende o ponto ao lado do número, no rodapé do menu. O aviso não abre
+ * sozinho; o ponto convida e a pessoa clica.
  */
 
 export type TipoNovidade = 'novidade' | 'melhoria' | 'corrigido';
@@ -28,6 +29,17 @@ export interface VersaoNovidade {
 }
 
 export const NOVIDADES: VersaoNovidade[] = [
+  {
+    versao: '1.7.5',
+    data: '2026-09-02',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Este aviso parou de abrir sozinho. Antes ele aparecia na sua frente a cada versão nova, mesmo quando você tinha entrado só para atender um chamado. Agora o número da versão, no rodapé do menu, ganha um pontinho azul quando há novidade — e você lê quando quiser, clicando nele.',
+      },
+    ],
+  },
   {
     versao: '1.7.4',
     data: '2026-09-01',
