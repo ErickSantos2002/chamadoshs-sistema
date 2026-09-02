@@ -105,12 +105,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           aria-label="Ir para o Dashboard"
           className="flex items-center"
         >
+          {/* O monograma da barra recolhida usa o token em valor arbitrário
+              pelo mesmo motivo do item ativo — regra (d) do D8-a. Ficou de
+              fora da primeira aplicação da regra porque ela nomeia o item
+              ativo, e este é o monograma; a exposição, porém, é a mesma:
+              abaixo do piso do `color-mix` o fundo some e sobra o ícone
+              solto no canto. */}
           {recolhida ? (
-            {/* Em valor arbitrário pelo mesmo motivo do item ativo — regra
-                (d) do D8-a. Ficou de fora da primeira aplicação da regra
-                porque ela nomeia o item ativo, e este é o monograma; a
-                exposição, porém, é a mesma: abaixo do piso do `color-mix` o
-                fundo some e sobra o ícone solto no canto. */}
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--action-tint)]">
               <img src={icone} alt="" className="h-5 w-5 object-contain" />
             </span>
