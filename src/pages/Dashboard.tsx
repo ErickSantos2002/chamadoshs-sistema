@@ -455,7 +455,7 @@ const Dashboard: React.FC = () => {
               onClick={() => setIncluirCancelados(!incluirCancelados)}
               className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                 incluirCancelados
-                  ? 'border-perigo/30 bg-perigo/20 text-perigo-forte hover:bg-perigo/30 dark:text-perigo-suave'
+                  ? 'border-perigo/30 bg-perigo/20 text-on-tint-danger hover:bg-perigo/30'
                   : 'border-borda bg-superficie-elevada text-conteudo-suave hover:text-conteudo'
               }`}
               title={incluirCancelados ? 'Ocultar cancelados' : 'Mostrar cancelados'}
@@ -692,7 +692,7 @@ const Dashboard: React.FC = () => {
               <p
                 className={`mt-2 text-3xl font-bold tabular-nums ${
                   metricasSla.percentualNoPrazo !== null
-                    ? 'text-sucesso-forte dark:text-sucesso-suave'
+                    ? 'text-on-tint-success'
                     : 'text-conteudo-tenue'
                 }`}
               >
@@ -710,7 +710,7 @@ const Dashboard: React.FC = () => {
               <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                 Estourados em aberto
               </p>
-              <p className="mt-2 text-3xl font-bold tabular-nums text-perigo-forte dark:text-perigo-suave">
+              <p className="mt-2 text-3xl font-bold tabular-nums text-on-tint-danger">
                 {metricasSla.estouradosEmAberto}
               </p>
               <p className="mt-1.5 text-xs text-conteudo-tenue">precisam de ação agora</p>
@@ -719,7 +719,7 @@ const Dashboard: React.FC = () => {
               <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                 Em atenção (≥80% do prazo)
               </p>
-              <p className="mt-2 text-3xl font-bold tabular-nums text-alerta-forte dark:text-alerta-suave">
+              <p className="mt-2 text-3xl font-bold tabular-nums text-on-tint-warning">
                 {metricasSla.emAtencao}
               </p>
               <p className="mt-1.5 text-xs text-conteudo-tenue">prestes a estourar</p>
@@ -978,13 +978,13 @@ const Dashboard: React.FC = () => {
                             {getStatusDisplay(chamado.status)}
                           </span>
                           {chamado.arquivado && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-alerta/15 text-on-tint-warning">
                               <IconeArquivar className="w-3 h-3" />
                               Arquivado
                             </span>
                           )}
                           {chamado.cancelado && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-perigo/15 text-perigo-forte dark:text-perigo-suave">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-perigo/15 text-on-tint-danger">
                               <IconeProibido className="w-3 h-3" />
                               Cancelado
                             </span>

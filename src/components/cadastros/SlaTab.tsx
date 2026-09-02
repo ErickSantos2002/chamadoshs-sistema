@@ -167,7 +167,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
       </div>
 
       {erro && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
           <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {erro}
         </div>

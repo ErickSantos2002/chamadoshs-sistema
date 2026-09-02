@@ -54,7 +54,7 @@ export const TrilhaComFalha: React.FC<{ mensagem: string; folga?: Folga }> = ({
 }) => (
   <div
     role="alert"
-    className={`flex gap-2 text-sm text-perigo-forte dark:text-perigo-suave ${
+    className={`flex gap-2 text-sm text-on-tint-danger ${
       folga === 'ampla'
         ? 'h-48 items-center justify-center px-6'
         : 'items-start rounded-lg border border-perigo/40 bg-perigo/10 px-3 py-2'

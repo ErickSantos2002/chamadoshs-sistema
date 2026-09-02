@@ -208,8 +208,8 @@ const UsuariosTab: React.FC = () => {
 
   const getRoleColor = (role: string): string => {
     const roleColors: Record<string, string> = {
-      'Administrador': 'bg-alerta/15 text-alerta-forte dark:text-alerta-suave',
-      'Tecnico': 'bg-info/15 text-info-forte dark:text-info-suave',
+      'Administrador': 'bg-alerta/15 text-on-tint-warning',
+      'Tecnico': 'bg-info/15 text-on-tint-info',
       'Usuario': 'bg-superficie-elevada text-conteudo-tenue',
     };
     return roleColors[role] || roleColors['Usuario'];
@@ -224,11 +224,11 @@ const UsuariosTab: React.FC = () => {
       {/* Header com ações */}
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeUsuarios className="h-6 w-6 text-alerta-forte dark:text-alerta-suave" />
+          <IconeUsuarios className="h-6 w-6 text-on-tint-warning" />
           <h2 className="text-sm font-semibold text-conteudo">
             Usuários
           </h2>
-          <span className="rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-alerta-forte dark:text-alerta-suave">
+          <span className="rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-on-tint-warning">
             Admin
           </span>
         </div>
@@ -267,7 +267,7 @@ const UsuariosTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
           <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex-1">
             <p>{error}</p>
@@ -521,7 +521,7 @@ const UsuariosTab: React.FC = () => {
       >
         <div className="space-y-4">
           {senhaError && (
-            <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+            <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
               {senhaError}
             </div>
           )}

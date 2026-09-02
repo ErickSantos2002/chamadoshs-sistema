@@ -465,7 +465,7 @@ const Chamados: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="shrink-0 rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+        <div className="shrink-0 rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
           {error}
         </div>
       )}

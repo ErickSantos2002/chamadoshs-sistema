@@ -63,6 +63,12 @@ describe('BotaoDeAcao', () => {
    * A regressão que este caso impede: alguém devolver a cor ao repouso e a
    * tabela voltar a ser uma fileira de glifos coloridos. Em repouso o botão é
    * cinza discreto; a cor do tom só existe atrás de `hover:`.
+   *
+   * O NOME da classe mudou na Fase 3, a asserção não. Era o par escrito à mão
+   * `text-<tom>-forte dark:text-<tom>-suave`; virou o token `--on-tint-*` de
+   * `DS/tokens/colors.css`, que já troca de degrau sozinho entre os temas —
+   * 700 no claro, 400 no escuro. O que este caso trava continua sendo a HORA
+   * em que a cor entra, e não o nome dela.
    */
   it('em repouso é neutro — a cor do tom só aparece no hover', () => {
     const html = renderizar(
@@ -72,9 +78,9 @@ describe('BotaoDeAcao', () => {
     );
 
     expect(html).toContain('text-conteudo-tenue');
-    expect(html).toContain('hover:text-perigo-forte');
-    // Sem variante, `text-perigo-forte` pintaria o ícone o tempo todo.
-    expect(html).not.toMatch(/class="[^"]*(?<!hover:)text-perigo-forte/);
+    expect(html).toContain('hover:text-on-tint-danger');
+    // Sem variante, `text-on-tint-danger` pintaria o ícone o tempo todo.
+    expect(html).not.toMatch(/class="[^"]*(?<!hover:)text-on-tint-danger/);
   });
 
   it('cada tom traz a própria cor de hover', () => {
@@ -85,10 +91,10 @@ describe('BotaoDeAcao', () => {
         </BotaoDeAcao>
       );
 
-    expect(tomDe('info')).toContain('hover:text-info-forte');
-    expect(tomDe('alerta')).toContain('hover:text-alerta-forte');
-    expect(tomDe('sucesso')).toContain('hover:text-sucesso-forte');
-    expect(tomDe('perigo')).toContain('hover:text-perigo-forte');
+    expect(tomDe('info')).toContain('hover:text-on-tint-info');
+    expect(tomDe('alerta')).toContain('hover:text-on-tint-warning');
+    expect(tomDe('sucesso')).toContain('hover:text-on-tint-success');
+    expect(tomDe('perigo')).toContain('hover:text-on-tint-danger');
     // Neutro não tem cor de significado: escurece para o conteúdo comum.
     expect(tomDe('neutro')).toContain('hover:text-conteudo');
   });

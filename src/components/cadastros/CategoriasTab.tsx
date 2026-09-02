@@ -135,7 +135,7 @@ const CategoriasTab: React.FC = () => {
       {/* Header com ações */}
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeEtiqueta className="h-6 w-6 text-info-forte dark:text-info-suave" />
+          <IconeEtiqueta className="h-6 w-6 text-on-tint-info" />
           <h2 className="text-sm font-semibold text-conteudo">
             Categorias
           </h2>
@@ -175,7 +175,7 @@ const CategoriasTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
           <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex-1">
             <p>{error}</p>

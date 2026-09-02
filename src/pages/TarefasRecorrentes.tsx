@@ -387,13 +387,13 @@ const TarefasRecorrentes: React.FC = () => {
     if (ymd < hoje)
       return {
         label: 'Atrasada',
-        classe: 'bg-perigo/15 text-perigo-forte dark:text-perigo-suave',
+        classe: 'bg-perigo/15 text-on-tint-danger',
       };
     if (ymd === hoje)
       return {
         label: 'Hoje',
         classe:
-          'bg-alerta/15 text-alerta-forte dark:text-alerta-suave',
+          'bg-alerta/15 text-on-tint-warning',
       };
     return null;
   };

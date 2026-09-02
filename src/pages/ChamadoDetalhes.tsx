@@ -577,10 +577,10 @@ const ChamadoDetalhes: React.FC = () => {
   const getRoleBadgeColor = (roleId: number) => {
     switch (roleId) {
       case 1: // Admin
-        return 'bg-info/15 text-info-forte dark:text-info-suave';
+        return 'bg-info/15 text-on-tint-info';
 
       case 2: // Técnico
-        return 'bg-info/20 text-info-forte dark:text-info-suave';
+        return 'bg-info/20 text-on-tint-info';
 
       case 3: // Usuário
         return 'bg-superficie-elevada text-conteudo-suave';
@@ -608,7 +608,7 @@ const ChamadoDetalhes: React.FC = () => {
     return (
       <div className="space-y-5">
         <div className="rounded-xl border border-perigo/30 bg-perigo/10 px-5 py-4
-                        text-sm text-perigo-forte dark:text-perigo-suave">
+                        text-sm text-on-tint-danger">
           {error || 'Chamado não encontrado'}
         </div>
         <button
@@ -681,8 +681,8 @@ const ChamadoDetalhes: React.FC = () => {
                           onClick={() => setMostrarModalCancelar(true)}
                           className="flex items-center gap-2 rounded-lg border border-perigo/40
                                     px-4 py-2 text-sm font-semibold
-                                    text-perigo-forte transition-colors
-                                    hover:bg-perigo/10 dark:text-perigo-suave"
+                                    text-on-tint-danger transition-colors
+                                    hover:bg-perigo/10"
                         >
                           <IconeProibido className="h-4 w-4" />
                           Cancelar Chamado
@@ -695,8 +695,8 @@ const ChamadoDetalhes: React.FC = () => {
                         className={`flex items-center gap-2 rounded-lg border px-4 py-2
                                   text-sm font-semibold transition-colors ${
                                     chamado?.arquivado
-                                      ? 'border-sucesso/40 text-sucesso-forte hover:bg-sucesso/10 dark:text-sucesso-suave'
-                                      : 'border-alerta/40 text-alerta-forte hover:bg-alerta/10 dark:text-alerta-suave'
+                                      ? 'border-sucesso/40 text-on-tint-success hover:bg-sucesso/10'
+                                      : 'border-alerta/40 text-on-tint-warning hover:bg-alerta/10'
                                   }`}
                       >
                         {chamado?.arquivado ? (
@@ -1365,7 +1365,7 @@ const ChamadoDetalhes: React.FC = () => {
           }
         >
           <div className="mb-4 rounded-xl border border-perigo/30 bg-perigo/10 p-4">
-            <p className="text-sm text-perigo-forte dark:text-perigo-suave">
+            <p className="text-sm text-on-tint-danger">
               Esta ação irá marcar o chamado como cancelado. O chamado não será excluído, mas não aparecerá mais na listagem padrão.
             </p>
           </div>
@@ -1445,7 +1445,7 @@ const ChamadoDetalhes: React.FC = () => {
               comentários e o histórico faz a pessoa pensar no que havia
               ali dentro. */}
           <div className="mb-4 rounded-xl border border-perigo/30 bg-perigo/10 p-4">
-            <p className="text-sm text-perigo-forte dark:text-perigo-suave">
+            <p className="text-sm text-on-tint-danger">
               O chamado, os {comentarios.length} comentários e as{' '}
               {historico.length} entradas de histórico dele deixam de
               existir. Não há como desfazer, e não há cópia em outro lugar.
@@ -1528,7 +1528,7 @@ const ChamadoDetalhes: React.FC = () => {
           }
         >
           <div className={`rounded-xl border p-4 ${chamado?.arquivado ? 'border-sucesso/30 bg-sucesso/10' : 'border-alerta/30 bg-alerta/10'}`}>
-            <p className={`text-sm ${chamado?.arquivado ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-alerta-forte dark:text-alerta-suave'}`}>
+            <p className={`text-sm ${chamado?.arquivado ? 'text-on-tint-success' : 'text-on-tint-warning'}`}>
               {chamado?.arquivado
                 ? 'O chamado será restaurado e voltará a aparecer na listagem principal.'
                 : 'O chamado não será excluído, apenas ocultado da visualização padrão. Você poderá visualizá-lo novamente usando os filtros.'}

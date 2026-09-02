@@ -147,7 +147,7 @@ const SetoresTab: React.FC = () => {
       {/* Header com ações */}
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeSetor className="h-6 w-6 text-sucesso-forte dark:text-sucesso-suave" />
+          <IconeSetor className="h-6 w-6 text-on-tint-success" />
           <h2 className="text-sm font-semibold text-conteudo">
             Setores
           </h2>
@@ -187,7 +187,7 @@ const SetoresTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
           <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex-1">
             <p>{error}</p>

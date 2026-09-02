@@ -16,12 +16,18 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTES: Record<VarianteBotao, string> = {
-  // A cor de sinal, que é o azul da marca. O texto NÃO é branco nos dois
-  // temas: sobre o sinal claro do tema escuro, branco dá 2,69:1 e reprova.
-  // Escurecendo o texto ali, vai a 7,05:1.
-  // O gradiente é um véu branco de 10% por cima do preenchimento sólido, não
-  // uma segunda cor: dá o relevo de um botão físico sem inventar um token de
-  // "sinal claro" que precisaria ser validado à parte.
+  // A cor de ação do design system (`--action` = `--sinal`).
+  //
+  // O texto NÃO é branco nos dois temas, e este é um desvio deliberado do
+  // pacote — decisão D5-a, registrada em `src/design-system/VERSION.md`.
+  // `DS/components/core/Button.jsx` usa `--text-on-primary` (branco) sempre,
+  // mas no escuro `--action` é `#47A6E1` e branco sobre ele dá **2,69:1**:
+  // reprova em AA. O navy do fundo dá **6,47:1**.
+  //
+  // A causa está no token, não aqui: `--text-on-primary` é declarado em
+  // `:root` como branco e não é redefinido no `.dark`. Pela seção 2.1, token
+  // vence componente — e este token está incompleto para o tema escuro. A
+  // sugerir ao design system.
   primario:
     'bg-sinal text-white dark:text-superficie-base hover:brightness-110 focus-visible:ring-sinal',
   secundario:

@@ -125,7 +125,7 @@ const CadastrosBasicos: React.FC = () => {
                   <span>{aba.label}</span>
 
                   {aba.id === 'usuarios' && (
-                    <span className="ml-1 rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-alerta-forte dark:text-alerta-suave">
+                    <span className="ml-1 rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-on-tint-warning">
                       Admin
                     </span>
                   )}

@@ -84,7 +84,7 @@ const ModalTrocarSenha: React.FC<ModalTrocarSenhaProps> = ({
     >
       <form id={ID_DO_FORM} onSubmit={confirmar} className="space-y-4">
         {erro && (
-          <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+          <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
             {erro}
           </div>
         )}

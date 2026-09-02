@@ -70,7 +70,7 @@ const Secao: React.FC<{
   >
     <h3
       className={`mb-2 text-sm font-semibold ${
-        destaque ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-conteudo-tenue'
+        destaque ? 'text-on-tint-success' : 'text-conteudo-tenue'
       }`}
     >
       {titulo}
@@ -275,7 +275,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       )}
 
       {erro && !carregando && (
-        <div className="rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
+        <div className="rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
           {erro}
         </div>
       )}
