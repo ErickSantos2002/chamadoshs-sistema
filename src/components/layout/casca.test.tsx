@@ -199,6 +199,51 @@ describe('casca', () => {
   });
 
   /**
+   * O estado inicial da barra e da gaveta.
+   *
+   * As duas props existem para a galeria de desenvolvimento (`/dev/galeria`)
+   * poder fotografar cada estado da casca por URL, sem clique — o que a §26
+   * exige no Checkpoint 1 e não dava para fazer, porque a casca só aparece
+   * depois do login e o login depende da API.
+   *
+   * O primeiro caso é o que importa: SEM as props, o padrão continua o de
+   * sempre. Essa é a regressão que a galeria poderia causar e que ninguém
+   * notaria — a barra abrindo expandida na TV da sala, comendo uma coluna do
+   * quadro de chamados, que é exatamente o motivo de ela nascer recolhida.
+   */
+  const cascaCom = (props: Record<string, unknown> = {}) =>
+    casca(
+      <AppLayout
+        aoAbrirNovidades={() => {}}
+        temNovidade={false}
+        versao="9.9.9"
+        {...props}
+      >
+        <p>conteúdo da página</p>
+      </AppLayout>
+    );
+
+  it('sem as props de galeria, nasce recolhida e sem gaveta', () => {
+    const padrao = cascaCom();
+    expect(padrao).toContain('md:w-[72px]');
+    expect(padrao).not.toContain('md:w-64');
+    expect(padrao).toContain('-translate-x-full');
+    expect(padrao).not.toContain('bg-overlay');
+  });
+
+  it('a galeria consegue abrir a barra', () => {
+    const aberta = cascaCom({ recolhidaInicial: false });
+    expect(aberta).toContain('md:w-64');
+    expect(aberta).not.toContain('md:w-[72px]');
+  });
+
+  it('a galeria consegue abrir a gaveta', () => {
+    const comGaveta = cascaCom({ gavetaAbertaInicial: true });
+    expect(comGaveta).toContain('translate-x-0');
+    expect(comGaveta).toContain('bg-overlay');
+  });
+
+  /**
    * O defeito que a lista única de `lib/navegacao` veio consertar era duas
    * listas. A casca nova vai além: um componente só, que muda de forma
    * conforme a largura. Se voltar a haver dois `<nav>`, voltaram as duas

@@ -13,6 +13,21 @@ interface AppLayoutProps {
    * no commit em que for migrada nas Fases 11–16.
    */
   pageTitle?: string;
+  /**
+   * Estado inicial da barra lateral e da gaveta.
+   *
+   * Existem para a GALERIA DE DESENVOLVIMENTO (`/dev/galeria`, que só existe
+   * em `dev`) poder fotografar cada estado da casca por URL, sem depender de
+   * clique. `App.tsx` não passa nenhuma das duas, e o padrão é o de sempre —
+   * barra recolhida, gaveta fechada. Em produção nada muda.
+   *
+   * A alternativa era a galeria montar a própria composição de `Sidebar` +
+   * `Topbar`. Seria uma SEGUNDA casca, e screenshot de cópia não prova nada
+   * sobre a casca de verdade — que é justamente o que a §26 manda conferir.
+   * Duas props opcionais custam menos e não mentem.
+   */
+  recolhidaInicial?: boolean;
+  gavetaAbertaInicial?: boolean;
   aoAbrirNovidades: () => void;
   temNovidade: boolean;
   versao: string;
@@ -56,6 +71,8 @@ interface AppLayoutProps {
 export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
   pageTitle,
+  recolhidaInicial = true,
+  gavetaAbertaInicial = false,
   aoAbrirNovidades,
   temNovidade,
   versao,
@@ -75,8 +92,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
    * escolha vale enquanto a pessoa navega. Volta a recolher no recarregamento,
    * que é justamente o que a TV precisa.
    */
-  const [recolhida, setRecolhida] = useState(true);
-  const [gavetaAberta, setGavetaAberta] = useState(false);
+  const [recolhida, setRecolhida] = useState(recolhidaInicial);
+  const [gavetaAberta, setGavetaAberta] = useState(gavetaAbertaInicial);
 
   return (
     <div className="flex h-screen overflow-hidden bg-superficie-base text-conteudo transition-colors">

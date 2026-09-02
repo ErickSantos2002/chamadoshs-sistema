@@ -12,6 +12,23 @@ const TarefasRecorrentes = lazy(() => import('./pages/TarefasRecorrentes'));
 const Auditoria = lazy(() => import('./pages/Auditoria'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
+/**
+ * A galeria da casca — SÓ EM DESENVOLVIMENTO.
+ *
+ * Existe para produzir os screenshots que a §26 exige no Checkpoint 1: a casca
+ * só aparece depois do login, o login depende da API, e o front rodando
+ * sozinho não passa da tela de login. A galeria monta a casca de verdade, sem
+ * token e sem rede, com o estado escolhido pela URL.
+ *
+ * O Vite troca `import.meta.env.DEV` por `false` literal no build, então o
+ * `import()` abaixo morre no tree-shaking e o arquivo não vira pedaço nenhum
+ * do bundle de produção. A rota também deixa de ser registrada, e
+ * `/dev/galeria` cai no 404 como qualquer endereço que não existe.
+ */
+const GaleriaDaCasca = import.meta.env.DEV
+  ? lazy(() => import('./pages/dev/GaleriaDaCasca'))
+  : null;
+
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Loading Fallback Component
@@ -109,6 +126,10 @@ const AppRoutes: React.FC = () => (
           </ProtectedRoute>
         }
       />
+
+      {GaleriaDaCasca && (
+        <Route path="/dev/galeria" element={<GaleriaDaCasca />} />
+      )}
 
       <Route path="/" element={<Navigate to="/dashboard" />} />
       <Route path="*" element={<NotFound />} />
