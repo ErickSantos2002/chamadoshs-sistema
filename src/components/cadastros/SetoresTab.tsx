@@ -116,7 +116,7 @@ const SetoresTab: React.FC = () => {
   };
 
   const handleDesativarSetor = async (id: number) => {
-    if (!confirmDelete) {
+    if (confirmDelete !== id) {
       setConfirmDelete(id);
       return;
     }

@@ -119,7 +119,7 @@ const CategoriasTab: React.FC = () => {
   };
 
   const handleExcluirCategoria = async (id: number) => {
-    if (!confirmDelete) {
+    if (confirmDelete !== id) {
       setConfirmDelete(id);
       return;
     }

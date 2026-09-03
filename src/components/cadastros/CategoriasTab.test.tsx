@@ -279,6 +279,41 @@ describe('CategoriasTab — checklist da §29', () => {
     expect(regiao!.textContent).toContain('Carregando categorias');
   });
 
+  it('a confirmação é DA LINHA, e não da tabela', () => {
+    montar();
+
+    // O defeito que este caso existe para impedir, e ele apagava dado:
+    //
+    // A guarda era `if (!confirmDelete)`, e não `if (confirmDelete !== id)`.
+    // O estado de confirmação é um só para a tabela inteira, então:
+    //
+    //   1. clique na lixeira de A  -> confirmDelete = A, a linha A troca para
+    //                                 Confirmar/Cancelar
+    //   2. a linha B CONTINUA mostrando a lixeira, porque a confirmação aberta
+    //      é a da A
+    //   3. clique na lixeira de B  -> confirmDelete já é verdadeiro, a guarda
+    //                                 não dispara, e B é apagada NA HORA
+    //
+    // Dois cliques, em botões que a interface apresenta como "pedir
+    // confirmação", e uma categoria some sem nenhum "Confirmar" ter existido.
+    // Em Categorias a ação é `deleteCategoria` — exclusão de verdade.
+    clicar(porRotulo('Excluir Infraestrutura')!);
+    clicar(porRotulo('Excluir Acessos')!);
+
+    expect(apagar).not.toHaveBeenCalled();
+
+    // E a confirmação PASSA para a segunda linha, que é o que a interface já
+    // aparentava fazer: agora existe um Confirmar, e ele é o de Acessos.
+    const confirmar = Array.from(host.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Confirmar'
+    );
+    expect(confirmar).toBeTruthy();
+
+    clicar(confirmar!);
+    expect(apagar).toHaveBeenCalledTimes(1);
+    expect(apagar).toHaveBeenCalledWith(2);
+  });
+
   it('atualizar chama o contexto', () => {
     montar();
     clicar(porRotulo('Atualizar dados')!);

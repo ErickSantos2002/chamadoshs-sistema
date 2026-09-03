@@ -10,7 +10,7 @@ se errar aqui se repete três vezes.
 
 A página vive atrás do login, o login depende da API, e o front rodando sozinho
 não passa da tela de entrada. Então a conferência é por **teste montado no
-jsdom** (`CategoriasTab.test.tsx`, 13 casos), e não por passagem de olho no
+jsdom** (`CategoriasTab.test.tsx`, 14 casos), e não por passagem de olho no
 navegador — que é o que a §29 permite e, aqui, o que sobra.
 
 O teste é melhor para o que a §29 quer: uma conferência manual prova o dia em
@@ -32,7 +32,7 @@ ANTES                                                          DEPOIS
 [x] ordena (id, nome, created_at, asc/desc)                     [x] + aria-sort declarado
 [x] cria (modal, só Administrador/Tecnico)                      [x] inalterado
 [x] edita (modal, mesma regra)                                  [x] inalterado
-[x] exclui — COM DEFEITO, ver abaixo                            [x] mesmo defeito, não tocado
+[x] exclui — COM DEFEITO, ver abaixo                            [x] CORRIGIDO, ver abaixo
 [x] abre detalhes (modo view, todos os papéis)                   [x] inalterado
 [ ] anexa/remove arquivo — não existe                           [ ] continua não existindo
 [x] respeita permissões (Administrador, Tecnico, Usuario)        [x] teste cobre os três
@@ -74,10 +74,11 @@ O botão "Confirmar" era um dos **seis** que o comentário do `Button.tsx`
 listava como fora do alcance da Fase 7, por serem código de página. Este é o
 primeiro a cair.
 
-## O defeito que a leitura do código expôs
+## O defeito que a leitura do código expôs — e que foi corrigido
 
-O item `exclui` está marcado nos dois lados porque a exclusão **funciona** — e
-está errada. Não foi tocado: é mudança funcional, e a §30 exige aprovação.
+Achado ao preencher o checklist, e não ao olhar a tela. É mudança funcional, e
+por isso foi levado ao operador antes de tocar: **aprovado em 03/09/2026**,
+corrigido em commit próprio nos três arquivos.
 
 `handleExcluirCategoria` guarda por `if (!confirmDelete)`, e não por
 `if (confirmDelete !== id)`. O estado de confirmação é **global à tabela**, não
@@ -93,7 +94,26 @@ Provado por teste descartável: `deleteCategoria` foi chamado uma vez sem que
 nenhum "Confirmar" tivesse existido na tela.
 
 **Em Categorias a ação é `deleteCategoria` — exclusão de verdade.** Em
-`SetoresTab` e `UsuariosTab` o mesmo defeito existe, linha a linha, mas a ação
+`SetoresTab` e `UsuariosTab` o mesmo defeito existia, linha a linha, mas a ação
 é desativar, que é reversível.
 
-O diff proposto está no relatório levado ao operador.
+### A correção
+
+Uma linha, idêntica nos três arquivos:
+
+```diff
+-    if (!confirmDelete) {
++    if (confirmDelete !== id) {
+```
+
+A forma é literal de propósito: o mesmo diff vai à `main` como hotfix, por
+outra sessão, em worktree. Escrever a comparação de outro jeito em qualquer um
+dos três faria o merge conflitar sem necessidade — e por isso não há comentário
+acrescentado em volta da linha, que também criaria conflito. A explicação mora
+nos testes.
+
+Travada por dois caminhos: `CategoriasTab.test.tsx` prova o comportamento
+(armar em A e clicar em B passa a confirmação em vez de apagar), e
+`confirmacao.test.ts` confere que as **três** abas têm a linha — porque o risco
+real não é alguém quebrar o comportamento de uma delas, é alguém corrigir uma e
+esquecer as outras, que foi como o defeito nasceu.
