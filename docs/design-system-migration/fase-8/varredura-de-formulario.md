@@ -75,8 +75,8 @@ Não são de acabamento, e não são desta fase. Levados ao operador em separado
 | ~~`SlaTab.tsx:54`~~ | **REFUTADO por mim, ao ler o código.** O agente relatou que apagar o campo grava SLA de 0 minutos, "sem clamp no salvar". Há clamp: `salvar` (linha 121) recusa `< 1` nos dois prazos e mostra "Os prazos precisam ser de pelo menos 1 minuto". Zero nunca chega ao servidor. O que sobra é cosmético: o campo pode exibir `0` enquanto se digita, porque `Number('')` é `0`. |
 | `TarefasRecorrentes.tsx:707` | `dia_mes` vira **0** ao limpar o campo, fora do próprio `min={1} max={31}` declarado ao lado. Conferido: `montarPayload` (279) manda `form.dia_mes` cru quando a recorrência é mensal, sem clamp. O 0 chega ao servidor. |
 | `TarefasRecorrentes.tsx:720` | `intervalo` sofre o mesmo `Number('') === 0`, mas aqui `montarPayload` corrige calado. A tela pode dizer uma coisa e o sistema gravar outra. |
-| `UsuariosTab.tsx:567` | Reset de senha **envia duas vezes** no clique duplo: sem `carregando`, sem `disabled` e sem estado em voo. |
-| `UsuarioModal.tsx:302` | Campo de senha **sem `autoComplete`** no único formulário que cria a senha de OUTRA pessoa: o gerenciador oferece a senha do próprio administrador, e aceita por reflexo ela vira a senha do usuário novo. Os outros três campos de senha do projeto acertam. |
+| ~~`UsuariosTab.tsx:567`~~ | **CORRIGIDO** em `3018452`, como desvio funcional aprovado pelo operador em 03/09/2026. Trava por `useRef` — o `useState` não serve, porque não muda no mesmo tique em que os dois cliques caem. Com teste, e com a prova negativa nos dois sentidos. |
+| ~~`UsuarioModal.tsx:302`~~ | **CORRIGIDO** em `0e09c35`, como desvio funcional aprovado pelo operador em 03/09/2026. `autoComplete="new-password"` nos dois campos do par, com teste que varre os 8 campos de senha dos 4 arquivos — falha no dia em que alguém acrescentar um campo novo sem o atributo. |
 | `ChamadoDetalhes.tsx:605` | Falha ao salvar **destrói a página inteira e o que foi digitado**: os `catch` chamam `setError`, e o guarda de render troca a ficha toda pela tela de erro. Quem escreveu 400 caracteres de solução e recebeu um 500 perde tudo. |
 
 ### Acessibilidade que sobra para as telas
@@ -122,6 +122,22 @@ junto da primeira tela que for arrumar o foco de erro, nas Fases 11–16.
 evento", que se lê como "nada aconteceu" — numa tela cuja função é provar o
 passado. O mesmo par no `Dashboard` (511/512) acerta, com `max` e `min`
 cruzados.
+
+## Desvios funcionais aprovados
+
+A §29 e a §30 dizem que esta migração não muda comportamento. Dois itens desta
+lista foram corrigidos mesmo assim, com **aprovação explícita do operador em
+03/09/2026**, porque o modo de falha dos dois é gravar credencial errada sem
+ninguém perceber:
+
+| Commit | O quê |
+|---|---|
+| `0e09c35` | `autoComplete="new-password"` no par de senha do `UsuarioModal` |
+| `3018452` | trava de duplo clique no reset de senha do `UsuariosTab` |
+
+Os dois têm teste, e nos dois a prova negativa foi feita — o teste reprova
+quando a correção é removida. No segundo, essa prova mudou a correção: a
+primeira versão travava por `useState` e o teste mostrou que não travava nada.
 
 ## Sobre a confiabilidade desta lista
 
