@@ -57,6 +57,8 @@ O pacote foi **emendado** em 02/09/2026, em três pontos, todos registrados em
 | **E2** | botões `danger`/`success` ganham degrau de ação; `--on-tint-warning` e `--on-tint-neutral` passam a AA | `tokens/colors.css` | HelpHS |
 | **E3** | a fonte passa a ser servida pelo pacote — 12 `@font-face` e `fonts/` | `tokens/typography.css` + `fonts/` | ChamadosHS |
 | **E5** | `--text-muted` vai ao slate-600: sobre `--surface-elevated` o 500 dava 4,34:1 | `tokens/colors.css` | ChamadosHS |
+| **E7** | `--border-control`: nenhum token de borda alcançava os 3:1 que a WCAG 1.4.11 pede para contorno de controle | `tokens/colors.css` + 7 componentes de formulário | HelpHS |
+| **E7-b** | visto e traço do `Checkbox` saem de `--color-white` para `--text-on-primary` | `components/forms/Checkbox.jsx` | HelpHS |
 
 O que cada uma significa aqui:
 
@@ -66,6 +68,39 @@ O que cada uma significa aqui:
   O valor não foi "mantido": foi corrigido na raiz. Ver a seção do D4-a.
 - **E3 fecha o D1-a.** O desvio local do `@import` deixa de existir: este
   `typography.css` é o do pacote, sem uma vírgula de diferença.
+- **E7 cria o degrau que faltava para contorno de CONTROLE.** Medido nas três
+  superfícies, claro | escuro: `--border-color` 1,23 1,18 1,13 | 1,39 1,51
+  1,18; `--border-strong` 1,48 1,42 1,36 | 2,29 2,50 1,94. **Seis de seis
+  reprovavam** no mais forte dos que existiam. Eles não estavam errados — são a
+  linha de cabelo entre um card e o fundo, e para isso 1,2:1 é o desenho certo.
+  O erro era usar o mesmo token para dizer "aqui começa um campo".
+  `--border-control` dá 4,76 4,55 4,34 | 6,23 6,78 5,29.
+
+  A regra que entra com ela: **contorno de controle usa `--border-control`;
+  `--border-color` e `--border-strong` são separadores de superfície e não
+  delimitam campo, caixa, seletor nem interruptor.** O piso aqui é 3:1 e não
+  4,5:1 — limite de componente não é texto (WCAG 1.4.11).
+
+  Mapeado como `borda.control` no `tailwind.config.js`. **Sem esse mapeamento a
+  classe simplesmente não existe em CSS, e um teste que procure a classe passa
+  com o pixel errado** — o aviso veio da sessão do HelpHS, que tropeçou nisso.
+
+- **E7-b fecha a família do `--color-white` sobre `--action`, em seis
+  aparições.** `--action` é o único fundo do pacote que troca de degrau por
+  tema: branco dá 5,29:1 no claro e 2,69:1 no escuro. A regra permanente é
+  **nunca `--color-white` sobre `--action`, sempre `--text-on-primary`** — e o
+  escopo é estreito de propósito, porque branco sobre degrau ABSOLUTO da rampa
+  segue válido, que é o que `--text-on-danger` e `--text-on-success` fazem.
+
+  As seis: o `Button` do pacote (E1), o link "Pular para o conteúdo", o
+  `fantasma` do `Button`, o "Sair" do `Topbar`, a bolinha do `Switch` (E7) e o
+  visto do `Checkbox` (E7-b). Três delas foram achadas aqui.
+
+  O padrão que elas desenham vale como método: a E1 criou `--text-on-primary`
+  em 02/09, e as cinco aparições seguintes **já existiam naquele dia**. Nenhuma
+  foi corrigida por ela, porque nenhuma usava o token. **Depois de criar um
+  token, varra quem deveria usá-lo.**
+
 - **E5 corrige a tabela do D4-a e resolve sete pares de tela.** O token de
   texto tênue passa de slate-500 a slate-600 no tema claro: 4,76 · 4,55 · 4,34
   viram 7,58 · 7,24 · 6,92, contra `--surface` · `--bg-base` ·
@@ -84,13 +119,17 @@ O que cada uma significa aqui:
 ## Hashes (SHA-256)
 
 Conferidos com `Get-FileHash` em 03/09/2026, na recópia do pacote emendado
-(E1+E2+E3+E5), e comparados com `Compare-Object` contra o pacote: **19
+(E1+E2+E3+E5+E7), e comparados com `Compare-Object` contra o pacote: **19
 arquivos, sem diferença**.
+
+A E7-b não aparece aqui: ela mudou `components/forms/Checkbox.jsx`, e este
+repositório não copia componentes do pacote — eles são referência, não
+dependência. Só `styles.css`, `tokens/` e `fonts/` vêm para cá.
 
 ```
 1EF6324844AA066488F0D8A015B39E3CA0756C629512FCE4E1BD95CA8B93B9B2  styles.css
 BDD047CE432E74B33FA7F752DA08CF025419E83EA18485BD947C889C0AC1C221  tokens/base.css
-66BE0CD316F79902177E0558B21833B545E9939549F55095939DFC97CE80D89B  tokens/colors.css      <- E1+E2+E5
+539388386F7D92789A8F036AAAED638AE43FC3EA3ECE38D64629E29676B520F1  tokens/colors.css      <- E1+E2+E5+E7
 C70D51A982AE0B91BD53ECE150D8D16E0E70BEF9CA59586541A9A7177228478E  tokens/motion.css
 7BCFBBC585D3EA8C7F689A27EEB3AE13DE0C2A9DCC3C6CC0C8F41D440D193F7D  tokens/shape.css
 C093B261C6893A893A418CDF64798555326D4586A8ADB37CC7ECA457FABAE420  tokens/spacing.css

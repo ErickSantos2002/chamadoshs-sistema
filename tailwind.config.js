@@ -154,6 +154,27 @@ module.exports = {
           forte: "rgb(var(--borda-forte) / <alpha-value>)",
           muted: corDeToken("--border-muted"),
           strong: corDeToken("--border-strong"),
+          // Contorno de CONTROLE — campo, caixa, seletor, interruptor.
+          //
+          // A emenda E7 do pacote criou este degrau porque NENHUM token de
+          // borda alcançava 3:1, que é o que a WCAG 1.4.11 pede para o limite
+          // de um componente. Medido nas três superfícies, claro | escuro:
+          //
+          //   --border-color    1,23 1,18 1,13 | 1,39 1,51 1,18
+          //   --border-strong   1,48 1,42 1,36 | 2,29 2,50 1,94
+          //   --border-control  4,76 4,55 4,34 | 6,23 6,78 5,29
+          //
+          // Seis de seis reprovavam no mais forte dos que existiam. Eles não
+          // estavam errados: são a linha de cabelo entre um card e o fundo, e
+          // para isso 1,2:1 é o desenho certo. O erro era usar o mesmo token
+          // para dizer "aqui começa um campo".
+          //
+          // O nome fica em inglês, como `muted` e `strong` logo acima, e não
+          // em português como `suave` e `forte`: a regra deste objeto é que
+          // nome da PONTE é português e nome que vem direto do pacote mantém o
+          // nome do pacote. Sem isso não dá para saber, lendo a classe, se ela
+          // sai da ponte que morre nas Fases 11–16 ou do token que fica.
+          control: corDeToken("--border-control"),
         },
         conteudo: {
           DEFAULT: "rgb(var(--conteudo) / <alpha-value>)",
