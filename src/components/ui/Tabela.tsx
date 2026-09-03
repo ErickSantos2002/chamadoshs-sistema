@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { IconeSeta, IconeSetaCima } from './icones';
 
 /**
  * A tabela do sistema, nas peças do `Table.jsx` do pacote.
@@ -89,24 +90,67 @@ export const TabelaLinha: React.FC<{
   </tr>
 );
 
+export type DirecaoDeOrdem = 'asc' | 'desc';
+
 export const TabelaCelulaDeCabecalho: React.FC<{
   children: React.ReactNode;
   /** Alinha à direita — para coluna de ações ou de número. */
   aDireita?: boolean;
+  /** Torna a coluna ordenável. Sem isto o cabeçalho é texto. */
+  aoOrdenar?: () => void;
+  /** A direção atual, ou `null` quando a ordem é de outra coluna. */
+  ordenadaPor?: DirecaoDeOrdem | null;
   className?: string;
-}> = ({ children, aDireita = false, className }) => (
+}> = ({ children, aDireita = false, aoOrdenar, ordenadaPor = null, className }) => (
   <th
     // `scope="col"` sempre. É a razão principal de este componente existir:
     // era o que faltava nas seis tabelas do sistema, e é o que amarra cada
     // valor ao nome da coluna para quem não vê a grade.
     scope="col"
+    // `aria-sort` só na coluna ordenável, e só uma por tabela pode dizer
+    // `ascending`/`descending` — é assim que o leitor de tela anuncia "ordenado
+    // por Nome, crescente" em vez de deixar a pessoa adivinhar pela seta.
+    //
+    // O `Table.jsx` do pacote desenha a seta e NÃO declara `aria-sort`: a
+    // ordem existia só para quem vê. Levado à sessão do HelpHS.
+    aria-sort={
+      aoOrdenar
+        ? ordenadaPor === 'asc'
+          ? 'ascending'
+          : ordenadaPor === 'desc'
+            ? 'descending'
+            : 'none'
+        : undefined
+    }
     className={cn(
       'px-4 py-3 text-xs font-medium text-conteudo-suave',
       aDireita ? 'text-right' : 'text-left',
       className
     )}
   >
-    {children}
+    {aoOrdenar ? (
+      <button
+        type="button"
+        onClick={aoOrdenar}
+        className={cn(
+          'flex items-center gap-1 rounded transition-colors hover:text-conteudo',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
+          aDireita && 'ml-auto'
+        )}
+      >
+        {children}
+        {/* A seta é decorativa: quem não vê recebe a ordem pelo `aria-sort`,
+            e anunciar "seta para cima" no meio do nome da coluna atrapalha. */}
+        {ordenadaPor === 'asc' && (
+          <IconeSetaCima className="h-4 w-4" aria-hidden="true" />
+        )}
+        {ordenadaPor === 'desc' && (
+          <IconeSeta className="h-4 w-4" aria-hidden="true" />
+        )}
+      </button>
+    ) : (
+      children
+    )}
   </th>
 );
 

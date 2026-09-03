@@ -68,5 +68,6 @@ export {
   TabelaCelula,
   TabelaVazia,
 } from './Tabela';
+export type { DirecaoDeOrdem } from './Tabela';
 
 export { Textarea } from './Textarea';
