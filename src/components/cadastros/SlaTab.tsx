@@ -3,7 +3,8 @@ import { slaConfigsService } from '../../services/chamadoshsapi';
 import { PrioridadeEnum, SLAConfig } from '../../types/api';
 import { EXPEDIENTE, MINUTOS_POR_DIA_UTIL, formatarPrazo } from '../../lib/prazo';
 import { cn } from '../../lib/utils';
-import { Badge, Button, Input, Modal, RotuloDeCampo, VarianteBadge } from '../ui';
+import { Button, Input, Modal, RotuloDeCampo } from '../ui';
+import { PrioridadeBadge } from '../SelosDeChamado';
 import { IconeAlerta, IconeCarregando, IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
 
 interface SlaTabProps {
@@ -25,13 +26,6 @@ const ORDEM: PrioridadeEnum[] = [
   PrioridadeEnum.MEDIA,
   PrioridadeEnum.BAIXA,
 ];
-
-const VARIANTE: Record<PrioridadeEnum, VarianteBadge> = {
-  [PrioridadeEnum.CRITICA]: 'perigo',
-  [PrioridadeEnum.ALTA]: 'alerta',
-  [PrioridadeEnum.MEDIA]: 'info',
-  [PrioridadeEnum.BAIXA]: 'neutro',
-};
 
 /**
  * A barra usa a cor da prioridade, menos em "Baixa": o cinza do selo some
@@ -189,7 +183,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                 )}
               >
                 <div className="w-24 shrink-0">
-                  <Badge variante={VARIANTE[config.prioridade]}>{config.prioridade}</Badge>
+                  <PrioridadeBadge prioridade={config.prioridade} />
                 </div>
 
                 <div className="flex min-w-[10rem] flex-1 flex-col gap-2">

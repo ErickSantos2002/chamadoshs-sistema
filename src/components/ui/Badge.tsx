@@ -1,8 +1,26 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 
+/**
+ * As sete variantes do pacote, com os nomes daqui.
+ *
+ * | aqui        | pacote      | usada em (secao 16)            |
+ * |-------------|-------------|--------------------------------|
+ * | `neutro`    | `secondary` | Arquivado                      |
+ * | `discreto`  | `muted`     | Fechado, prioridade Baixa      |
+ * | `principal` | `primary`   | Em Andamento                   |
+ * | `info`      | `info`      | Aberto, prioridade Media       |
+ * | `sucesso`   | `success`   | Resolvido                      |
+ * | `alerta`    | `warning`   | Aguardando, prioridade Alta    |
+ * | `perigo`    | `danger`    | Cancelado, prioridade Critica  |
+ *
+ * Os nomes em portugues ficam porque a secao 7.1 proibe renomear o que as
+ * telas ja passam — sao 26 usos em 8 arquivos.
+ */
 export type VarianteBadge =
   | 'neutro'
+  | 'discreto'
+  | 'principal'
   | 'info'
   | 'sucesso'
   | 'alerta'
@@ -79,7 +97,31 @@ interface BadgeProps {
 // `border-info/30` é a ponte em canais `R G B`, que define o alfa e funciona
 // em qualquer navegador.
 const VARIANTES: Record<VarianteBadge, string> = {
-  neutro: 'bg-tint-neutral text-conteudo-suave border-borda',
+  // `neutro` e `discreto` sao IDENTICOS, e isso e a decisao, nao descuido.
+  //
+  // No pacote as duas so diferiam pelo texto: `secondary` usava
+  // `--on-tint-neutral` e `muted` usava `--text-faint`, que da **2,34:1**
+  // sobre a tinta neutra e reprova. O D9 ja proibia `--text-faint` em texto
+  // informativo, e "Fechado" e "Baixo" sao informativos: quem nao le, nao sabe
+  // o estado do chamado. A emenda E6 do pacote igualou as duas.
+  //
+  // A alternativa seria inventar um terceiro tom entre um e outro para
+  // preservar uma distincao que nunca foi legivel — 2,34:1 nao e "mais
+  // discreto", e ilegivel. O que separa as duas passa a ser o ROTULO, que a
+  // secao 16 exige de todo jeito ("nunca cor sozinha").
+  //
+  // Continuam como nomes distintos porque o mapa da secao 16 usa os dois, e
+  // porque no dia em que o pacote quiser diferencia-las a costura esta pronta.
+  //
+  // O texto saiu de `--text-body` (13,35:1) para `--on-tint-neutral` (6,92:1)
+  // nesta mesma passagem. Eu tinha mantido o local de proposito, medindo mais;
+  // com `discreto` entrando, manter os dois diferentes contradiria a E6 — e
+  // 6,92:1 passa com folga.
+  neutro: 'bg-tint-neutral text-on-tint-neutral border-borda',
+  discreto: 'bg-tint-neutral text-on-tint-neutral border-borda',
+  // A borda e o degrau 500 a 30%, como no pacote: `--color-primary-500` e
+  // opaco, entao aqui o modificador DEFINE o alfa e nao multiplica.
+  principal: 'bg-tint-primary text-on-tint-primary border-primary/30',
   info: 'bg-tint-info text-on-tint-info border-info/30',
   sucesso: 'bg-tint-success text-on-tint-success border-sucesso/30',
   alerta: 'bg-tint-warning text-on-tint-warning border-alerta/30',

@@ -12,7 +12,8 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
-import { Badge, Modal, Seletor } from '../components/ui';
+import { Modal, Seletor } from '../components/ui';
+import { MarcaBadge } from '../components/SelosDeChamado';
 import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
 import { IconeApagar, IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
 import {
@@ -660,8 +661,8 @@ const ChamadoDetalhes: React.FC = () => {
                     marcou soubesse do cancelamento. */}
                 {(chamado.cancelado || chamado.arquivado) && (
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {chamado.cancelado && <Badge variante="perigo">Cancelado</Badge>}
-                    {chamado.arquivado && <Badge variante="neutro">Arquivado</Badge>}
+                    {chamado.cancelado && <MarcaBadge marca="cancelado" />}
+                    {chamado.arquivado && <MarcaBadge marca="arquivado" />}
                     <span className="text-sm text-conteudo-tenue">
                       Fora do fluxo de atendimento — o status abaixo é o que ele
                       tinha quando saiu.

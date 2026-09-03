@@ -5,8 +5,9 @@ import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { chamadosService } from '../services/chamadoshsapi';
 import { podeSerResponsavel } from '../utils/roleMapper';
-import { Chamado, Comentario, PrioridadeEnum, StatusEnum } from '../types/api';
-import { Avatar, Badge, Button, Modal, Seletor, Textarea, VarianteBadge } from './ui';
+import { Chamado, Comentario } from '../types/api';
+import { Avatar, Button, Modal, Seletor, Textarea } from './ui';
+import { MarcaBadge, PrioridadeBadge, StatusBadge } from './SelosDeChamado';
 import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
@@ -18,21 +19,6 @@ interface ChamadoModalProps {
   /** Leva para a página inteira, onde ficam as ações. */
   aoAbrirEmPagina: (id: number) => void;
 }
-
-const VARIANTE_STATUS: Record<StatusEnum, VarianteBadge> = {
-  [StatusEnum.ABERTO]: 'info',
-  [StatusEnum.EM_ANDAMENTO]: 'info',
-  [StatusEnum.AGUARDANDO]: 'neutro',
-  [StatusEnum.RESOLVIDO]: 'sucesso',
-  [StatusEnum.FECHADO]: 'sucesso',
-};
-
-const VARIANTE_PRIORIDADE: Record<PrioridadeEnum, VarianteBadge> = {
-  [PrioridadeEnum.CRITICA]: 'perigo',
-  [PrioridadeEnum.ALTA]: 'alerta',
-  [PrioridadeEnum.MEDIA]: 'info',
-  [PrioridadeEnum.BAIXA]: 'neutro',
-};
 
 const dataHora = (valor?: string | null): string =>
   valor
@@ -355,12 +341,10 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
           {/* Ficha */}
           <aside className="space-y-4 rounded-xl border border-borda bg-superficie-elevada p-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variante={VARIANTE_STATUS[chamado.status]}>{chamado.status}</Badge>
-              <Badge variante={VARIANTE_PRIORIDADE[chamado.prioridade]}>
-                {chamado.prioridade}
-              </Badge>
-              {chamado.arquivado && <Badge variante="neutro">Arquivado</Badge>}
-              {chamado.cancelado && <Badge variante="perigo">Cancelado</Badge>}
+              <StatusBadge status={chamado.status} />
+              <PrioridadeBadge prioridade={chamado.prioridade} />
+              {chamado.arquivado && <MarcaBadge marca="arquivado" />}
+              {chamado.cancelado && <MarcaBadge marca="cancelado" />}
             </div>
 
             <SlaProgresso sla={chamado.sla} status={chamado.status} />

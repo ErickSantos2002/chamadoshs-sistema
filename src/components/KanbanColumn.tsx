@@ -2,7 +2,8 @@ import React from 'react';
 import { Chamado, Categoria, PrioridadeEnum, Usuario } from '../types/api';
 import { precisaAvaliar } from '../utils/avaliacao';
 import { cn } from '../lib/utils';
-import { Avatar, Badge, VarianteBadge } from './ui';
+import { Avatar, Badge } from './ui';
+import { MarcaBadge, PrioridadeBadge } from './SelosDeChamado';
 import SlaProgresso from './SlaProgresso';
 import { IconeEstrela } from './ui/icones';
 
@@ -27,13 +28,6 @@ interface KanbanColumnProps {
  * vermelho porque é perigo, alta é âmbar porque é alerta. Assim o card inteiro
  * fala a mesma língua do resto da interface.
  */
-const VARIANTE_PRIORIDADE: Record<PrioridadeEnum, VarianteBadge> = {
-  [PrioridadeEnum.CRITICA]: 'perigo',
-  [PrioridadeEnum.ALTA]: 'alerta',
-  [PrioridadeEnum.MEDIA]: 'info',
-  [PrioridadeEnum.BAIXA]: 'neutro',
-};
-
 const PONTO_PRIORIDADE: Record<PrioridadeEnum, string> = {
   [PrioridadeEnum.CRITICA]: 'bg-perigo',
   [PrioridadeEnum.ALTA]: 'bg-alerta',
@@ -177,9 +171,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       {categoria}
                     </Badge>
                   )}
-                  <Badge variante={VARIANTE_PRIORIDADE[chamado.prioridade]}>
-                    {chamado.prioridade}
-                  </Badge>
+                  <PrioridadeBadge prioridade={chamado.prioridade} />
 
                   {/* Mesmas palavras e mesmas variantes que a janela do chamado
                       usa. Dentro das colunas "Arquivado" e "Cancelado" o selo é
@@ -192,11 +184,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       pode sumir junto — é o que explica por que aquele chamado
                       nunca foi atendido. */}
                   {chamado.arquivado && (
-                    <Badge variante="neutro">Arquivado</Badge>
+                    <MarcaBadge marca="arquivado" />
                   )}
 
                   {chamado.cancelado && (
-                    <Badge variante="perigo">Cancelado</Badge>
+                    <MarcaBadge marca="cancelado" />
                   )}
 
                   {precisaAvaliar(chamado, usuarioLogadoId) && (

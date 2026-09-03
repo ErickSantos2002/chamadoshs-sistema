@@ -22,7 +22,8 @@ export type { VarianteBotao, TamanhoBotao } from './Button';
 // que é monoespaçado e serve a rótulo de painel.
 export { MensagemDeErro, RotuloDeCampo } from './Campo';
 
-export { Card, CardHeader, CardBody } from './Card';
+export { Card, CardHeader, CardBody, CardTitle } from './Card';
+export type { PaddingDoCard } from './Card';
 
 export { Input } from './Input';
 
