@@ -171,33 +171,63 @@ export const Topbar: React.FC<TopbarProps> = ({
               <p className="truncate text-xs text-conteudo-tenue">{user?.role}</p>
             </div>
 
+            {/* `menuitemcheckbox` com `aria-checked`, e nao `menuitem` com
+                `aria-pressed`.
+
+                Dentro de um menu, esta e a funcao que a ARIA reserva para uma
+                opcao que liga e desliga — o leitor anuncia "marcado"/"nao
+                marcado" no vocabulario de menu. `aria-pressed` e de botao de
+                alternancia solto, e num menu ele descreve o controle errado.
+
+                E o interruptor ao lado NAO e o `Switch` do kit, de proposito:
+                aquele contem um `<input>`, e input dentro de button e HTML
+                invalido — seriam dois controles para uma acao so. Aqui a linha
+                inteira ja e o controle, e o desenho ao lado e decoracao que
+                mostra o estado. */}
             <button
               type="button"
-              role="menuitem"
+              role="menuitemcheckbox"
+              aria-checked={darkMode}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-conteudo-suave transition-colors hover:bg-superficie-elevada hover:text-conteudo"
               onClick={toggleDarkMode}
-              aria-pressed={darkMode}
             >
               <IconeLua className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="flex-1 text-left">Modo escuro</span>
-              {/* Interruptor. O trilho é `primary` e não `sinal` porque aqui
-                  ele é PREENCHIMENTO, não texto: é o mesmo azul do HelpHS.
+              {/* O desenho do interruptor era feito aqui, à mão. Passa a ser
+                  o `Switch` do kit, e três coisas mudam.
 
-                  Em VALOR ARBITRÁRIO, e não pela classe utilitária do
-                  degrau — regra (d) do D8-a. Abaixo do piso do `color-mix` o
-                  trilho ficaria transparente e o interruptor perderia o
-                  estado: com o botão à direita e sem trilho, ninguém sabe se
-                  está ligado. O estado continua legível por `aria-pressed`,
-                  que não muda; o que se perde é a leitura visual. */}
+                  O trilho DESLIGADO era `bg-borda` com o botão em branco
+                  cravado: no tema claro isso é branco sobre slate-200, 1,15:1
+                  — o botão sumia contra o trilho, e a posição dele é a
+                  informação principal de um interruptor. Agora o trilho é
+                  `--surface-elevated` com contorno `--border-control`, que é
+                  o que faz o trilho existir como forma.
+
+                  O botão era `bg-white` cravado. Passa a `--text-on-primary`,
+                  pela regra permanente que a emenda E7-b fechou: nunca branco
+                  cravado sobre `--action`. Aqui o trilho ligado era o degrau
+                  500 absoluto, que não inverte, então não era o caso da
+                  regra — mas usar o token é o que impede que vire o caso
+                  quando alguém trocar o degrau.
+
+                  E o botão inteiro deixa de ser um `<button aria-pressed>`
+                  para conter um `<input role="switch">`: o leitor de tela
+                  passa a dizer "ligado"/"desligado" em vez de "pressionado". */}
               <span
-                className={cn(
-                  'relative h-5 w-9 rounded-full transition-colors duration-200',
-                  darkMode ? 'bg-[var(--color-primary-500)]' : 'bg-borda'
-                )}
+                aria-hidden="true"
+                className="relative inline-block h-5 w-9 shrink-0"
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200',
+                    'absolute inset-0 rounded-full border transition-colors duration-200',
+                    darkMode
+                      ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-500)]'
+                      : 'border-borda-control bg-superficie-elevada'
+                  )}
+                />
+                <span
+                  className={cn(
+                    'absolute top-0.5 h-4 w-4 rounded-full bg-[var(--text-on-primary)] shadow transition-transform duration-200',
                     darkMode ? 'translate-x-4' : 'translate-x-0.5'
                   )}
                 />

@@ -8,9 +8,14 @@ import {
   Button,
   Card,
   CardHeader,
+  Checkbox,
   Colchetes,
+  Input,
   Rotulo,
+  Seletor,
   Spinner,
+  Switch,
+  Textarea,
   type VarianteBadge,
   type VarianteBotao,
 } from '../../components/ui';
@@ -69,7 +74,7 @@ import { contrasteDoTexto, formatar, PISO_TEXTO } from './contraste';
  *   /dev/componentes?tema=claro&grupo=button&foco=primario
  *
  * `tema`   claro | escuro                          (exigido na captura)
- * `grupo`  badge | button | card | avatar | spinner | console | tudo
+ * `grupo`  badge | button | card | avatar | spinner | console | campo | tudo
  * `foco`   a variante de Button que recebe foco    (ver a nota em Botoes)
  *
  * ── Por que não entra em produção ─────────────────────────────────────
@@ -568,6 +573,127 @@ const PelesDeConsole: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
   </>
 );
 
+
+/* ─────────────────────────────────────────────────────────────────────
+   Formulário — Fase 8
+   ───────────────────────────────────────────────────────────────────── */
+
+const Campos: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => {
+  // Estado real: um controle de formulário parado não mostra estado nenhum, e
+  // o que interessa aqui é justamente o contraste de cada estado.
+  const [marcado, setMarcado] = React.useState(true);
+  const [ligado, setLigado] = React.useState(true);
+
+  return (
+    <>
+      <Secao
+        titulo="Campos — o contorno agora é --border-control"
+        nota="Era --border-color, o separador de superfície: 1,23:1 contra a página. A WCAG 1.4.11 pede 3:1 para o limite de um componente, e limite de campo é exatamente isso — é o que diz onde começa a área em que se digita. A emenda E7 criou o degrau; --border-control dá 4,76 no pior caso do claro. O número abaixo mede o TEXTO do campo, não o contorno."
+      >
+        <Amostra id="campo-input" rotulo="Input" seletor="input" medicoes={medicoes}>
+          <Input defaultValue="Texto digitado" className="w-52" />
+        </Amostra>
+        <Amostra
+          id="campo-placeholder"
+          rotulo="placeholder"
+          nota="--text-faint, permitido pela D9"
+          seletor="input"
+          medicoes={medicoes}
+        >
+          <Input placeholder="Buscar chamado..." className="w-52" />
+        </Amostra>
+        <Amostra
+          id="campo-off"
+          rotulo="desabilitado"
+          nota="número não inclui a opacidade"
+          seletor="input"
+          medicoes={medicoes}
+        >
+          <Input defaultValue="Não editável" disabled className="w-52" />
+        </Amostra>
+        <Amostra id="campo-textarea" rotulo="Textarea" seletor="textarea" medicoes={medicoes}>
+          <Textarea defaultValue="Descrição do chamado" className="w-52" />
+        </Amostra>
+        <Amostra id="campo-seletor" rotulo="Seletor" seletor="button" medicoes={medicoes}>
+          <Seletor
+            rotulo="Prioridade"
+            valor="media"
+            aoMudar={() => {}}
+            opcoes={[
+              { valor: 'media', rotulo: 'Média' },
+              { valor: 'alta', rotulo: 'Alta' },
+            ]}
+            className="w-52"
+          />
+        </Amostra>
+        <Amostra
+          id="campo-seletor-erro"
+          rotulo="Seletor inválido"
+          seletor="button"
+          medicoes={medicoes}
+        >
+          <Seletor
+            rotulo="Categoria"
+            valor=""
+            aoMudar={() => {}}
+            invalido
+            opcoes={[{ valor: '', rotulo: 'Selecione...' }]}
+            className="w-52"
+          />
+        </Amostra>
+      </Secao>
+
+      <Secao
+        titulo="Checkbox e Switch — e o foco que o pacote não mostra"
+        nota="Nos dois, o pacote esconde o <input> em 1×1 com opacity 0 e NADA reage ao foco dele: quem navega por teclado chega no controle e não vê onde está. Aqui o input é peer e a caixa (ou o trilho) desenha o anel de --focus-ring. Para ver, pressione Tab — o anel é focus-visible, então não aparece no clique."
+      >
+        <Amostra id="check-marcado" rotulo="marcado" seletor="span" medicoes={medicoes}>
+          <Checkbox marcado={marcado} aoMudar={setMarcado}>
+            Conta de serviço
+          </Checkbox>
+        </Amostra>
+        <Amostra id="check-vazio" rotulo="desmarcado" seletor="span" medicoes={medicoes}>
+          <Checkbox marcado={false} aoMudar={() => {}}>
+            Mostrar desativadas
+          </Checkbox>
+        </Amostra>
+        <Amostra
+          id="check-misto"
+          rotulo="misto"
+          nota="input.indeterminate no DOM, não só desenhado"
+          seletor="span"
+          medicoes={medicoes}
+        >
+          <Checkbox marcado={false} misto aoMudar={() => {}}>
+            Marcar todos
+          </Checkbox>
+        </Amostra>
+        <Amostra id="check-off" rotulo="desabilitado" seletor="span" medicoes={medicoes}>
+          <Checkbox marcado desabilitado aoMudar={() => {}}>
+            Não editável
+          </Checkbox>
+        </Amostra>
+        <Amostra id="switch-ligado" rotulo="Switch ligado" seletor="span" medicoes={medicoes}>
+          <Switch ligado={ligado} aoMudar={setLigado}>
+            Modo escuro
+          </Switch>
+        </Amostra>
+        <Amostra
+          id="switch-desligado"
+          rotulo="Switch desligado"
+          nota="o contorno é o que faz o trilho existir"
+          seletor="span"
+          medicoes={medicoes}
+        >
+          <Switch ligado={false} aoMudar={() => {}}>
+            Notificações
+          </Switch>
+        </Amostra>
+      </Secao>
+    </>
+  );
+};
+
 /* ─────────────────────────────────────────────────────────────────────
    A página
    ───────────────────────────────────────────────────────────────────── */
@@ -709,6 +835,7 @@ const GaleriaDeComponentes: React.FC = () => {
       {mostrar('avatar') && <Avatares medicoes={medicoes} />}
       {mostrar('spinner') && <Aneis medicoes={medicoes} />}
       {mostrar('console') && <PelesDeConsole medicoes={medicoes} />}
+      {mostrar('campo') && <Campos medicoes={medicoes} />}
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
   Seletor,
   Textarea,
   BlocoCarregando,
+  Checkbox,
 } from '../components/ui';
 import { IconeAgenda, IconeApagar, IconeAtencao, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
 import {
@@ -442,15 +443,13 @@ const TarefasRecorrentes: React.FC = () => {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {/* Filtro */}
-          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-conteudo-suave">
-            <input
-              type="checkbox"
-              checked={mostrarInativas}
-              onChange={(e) => setMostrarInativas(e.target.checked)}
-              className="h-4 w-4 accent-sinal"
-            />
+          <Checkbox
+            marcado={mostrarInativas}
+            aoMudar={setMostrarInativas}
+            className="items-center"
+          >
             Mostrar também as desativadas
-          </label>
+          </Checkbox>
           <Button onClick={abrirCriar}>
             <IconeMais className="h-4 w-4" aria-hidden="true" />
             Nova tarefa

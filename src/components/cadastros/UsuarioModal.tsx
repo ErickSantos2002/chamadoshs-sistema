@@ -4,7 +4,16 @@ import { useCadastros } from '../../context/CadastrosContext';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import HistoricoDaConta from './HistoricoDaConta';
-import { Button, Input, MensagemDeErro, Modal, Rotulo, RotuloDeCampo, Seletor } from '../ui';
+import {
+  Button,
+  Checkbox,
+  Input,
+  MensagemDeErro,
+  Modal,
+  Rotulo,
+  RotuloDeCampo,
+  Seletor,
+} from '../ui';
 import { getRoleName } from '../../utils/roleMapper';
 import { IconeEscudo, IconeOlho, IconeOlhoFechado, IconeSalvar, IconeSetor } from '../ui/icones';
 import type {
@@ -409,33 +418,24 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
 
           {/* Conta de serviço */}
           <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                name="conta_de_servico"
-                checked={formData.conta_de_servico ?? false}
-                onChange={(e) =>
-                  setFormData((anterior) => ({
-                    ...anterior,
-                    conta_de_servico: e.target.checked,
-                  }))
-                }
-                disabled={isReadOnly}
-                className={`mt-0.5 h-4 w-4 shrink-0 accent-sinal ${
-                  isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-                }`}
-              />
-              <span>
-                <span className="block text-sm font-medium text-conteudo">
-                  Conta de serviço
-                </span>
-                <span className="mt-0.5 block text-xs text-conteudo-tenue">
-                  Marque para contas que não são pessoas — painel de TV, login de
-                  integração. Elas continuam acessando o sistema, mas deixam de
-                  aparecer na lista de técnico responsável.
-                </span>
-              </span>
-            </label>
+            {/* Era `accent-sinal` num <input> nativo: o `accent-color` pinta
+                o preenchimento e o navegador desenha o resto, então a caixa
+                não tinha contorno próprio nem seguia o tema. O `Checkbox` do
+                kit desenha a caixa, com o contorno de `--border-control` que a
+                emenda E7 criou e o anel de foco que o pacote não mostra. */}
+            <Checkbox
+              marcado={formData.conta_de_servico ?? false}
+              aoMudar={(v) =>
+                setFormData((anterior) => ({
+                  ...anterior,
+                  conta_de_servico: v,
+                }))
+              }
+              desabilitado={isReadOnly}
+              dica="Marque para contas que não são pessoas — painel de TV, login de integração. Elas continuam acessando o sistema, mas deixam de aparecer na lista de técnico responsável."
+            >
+              <span className="font-medium text-conteudo">Conta de serviço</span>
+            </Checkbox>
           </div>
 
           {/* Informações de auditoria (apenas visualização) */}

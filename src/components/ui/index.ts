@@ -20,7 +20,12 @@ export type { VarianteBotao, TamanhoBotao } from './Button';
 
 // Rótulo e erro de campo de FORMULÁRIO. Não confundir com o `Rotulo` abaixo,
 // que é monoespaçado e serve a rótulo de painel.
-export { MensagemDeErro, RotuloDeCampo } from './Campo';
+export { MensagemDeErro, RotuloDeCampo, FORMA_DE_CAMPO } from './Campo';
+
+// Caixa de selecao e interruptor. Os dois consertam o mesmo defeito do
+// pacote: la o input escondido nao mostra foco nenhum. Ver as notas.
+export { Checkbox } from './Checkbox';
+export { Switch } from './Switch';
 
 export { Card, CardHeader, CardBody, CardTitle } from './Card';
 export type { PaddingDoCard } from './Card';

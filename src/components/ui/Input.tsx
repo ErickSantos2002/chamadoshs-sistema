@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { FORMA_DE_CAMPO } from './Campo';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   /** Ícone à esquerda, dentro do campo. */
@@ -26,11 +27,8 @@ export const Input: React.FC<InputProps> = ({ icone, className, ...resto }) => (
         // de comprar quase nada — #F8FAFC contra #FFFFFF é 1,05:1 — e quem
         // passou a carregar a distinção é o anel de foco, que dobrou de
         // espessura e é o que de fato importa para quem navega por teclado.
-        'w-full rounded-lg border border-borda bg-superficie py-2 text-sm text-conteudo',
-        'placeholder:text-conteudo-tenue',
-        'hover:border-conteudo-tenue',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        'transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal',
+        FORMA_DE_CAMPO,
+        'py-2',
         icone ? 'pl-9 pr-3' : 'px-3',
         className
       )}

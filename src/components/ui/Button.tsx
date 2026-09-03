@@ -110,6 +110,15 @@ export const Button: React.FC<ButtonProps> = ({
   ...resto
 }) => (
   <button
+    // `type="button"` por padrão, e ANTES do `{...resto}` para quem precisa de
+    // submit continuar declarando `type="submit"` e vencer.
+    //
+    // Sem isto, um `<button>` dentro de `<form>` nasce SUBMIT pelo HTML. Hoje
+    // escapa por acaso — os botões que submetem declaram, e os que não
+    // declaram estão fora de qualquer form —, mas basta alguém envolver um
+    // bloco de ações num `<form>` para "Resolver" e "Cancelar" passarem a
+    // enviar o formulário. O `Seletor` já tomava esse cuidado no gatilho dele.
+    type="button"
     // O gancho da regra de traço do pacote: "peso 1.75 na navegação, 2 dentro
     // de botão e em avisos". Ver a regra em `styles/index.css`.
     data-botao=""

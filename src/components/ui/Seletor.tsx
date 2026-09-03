@@ -213,6 +213,18 @@ export const Seletor: React.FC<SeletorProps> = ({
         break;
       case 'Escape':
         e.preventDefault();
+        // `stopPropagation` é o que impede o Esc de fechar o MODAL junto.
+        //
+        // O `Modal` escuta `keydown` no `document` (Modal.tsx:108), e
+        // `preventDefault` não interrompe a propagação — só cancela a ação
+        // padrão do navegador. Sem esta linha, Esc com a lista aberta fechava
+        // a lista E o modal atrás dela, e a pessoa perdia o formulário inteiro
+        // por ter desistido de escolher um item.
+        //
+        // A lista ainda vive num portal em `document.body`, então nem a
+        // hierarquia de React salvaria: o evento nativo sobe pela árvore do
+        // DOM até o `document` de qualquer jeito.
+        e.stopPropagation();
         fechar(true);
         break;
       case 'Tab':
@@ -251,6 +263,16 @@ export const Seletor: React.FC<SeletorProps> = ({
           // rolagem na página atrás — que fecharia a lista pelo caminho.
           // Sem `max-h-*`: o teto vem calculado em `posicao.maxHeight`, e é
           // o espaço que existe de verdade acima ou abaixo do campo.
+          // `border-borda` AQUI, e não `border-borda-control` — de propósito.
+          //
+          // A E7 trocou o contorno dos CONTROLES, e este painel não é um: é
+          // uma camada flutuante, e o que a separa do fundo é a sombra
+          // (`shadow-xl`), não a linha. A borda aqui é o acabamento da camada,
+          // que é exatamente o papel de `--border-color`.
+          //
+          // O `SearchSelect.jsx` do pacote fez a mesma distinção na E7, e pelo
+          // mesmo motivo. Se alguém varrer `border-borda` procurando o que
+          // ficou para trás, este é o que deve ficar.
           className="overflow-auto overscroll-contain rounded-lg border border-borda bg-superficie shadow-xl focus:outline-none"
         >
           {opcoes.map((opcao, indice) => {
@@ -308,12 +330,21 @@ export const Seletor: React.FC<SeletorProps> = ({
           'flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
           'bg-superficie text-conteudo',
           'disabled:cursor-not-allowed disabled:opacity-60',
+          // O contorno de repouso sai de `--border-control`, o degrau que a
+          // emenda E7 criou para limite de CONTROLE. Era `--border-color`, o
+          // separador de superfície, que dá 1,23:1 contra a página — a WCAG
+          // 1.4.11 pede 3:1 para o limite de um componente. Ver a nota longa
+          // em `Campo.tsx`, onde mora a forma compartilhada.
+          //
+          // O hover saiu junto com o dos outros dois campos: no tema escuro
+          // `--text-muted` e `--border-control` são o mesmo slate-400, então
+          // ele não fazia nada ali.
           aberto
-            ? 'border-transparent ring-2 ring-sinal'
+            ? 'border-transparent ring-2 ring-[var(--focus-ring)]'
             : invalido
               ? 'border-perigo'
-              : 'border-borda hover:border-conteudo-tenue',
-          'focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal'
+              : 'border-borda-control',
+          'focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]'
         )}
       >
         {escolhida?.cor && (
