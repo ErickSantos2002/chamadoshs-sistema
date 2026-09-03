@@ -65,6 +65,7 @@ export const BotaoDeAcao: React.FC<BotaoDeAcaoProps> = ({
   children,
 }) => (
   <button
+    data-botao=""
     type="button"
     onClick={onClick}
     title={titulo}

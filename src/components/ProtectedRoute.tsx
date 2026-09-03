@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { BlocoCarregando } from './ui';
 import Bloqueio from '../pages/Bloqueio';
 
 interface ProtectedRouteProps {
@@ -33,9 +34,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       // `<main>`, que já desconta a faixa do topo e o próprio padding. Com
       // a altura da viewport inteira, o "Carregando" ficava fora do centro
       // e a tela ganhava uma barra de rolagem enquanto a sessão era lida.
-      <div className="flex items-center justify-center min-h-full">
-        <span className="text-conteudo-tenue text-lg">Carregando...</span>
-      </div>
+      // Era a ÚNICA espera do sistema sem indicador de movimento: só a
+      // palavra "Carregando..." parada no meio da tela. E é a primeira que
+      // qualquer pessoa vê, porque acontece enquanto a sessão é lida, antes
+      // de qualquer rota. Texto parado não distingue "estou trabalhando" de
+      // "travei" — o anel distingue, e é o único jeito de dizer isso sem
+      // palavra nenhuma.
+      //
+      // Achada pelo crítico de completude da varredura, e não por mim: a
+      // minha busca foi por `animate-spin`, e o defeito aqui era justamente
+      // a AUSÊNCIA de animação. Procurar pelo sintoma não acha quem não o tem.
+      <BlocoCarregando className="min-h-full">
+        <span className="text-lg text-conteudo-tenue">Carregando...</span>
+      </BlocoCarregando>
     );
   }
 

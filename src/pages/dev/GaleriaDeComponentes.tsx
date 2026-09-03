@@ -8,6 +8,8 @@ import {
   Button,
   Card,
   CardHeader,
+  Colchetes,
+  Rotulo,
   Spinner,
   type VarianteBadge,
   type VarianteBotao,
@@ -67,7 +69,7 @@ import { contrasteDoTexto, formatar, PISO_TEXTO } from './contraste';
  *   /dev/componentes?tema=claro&grupo=button&foco=primario
  *
  * `tema`   claro | escuro                          (exigido na captura)
- * `grupo`  badge | button | card | avatar | spinner | tudo  (padrão: tudo)
+ * `grupo`  badge | button | card | avatar | spinner | console | tudo
  * `foco`   a variante de Button que recebe foco    (ver a nota em Botoes)
  *
  * ── Por que não entra em produção ─────────────────────────────────────
@@ -503,6 +505,69 @@ const Aneis: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
   </>
 );
 
+
+/* ─────────────────────────────────────────────────────────────────────
+   Rotulo e Colchetes — as duas peças da D2-a
+   ───────────────────────────────────────────────────────────────────── */
+
+const PelesDeConsole: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
+  <>
+    <Secao
+      titulo="Rotulo — a forma de console, com a escala do pacote"
+      nota="Monoespaçado, caixa alta, 12px, 0,1em de entreletra. A D2-a restaura a forma que a 1.7.0 tinha desfeito, mas com os números do pacote (--text-xs e --tracking-label) em vez dos antigos 11px e 0,14em. Rótulo de SEÇÃO: campo que alguém preenche usa RotuloDeCampo, que é text-sm e não isto."
+    >
+      <Amostra id="rotulo-secao" rotulo="rótulo de seção" medicoes={medicoes}>
+        <Rotulo>Detalhes do chamado</Rotulo>
+      </Amostra>
+      <Amostra
+        id="rotulo-card"
+        rotulo="sobre --surface"
+        fundo="--surface"
+        medicoes={medicoes}
+      >
+        <Rotulo>Histórico</Rotulo>
+      </Amostra>
+      <Amostra
+        id="rotulo-elevada"
+        rotulo="sobre --surface-elevated"
+        fundo="--surface-elevated"
+        medicoes={medicoes}
+      >
+        <Rotulo>Anexos</Rotulo>
+      </Amostra>
+    </Secao>
+
+    <Secao
+      titulo="Colchetes — o motivo gráfico do ChamadosHS"
+      nota="Quatro cantos de 1px que marcam uma superfície como painel de trabalho. Só em painel: num painel com oito cards de métrica viram trinta e dois riscos e param de dizer coisa alguma. O pai precisa de position: relative — sem isso eles se ancoram no <body> e aparecem nos cantos da TELA."
+    >
+      <Amostra id="colchetes-sm" rotulo="estrutura · sm" seletor="p" medicoes={medicoes}>
+        <div className="relative border border-borda bg-superficie p-5">
+          <p className="text-sm text-conteudo-suave">Painel de trabalho</p>
+          <Colchetes />
+        </div>
+      </Amostra>
+      <Amostra id="colchetes-md" rotulo="estrutura · md" seletor="p" medicoes={medicoes}>
+        <div className="relative border border-borda bg-superficie p-5">
+          <p className="text-sm text-conteudo-suave">Braço de 16px</p>
+          <Colchetes tamanho="md" />
+        </div>
+      </Amostra>
+      <Amostra
+        id="colchetes-sinal"
+        rotulo="sinal · só no login"
+        seletor="p"
+        medicoes={medicoes}
+      >
+        <div className="relative border border-borda bg-superficie p-5">
+          <p className="text-sm text-conteudo-suave">Entrar no sistema</p>
+          <Colchetes variante="sinal" />
+        </div>
+      </Amostra>
+    </Secao>
+  </>
+);
+
 /* ─────────────────────────────────────────────────────────────────────
    A página
    ───────────────────────────────────────────────────────────────────── */
@@ -643,6 +708,7 @@ const GaleriaDeComponentes: React.FC = () => {
       {mostrar('card') && <Cartoes medicoes={medicoes} />}
       {mostrar('avatar') && <Avatares medicoes={medicoes} />}
       {mostrar('spinner') && <Aneis medicoes={medicoes} />}
+      {mostrar('console') && <PelesDeConsole medicoes={medicoes} />}
     </div>
   );
 };

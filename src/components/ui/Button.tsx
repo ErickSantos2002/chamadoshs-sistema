@@ -110,6 +110,9 @@ export const Button: React.FC<ButtonProps> = ({
   ...resto
 }) => (
   <button
+    // O gancho da regra de traço do pacote: "peso 1.75 na navegação, 2 dentro
+    // de botão e em avisos". Ver a regra em `styles/index.css`.
+    data-botao=""
     disabled={disabled || carregando}
     aria-busy={carregando || undefined}
     className={cn(

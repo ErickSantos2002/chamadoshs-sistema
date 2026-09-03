@@ -25,6 +25,11 @@ export { MensagemDeErro, RotuloDeCampo } from './Campo';
 export { Card, CardHeader, CardBody, CardTitle } from './Card';
 export type { PaddingDoCard } from './Card';
 
+// Os quatro cantos do painel — o motivo gráfico deste sistema. Só em painel:
+// ver a nota no arquivo, e a D2-a.
+export { Colchetes } from './Colchetes';
+export type { VarianteColchetes, TamanhoColchetes } from './Colchetes';
+
 export { Input } from './Input';
 
 export { Modal } from './Modal';

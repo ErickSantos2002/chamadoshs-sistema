@@ -226,3 +226,30 @@ body,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Peso do traço dos ícones DENTRO de botão.
+ *
+ * A regra é do pacote, em readme.md → ICONOGRAFIA: "Ícones de traço, 24×24,
+ * stroke: currentColor, pontas e junções arredondadas. **Peso 1.75 na
+ * navegação, 2 dentro de botão e em avisos.**"
+ *
+ * Está em CSS, e não repetida em cada `<IconeX strokeWidth={2} />`, porque a
+ * regra é CONTEXTUAL: o mesmo ícone pesa 1.75 no menu e 2 no botão. Escrita no
+ * sítio, ela seria dezenas de repetições que ninguém consegue manter iguais —
+ * e a primeira que alguém esquecesse ficaria com o traço da navegação dentro de
+ * um botão, sem nada acusar.
+ *
+ * `stroke-width` como propriedade CSS vence o atributo `strokeWidth` do SVG:
+ * atributo de apresentação tem a menor precedência da cascata. É por isso que
+ * isto funciona sem tocar em `icones.tsx`.
+ *
+ * Escopado por `[data-botao]`, que só `Button` e `BotaoDeAcao` põem — e NÃO
+ * por `button svg`. A diferença importa: a barra lateral desenha os itens de
+ * navegação com marcação própria, e um seletor por elemento engordaria o traço
+ * do menu inteiro, que é exatamente o que a regra manda deixar em 1.75.
+ *
+ * Avisos ficam de fora por ora: não existe primitivo de aviso aqui — os avisos
+ * são blocos escritos nas telas, e entram nas Fases 11–16 junto com elas. */
+[data-botao] svg {
+  stroke-width: 2;
+}
