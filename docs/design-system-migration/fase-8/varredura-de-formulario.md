@@ -72,9 +72,9 @@ Não são de acabamento, e não são desta fase. Levados ao operador em separado
 
 | Onde | O quê |
 |---|---|
-| `SlaTab.tsx:54` | Apagar o campo e salvar grava SLA de **0 minutos**. `Number('')` é `0`, e `Number.isFinite(0)` é `true`, então a guarda de sanidade não dispara. Todo chamado nasce estourado. |
-| `TarefasRecorrentes.tsx:707` | `dia_mes` vira **0** ao limpar o campo, fora do próprio `min={1} max={31}` declarado ao lado, e o 0 vai para o servidor. |
-| `TarefasRecorrentes.tsx:720` | A tela mostra "a cada 0 dias" e o payload envia `1` — `montarPayload` corrige calado. O campo diz uma coisa e o sistema grava outra. |
+| ~~`SlaTab.tsx:54`~~ | **REFUTADO por mim, ao ler o código.** O agente relatou que apagar o campo grava SLA de 0 minutos, "sem clamp no salvar". Há clamp: `salvar` (linha 121) recusa `< 1` nos dois prazos e mostra "Os prazos precisam ser de pelo menos 1 minuto". Zero nunca chega ao servidor. O que sobra é cosmético: o campo pode exibir `0` enquanto se digita, porque `Number('')` é `0`. |
+| `TarefasRecorrentes.tsx:707` | `dia_mes` vira **0** ao limpar o campo, fora do próprio `min={1} max={31}` declarado ao lado. Conferido: `montarPayload` (279) manda `form.dia_mes` cru quando a recorrência é mensal, sem clamp. O 0 chega ao servidor. |
+| `TarefasRecorrentes.tsx:720` | `intervalo` sofre o mesmo `Number('') === 0`, mas aqui `montarPayload` corrige calado. A tela pode dizer uma coisa e o sistema gravar outra. |
 | `UsuariosTab.tsx:567` | Reset de senha **envia duas vezes** no clique duplo: sem `carregando`, sem `disabled` e sem estado em voo. |
 | `UsuarioModal.tsx:302` | Campo de senha **sem `autoComplete`** no único formulário que cria a senha de OUTRA pessoa: o gerenciador oferece a senha do próprio administrador, e aceita por reflexo ela vira a senha do usuário novo. Os outros três campos de senha do projeto acertam. |
 | `ChamadoDetalhes.tsx:605` | Falha ao salvar **destrói a página inteira e o que foi digitado**: os `catch` chamam `setError`, e o guarda de render troca a ficha toda pela tela de erro. Quem escreveu 400 caracteres de solução e recebeu um 500 perde tudo. |
@@ -122,6 +122,18 @@ junto da primeira tela que for arrumar o foco de erro, nas Fases 11–16.
 evento", que se lê como "nada aconteceu" — numa tela cuja função é provar o
 passado. O mesmo par no `Dashboard` (511/512) acerta, com `max` e `min`
 cruzados.
+
+## Sobre a confiabilidade desta lista
+
+Cada defeito acima passou por um cético com ordem de refutar, e ainda assim
+**um dos seis "corrompe dado" caiu quando eu li o código** — o do `SlaTab`. A
+passagem adversarial reduz o falso positivo; não o elimina.
+
+O que o derrubou não foi um método melhor, foi abrir o arquivo e procurar a
+função de salvar. Vale como regra para quem for agir sobre esta lista: **antes
+de consertar qualquer item, leia o caminho inteiro**, e não só a linha
+apontada. O agente leu o `onChange` e concluiu sobre o `salvar` sem ler o
+`salvar`.
 
 ## Falso positivo registrado
 
