@@ -56,6 +56,7 @@ O pacote foi **emendado** em 02/09/2026, em três pontos, todos registrados em
 | **E1** | `.dark` ganha `--text-on-primary`: branco sobre `--action` no escuro dava 2,69:1 | `tokens/colors.css` | HelpHS |
 | **E2** | botões `danger`/`success` ganham degrau de ação; `--on-tint-warning` e `--on-tint-neutral` passam a AA | `tokens/colors.css` | HelpHS |
 | **E3** | a fonte passa a ser servida pelo pacote — 12 `@font-face` e `fonts/` | `tokens/typography.css` + `fonts/` | ChamadosHS |
+| **E5** | `--text-muted` vai ao slate-600: sobre `--surface-elevated` o 500 dava 4,34:1 | `tokens/colors.css` | ChamadosHS |
 
 O que cada uma significa aqui:
 
@@ -65,17 +66,31 @@ O que cada uma significa aqui:
   O valor não foi "mantido": foi corrigido na raiz. Ver a seção do D4-a.
 - **E3 fecha o D1-a.** O desvio local do `@import` deixa de existir: este
   `typography.css` é o do pacote, sem uma vírgula de diferença.
+- **E5 corrige a tabela do D4-a e resolve sete pares de tela.** O token de
+  texto tênue passa de slate-500 a slate-600 no tema claro: 4,76 · 4,55 · 4,34
+  viram 7,58 · 7,24 · 6,92, contra `--surface` · `--bg-base` ·
+  `--surface-elevated`. O tema escuro não muda — lá é slate-400 e já passava.
+
+  **A ponte do D3-a foi atualizada no mesmo commit**, de `100 116 139` para
+  `71 85 105`. Ela existe para carregar os valores do pacote em canais
+  `R G B`; se ficasse no slate-500, o pacote diria uma coisa e as telas
+  pintariam outra — a segunda fonte de verdade que a §5.4 proíbe.
+
+  E veio com uma regra permanente, escrita no `EMENDAS.md` do pacote:
+  **contraste de token de texto se mede contra as três superfícies**, não
+  contra a mais clara. A ausência dela produziu quatro descobertas
+  independentes do mesmo defeito.
 
 ## Hashes (SHA-256)
 
-Conferidos com `Get-FileHash` em 02/09/2026, na recópia do pacote emendado
-(E1+E2+E3), e comparados com `Compare-Object` contra o pacote: **19 arquivos,
-sem diferença**.
+Conferidos com `Get-FileHash` em 03/09/2026, na recópia do pacote emendado
+(E1+E2+E3+E5), e comparados com `Compare-Object` contra o pacote: **19
+arquivos, sem diferença**.
 
 ```
 1EF6324844AA066488F0D8A015B39E3CA0756C629512FCE4E1BD95CA8B93B9B2  styles.css
 BDD047CE432E74B33FA7F752DA08CF025419E83EA18485BD947C889C0AC1C221  tokens/base.css
-696ABC6D1C468B17D4510B106517AEF37704663E06E008C38FC109FEEC2A5618  tokens/colors.css      <- E1+E2
+66BE0CD316F79902177E0558B21833B545E9939549F55095939DFC97CE80D89B  tokens/colors.css      <- E1+E2+E5
 C70D51A982AE0B91BD53ECE150D8D16E0E70BEF9CA59586541A9A7177228478E  tokens/motion.css
 7BCFBBC585D3EA8C7F689A27EEB3AE13DE0C2A9DCC3C6CC0C8F41D440D193F7D  tokens/shape.css
 C093B261C6893A893A418CDF64798555326D4586A8ADB37CC7ECA457FABAE420  tokens/spacing.css
@@ -125,7 +140,7 @@ resolvido na raiz pela E3. Esta cópia é o pacote, byte a byte.
 
 > **Para o HelpHS:** os sete arquivos e o `fonts/` aqui são os do pacote
 > emendado. `typography.css` fecha em `1DD9B29E…` e `colors.css` em
-> `696ABC6D…`. Quem estiver com `99D1A02B…` ou `63D96084…` está desatualizado,
+> `66BE0CD3…`. Quem estiver com `99D1A02B…` ou `63D96084…` está desatualizado,
 > não divergente. O `VERSION.md` continua diferindo por natureza — é o registro
 > local de cada repositório.
 

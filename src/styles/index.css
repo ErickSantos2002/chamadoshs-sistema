@@ -62,6 +62,12 @@
  * `npm run validar:paleta` verde — ele roda dentro do `npm run build` e falha
  * se alguém baixar um valor.
  *
+ * Os números de contraste no comentário de cada nível de texto são contra as
+ * TRÊS superfícies, nesta ordem: `--surface` · `--bg-base` ·
+ * `--surface-elevated`. Um número só, contra a mais clara, foi o que deixou o
+ * `--text-muted` passar por aprovado em 4,76:1 enquanto dava 4,34:1 sobre a
+ * superfície elevada — o defeito que a emenda E5 do pacote consertou.
+ *
  * A classe `dark` é aplicada no <html> pelo ThemeContext.
  */
 @layer base {
@@ -77,9 +83,13 @@
     --borda-forte: 203 213 225;        /* --border-strong    slate-300 #CBD5E1 */
 
     /* Conteúdo — ver "Os três níveis de texto" acima */
-    --conteudo: 15 23 42;              /* --text-heading     slate-900 #0F172A  17,85:1 */
-    --conteudo-suave: 30 41 59;        /* --text-body        slate-800 #1E293B  14,63:1 */
-    --conteudo-tenue: 100 116 139;     /* --text-muted       slate-500 #64748B   4,76:1 */
+    --conteudo: 15 23 42;              /* --text-heading     slate-900 #0F172A  17,85 · 17,06 · 16,30 */
+    --conteudo-suave: 30 41 59;        /* --text-body        slate-800 #1E293B  14,63 · 13,98 · 13,35 */
+    /* E5 do pacote (03/09/2026): o token foi de slate-500 a slate-600 porque
+     * sobre --surface-elevated o 500 dava 4,34:1. A ponte segue o token — se
+     * ela ficasse em slate-500, o pacote diria uma coisa e as telas pintariam
+     * outra, que e a segunda fonte de verdade que a §5.4 proibe. */
+    --conteudo-tenue: 71 85 105;       /* --text-muted       slate-600 #475569   7,58 · 7,24 · 6,92 */
 
     /* Sinal = a cor de AÇÃO do pacote, não o degrau de marca. O 500
      * (#1F89CA) dá 3,83:1 no branco e serve para logo, borda e gráfico —
@@ -111,9 +121,9 @@
     --borda-suave: 19 34 56;           /* --border-muted     #132238 — = superfície */
     --borda-forte: 49 93 129;          /* --border-strong    #315D81 */
 
-    --conteudo: 241 245 249;           /* --text-heading     slate-100 #F1F5F9  14,59:1 */
-    --conteudo-suave: 226 232 240;     /* --text-body        slate-200 #E2E8F0  12,97:1 */
-    --conteudo-tenue: 148 163 184;     /* --text-muted       slate-400 #94A3B8   6,23:1 */
+    --conteudo: 241 245 249;           /* --text-heading     slate-100 #F1F5F9  14,59 · 15,88 · 12,37 */
+    --conteudo-suave: 226 232 240;     /* --text-body        slate-200 #E2E8F0  12,97 · 14,11 · 10,99 */
+    --conteudo-tenue: 148 163 184;     /* --text-muted       slate-400 #94A3B8   6,23 · 6,78 · 5,29 */
 
     /* No escuro a escada inverte: o tom claro é que passa no contraste. */
     --sinal: 71 166 225;               /* --action     primary-400 #47A6E1  5,95:1 */
