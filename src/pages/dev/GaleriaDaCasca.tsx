@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -184,7 +184,7 @@ const CascaDaGaleria: React.FC<{
 
 const GaleriaDaCasca: React.FC = () => {
   const [params] = useSearchParams();
-  const { darkMode, toggleDarkMode } = useTheme();
+  const { darkMode } = useTheme();
 
   const cru = params.get('cru') === '1';
   const estado: Estado = ehEstado(params.get('estado'))
@@ -196,29 +196,21 @@ const GaleriaDaCasca: React.FC = () => {
   const altura = Number(params.get('altura')) || 768;
 
   /**
-   * O tema sai da URL, mas quem o aplica continua sendo o `ThemeContext` — o
-   * mesmo caminho do botão no menu do usuário. Escrever `dark` no `<html>`
-   * daqui pintaria a tela certa por um caminho que o sistema não usa, e o
-   * screenshot deixaria de provar o que se quer provar.
+   * O tema NÃO é aplicado aqui.
    *
-   * Só o modo cru aplica: se a moldura também aplicasse, as duas páginas
-   * disputariam a mesma chave de `localStorage`.
+   * Ele entra em `main.tsx`, de forma síncrona, antes do `createRoot` — a
+   * chave de `localStorage` é escrita a partir da URL e a classe vai para o
+   * `<html>` na mesma linha, então a PRIMEIRA pintura já sai certa.
    *
-   * O `ref` não é enfeite. `toggleDarkMode` INVERTE, e o `StrictMode` do
-   * `main.tsx` monta, desmonta e remonta cada efeito em desenvolvimento: sem a
-   * trava, o efeito rodava duas vezes com o mesmo `darkMode` no fecho,
-   * invertia duas vezes e a tela voltava ao tema de onde tinha saído.
-   * Aconteceu — `?tema=claro` abria escuro. Foi a medição no navegador que
-   * pegou, não o olho, e é o tipo de coisa que estragaria os oito screenshots
-   * sem estragar mais nada.
+   * Esta página fazia isso por efeito, e o preço eram três defeitos: a
+   * primeira pintura saía no tema errado e trocava um quadro depois; o
+   * `toggleDarkMode` inverte e o `StrictMode` o chamava duas vezes; e a
+   * moldura e o iframe, sendo duas instâncias do app na mesma origem,
+   * escreviam a mesma chave e uma desfazia a outra.
+   *
+   * O `darkMode` daqui serve só para a legenda da imagem dizer o que está
+   * pintado — e, por vir do mesmo contexto que pinta, não pode divergir dela.
    */
-  const temaAplicado = useRef<string | null>(null);
-  useEffect(() => {
-    if (!cru || !temaPedido) return;
-    if (temaAplicado.current === temaPedido) return;
-    if ((temaPedido === 'escuro') !== darkMode) toggleDarkMode();
-    temaAplicado.current = temaPedido;
-  }, [cru, temaPedido, darkMode, toggleDarkMode]);
 
   if (cru) {
     return (

@@ -29,6 +29,19 @@ const GaleriaDaCasca = import.meta.env.DEV
   ? lazy(() => import('./pages/dev/GaleriaDaCasca'))
   : null;
 
+/**
+ * A galeria de COMPONENTES — mesma regra, mesmo motivo, mesmo prazo.
+ *
+ * A da casca fotografa a moldura; esta fotografa o que vai dentro dela: os
+ * primitivos em todos os estados, nos dois temas, com a razão de contraste
+ * medida na hora sob cada amostra. É o que fecha o Checkpoint 2 da §26.
+ *
+ * Sai na Fase 20, junto com a outra.
+ */
+const GaleriaDeComponentes = import.meta.env.DEV
+  ? lazy(() => import('./pages/dev/GaleriaDeComponentes'))
+  : null;
+
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Loading Fallback Component
@@ -129,6 +142,10 @@ const AppRoutes: React.FC = () => (
 
       {GaleriaDaCasca && (
         <Route path="/dev/galeria" element={<GaleriaDaCasca />} />
+      )}
+
+      {GaleriaDeComponentes && (
+        <Route path="/dev/componentes" element={<GaleriaDeComponentes />} />
       )}
 
       <Route path="/" element={<Navigate to="/dashboard" />} />

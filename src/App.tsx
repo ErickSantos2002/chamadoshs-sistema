@@ -14,12 +14,16 @@ import { useNovidades } from './hooks/useNovidades';
 // fotografá-la em estados que a casca daqui não expõe. Sem isto seriam duas,
 // uma dentro da outra.
 //
+// `/dev/componentes` entra por motivo oposto: ela não quer casca NENHUMA. O
+// que está sendo fotografado são os primitivos, e a barra lateral em volta
+// roubaria metade da largura de uma página que já é uma grade larga.
+//
 // Sob o mesmo `import.meta.env.DEV` que registra a rota em `router.tsx`: o
 // Vite troca por `false` literal, e nem o endereço sobra no bundle. Ele não
 // faria mal nenhum ali — nada casaria com ele —, mas "não existe em produção"
 // é mais fácil de conferir do que "existe e é inofensivo".
 const noLayoutRoutes = import.meta.env.DEV
-  ? ['/login', '/dev/galeria']
+  ? ['/login', '/dev/galeria', '/dev/componentes']
   : ['/login'];
 
 /**
