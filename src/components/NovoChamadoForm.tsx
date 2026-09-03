@@ -6,7 +6,15 @@ import { Chamado, ChamadoCreate, PrioridadeEnum, SLAConfig } from '../types/api'
 import { EXPEDIENTE, formatarPrazo } from '../lib/prazo';
 import { corDaPrioridade } from '../lib/graficos';
 import { useTheme } from '../context/ThemeContext';
-import { Button, Input, Rotulo, RotuloDeCampo, Seletor, Textarea } from './ui';
+import {
+  Aviso,
+  Button,
+  Input,
+  Rotulo,
+  RotuloDeCampo,
+  Seletor,
+  Textarea,
+} from './ui';
 import ContadorMinimo from './ContadorMinimo';
 import { IconeEscudoConfere, IconeRelogio } from './ui/icones';
 import {
@@ -124,9 +132,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
   return (
     <form onSubmit={enviar} className="space-y-4">
       {erro && (
-        <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
-          {erro}
-        </div>
+        <Aviso variante="perigo">{erro}</Aviso>
       )}
 
       <div>

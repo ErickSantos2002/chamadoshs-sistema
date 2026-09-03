@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import {
+  Aviso,
   BlocoCarregando,
   BotaoDeAcao,
   Button,
@@ -12,7 +13,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
-import { IconeAlerta, IconeBusca, IconeChave, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor, IconeUsuarios } from '../ui/icones';
+import { IconeBusca, IconeChave, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor, IconeUsuarios } from '../ui/icones';
 import type {
   Usuario,
   ModalMode,
@@ -274,12 +275,7 @@ const UsuariosTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
-          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">
-            <p>{error}</p>
-          </div>
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{error}</Aviso>
       )}
 
       {/* Tabela */}
@@ -525,9 +521,7 @@ const UsuariosTab: React.FC = () => {
       >
         <div className="space-y-4">
           {senhaError && (
-            <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
-              {senhaError}
-            </div>
+            <Aviso variante="perigo">{senhaError}</Aviso>
           )}
 
           <div>

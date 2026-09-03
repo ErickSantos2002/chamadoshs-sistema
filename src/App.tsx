@@ -49,14 +49,27 @@ const AvisosFlutuantes: React.FC = () => (
       // toast. Eram quatro hexadecimais cravados — os últimos do arquivo.
       success: {
         iconTheme: {
-          primary: 'var(--color-success-500)',
-          secondary: 'var(--color-white)',
+          // O par da emenda E2, e nao o degrau 500 com branco cravado.
+          //
+          // O visto do toast e branco DENTRO de um circulo: e forma, nao
+          // texto, entao o piso e 3:1 (WCAG 1.4.11). Branco sobre
+          // --color-success-500 da 2,54:1 — o mesmo numero que a E2 corrigiu
+          // no botao `sucesso`, pelo mesmo motivo, no mesmo dia.
+          //
+          // --action-success e o degrau que a E2 criou justamente para
+          // carregar branco por cima: 5,48:1.
+          primary: 'var(--action-success)',
+          secondary: 'var(--text-on-success)',
         },
       },
       error: {
         iconTheme: {
-          primary: 'var(--color-danger-500)',
-          secondary: 'var(--color-white)',
+          // O de erro passava (3,76:1), mas vai para o mesmo par pela mesma
+          // razao de procedencia: --action-danger existe para isto, da 4,83:1,
+          // e deixar os dois toasts em degraus diferentes seria manter uma
+          // divergencia sem motivo.
+          primary: 'var(--action-danger)',
+          secondary: 'var(--text-on-danger)',
         },
       },
     }}

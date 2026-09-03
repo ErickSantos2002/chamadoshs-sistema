@@ -7,6 +7,7 @@ import { PrioridadeEnum, TarefaRecorrente } from '../types/api';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
 import {
+  Aviso,
   Badge,
   BlocoCarregando,
   Button,
@@ -471,9 +472,7 @@ const Chamados: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="shrink-0 rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
-          {error}
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{error}</Aviso>
       )}
 
       {/* Kanban. Quatro colunas de fluxo; as duas de fora — arquivo e

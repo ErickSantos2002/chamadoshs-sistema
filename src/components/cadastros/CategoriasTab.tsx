@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
-import { BlocoCarregando, BotaoDeAcao, Button, Input } from '../ui';
+import { Aviso, BlocoCarregando, BotaoDeAcao, Button, Input } from '../ui';
 import CategoriaModal from './CategoriaModal';
-import { IconeAlerta, IconeApagar, IconeBusca, IconeEditar, IconeEtiqueta, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima } from '../ui/icones';
+import { IconeApagar, IconeBusca, IconeEditar, IconeEtiqueta, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima } from '../ui/icones';
 import type {
   Categoria,
   ModalMode,
@@ -175,12 +175,7 @@ const CategoriasTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
-          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">
-            <p>{error}</p>
-          </div>
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{error}</Aviso>
       )}
 
       {/* Tabela */}

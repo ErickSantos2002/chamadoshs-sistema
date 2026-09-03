@@ -3,9 +3,9 @@ import { slaConfigsService } from '../../services/chamadoshsapi';
 import { PrioridadeEnum, SLAConfig } from '../../types/api';
 import { EXPEDIENTE, MINUTOS_POR_DIA_UTIL, formatarPrazo } from '../../lib/prazo';
 import { cn } from '../../lib/utils';
-import { BlocoCarregando, Button, Input, Modal, RotuloDeCampo } from '../ui';
+import { Aviso, BlocoCarregando, Button, Input, Modal, RotuloDeCampo } from '../ui';
 import { PrioridadeBadge } from '../SelosDeChamado';
-import { IconeAlerta, IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
+import { IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
 
 interface SlaTabProps {
   /** Indica se a aba SLA está ativa/visível no momento. */
@@ -161,10 +161,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
       </div>
 
       {erro && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
-          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          {erro}
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{erro}</Aviso>
       )}
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto">

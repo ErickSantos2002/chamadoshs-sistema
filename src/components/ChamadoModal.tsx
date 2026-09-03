@@ -8,6 +8,7 @@ import { podeSerResponsavel } from '../utils/roleMapper';
 import { Chamado, Comentario } from '../types/api';
 import {
   Avatar,
+  Aviso,
   BlocoCarregando,
   Button,
   Modal,
@@ -268,9 +269,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       )}
 
       {erro && !carregando && (
-        <div className="rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-on-tint-danger">
-          {erro}
-        </div>
+        <Aviso variante="perigo">{erro}</Aviso>
       )}
 
       {chamado && !carregando && (

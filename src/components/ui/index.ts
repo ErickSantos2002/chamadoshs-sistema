@@ -7,6 +7,11 @@
  */
 export { Avatar } from './Avatar';
 
+// Aviso em bloco, no fluxo da pagina. Traz `role="alert"`: os blocos que ele
+// substitui apareciam em silencio quando uma submissao falhava.
+export { Aviso } from './Aviso';
+export type { VarianteAviso } from './Aviso';
+
 export { Badge } from './Badge';
 export type { VarianteBadge } from './Badge';
 

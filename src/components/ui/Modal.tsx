@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
-import { primeiroCampoFocavel } from '../../lib/foco';
+import { prenderTab, primeiroCampoFocavel } from '../../lib/foco';
 import { IconeFechar } from './icones';
 
 interface ModalProps {
@@ -102,7 +102,13 @@ export const Modal: React.FC<ModalProps> = ({
     focoAnterior.current = document.activeElement as HTMLElement;
 
     const aoTeclar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') aoFecharRef.current();
+      if (e.key === 'Escape') {
+        aoFecharRef.current();
+        return;
+      }
+      // A armadilha que o docblock acima prometia e o código não entregava.
+      // Ver a nota longa em `lib/foco.ts`.
+      prenderTab(e, painelRef.current);
     };
 
     document.addEventListener('keydown', aoTeclar);
