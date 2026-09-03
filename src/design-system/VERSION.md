@@ -59,6 +59,8 @@ O pacote foi **emendado** em 02/09/2026, em três pontos, todos registrados em
 | **E5** | `--text-muted` vai ao slate-600: sobre `--surface-elevated` o 500 dava 4,34:1 | `tokens/colors.css` | ChamadosHS |
 | **E7** | `--border-control`: nenhum token de borda alcançava os 3:1 que a WCAG 1.4.11 pede para contorno de controle | `tokens/colors.css` + 7 componentes de formulário | HelpHS |
 | **E7-b** | visto e traço do `Checkbox` saem de `--color-white` para `--text-on-primary` | `components/forms/Checkbox.jsx` | HelpHS |
+| **E8** | os três pares `on-tint` que a E2 não mediu passam a AA sobre `--surface-elevated` | `tokens/colors.css` | ChamadosHS |
+| **E9** | `Checkbox` e `Switch` do pacote passam a mostrar foco | `components/forms/{Checkbox,Switch}.jsx` | HelpHS |
 
 O que cada uma significa aqui:
 
@@ -101,6 +103,35 @@ O que cada uma significa aqui:
   foi corrigida por ela, porque nenhuma usava o token. **Depois de criar um
   token, varra quem deveria usá-lo.**
 
+- **E8 fecha a lacuna que a E2 deixou, e a previsão em prosa estava metade
+  errada.** A E2 mediu `--on-tint-warning` nas três superfícies, achou 4,47 e
+  levou-o ao degrau 800 — e **não** repetiu a medição para `success`, `info` e
+  `danger`. Os três seguiram no degrau original por mais oito emendas, e os
+  números eram claro `success` 4,39, escuro `info` 4,40, escuro `danger` 4,38.
+
+  A nota de numeração dentro da E9 previa que "a correção é levá-los ao degrau
+  800". **Vale para o claro e é o oposto do que o escuro precisa.** No claro os
+  `on-tint` são degraus 700, texto escuro sobre tinta clara: subir para o 800
+  afasta os dois. No escuro são degraus 400, texto claro sobre tinta escura, e
+  ali o 800 seria quase preto sobre quase preto — a direção certa é DESCER para
+  o 300.
+
+  É o mesmo que a E1 fixou para `--action`: o degrau que carrega um papel
+  inverte com o tema. Aqui aplicado ao texto sobre tinta.
+
+  `--color-danger-300` e `--color-info-300` são degraus NOVOS na rampa, e ficam
+  no `:root` porque rampa não tem tema — o `.dark` troca qual degrau um alias
+  aponta, nunca o valor do degrau.
+
+- **E9 vem de um achado deste repositório.** O `Checkbox.jsx` e o `Switch.jsx`
+  do pacote escondiam o `<input>` em 1×1 com `opacity: 0` e nada reagia ao foco
+  dele. Os DOIS repositórios já tinham o anel nas implementações locais, cada um
+  por conta própria, e nenhum tinha notado que a referência não tinha — o fato
+  de os dois consumidores estarem certos escondia o defeito da origem.
+
+  Não pede recópia aqui: este repositório copia `styles.css`, `tokens/` e
+  `fonts/`, e não componentes.
+
 - **E5 corrige a tabela do D4-a e resolve sete pares de tela.** O token de
   texto tênue passa de slate-500 a slate-600 no tema claro: 4,76 · 4,55 · 4,34
   viram 7,58 · 7,24 · 6,92, contra `--surface` · `--bg-base` ·
@@ -119,17 +150,18 @@ O que cada uma significa aqui:
 ## Hashes (SHA-256)
 
 Conferidos com `Get-FileHash` em 03/09/2026, na recópia do pacote emendado
-(E1+E2+E3+E5+E7), e comparados com `Compare-Object` contra o pacote: **19
+(E1+E2+E3+E5+E7+E8), e comparados com `Compare-Object` contra o pacote: **19
 arquivos, sem diferença**.
 
-A E7-b não aparece aqui: ela mudou `components/forms/Checkbox.jsx`, e este
-repositório não copia componentes do pacote — eles são referência, não
-dependência. Só `styles.css`, `tokens/` e `fonts/` vêm para cá.
+A E7-b e a E9 não aparecem aqui: as duas mudaram componentes em
+`components/forms/`, e este repositório não copia componentes do pacote — eles
+são referência, não dependência. Só `styles.css`, `tokens/` e `fonts/` vêm
+para cá.
 
 ```
 1EF6324844AA066488F0D8A015B39E3CA0756C629512FCE4E1BD95CA8B93B9B2  styles.css
 BDD047CE432E74B33FA7F752DA08CF025419E83EA18485BD947C889C0AC1C221  tokens/base.css
-539388386F7D92789A8F036AAAED638AE43FC3EA3ECE38D64629E29676B520F1  tokens/colors.css      <- E1+E2+E5+E7
+73550E08F6F951571068EEC741278FC2A7EDB5CEEC9CDDFC997111BC0F741139  tokens/colors.css      <- E1+E2+E5+E7+E8
 C70D51A982AE0B91BD53ECE150D8D16E0E70BEF9CA59586541A9A7177228478E  tokens/motion.css
 7BCFBBC585D3EA8C7F689A27EEB3AE13DE0C2A9DCC3C6CC0C8F41D440D193F7D  tokens/shape.css
 C093B261C6893A893A418CDF64798555326D4586A8ADB37CC7ECA457FABAE420  tokens/spacing.css

@@ -5,21 +5,36 @@
 ## O resultado, em uma linha
 
 **192 medições de contraste**, 96 amostras × 2 temas, feitas no navegador a
-partir do estilo computado. **Três reprovações — e as três são o mesmo defeito
-aberto do pacote**, não deste repositório.
+partir do estilo computado. **Zero reprovações.**
 
 | Tema | Amostras | Reprovam |
 |---|---|---|
-| claro | 96 | 1 |
-| escuro | 96 | 2 |
-
-As três: `badge sucesso` sobre `--surface-elevated` no claro (4,39:1),
-`badge info` e `badge perigo` na mesma superfície no escuro (4,40:1 e 4,38:1).
-São os pares `tint`/`on-tint` que a emenda E2 corrigiu para `warning` e não
-mediu para `success`, `info` e `danger`. Levado ao operador como candidato a
-emenda; ainda aberto.
+| claro | 96 | 0 |
+| escuro | 96 | 0 |
 
 Nenhuma amostra ficou sem medição.
+
+### O que mudou entre o fechamento das fases e este número
+
+Quando as Fases 7–10 fecharam, **três** amostras reprovavam: `badge sucesso`
+sobre `--surface-elevated` no claro (4,39:1), e `badge info` e `badge perigo`
+na mesma superfície no escuro (4,40:1 e 4,38:1).
+
+As três eram o mesmo defeito **do pacote**, não deste repositório: os pares
+`tint`/`on-tint` que a emenda E2 corrigiu para `warning` e não mediu para
+`success`, `info` e `danger`. Foram levadas ao operador, que aprovou a emenda
+**E8** — escrita a partir daqui em 03/09/2026.
+
+Medido depois da recópia, na mesma galeria:
+
+| | antes | depois |
+|---|---|---|
+| claro `sucesso` sobre elevada | 4,39 | **6,15** |
+| escuro `info` sobre elevada | 4,40 | **6,21** |
+| escuro `perigo` sobre elevada | 4,38 | **6,38** |
+
+Os três caíram exatamente nos valores calculados na proposta da emenda, o que
+fecha a quarta confirmação independente do mesmo par de números.
 
 ## Como esta evidência foi produzida
 
@@ -90,16 +105,22 @@ Nenhum destes era visível. Todos foram achados medindo ou lendo, não olhando.
 
 ## O que continua aberto
 
-**Do pacote:** os pares `tint`/`on-tint` de `success`, `info` e `danger` sobre
-`--surface-elevated` (as três reprovações acima). Real em
-`ChamadoModal.tsx:356`, que põe os selos dentro de um `<aside>` elevado — a
-tela mais usada do sistema.
+**Do pacote:** nada. A E8 fechou o último item aberto.
 
 **Deste repositório, para as Fases 11–16:** está em
 `docs/design-system-migration/fase-8/varredura-de-formulario.md` e
-`fase-7/varredura-de-carregamento.md`, com arquivo e linha. Os cinco mais
-graves são funcionais e não de acabamento — um deles grava credencial errada
-sem ninguém perceber.
+`fase-7/varredura-de-carregamento.md`, com arquivo e linha.
+
+Dois dos mais graves saíram desta lista em 03/09/2026, como **desvios
+funcionais aprovados** pelo operador — os dois de senha, em `0e09c35` e
+`3018452`. O critério da exceção está registrado: nos dois o modo de falha é
+gravar credencial errada sem ninguém perceber.
+
+O que fica: cinco controles escritos à mão em `ChamadoDetalhes.tsx`, que esta
+migração PIOROU (os primitivos foram a 4,34–6,78:1 e as cópias ficaram em
+1,13–1,51:1); a página inteira que se perde quando um salvamento falha
+(`ChamadoDetalhes.tsx:605`); e o campo numérico que manda 0 ao servidor
+(`TarefasRecorrentes.tsx:707`).
 
 **Não adotados, com motivo registrado:** `Pagination` (a API da trilha não
 devolve total), `Tooltip`, `Radio` e `FileUpload` (sem consumidor).
