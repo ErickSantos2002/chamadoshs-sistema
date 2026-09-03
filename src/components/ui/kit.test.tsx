@@ -86,6 +86,45 @@ describe('cantos', () => {
   });
 
   /**
+   * A cor do avatar sai de TOKEN, e não de hexadecimal.
+   *
+   * Este é o caso que impede a volta do defeito: até 03/09/2026 a cor vinha da
+   * paleta categórica de `lib/graficos.ts`, que é hexadecimal cravado e é
+   * certificada só para FORMA (piso 3:1). Usada para texto, dava 14
+   * reprovações de AA em 20 combinações reais.
+   *
+   * Se alguém voltar a pintar avatar com cor de gráfico, o `#` aparece no
+   * style e este caso fica vermelho.
+   */
+  it('o avatar pinta com token, nunca com hexadecimal', () => {
+    const html = comTema(<Avatar nome="Rickelme David" />);
+    expect(html).toContain('var(--color-');
+    expect(html).not.toMatch(/background-color:s*#/);
+    expect(html).not.toMatch(/color:s*#/);
+  });
+
+  /** Mesma pessoa, mesma cor — é o que o avatar existe para permitir. */
+  it('a cor do avatar é estável para o mesmo nome', () => {
+    const a = comTema(<Avatar nome="Rickelme David" />);
+    const b = comTema(<Avatar nome="Rickelme David" />);
+    expect(a).toBe(b);
+  });
+
+  /**
+   * Sem nome, o par neutro — e não o par 0.
+   *
+   * A derivação do pacote manda nome vazio para `COLORS[0]`, que é azul.
+   * "Sem responsável" não é uma pessoa, e já era cinza antes da migração; a
+   * §30 não deixa trocar isso por motivo visual.
+   */
+  it('sem nome, o avatar é neutro e não azul', () => {
+    const html = comTema(<Avatar nome={null} />);
+    expect(html).toContain('var(--surface-elevated)');
+    expect(html).toContain('var(--on-tint-neutral)');
+    expect(html).not.toContain('var(--color-primary-100)');
+  });
+
+  /**
    * O fundo do selo é o alias de tinta do pacote, SEM modificador de
    * opacidade — regra (a) do D8-a. Com modificador o alfa seria multiplicado
    * (0,15 × 0,20 = 0,03) e o selo sairia quase sem fundo; `validar:paleta`

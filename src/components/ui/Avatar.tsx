@@ -1,8 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 import { iniciais } from '../../lib/formato';
-import { paletaCategorica } from '../../lib/graficos';
-import { useTheme } from '../../context/ThemeContext';
 
 interface AvatarProps {
   nome: string | null | undefined;
@@ -18,51 +16,84 @@ interface AvatarProps {
  * cor em toda a interface — é o que permite reconhecer de relance quem está
  * com o chamado sem ler o texto.
  *
- * ── Por que a paleta categórica, e não as cores de significado ────────
+ * ── A paleta é a do pacote, e por quê ─────────────────────────────────
  *
- * A versão anterior usava `sucesso`, `alerta` e `perigo` para tingir iniciais.
- * Isso empresta significado a quem não tem: um avatar vermelho não quer dizer
- * que aquela pessoa é um perigo, mas é o que a cor diz em todo o resto do
- * sistema. E as duas cores que faltavam para completar seis eram roxo e
- * turquesa crus, que não acompanhavam tema nenhum.
+ * Até 03/09/2026 a cor vinha da paleta CATEGÓRICA de gráficos
+ * (`lib/graficos.ts`), com o texto na cor e o fundo na mesma cor a 20%.
+ * O raciocínio parecia bom — identificar sem significar — e o resultado era
+ * ruim: medido, **14 de 20 combinações reais reprovavam 4,5:1, e 6 delas não
+ * chegavam nem a 3:1**.
  *
- * A paleta categórica existe exatamente para isto: identificar sem significar.
- * Ela já foi verificada por contraste e por separação para daltonismo — e a
- * distinção entre pessoas é o mesmo problema que a distinção entre séries.
+ * A causa era de construção, não de escolha de tom: texto e fundo eram A MESMA
+ * COR, um deles a 20%. O contraste possível entre uma cor e ela mesma
+ * esmaecida tem teto baixo, e nenhum ajuste de paleta o levanta. A paleta
+ * categórica é certificada para FORMA (piso 3:1, barra e ponto de gráfico), e
+ * estava sendo usada para carregar TEXTO.
  *
- * Não há colisão prática com os gráficos: avatar aparece em card e tabela,
- * série aparece dentro de um painel de gráfico, nunca lado a lado.
+ * Agora são os seis pares de `DS/components/core/Avatar.jsx`, que são pares
+ * [fundo, texto] pensados um contra o outro — degrau 50/100 no fundo, 700 no
+ * texto. Medidos, depois da emenda E5:
+ *
+ *   primary   6,31 · 6,31      danger    5,91 · 5,91
+ *   info      6,16 · 6,16      success   5,21 · 5,21
+ *   warning   4,84 · 4,84      neutro    6,92 · 5,29
+ *                                        (claro · escuro)
+ *
+ * Nenhum reprova. O pior é 4,84, contra os 2,64 do pior de antes.
+ *
+ * Some junto a segunda fonte de verdade que a §5.4 proíbe: a cor do avatar
+ * deixa de sair de um arquivo de gráficos e passa a sair de `tokens/`.
+ *
+ * ── Uma consequência visual, para não ser surpresa ────────────────────
+ *
+ * No tema claro os fundos do pacote são degraus 50/100, quase brancos: o disco
+ * fica discreto contra a página (1,04 a 1,19 contra `--surface`) e quem carrega
+ * a identificação são as iniciais. No escuro é o contrário — os mesmos fundos
+ * pálidos saltam sobre o navy. É o desenho do pacote, e não efeito colateral.
+ *
+ * ── A derivação também é a do pacote ──────────────────────────────────
+ *
+ * `soma dos charCodes % 6`, sem o `% 997` que havia aqui. A consequência é que
+ * cada pessoa pode trocar de cor uma vez, nesta migração; o que importa é que
+ * continue estável a partir de agora, e que os dois sistemas derivem igual.
  */
-function indiceDoNome(nome: string, total: number): number {
-  let soma = 0;
-  for (let i = 0; i < nome.length; i++) {
-    soma = (soma + nome.charCodeAt(i)) % 997;
-  }
-  return soma % total;
+const PARES: ReadonlyArray<readonly [fundo: string, texto: string]> = [
+  ['var(--color-primary-100)', 'var(--color-primary-700)'],
+  ['var(--color-info-50)', 'var(--color-info-700)'],
+  ['var(--color-warning-50)', 'var(--color-warning-700)'],
+  ['var(--color-danger-50)', 'var(--color-danger-700)'],
+  ['var(--color-success-50)', 'var(--color-success-700)'],
+  ['var(--surface-elevated)', 'var(--on-tint-neutral)'],
+];
+
+/** O índice do pacote: soma dos códigos do nome, módulo o tamanho da lista. */
+function parDoNome(nome: string): (typeof PARES)[number] {
+  const soma = nome.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return PARES[soma % PARES.length];
 }
 
+/**
+ * Sem nome, o par NEUTRO — que é o sexto da mesma lista, não uma cor à parte.
+ *
+ * O pacote mandaria o nome vazio para o par 0 (soma 0), pintando de azul quem
+ * não tem responsável. Aqui isso seria mentira: "Sem responsável" não é uma
+ * pessoa, e já era cinza antes desta migração. A §30 não deixa trocar isso por
+ * motivo visual.
+ */
+const PAR_NEUTRO = PARES[5];
+
 export const Avatar: React.FC<AvatarProps> = ({ nome, title, className }) => {
-  const { darkMode } = useTheme();
-  const paleta = paletaCategorica(darkMode);
-  const cor = nome ? paleta[indiceDoNome(nome, paleta.length)] : null;
+  const [fundo, texto] = nome ? parDoNome(nome) : PAR_NEUTRO;
 
   return (
     <span
       title={title ?? nome ?? 'Sem responsável'}
-      // O texto fica na cor da paleta e o fundo é a mesma cor esmaecida: as
-      // cores da paleta já passam em 3:1 contra a superfície, e o fundo a 20%
-      // não chega perto de comprometer isso.
-      style={cor ? { color: cor, backgroundColor: `${cor}33` } : undefined}
+      style={{ backgroundColor: fundo, color: texto }}
       className={cn(
+        // `rounded-full` fica: é círculo de verdade, a exceção que o canto reto
+        // do D2-a preserva junto com o ponto de status e o anel do spinner.
         'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
         'text-[10px] font-medium leading-none',
-        // O ramo sem cor: `--on-tint-neutral` e não `--text-muted`.
-        //
-        // São a MESMA superfície — `--tint-neutral` é `--surface-elevated` —
-        // e a emenda E2 do pacote levou o par de 4,34:1 para 6,92:1 no claro
-        // exatamente por causa disso. O avatar ficou para trás porque usa o
-        // token de texto direto, e não o par `on-tint`.
-        !cor && 'bg-superficie-elevada text-on-tint-neutral',
         className
       )}
     >
