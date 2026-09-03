@@ -40,6 +40,7 @@ vi.mock('react-hot-toast', () => ({
 }));
 
 const { default: CategoriaModal } = await import('./CategoriaModal');
+const { Campo, Input } = await import('../ui');
 
 let host: HTMLDivElement;
 let root: Root;
@@ -114,6 +115,30 @@ describe('CategoriaModal — o template de formulário', () => {
     // obrigatoriedade por aqui, ou não recebe de jeito nenhum.
     expect(campo('nome').getAttribute('aria-required')).toBe('true');
     expect(campo('descricao').hasAttribute('aria-required')).toBe(false);
+  });
+
+  it('não diz a mesma coisa duas vezes quando há `required` nativo', () => {
+    // Nenhum campo embrulhado pelo `Campo` tem o nativo hoje, mas
+    // `NovoChamadoForm` e `Login` têm — e são telas das Fases 12–16. Quando
+    // migrarem, o `Campo` não pode acrescentar um segundo sinal que possa
+    // divergir do primeiro.
+    const alvo = document.createElement('div');
+    document.body.appendChild(alvo);
+    const r = createRoot(alvo);
+    act(() =>
+      r.render(
+        <Campo id="obrigatorio-nativo" rotulo="Assunto" obrigatorio>
+          <Input required />
+        </Campo>
+      )
+    );
+
+    const controle = alvo.querySelector('input')!;
+    expect(controle.required).toBe(true);
+    expect(controle.hasAttribute('aria-required')).toBe(false);
+
+    act(() => r.unmount());
+    alvo.remove();
   });
 
   it('recusado, o campo fica inválido E aponta para o motivo', () => {

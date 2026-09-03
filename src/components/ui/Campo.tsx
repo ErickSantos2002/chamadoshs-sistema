@@ -92,9 +92,10 @@ export const RotuloDeCampo: React.FC<RotuloDeCampoProps> = ({
     {obrigatorio && (
       <>
         {' '}
-        {/* O asterisco vai junto do rótulo e fora do texto lido: quem usa
-            leitor de tela recebe a obrigatoriedade do `required` do campo, não
-            de um símbolo solto no meio da frase. */}
+        {/* O asterisco é `aria-hidden`: um "*" solto no meio da frase lida
+            não comunica obrigatoriedade a ninguém — vira "Nome asterisco".
+            Quem informa é o campo, por `required` nativo ou `aria-required`;
+            o `Campo` abaixo garante que um dos dois exista. */}
         <span aria-hidden="true" className="text-perigo">
           *
         </span>
@@ -209,6 +210,18 @@ export const Campo: React.FC<CampoProps> = ({
   const idDoErro = `${id}-erro`;
   const idDaDica = `${id}-dica`;
 
+  // `aria-required` SÓ quando o controle não traz `required` nativo.
+  //
+  // O nativo já informa a árvore de acessibilidade, e declarar os dois é dizer
+  // a mesma coisa duas vezes — com o risco de divergirem no dia em que alguém
+  // mexer num e não no outro. Hoje nenhum campo embrulhado por este componente
+  // tem o nativo, mas `NovoChamadoForm` e `Login` têm, e são telas das Fases
+  // 12–16: a colisão está a caminho, não é hipotética.
+  //
+  // Achado pela sessão do HelpHS, que chegou nele pelo lado oposto — lá os
+  // primitivos já espalhavam `required` e o `aria-required` seria o redundante.
+  const temRequiredNativo = 'required' in children.props;
+
   // O erro vem primeiro: quando os dois existem, é ele que a pessoa precisa
   // ouvir antes.
   const descritores = [erro && idDoErro, dica && idDaDica]
@@ -224,7 +237,7 @@ export const Campo: React.FC<CampoProps> = ({
       {React.cloneElement(children, {
         id,
         'aria-invalid': erro ? true : undefined,
-        'aria-required': obrigatorio || undefined,
+        'aria-required': obrigatorio && !temRequiredNativo ? true : undefined,
         'aria-describedby': descritores || undefined,
         // O spread do filho vem por ÚLTIMO de propósito: o que o sítio já
         // escreveu vence o que este componente injeta. Um campo que precise de
