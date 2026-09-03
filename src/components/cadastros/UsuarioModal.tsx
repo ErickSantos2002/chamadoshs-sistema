@@ -302,6 +302,24 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                     type={showPassword ? 'text' : 'password'}
                     id="password"
                     name="password"
+                    // `new-password` nos DOIS campos deste par.
+                    //
+                    // Sem ele, o gerenciador de senhas do navegador trata o
+                    // campo como login e oferece a senha salva de quem está
+                    // logado — que aqui é o ADMINISTRADOR criando a conta de
+                    // outra pessoa. Aceita por reflexo, a senha do
+                    // administrador vira a senha do usuário novo, e ninguém
+                    // percebe: o formulário salva, o toast diz que deu certo,
+                    // e a pessoa recebe uma credencial que não é a dela.
+                    //
+                    // Vale também no modo de edição: ali o campo é "nova senha
+                    // (opcional)", que continua sendo uma senha nova.
+                    //
+                    // Era o ÚNICO formulário de senha do projeto sem o
+                    // atributo. `UsuariosTab` (538, 553) e `ModalTrocarSenha`
+                    // (97, 109, 121) já acertavam — o que torna este um desvio
+                    // isolado, não um padrão do sistema.
+                    autoComplete="new-password"
                     value={formData.password}
                     onChange={handleInputChange}
                     className={cn('pr-10', errors.password && 'border-perigo')}
@@ -333,6 +351,12 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   <Input
                     type={showConfirmPassword ? 'text' : 'password'}
                     id="confirmarSenha"
+                    // O par do campo acima. Corrigir só um deixaria o
+                    // gerenciador preenchendo metade do par, que é pior que
+                    // preencher os dois: a confirmação passaria a divergir e o
+                    // formulário recusaria sem dizer por quê.
+                    name="confirmarSenha"
+                    autoComplete="new-password"
                     value={confirmarSenha}
                     onChange={(e) => {
                       setConfirmarSenha(e.target.value);
