@@ -432,6 +432,53 @@ const BRANCO = [255, 255, 255];
  * condicional. Subcontar é melhor que inventar: um número a menos é uma
  * tarefa esquecida, um número inventado é uma tarefa que não existe.
  */
+/**
+ * As classes, com o `!` opcional — armadilha 7.
+ *
+ * `!bg-perigo` e `hover:!bg-perigo` são classes válidas, e o padrão anterior
+ * não as via. Cegueira, não invenção; mas cegueira silenciosa.
+ */
+const CLASSE_FUNDO = /(?:^|\s)((?:[\w-]+:)*)!?(bg-[\w-]+)(?![-\w/])/g;
+const CLASSE_TEXTO = /(?:^|\s)((?:[\w-]+:)*)!?(text-[\w-]+)(?![-\w/])/g;
+
+/** `md:hover:` vira ['md','hover']. Sem prefixo, lista vazia. */
+const variantesDe = (prefixo) => (prefixo ? prefixo.split(':').filter(Boolean) : []);
+
+/** Todo elemento de `a` está em `b`? */
+const contido = (a, b) => a.every((v) => b.includes(v));
+
+/**
+ * Recorta cada interpolação de template contando chaves — armadilha 8.
+ *
+ * Devolve os trechos ESTÁTICOS do literal, na ordem. Recortar até o primeiro
+ * `}` erra quando a interpolação tem chaves dentro, como em
+ * `cn({ ativo }, '...')`, e mistura pedaços de ramos diferentes. Aqui isso só
+ * produzia cegueira — a classe precisa vir depois de espaço, e no pedaço ela
+ * vinha depois de aspa — mas na varredura do HelpHS produzia falso positivo.
+ */
+function semInterpolacao(texto) {
+  const CIFRAO = String.fromCharCode(36);
+  const trechos = [];
+  let atual = '';
+  for (let i = 0; i < texto.length; i++) {
+    if (texto[i] === CIFRAO && texto[i + 1] === '{') {
+      trechos.push(atual);
+      atual = '';
+      let nivel = 1;
+      i += 2;
+      for (; i < texto.length && nivel > 0; i++) {
+        if (texto[i] === '{') nivel++;
+        else if (texto[i] === '}') nivel--;
+      }
+      i--;
+    } else {
+      atual += texto[i];
+    }
+  }
+  trechos.push(atual);
+  return trechos;
+}
+
 function varrerFundoCheio() {
   // Lidos uma vez, e não a cada par encontrado.
   const css = fs.readFileSync(CSS, 'utf8');
@@ -461,7 +508,7 @@ function varrerFundoCheio() {
       // ternario no MESMO literal. O conteudo da interpolacao vira separador;
       // as strings de dentro dela sao lidas por conta propria, porque o
       // matchAll continua correndo o arquivo inteiro.
-      for (const lista of m[2].split(/\$\{[\s\S]*?\}/)) {
+      for (const lista of semInterpolacao(m[2])) {
         // `text-` não é só cor: `text-xs`, `text-left` e `text-nowrap` usam o
         // mesmo prefixo. Sem este filtro, "o texto deste estado" devolvia o
         // TAMANHO da fonte e o pareamento parava de achar qualquer coisa —
@@ -469,26 +516,38 @@ function varrerFundoCheio() {
         // parece conserto.
         const NAO_E_COR =
           /^text-(?:\d?xs|sm|base|lg|\d?xl|left|center|right|justify|start|end|wrap|nowrap|balance|pretty|ellipsis|clip|opacity-\d+)$/;
-        const textos = [
-          ...lista.matchAll(/(?:^|\s)((?:[\w-]+:)*)(text-[\w-]+)(?![-\w/])/g),
-        ].filter((x) => !NAO_E_COR.test(x[2]));
+        const textos = [...lista.matchAll(CLASSE_TEXTO)]
+          .map((x) => ({ variantes: variantesDe(x[1]), nome: x[2] }))
+          .filter((x) => !NAO_E_COR.test(x.nome));
         if (!textos.length) continue;
 
-        // Armadilha 5: num estado vale o texto DAQUELE estado; o base so
-        // entra quando o estado nao declara o proprio.
-        const textoDoEstado = (estado) => {
-          const proprio = textos.find((x) => x[1] === estado);
-          if (proprio) return proprio[2];
-          const base = textos.find((x) => x[1] === '');
-          return base ? base[2] : null;
+        // Armadilhas 5 e 6: PRECEDENCIA, e nao igualdade de prefixo.
+        //
+        // A primeira versao perguntava "este estado declara texto proprio?" e,
+        // se nao, caia no texto base. Funciona com um nivel de variante e
+        // volta a inventar assim que eles se compoem: para `md:hover:bg-X`,
+        // nao ha `md:hover:text-`, entao ela usava o texto base e IGNORAVA um
+        // `hover:text-` que a CSS aplica ali. Provado com fixture — contava um
+        // par que nao existe.
+        //
+        // O modelo do Tailwind e conteudo + especificidade: vale o texto cujas
+        // variantes estao CONTIDAS nas do fundo, e entre os candidatos ganha o
+        // de mais variantes (no empate, o ultimo escrito).
+        const textoDoEstado = (variantesDoFundo) => {
+          let melhor = null;
+          for (const tx of textos) {
+            if (!contido(tx.variantes, variantesDoFundo)) continue;
+            if (!melhor || tx.variantes.length >= melhor.variantes.length) melhor = tx;
+          }
+          return melhor ? melhor.nome : null;
         };
 
-      for (const fm of lista.matchAll(/(?:^|\s)((?:[\w-]+:)*)(bg-[\w-]+)(?![-\w/])/g)) {
+      for (const fm of lista.matchAll(CLASSE_FUNDO)) {
         const estado = fm[1];
         const fundo = fm[2];
         const token = FUNDOS_CHEIOS[fundo];
         if (!token) continue;
-        if (textoDoEstado(estado) !== 'text-white') continue;
+        if (textoDoEstado(variantesDe(estado)) !== 'text-white') continue;
 
         // O `.dark` NÃO redeclara as cores de significado, de propósito:
         // erro é vermelho nos dois temas. Sem o fallback para `:root` a
