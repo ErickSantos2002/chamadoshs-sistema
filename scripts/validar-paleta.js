@@ -375,7 +375,11 @@ function exigirSemModificadorDeOpacidade() {
  * causa de uma linha em branco é uma catraca que alguém desliga.
  */
 const PARES_CONHECIDOS = new Map([
-  ['src/components/cadastros/CategoriasTab.tsx  bg-perigo  repouso', 1],
+  // O par do `CategoriasTab` saiu em 03/09/2026: o botao "Confirmar" da
+  // exclusao era `bg-perigo` com `text-white`, 3,76:1, e virou
+  // `Button variante="perigo"` no template de listagem da Fase 11.
+  //
+  // Os quatro que restam sao todos de `ChamadoDetalhes`, que e a Fase 15.
   ['src/pages/ChamadoDetalhes.tsx  bg-info  repouso', 3],
   ['src/pages/ChamadoDetalhes.tsx  bg-perigo  repouso', 3],
   ['src/pages/ChamadoDetalhes.tsx  bg-sinal  repouso', 3],
