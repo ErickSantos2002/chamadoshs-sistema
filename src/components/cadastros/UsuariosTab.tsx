@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import {
@@ -52,6 +52,22 @@ const UsuariosTab: React.FC = () => {
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [senhaError, setSenhaError] = useState('');
+  // O reset de senha em voo, em DOIS lugares, e cada um faz uma coisa.
+  //
+  // O estado desenha: e ele que desabilita o botao e poe o anel.
+  // A REF trava: e ela que impede a segunda chamada.
+  //
+  // Precisa dos dois porque `setResetandoSenha(true)` NAO atualiza
+  // `resetandoSenha` no mesmo tique — a leitura seguinte, dentro do mesmo
+  // manipulador ou num segundo clique antes do render, ainda ve `false`. Um
+  // duplo clique de mouse sao dois eventos em milissegundos, antes de qualquer
+  // pintura: os dois liam falso e os dois passavam.
+  //
+  // Isto nao e teoria. A primeira versao deste conserto guardava so pelo
+  // estado, e o teste reprovou na hora com "expected 1 time, got 2 times".
+  // `useRef` muda no ato, e por isso e a trava.
+  const [resetandoSenha, setResetandoSenha] = useState(false);
+  const resetEmVoo = useRef(false);
   const [ordenacao, setOrdenacao] = useState<{
     campo: OrdenacaoCampo;
     direcao: OrdenacaoDirecao;
@@ -179,23 +195,55 @@ const UsuariosTab: React.FC = () => {
   const handleResetPassword = async () => {
     if (!resetPasswordFor) return;
 
+    // A guarda contra o segundo clique.
+    //
+    // Sem ela, dois cliques disparavam duas chamadas de troca de senha para o
+    // mesmo usuario. A segunda costuma vencer e gravar o mesmo valor, entao na
+    // maior parte das vezes nao da em nada visivel — mas as duas partem em
+    // paralelo, e nao ha nada garantindo a ordem: e uma corrida com credencial
+    // de outra pessoa em jogo, e o resultado depende de qual resposta chega
+    // primeiro.
+    //
+    // Duplo clique num botao nao e descuido raro: e o gesto padrao de quem
+    // acha que o primeiro clique nao pegou — e aqui o primeiro NAO dava
+    // nenhum sinal de ter pego, porque o botao nao mudava de estado.
+    //
+    // A trava vem ANTES de tudo, e le a REF e nao o estado — ver a nota na
+    // declaracao. O botao desabilitado e o aviso visual; esta linha e o que
+    // de fato impede a segunda chamada.
+    if (resetEmVoo.current) return;
+    resetEmVoo.current = true;
+
     // Validações
+    // As duas recusas soltam a trava antes de sair. Sem isso, uma senha curta
+    // travaria o botao para sempre: a ref ficaria `true` e nenhuma tentativa
+    // seguinte passaria — o defeito oposto, e pior, porque silencioso.
     if (!novaSenha || novaSenha.length < 6) {
       setSenhaError('A senha deve ter pelo menos 6 caracteres');
+      resetEmVoo.current = false;
       return;
     }
 
     if (novaSenha !== confirmarSenha) {
       setSenhaError('As senhas não coincidem');
+      resetEmVoo.current = false;
       return;
     }
 
     try {
+      setResetandoSenha(true);
       await updateUsuarioPassword(resetPasswordFor.id, novaSenha);
       toast.success(`Senha do usuário ${resetPasswordFor.nome} atualizada com sucesso!`);
       fecharResetSenha();
     } catch (err: any) {
       setSenhaError(err.response?.data?.detail || 'Erro ao resetar senha');
+    } finally {
+      // `finally` e nao no fim do `try`: sem ele, um erro deixaria o botao
+      // travado para sempre e a pessoa teria de fechar o modal para tentar de
+      // novo — trocando um defeito por outro. Os dois sao soltos aqui, senao
+      // a ref ficaria travada com o botao ja liberado.
+      resetEmVoo.current = false;
+      setResetandoSenha(false);
     }
   };
 
@@ -558,8 +606,10 @@ const UsuariosTab: React.FC = () => {
             <Button variante="secundario" onClick={fecharResetSenha}>
               Cancelar
             </Button>
-            <Button onClick={handleResetPassword}>
-              <IconeChave className="h-4 w-4" aria-hidden="true" />
+            <Button onClick={handleResetPassword} carregando={resetandoSenha}>
+              {!resetandoSenha && (
+                <IconeChave className="h-4 w-4" aria-hidden="true" />
+              )}
               Resetar senha
             </Button>
           </div>
