@@ -929,22 +929,22 @@ const Dashboard: React.FC = () => {
               <table className="w-full">
                 <thead className="bg-superficie-elevada border-b border-borda">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                       Protocolo
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                       Título
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
                       Prioridade
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
                       Data
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
                       Ações
                     </th>
                   </tr>

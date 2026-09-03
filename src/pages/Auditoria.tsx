@@ -311,6 +311,7 @@ const Auditoria: React.FC = () => {
               <tr>
                 {['Quando', 'Quem', 'O quê', 'Cadastro', 'Origem'].map((coluna) => (
                   <th
+                    scope="col"
                     key={coluna}
                     className="border-b border-borda px-4 py-3 text-left text-xs font-medium text-conteudo-suave"
                   >

@@ -307,7 +307,7 @@ const UsuariosTab: React.FC = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-borda">
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                   <button
                     onClick={() => handleOrdenar('id')}
                     className="flex items-center gap-1 hover:text-conteudo"
@@ -320,7 +320,7 @@ const UsuariosTab: React.FC = () => {
                     )}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                   <button
                     onClick={() => handleOrdenar('nome')}
                     className="flex items-center gap-1 hover:text-conteudo"
@@ -333,13 +333,13 @@ const UsuariosTab: React.FC = () => {
                     )}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                   Perfil
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                   Setor
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                   <button
                     onClick={() => handleOrdenar('created_at')}
                     className="flex items-center gap-1 hover:text-conteudo"
@@ -352,7 +352,7 @@ const UsuariosTab: React.FC = () => {
                     )}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-conteudo-suave">
+                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-conteudo-suave">
                   Ações
                 </th>
               </tr>

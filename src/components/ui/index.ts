@@ -52,4 +52,16 @@ export type { TamanhoSpinner } from './Spinner';
 
 export { IconeConfere, IconeSeta } from './icones';
 
+// A tabela, nas pecas do Table.jsx do pacote. O `scope="col"` vem de graca
+// na celula de cabecalho — era o que faltava nas seis tabelas do sistema.
+export {
+  Tabela,
+  TabelaCabecalho,
+  TabelaCorpo,
+  TabelaLinha,
+  TabelaCelulaDeCabecalho,
+  TabelaCelula,
+  TabelaVazia,
+} from './Tabela';
+
 export { Textarea } from './Textarea';

@@ -66,7 +66,31 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
 
   return (
     <div className="space-y-1" title={detalhe}>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-superficie-elevada">
+      {/* `role="progressbar"` com os três valores.
+       *
+       * A barra dizia o consumo do prazo APENAS pelo comprimento pintado, que
+       * é informação puramente visual. O `title` do contêiner acima não
+       * resolve: `title` não é anunciado de forma confiável, e em teclado ele
+       * nem aparece.
+       *
+       * `aria-valuenow` leva o valor SATURADO, o mesmo que a barra desenha, e
+       * não o percentual cru: com o prazo estourado o cru passa de 100 e
+       * ficaria fora do intervalo declarado. O número real continua no texto
+       * abaixo e no `title`, que é onde ele cabe.
+       *
+       * Veio do `Progress.jsx` do pacote — que é este mesmo componente,
+       * capturado daqui. O pacote acrescentou a semântica ao capturá-lo, e ela
+       * nunca voltou para cá. É o gêmeo do que a emenda E7-b ensinou: depois
+       * de criar alguma coisa, varra quem deveria tê-la.
+       */}
+      <div
+        role="progressbar"
+        aria-valuenow={largura}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={detalhe}
+        className="h-1 w-full overflow-hidden rounded-full bg-superficie-elevada"
+      >
         <div
           className={cn(
             'h-full rounded-full transition-all duration-700',
