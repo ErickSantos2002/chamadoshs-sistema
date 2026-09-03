@@ -120,7 +120,11 @@ describe('cantos', () => {
   it('sem nome, o avatar é neutro e não azul', () => {
     const html = comTema(<Avatar nome={null} />);
     expect(html).toContain('var(--surface-elevated)');
-    expect(html).toContain('var(--on-tint-neutral)');
+    // `--text-muted` e nao `--on-tint-neutral`: depois da E5 os dois resolvem
+    // para o mesmo valor, e o pacote voltou a escrever o primeiro. O que este
+    // caso trava e o par NEUTRO, nao a expressao — mas travar a expressao e o
+    // que faz a divergencia com o pacote aparecer no teste, e nao no olho.
+    expect(html).toContain('var(--text-muted)');
     expect(html).not.toContain('var(--color-primary-100)');
   });
 

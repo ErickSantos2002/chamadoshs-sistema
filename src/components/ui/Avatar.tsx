@@ -63,7 +63,11 @@ const PARES: ReadonlyArray<readonly [fundo: string, texto: string]> = [
   ['var(--color-warning-50)', 'var(--color-warning-700)'],
   ['var(--color-danger-50)', 'var(--color-danger-700)'],
   ['var(--color-success-50)', 'var(--color-success-700)'],
-  ['var(--surface-elevated)', 'var(--on-tint-neutral)'],
+  // O pacote reverteu para `--text-muted` em 03/09/2026, e este par segue a
+  // expressao dele. Zero pixel de diferenca: depois da E5 os dois resolvem
+  // para #475569 no claro e slate-400 no escuro. O que muda e a procedencia —
+  // a instrucao era usar a paleta do `Avatar.jsx`, e ela diz `--text-muted`.
+  ['var(--surface-elevated)', 'var(--text-muted)'],
 ];
 
 /** O índice do pacote: soma dos códigos do nome, módulo o tamanho da lista. */
