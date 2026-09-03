@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import {
   Avatar,
+  Aviso,
   Badge,
   BlocoCarregando,
   Button,
@@ -15,6 +16,13 @@ import {
   Seletor,
   Spinner,
   Switch,
+  Tabela,
+  TabelaCabecalho,
+  TabelaCelula,
+  TabelaCelulaDeCabecalho,
+  TabelaCorpo,
+  TabelaLinha,
+  TabelaVazia,
   Textarea,
   type VarianteBadge,
   type VarianteBotao,
@@ -74,7 +82,7 @@ import { contrasteDoTexto, formatar, PISO_TEXTO } from './contraste';
  *   /dev/componentes?tema=claro&grupo=button&foco=primario
  *
  * `tema`   claro | escuro                          (exigido na captura)
- * `grupo`  badge | button | card | avatar | spinner | console | campo | tudo
+ * `grupo`  badge | button | card | avatar | spinner | console | campo | dados | tudo
  * `foco`   a variante de Button que recebe foco    (ver a nota em Botoes)
  *
  * ── Por que não entra em produção ─────────────────────────────────────
@@ -578,6 +586,17 @@ const PelesDeConsole: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
    Formulário — Fase 8
    ───────────────────────────────────────────────────────────────────── */
 
+// Os controles de selecao sao medidos no ROTULO, e nao na caixa desenhada.
+//
+// A primeira versao usava `seletor="span"`, que pega o primeiro <span> do
+// slot — a caixa `aria-hidden`. Ela nao tem texto: o que se media era a cor
+// herdada do rotulo contra o fundo da caixa marcada, 2,77:1, um par que nao
+// existe em pixel nenhum. A galeria reprovava tres amostras corretas.
+//
+// Fica registrado porque e o modo de falha que esta pagina inteira existe para
+// evitar: um numero errado e uma RESPOSTA, e uma resposta errada com aparencia
+// de medicao e pior que um traco. O que a caixa carrega — o visto em
+// --text-on-primary sobre --action — e forma, piso 3:1, e esta em 5,29/5,11.
 const Campos: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => {
   // Estado real: um controle de formulário parado não mostra estado nenhum, e
   // o que interessa aqui é justamente o contraste de cada estado.
@@ -647,12 +666,12 @@ const Campos: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => {
         titulo="Checkbox e Switch — e o foco que o pacote não mostra"
         nota="Nos dois, o pacote esconde o <input> em 1×1 com opacity 0 e NADA reage ao foco dele: quem navega por teclado chega no controle e não vê onde está. Aqui o input é peer e a caixa (ou o trilho) desenha o anel de --focus-ring. Para ver, pressione Tab — o anel é focus-visible, então não aparece no clique."
       >
-        <Amostra id="check-marcado" rotulo="marcado" seletor="span" medicoes={medicoes}>
+        <Amostra id="check-marcado" rotulo="marcado" seletor="label > span:last-child" medicoes={medicoes}>
           <Checkbox marcado={marcado} aoMudar={setMarcado}>
             Conta de serviço
           </Checkbox>
         </Amostra>
-        <Amostra id="check-vazio" rotulo="desmarcado" seletor="span" medicoes={medicoes}>
+        <Amostra id="check-vazio" rotulo="desmarcado" seletor="label > span:last-child" medicoes={medicoes}>
           <Checkbox marcado={false} aoMudar={() => {}}>
             Mostrar desativadas
           </Checkbox>
@@ -661,19 +680,19 @@ const Campos: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => {
           id="check-misto"
           rotulo="misto"
           nota="input.indeterminate no DOM, não só desenhado"
-          seletor="span"
+          seletor="label > span:last-child"
           medicoes={medicoes}
         >
           <Checkbox marcado={false} misto aoMudar={() => {}}>
             Marcar todos
           </Checkbox>
         </Amostra>
-        <Amostra id="check-off" rotulo="desabilitado" seletor="span" medicoes={medicoes}>
+        <Amostra id="check-off" rotulo="desabilitado" seletor="label > span:last-child" medicoes={medicoes}>
           <Checkbox marcado desabilitado aoMudar={() => {}}>
             Não editável
           </Checkbox>
         </Amostra>
-        <Amostra id="switch-ligado" rotulo="Switch ligado" seletor="span" medicoes={medicoes}>
+        <Amostra id="switch-ligado" rotulo="Switch ligado" seletor="label > span:last-child" medicoes={medicoes}>
           <Switch ligado={ligado} aoMudar={setLigado}>
             Modo escuro
           </Switch>
@@ -682,7 +701,7 @@ const Campos: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => {
           id="switch-desligado"
           rotulo="Switch desligado"
           nota="o contorno é o que faz o trilho existir"
-          seletor="span"
+          seletor="label > span:last-child"
           medicoes={medicoes}
         >
           <Switch ligado={false} aoMudar={() => {}}>
@@ -693,6 +712,79 @@ const Campos: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => {
     </>
   );
 };
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   Dados e feedback — Fases 9 e 10
+   ───────────────────────────────────────────────────────────────────── */
+
+const DadosEFeedback: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
+  <>
+    <Secao
+      titulo="Aviso — as quatro variantes"
+      nota="Substituiu nove cópias literais da mesma string, e a maioria não tinha role nenhum: os avisos de submissão falhada apareciam em silêncio para quem usa leitor de tela. O fundo é o alias --tint-*, pela regra (b) da D8-a, e não a cor cheia com modificador."
+    >
+      {(['info', 'sucesso', 'alerta', 'perigo'] as const).map((v) => (
+        <Amostra key={v} id={`aviso-${v}`} rotulo={v} seletor="div > div" medicoes={medicoes}>
+          <Aviso variante={v} className="w-64">
+            Não foi possível concluir a operação.
+          </Aviso>
+        </Amostra>
+      ))}
+      <Amostra id="aviso-titulo" rotulo="com título" seletor="p" medicoes={medicoes}>
+        <Aviso variante="perigo" titulo="Erro ao salvar" className="w-64">
+          Verifique os campos destacados.
+        </Aviso>
+      </Amostra>
+    </Secao>
+
+    <Secao
+      titulo="Tabela — com scope no cabeçalho"
+      nota="A célula de cabeçalho era a mesma string em cinco arquivos, e nenhuma das seis tabelas do sistema declarava scope. Em tabela larga a inferência do navegador falha e o leitor lê os valores sem dizer de que coluna são."
+    >
+      <Amostra
+        id="tabela-cabecalho"
+        rotulo="cabeçalho"
+        seletor="th"
+        medicoes={medicoes}
+      >
+        <div className="w-80 rounded-xl border border-borda bg-superficie">
+          <Tabela>
+            <TabelaCabecalho>
+              <tr>
+                <TabelaCelulaDeCabecalho>Nome</TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho>Situação</TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho aDireita>Ações</TabelaCelulaDeCabecalho>
+              </tr>
+            </TabelaCabecalho>
+            <TabelaCorpo>
+              <TabelaLinha>
+                <TabelaCelula>Infraestrutura</TabelaCelula>
+                <TabelaCelula tenue>Ativa</TabelaCelula>
+                <TabelaCelula className="text-right">—</TabelaCelula>
+              </TabelaLinha>
+              <TabelaLinha clicavel onClick={() => {}}>
+                <TabelaCelula>Suporte</TabelaCelula>
+                <TabelaCelula tenue>Ativa</TabelaCelula>
+                <TabelaCelula className="text-right">—</TabelaCelula>
+              </TabelaLinha>
+            </TabelaCorpo>
+          </Tabela>
+        </div>
+      </Amostra>
+
+      <Amostra id="tabela-vazia" rotulo="vazia" seletor="td" medicoes={medicoes}>
+        <div className="w-64 rounded-xl border border-borda bg-superficie">
+          <Tabela>
+            <TabelaCorpo>
+              <TabelaVazia colunas={3}>Nenhum registro.</TabelaVazia>
+            </TabelaCorpo>
+          </Tabela>
+        </div>
+      </Amostra>
+    </Secao>
+  </>
+);
 
 /* ─────────────────────────────────────────────────────────────────────
    A página
@@ -836,6 +928,7 @@ const GaleriaDeComponentes: React.FC = () => {
       {mostrar('spinner') && <Aneis medicoes={medicoes} />}
       {mostrar('console') && <PelesDeConsole medicoes={medicoes} />}
       {mostrar('campo') && <Campos medicoes={medicoes} />}
+      {mostrar('dados') && <DadosEFeedback medicoes={medicoes} />}
     </div>
   );
 };
