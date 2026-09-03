@@ -27,6 +27,21 @@ const PADDING: Record<PaddingDoCard, string> = {
 };
 
 /**
+ * O padding do `Card` mais próximo acima. `null` fora de qualquer card.
+ *
+ * Existe para o `CardBody` conseguir avisar quando o respiro vai dobrar. Um
+ * comentário no arquivo não alcança quem compõe as duas peças em telas
+ * diferentes — e são onze telas para migrar nas Fases 11–16, cada uma num
+ * commit próprio, escritas por quem não vai reler este arquivo antes.
+ *
+ * Contexto, e não uma checagem de `children`: o `CardBody` raramente é filho
+ * DIRETO do card. Ele costuma vir embrulhado por um `<div>` de layout, por um
+ * `map`, ou por um componente da própria tela — e nenhum desses casos apareceria
+ * numa inspeção de `React.Children`. O contexto atravessa todos.
+ */
+const PaddingDoCardContext = React.createContext<PaddingDoCard | null>(null);
+
+/**
  * Superfície padrão: card, painel, coluna do kanban.
  *
  * Existe para as telas pararem de repetir a mesma pilha de dez classes com
@@ -71,17 +86,25 @@ export const Card: React.FC<CardProps> = ({
     className
   );
 
+  // O padding desce para quem estiver dentro, em qualquer profundidade. É o que
+  // permite ao `CardBody` reclamar quando o respiro vai dobrar.
+  const corpo = (
+    <PaddingDoCardContext.Provider value={padding}>
+      {children}
+    </PaddingDoCardContext.Provider>
+  );
+
   // Card clicável vira <button> de verdade, não <div onClick>: assim recebe
   // foco, responde a Enter e Espaço, e é anunciado como interativo.
   if (clicavel) {
     return (
       <button type="button" onClick={onClick} className={conteudo}>
-        {children}
+        {corpo}
       </button>
     );
   }
 
-  return <div className={conteudo}>{children}</div>;
+  return <div className={conteudo}>{corpo}</div>;
 };
 
 /** Título de card: 16px semibold em `--text-heading`. */
@@ -133,13 +156,34 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
 /**
  * Bloco com respiro próprio, para o card `padding="none"`.
  *
- * Não usar dentro de card com padding: o respiro dobra.
+ * Não usar dentro de card com padding: o respiro dobra — 16px do card mais
+ * 16px/20px daqui, e o conteúdo encolhe sem que ninguém tenha pedido. Em
+ * desenvolvimento, a combinação errada reclama no console.
+ *
+ * O aviso some do pacote publicado: `import.meta.env.DEV` vira `false` literal
+ * no build e o Vite remove o bloco inteiro. Não é `throw` de propósito —
+ * respiro dobrado é feio, não é quebra, e derrubar a tela de quem está
+ * migrando seria uma punição maior que o defeito.
  */
 export const CardBody: React.FC<{
   children: React.ReactNode;
   className?: string;
-}> = ({ children, className }) => (
-  <div className={cn('px-5 py-4', className)}>{children}</div>
-);
+}> = ({ children, className }) => {
+  const paddingDoCard = React.useContext(PaddingDoCardContext);
+
+  if (
+    import.meta.env.DEV &&
+    paddingDoCard !== null &&
+    paddingDoCard !== 'none'
+  ) {
+    console.error(
+      `[Card] CardBody dentro de um Card com padding="${paddingDoCard}": ` +
+        'o respiro dobra. Ou o Card leva padding="none" e cada bloco paga o ' +
+        'seu, ou o Card paga e o CardBody sai. Nunca os dois.'
+    );
+  }
+
+  return <div className={cn('px-5 py-4', className)}>{children}</div>;
+};
 
 export default Card;
