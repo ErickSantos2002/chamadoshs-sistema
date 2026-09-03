@@ -11,8 +11,9 @@ import {
   RotuloDeCampo,
   Seletor,
   Textarea,
+  BlocoCarregando,
 } from '../components/ui';
-import { IconeAgenda, IconeApagar, IconeAtencao, IconeCarregando, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
+import { IconeAgenda, IconeApagar, IconeAtencao, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
 import {
   tarefasRecorrentesService,
   usuariosService,
@@ -459,12 +460,11 @@ const TarefasRecorrentes: React.FC = () => {
 
       {/* Lista */}
       {loading ? (
-        <div className="flex h-48 items-center justify-center rounded-xl border border-borda bg-superficie">
-          <IconeCarregando
-            className="h-8 w-8 animate-spin text-info"
-            aria-hidden="true"
-          />
-        </div>
+        // O terceiro bloco silencioso.
+        <BlocoCarregando
+          tamanho="lg"
+          className="h-48 rounded-xl border border-borda bg-superficie"
+        />
       ) : tarefasOrdenadas.length === 0 ? (
         <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-borda bg-superficie text-sm text-conteudo-tenue">
           <IconeRepetir className="h-8 w-8" aria-hidden="true" />
@@ -757,10 +757,11 @@ const TarefasRecorrentes: React.FC = () => {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={salvando}>
-                    {salvando ? (
-                      <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
-                    ) : (
+                  {/* `carregando` em vez do par `disabled` + ícone trocado à
+                      mão: o Button já desenha o anel, já desabilita e já põe
+                      `aria-busy`, que faltava aqui. */}
+                  <Button type="submit" carregando={salvando}>
+                    {!salvando && (
                       <IconeSalvar className="h-4 w-4" aria-hidden="true" />
                     )}
                     Salvar
@@ -785,11 +786,9 @@ const TarefasRecorrentes: React.FC = () => {
               <Button
                 variante="sucesso"
                 onClick={confirmarRealizar}
-                disabled={salvando}
+                carregando={salvando}
               >
-                {salvando ? (
-                  <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
-                ) : (
+                {!salvando && (
                   <IconeConfereCirculo className="h-4 w-4" aria-hidden="true" />
                 )}
                 Confirmar

@@ -236,17 +236,18 @@ export const IconeRepetir: React.FC<PropsDeIcone> = (p) => (
   </Traco>
 );
 
-/**
- * Carregando.
+/* `IconeCarregando` saiu daqui na Fase 7.
  *
- * É um arco, e não um círculo: o vão é o que faz a rotação aparecer. Um anel
- * fechado girando fica parado aos olhos.
+ * Era um arco de SVG que dez telas giravam com `animate-spin`, cada uma no
+ * próprio tamanho e na própria cor. Quem carrega isso agora é o `Spinner` do
+ * kit, que é o anel do pacote e traz junto o `role="status"` que faltava.
+ *
+ * Removido, e não deixado sem uso: um ícone de carregar parado aqui é um
+ * convite para a próxima tela desenhar o décimo primeiro anel à mão em vez de
+ * usar o primitivo. O `IconeRecarregar` FICA, porque tem outro papel — é a
+ * seta do botão "Atualizar dados", que gira enquanto a busca corre e é
+ * decorativa (o botão já tem `aria-label`).
  */
-export const IconeCarregando: React.FC<PropsDeIcone> = (p) => (
-  <Traco {...p}>
-    <path d="M12 3a9 9 0 1 0 9 9" />
-  </Traco>
-);
 
 // ── Ações sobre registros ──────────────────────────────────────────────
 

@@ -143,6 +143,16 @@ export const Button: React.FC<ButtonProps> = ({
     {...resto}
   >
     {carregando && (
+      // Anel PRÓPRIO, e não o `Spinner` do kit — de propósito.
+      //
+      // O `Button.jsx` do pacote faz exatamente isto: desenha o anel inline em
+      // `0.875rem` (14px) em vez de usar o `Spinner.jsx`, que só tem 16, 24 e
+      // 32. Um anel de 16px num botão `sm`, que tem 12px de texto, fica maior
+      // que a letra ao lado.
+      //
+      // `aria-hidden` porque o botão já se anuncia: ele tem texto, e
+      // `aria-busy` acima diz que está ocupado. Um `role="status"` aqui faria
+      // o leitor ler "Carregando..." por cima do rótulo do próprio botão.
       <span
         aria-hidden="true"
         className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"

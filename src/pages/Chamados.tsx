@@ -6,7 +6,14 @@ import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { PrioridadeEnum, TarefaRecorrente } from '../types/api';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
-import { Badge, Button, Input, Modal, Seletor } from '../components/ui';
+import {
+  Badge,
+  BlocoCarregando,
+  Button,
+  Input,
+  Modal,
+  Seletor,
+} from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import { ehDaPessoa, responsaveisDosChamados } from '../lib/pessoas';
@@ -14,7 +21,7 @@ import { agruparPorColuna, estaNoFluxo } from '../lib/quadro';
 import { cn } from '../lib/utils';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
-import { IconeAgenda, IconeArquivar, IconeBusca, IconeCarregando, IconeConfereCirculo, IconeMais } from '../components/ui/icones';
+import { IconeAgenda, IconeArquivar, IconeBusca, IconeConfereCirculo, IconeMais } from '../components/ui/icones';
 
 // Data de hoje (local) em YYYY-MM-DD, para comparar com proxima_data das tarefas
 const hojeYMD = (): string => {
@@ -253,10 +260,9 @@ const Chamados: React.FC = () => {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <IconeCarregando className="mx-auto mb-4 h-12 w-12 animate-spin text-info" />
+        <BlocoCarregando tamanho="lg">
           <p className="text-conteudo-suave">Carregando chamados...</p>
-        </div>
+        </BlocoCarregando>
       </div>
     );
   }

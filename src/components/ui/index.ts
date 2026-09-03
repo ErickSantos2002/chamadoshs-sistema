@@ -35,6 +35,11 @@ export { Rotulo } from './Rotulo';
 export { Seletor } from './Seletor';
 export type { OpcaoDoSeletor } from './Seletor';
 
+// O anel de carregamento, e o bloco que centraliza um numa região vazia.
+// `BlocoCarregando` é o que carrega a região viva — ver a nota no arquivo.
+export { Spinner, BlocoCarregando } from './Spinner';
+export type { TamanhoSpinner } from './Spinner';
+
 export { IconeConfere, IconeSeta } from './icones';
 
 export { Textarea } from './Textarea';

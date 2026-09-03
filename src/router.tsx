@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { BlocoCarregando } from './components/ui';
 
 // Lazy loading de páginas para melhor performance
 const Login = lazy(() => import('./pages/Login'));
@@ -51,10 +52,12 @@ const PageLoader: React.FC = () => (
   // viewport inteira, toda troca de rota com pedaço ainda não baixado
   // criava uma barra de rolagem e jogava o spinner abaixo do centro.
   <div className="flex min-h-full items-center justify-center">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-sinal mx-auto"></div>
-      <p className="mt-4 text-conteudo-suave">Carregando...</p>
-    </div>
+    {/* O anel era 64px com só a borda de BAIXO pintada — um quarto de arco.
+        Passa a ser o anel de três quartos do pacote, em `lg` (32px), que é o
+        tamanho que o `Spinner.prompt.md` reserva para vazio de página. */}
+    <BlocoCarregando tamanho="lg">
+      <p className="text-conteudo-suave">Carregando...</p>
+    </BlocoCarregando>
   </div>
 );
 

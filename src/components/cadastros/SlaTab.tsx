@@ -3,9 +3,9 @@ import { slaConfigsService } from '../../services/chamadoshsapi';
 import { PrioridadeEnum, SLAConfig } from '../../types/api';
 import { EXPEDIENTE, MINUTOS_POR_DIA_UTIL, formatarPrazo } from '../../lib/prazo';
 import { cn } from '../../lib/utils';
-import { Button, Input, Modal, RotuloDeCampo } from '../ui';
+import { BlocoCarregando, Button, Input, Modal, RotuloDeCampo } from '../ui';
 import { PrioridadeBadge } from '../SelosDeChamado';
-import { IconeAlerta, IconeCarregando, IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
+import { IconeAlerta, IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
 
 interface SlaTabProps {
   /** Indica se a aba SLA está ativa/visível no momento. */
@@ -169,9 +169,11 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto">
         {carregando ? (
-          <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
-            <IconeCarregando className="h-6 w-6 animate-spin" aria-hidden="true" />
-          </div>
+          // Este bloco era SILENCIOSO: o anel tinha `aria-hidden` e não havia
+          // texto nenhum ao lado. Quem usa leitor de tela não ouvia "pouco",
+          // não ouvia NADA enquanto a região carregava — e não tinha como
+          // distinguir sistema trabalhando de sistema travado.
+          <BlocoCarregando className="h-48" />
         ) : (
           <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
             {ordenadas.map((config, indice) => (

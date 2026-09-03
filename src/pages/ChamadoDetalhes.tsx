@@ -12,7 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
-import { Modal, Seletor } from '../components/ui';
+import { BlocoCarregando, Modal, Seletor } from '../components/ui';
 import { MarcaBadge } from '../components/SelosDeChamado';
 import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
 import { IconeApagar, IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
@@ -595,12 +595,9 @@ const ChamadoDetalhes: React.FC = () => {
   if (loading && !chamado) {
     return (
       <div className="flex min-h-full items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-sinal"></div>
-          <p className="mt-4 text-sm text-conteudo-suave">
-            Carregando chamado...
-          </p>
-        </div>
+        <BlocoCarregando tamanho="lg">
+          <p className="text-sm text-conteudo-suave">Carregando chamado...</p>
+        </BlocoCarregando>
       </div>
     );
   }

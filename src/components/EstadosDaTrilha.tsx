@@ -1,6 +1,7 @@
 import React from 'react';
 import { INICIO_DA_TRILHA } from '../lib/auditoria';
-import { IconeAlerta, IconeCarregando } from './ui/icones';
+import { IconeAlerta } from './ui/icones';
+import { Spinner } from './ui';
 
 /**
  * Os três estados intermediários da trilha de auditoria — carregando, falhou,
@@ -30,12 +31,17 @@ export const TrilhaCarregando: React.FC<{
   folga?: Folga;
   children: React.ReactNode;
 }> = ({ folga = 'ampla', children }) => (
+  // `role="status"` no PARÁGRAFO, e não no anel: é o parágrafo que entra e
+  // sai da tela, e é essa troca que o leitor anuncia. O texto aqui é visível
+  // e já diz o que está carregando — melhor do que o "Carregando..." genérico
+  // que o anel diria.
   <p
+    role="status"
     className={`flex items-center gap-2 text-sm text-conteudo-tenue ${
       folga === 'ampla' ? 'h-48 justify-center' : 'py-6'
     }`}
   >
-    <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
+    <Spinner tamanho="sm" decorativo className="text-sinal" />
     {children}
   </p>
 );

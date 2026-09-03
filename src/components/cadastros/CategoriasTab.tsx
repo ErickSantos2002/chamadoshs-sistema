@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
-import { BotaoDeAcao, Button, Input } from '../ui';
+import { BlocoCarregando, BotaoDeAcao, Button, Input } from '../ui';
 import CategoriaModal from './CategoriaModal';
 import { IconeAlerta, IconeApagar, IconeBusca, IconeEditar, IconeEtiqueta, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima } from '../ui/icones';
 import type {
@@ -186,12 +186,9 @@ const CategoriasTab: React.FC = () => {
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto rounded-xl border border-borda bg-superficie">
         {loading && !categorias.length ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-sm text-conteudo-tenue">
-              <IconeRecarregar className="mx-auto mb-2 h-8 w-8 animate-spin" />
-              Carregando categorias...
-            </div>
-          </div>
+          <BlocoCarregando className="h-full" tamanho="lg">
+            Carregando categorias...
+          </BlocoCarregando>
         ) : categoriasOrdenadas.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8">
             <IconeEtiqueta className="mb-4 h-12 w-12 text-conteudo-tenue" />

@@ -4,9 +4,11 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   Avatar,
   Badge,
+  BlocoCarregando,
   Button,
   Card,
   CardHeader,
+  Spinner,
   type VarianteBadge,
   type VarianteBotao,
 } from '../../components/ui';
@@ -65,7 +67,7 @@ import { contrasteDoTexto, formatar, PISO_TEXTO } from './contraste';
  *   /dev/componentes?tema=claro&grupo=button&foco=primario
  *
  * `tema`   claro | escuro                          (exigido na captura)
- * `grupo`  badge | button | card | avatar | tudo   (padrão: tudo)
+ * `grupo`  badge | button | card | avatar | spinner | tudo  (padrão: tudo)
  * `foco`   a variante de Button que recebe foco    (ver a nota em Botoes)
  *
  * ── Por que não entra em produção ─────────────────────────────────────
@@ -447,6 +449,61 @@ const Avatares: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
 );
 
 /* ─────────────────────────────────────────────────────────────────────
+   Spinner
+   ───────────────────────────────────────────────────────────────────── */
+
+const Aneis: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
+  <>
+    <Secao
+      titulo="Spinner — os três tamanhos"
+      nota="16 · 24 · 32px, com o traço engrossando junto (2 · 2 · 3). Substituiu dezoito anéis escritos à mão em treze arquivos, em três formas, cinco cores e seis tamanhos. O piso aqui é 3:1 e não 4,5:1 — o anel é elemento não textual (WCAG 1.4.11) —, então o número embaixo é informativo, não veredito: o que ele mede é a cor do TEXTO do contêiner, e o anel herda dela."
+    >
+      {(['sm', 'md', 'lg'] as const).map((t) => (
+        <Amostra key={t} id={`spinner-${t}`} rotulo={t} medicoes={medicoes}>
+          <span className="text-sinal">
+            <Spinner tamanho={t} />
+          </span>
+        </Amostra>
+      ))}
+      <Amostra
+        id="spinner-herda"
+        rotulo="cor herdada"
+        nota="currentColor — é o que o Button usa"
+        medicoes={medicoes}
+      >
+        <span className="text-conteudo-tenue">
+          <Spinner tamanho="md" />
+        </span>
+      </Amostra>
+    </Secao>
+
+    <Secao
+      titulo="BlocoCarregando — o vazio de região"
+      nota="Aqui mora o role=status. Três destes blocos tinham aria-hidden no anel e nenhum texto: SlaTab, ChamadoModal e TarefasRecorrentes. Quem usa leitor de tela ficava em silêncio total enquanto a região carregava."
+      >
+      <Amostra
+        id="bloco-com-texto"
+        rotulo="com texto"
+        seletor="span:last-child"
+        medicoes={medicoes}
+      >
+        <BlocoCarregando className="h-24 w-56 rounded-xl border border-borda bg-superficie">
+          Carregando chamados...
+        </BlocoCarregando>
+      </Amostra>
+      <Amostra
+        id="bloco-sem-texto"
+        rotulo="sem texto"
+        nota="o anúncio vai em sr-only, sem mudar um pixel"
+        medicoes={medicoes}
+      >
+        <BlocoCarregando className="h-24 w-56 rounded-xl border border-borda bg-superficie" />
+      </Amostra>
+    </Secao>
+  </>
+);
+
+/* ─────────────────────────────────────────────────────────────────────
    A página
    ───────────────────────────────────────────────────────────────────── */
 
@@ -585,6 +642,7 @@ const GaleriaDeComponentes: React.FC = () => {
       {mostrar('button') && <Botoes medicoes={medicoes} foco={foco} />}
       {mostrar('card') && <Cartoes medicoes={medicoes} />}
       {mostrar('avatar') && <Avatares medicoes={medicoes} />}
+      {mostrar('spinner') && <Aneis medicoes={medicoes} />}
     </div>
   );
 };

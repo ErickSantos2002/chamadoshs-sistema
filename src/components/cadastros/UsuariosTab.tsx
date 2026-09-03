@@ -1,7 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { BotaoDeAcao, Button, Input, Modal, RotuloDeCampo } from '../ui';
+import {
+  BlocoCarregando,
+  BotaoDeAcao,
+  Button,
+  Input,
+  Modal,
+  RotuloDeCampo,
+} from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
@@ -278,12 +285,9 @@ const UsuariosTab: React.FC = () => {
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto rounded-xl border border-borda bg-superficie">
         {loading && !usuarios.length ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-sm text-conteudo-tenue">
-              <IconeRecarregar className="mx-auto mb-2 h-8 w-8 animate-spin" />
-              Carregando usuários...
-            </div>
-          </div>
+          <BlocoCarregando className="h-full" tamanho="lg">
+            Carregando usuários...
+          </BlocoCarregando>
         ) : usuariosOrdenados.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8">
             <IconeUsuarios className="mb-4 h-12 w-12 text-conteudo-tenue" />

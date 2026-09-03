@@ -6,12 +6,19 @@ import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { chamadosService } from '../services/chamadoshsapi';
 import { podeSerResponsavel } from '../utils/roleMapper';
 import { Chamado, Comentario } from '../types/api';
-import { Avatar, Button, Modal, Seletor, Textarea } from './ui';
+import {
+  Avatar,
+  BlocoCarregando,
+  Button,
+  Modal,
+  Seletor,
+  Textarea,
+} from './ui';
 import { MarcaBadge, PrioridadeBadge, StatusBadge } from './SelosDeChamado';
 import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
-import { IconeCarregando, IconeEnviar, IconeLinkExterno } from './ui/icones';
+import { IconeEnviar, IconeLinkExterno } from './ui/icones';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -255,9 +262,9 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       }
     >
       {carregando && (
-        <div className="flex items-center justify-center py-12 text-conteudo-tenue">
-          <IconeCarregando className="h-6 w-6 animate-spin" aria-hidden="true" />
-        </div>
+        // Também era silencioso, e este é o pior dos três: é o modal do
+        // chamado, a tela mais usada do sistema.
+        <BlocoCarregando className="py-12" />
       )}
 
       {erro && !carregando && (

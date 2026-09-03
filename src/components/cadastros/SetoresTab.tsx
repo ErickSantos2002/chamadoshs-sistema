@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
-import { BotaoDeAcao, Button, Input } from '../ui';
+import { BlocoCarregando, BotaoDeAcao, Button, Input } from '../ui';
 import SetorModal from './SetorModal';
 import { IconeAlerta, IconeBusca, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor } from '../ui/icones';
 import type {
@@ -198,12 +198,9 @@ const SetoresTab: React.FC = () => {
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto rounded-xl border border-borda bg-superficie">
         {loading && !setores.length ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-sm text-conteudo-tenue">
-              <IconeRecarregar className="mx-auto mb-2 h-8 w-8 animate-spin" />
-              Carregando setores...
-            </div>
-          </div>
+          <BlocoCarregando className="h-full" tamanho="lg">
+            Carregando setores...
+          </BlocoCarregando>
         ) : setoresOrdenados.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8">
             <IconeSetor className="mb-4 h-12 w-12 text-conteudo-tenue" />

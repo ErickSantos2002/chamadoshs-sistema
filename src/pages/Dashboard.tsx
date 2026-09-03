@@ -17,8 +17,8 @@ import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
 import { useNavigate } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
-import { Seletor } from '../components/ui';
-import { IconeAlerta, IconeArquivar, IconeAtividade, IconeCarregando, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
+import { BlocoCarregando, Seletor } from '../components/ui';
+import { IconeAlerta, IconeArquivar, IconeAtividade, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
 import {
   corDaPrioridade,
   corDaSerie,
@@ -417,12 +417,9 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex min-h-full items-center justify-center">
-        <div className="text-center">
-          <IconeCarregando className="w-12 h-12 animate-spin text-sinal mx-auto mb-4" />
-          <p className="text-conteudo-suave">
-            Carregando dashboard...
-          </p>
-        </div>
+        <BlocoCarregando tamanho="lg">
+          <p className="text-conteudo-suave">Carregando dashboard...</p>
+        </BlocoCarregando>
       </div>
     );
   }
