@@ -7,7 +7,19 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icone?: React.ReactNode;
 }
 
-export const Input: React.FC<InputProps> = ({ icone, className, ...resto }) => (
+/**
+ * `forwardRef` porque a `ref` precisa chegar ao `<input>`.
+ *
+ * Sem ela era impossivel mandar o foco ao primeiro campo com erro depois de
+ * uma submissao recusada — e, coerentemente, isso nao existia em lugar nenhum:
+ * havia tres `.focus()` em todo o `src`, os tres de navegacao.
+ *
+ * A varredura da Fase 8 registrou a falta e nao a corrigiu ali, porque sem
+ * consumidor seria API especulativa. O consumidor chegou: e o `Campo`, no
+ * template de formulario da Fase 11.
+ */
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ icone, className, ...resto }, ref) => (
   <div className="relative">
     {icone && (
       <span
@@ -18,6 +30,7 @@ export const Input: React.FC<InputProps> = ({ icone, className, ...resto }) => (
       </span>
     )}
     <input
+      ref={ref}
       className={cn(
         // A forma do campo no HelpHS: canto de 8px, fundo da própria
         // superfície e um anel de 2px no foco.
@@ -35,6 +48,9 @@ export const Input: React.FC<InputProps> = ({ icone, className, ...resto }) => (
       {...resto}
     />
   </div>
+  )
 );
+
+Input.displayName = 'Input';
 
 export default Input;

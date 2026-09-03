@@ -112,19 +112,133 @@ export const RotuloDeCampo: React.FC<RotuloDeCampoProps> = ({
  * Salvar, o formulário recusava, e nada era anunciado. `role="alert"` é região
  * viva assertiva — o texto é lido no instante em que aparece.
  *
- * O que ele NÃO resolve, e fica registrado para as Fases 11–16: a mensagem
- * continua SOLTA, sem `id`, e nenhum campo do sistema tem `aria-invalid` ou
- * `aria-describedby` apontando para ela — são **zero ocorrências dos três em
- * todo o `src`**. Então o campo continua se anunciando como válido, e quem
- * navegar de volta até ele depois do anúncio não reencontra o motivo.
+ * O que ele NÃO resolve sozinho é a ASSOCIAÇÃO. Anunciado no instante em que
+ * aparece, o erro some do alcance de quem navegar de volta ao campo depois:
+ * sem `aria-describedby`, o controle continua se anunciando como válido e sem
+ * motivo. Associar exige um `id` aqui e o `aria-describedby` lá.
  *
- * A associação exige `id` em cada sítio de uso, o que é código de tela. O
- * anúncio, que é o que faltava por completo, mora aqui.
+ * Quem faz esse par é o `Campo`, abaixo. Este componente aceita `id` para ser
+ * usado por ele; usado solto, continua anunciando e continua desassociado —
+ * que era o estado de todos os treze formulários do sistema.
  */
-export const MensagemDeErro: React.FC<{ texto?: string }> = ({ texto }) =>
+export const MensagemDeErro: React.FC<{ texto?: string; id?: string }> = ({
+  texto,
+  id,
+}) =>
   texto ? (
-    <p role="alert" className="mt-1 flex items-center gap-1 text-sm text-perigo">
+    <p
+      id={id}
+      role="alert"
+      className="mt-1 flex items-center gap-1 text-sm text-perigo"
+    >
       <IconeAlerta className="h-4 w-4 shrink-0" aria-hidden="true" />
       {texto}
     </p>
   ) : null;
+
+interface CampoProps {
+  /** O `id` do controle. É por ele que o rótulo e o erro se ligam ao campo. */
+  id: string;
+  rotulo: React.ReactNode;
+  /** Marca o rótulo com asterisco E põe `aria-required` no controle. */
+  obrigatorio?: boolean;
+  /** A mensagem de erro. Quando existe, o controle vira inválido. */
+  erro?: string;
+  /** Texto de apoio abaixo do campo — contador, formato esperado. */
+  dica?: React.ReactNode;
+  /**
+   * UM controle: `Input`, `Textarea` ou `Seletor`.
+   *
+   * Tipado com o registro de props aberto porque o `cloneElement` precisa
+   * injetar `id` e os `aria-*`, e um `ReactElement` sem parâmetro não aceita
+   * prop nenhuma no clone.
+   */
+  children: React.ReactElement<Record<string, unknown>>;
+  className?: string;
+}
+
+/**
+ * O campo inteiro: rótulo, controle, erro e dica — ligados entre si.
+ *
+ * ── O buraco que ele fecha ───────────────────────────────────────────
+ *
+ * A varredura da Fase 8 achou **zero ocorrências** de `aria-invalid`,
+ * `aria-describedby` e `aria-errormessage` em todo o `src`. As telas montavam
+ * a pilha à mão — `RotuloDeCampo`, controle, `MensagemDeErro` — e a mensagem
+ * ficava SOLTA: um `<p>` vermelho ao lado do campo, sem nada dizendo a quem
+ * ela pertence.
+ *
+ * O efeito é que o campo continuava se anunciando como VÁLIDO. Quem navegasse
+ * de volta até ele depois de o formulário recusar ouvia "Nome, caixa de
+ * edição" — sem "inválido", e sem o motivo. A mensagem existia só para quem
+ * a via na tela.
+ *
+ * A Fase 10 deu `role="alert"` ao `MensagemDeErro`, e isso resolve o ANÚNCIO
+ * no instante em que o erro aparece. Não resolve a ASSOCIAÇÃO, que é o que
+ * faz o motivo estar disponível depois — e associar exige `id`, que é decisão
+ * de cada sítio de uso. Este componente tira essa decisão do sítio.
+ *
+ * ── Por que `cloneElement`, que normalmente é ruim ───────────────────
+ *
+ * O componente injeta `id`, `aria-invalid`, `aria-required` e
+ * `aria-describedby` no filho. A alternativa seria o sítio escrever os quatro
+ * a cada campo, e é exatamente essa a coisa que ninguém faz toda vez — foi
+ * assim que se chegou a zero ocorrências em treze formulários.
+ *
+ * O risco do `cloneElement` é injetar em quem não espera. Aqui o filho é
+ * sempre um primitivo deste kit, e os três repassam `...resto` ao elemento
+ * nativo. Props que o sítio já tenha escrito VENCEM: o spread do filho vem
+ * depois, então um `aria-describedby` próprio não é sobrescrito.
+ *
+ * ── A dica entra no `aria-describedby` junto com o erro ──────────────
+ *
+ * Um contador de caracteres é a única explicação para "500 caracteres" ser
+ * recusado. Deixá-lo fora da descrição do campo é o mesmo defeito do
+ * `ContadorMinimo`, que a varredura registrou: a explicação existe e não
+ * alcança quem precisa dela.
+ */
+export const Campo: React.FC<CampoProps> = ({
+  id,
+  rotulo,
+  obrigatorio = false,
+  erro,
+  dica,
+  children,
+  className,
+}) => {
+  const idDoErro = `${id}-erro`;
+  const idDaDica = `${id}-dica`;
+
+  // O erro vem primeiro: quando os dois existem, é ele que a pessoa precisa
+  // ouvir antes.
+  const descritores = [erro && idDoErro, dica && idDaDica]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <div className={className}>
+      <RotuloDeCampo htmlFor={id} obrigatorio={obrigatorio}>
+        {rotulo}
+      </RotuloDeCampo>
+
+      {React.cloneElement(children, {
+        id,
+        'aria-invalid': erro ? true : undefined,
+        'aria-required': obrigatorio || undefined,
+        'aria-describedby': descritores || undefined,
+        // O spread do filho vem por ÚLTIMO de propósito: o que o sítio já
+        // escreveu vence o que este componente injeta. Um campo que precise de
+        // `aria-describedby` próprio continua podendo declará-lo.
+        ...(children.props as Record<string, unknown>),
+      })}
+
+      <MensagemDeErro id={idDoErro} texto={erro} />
+
+      {dica && (
+        <p id={idDaDica} className="mt-1 text-xs text-conteudo-tenue">
+          {dica}
+        </p>
+      )}
+    </div>
+  );
+};

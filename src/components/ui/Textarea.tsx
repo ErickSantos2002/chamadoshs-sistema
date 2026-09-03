@@ -4,8 +4,11 @@ import { FORMA_DE_CAMPO } from './Campo';
 
 type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-export const Textarea: React.FC<TextareaProps> = ({ className, ...resto }) => (
+/** `forwardRef` pelo mesmo motivo do `Input` — ver a nota la. */
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, ...resto }, ref) => (
   <textarea
+    ref={ref}
     className={cn(
       // Mesma forma do `Input` — é o mesmo campo, só que alto. E agora é
       // literalmente a mesma constante, não uma cópia que combina hoje.
@@ -16,6 +19,9 @@ export const Textarea: React.FC<TextareaProps> = ({ className, ...resto }) => (
     )}
     {...resto}
   />
+  )
 );
+
+Textarea.displayName = 'Textarea';
 
 export default Textarea;
