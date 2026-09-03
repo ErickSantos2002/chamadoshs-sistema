@@ -763,7 +763,7 @@ const DadosEFeedback: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
                 <TabelaCelula tenue>Ativa</TabelaCelula>
                 <TabelaCelula className="text-right">—</TabelaCelula>
               </TabelaLinha>
-              <TabelaLinha clicavel onClick={() => {}}>
+              <TabelaLinha>
                 <TabelaCelula>Suporte</TabelaCelula>
                 <TabelaCelula tenue>Ativa</TabelaCelula>
                 <TabelaCelula className="text-right">—</TabelaCelula>

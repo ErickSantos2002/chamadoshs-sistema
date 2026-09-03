@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -43,7 +44,9 @@ const { default: CategoriaModal } = await import('./CategoriaModal');
 let host: HTMLDivElement;
 let root: Root;
 
-const montar = (props: Record<string, unknown> = {}) => {
+type PropsDoModal = React.ComponentProps<typeof CategoriaModal>;
+
+const montar = (props: Partial<PropsDoModal> = {}) => {
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
@@ -54,7 +57,7 @@ const montar = (props: Record<string, unknown> = {}) => {
         onClose={() => {}}
         mode="create"
         categoria={null}
-        {...(props as never)}
+        {...props}
       />
     )
   );
