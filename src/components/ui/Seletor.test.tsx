@@ -134,3 +134,80 @@ describe('Seletor', () => {
     expect(lista()).toBeNull();
   });
 });
+
+/**
+ * O nome acessivel do gatilho, que e onde o valor escolhido estava sumindo.
+ *
+ * `aria-label` nao SOMA ao conteudo do elemento: substitui. Com
+ * `aria-label="Solicitante"` o gatilho mostrava "Gabriel" na tela e anunciava
+ * so "Solicitante, caixa de combinacao" -- a escolha atual, que e a unica
+ * informacao que este controle carrega, nao existia no canal nao visual.
+ *
+ * Estes casos travam o RESULTADO -- o nome do gatilho contem o rotulo E o
+ * valor --, e nao a costura que o produz. Se um dia o padrao do APG mudar de
+ * `aria-labelledby` duplo para outra coisa, os casos continuam valendo.
+ */
+describe('Seletor — o nome diz o campo E a escolha', () => {
+  /** O nome acessivel, montado como o navegador monta: na ordem dos ids. */
+  const nomeDoGatilho = () => {
+    const ids = gatilho().getAttribute('aria-labelledby');
+    if (!ids) return null;
+    return ids
+      .split(/\s+/)
+      .map((i) => document.getElementById(i)?.textContent?.trim() ?? '')
+      .filter(Boolean)
+      .join(' ');
+  };
+
+  it('o nome traz o rotulo e a opcao escolhida', () => {
+    montar({ valor: '2' });
+
+    const nome = nomeDoGatilho();
+    expect(nome).toContain('Solicitante');
+    expect(nome).toContain('Gabriel');
+  });
+
+  it('nao ha aria-label apagando o conteudo do gatilho', () => {
+    montar({ valor: '2' });
+    expect(gatilho().hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('o nome acompanha a troca de escolha', () => {
+    montar({ valor: '1' });
+    expect(nomeDoGatilho()).toContain('Lidisay');
+
+    montar({ valor: '2' });
+    expect(nomeDoGatilho()).toContain('Gabriel');
+    expect(nomeDoGatilho()).not.toContain('Lidisay');
+  });
+
+  /**
+   * `aria-controls` so quando a lista existe.
+   *
+   * Ela vive num portal e so e montada aberta. Apontar para ela o tempo todo
+   * seria ponteiro quebrado -- o mesmo defeito que o `Campo` ja trava por
+   * teste, e que a lista de definicoes do ChamadoDetalhes existe para evitar.
+   */
+  it('aponta para a lista so enquanto ela existe, e para a lista certa', () => {
+    montar();
+    expect(gatilho().getAttribute('aria-controls')).toBeNull();
+
+    abrir();
+    const alvo = gatilho().getAttribute('aria-controls');
+    expect(alvo).toBeTruthy();
+    expect(document.getElementById(alvo!)).toBe(lista());
+  });
+
+  it('a lista usa o MESMO rotulo do gatilho, e nao um proprio', () => {
+    montar();
+    abrir();
+
+    const doGatilho = gatilho().getAttribute('aria-labelledby')!.split(/\s+/);
+    const daLista = lista()!.getAttribute('aria-labelledby');
+
+    expect(daLista).toBeTruthy();
+    expect(doGatilho).toContain(daLista);
+    // Nome proprio na lista poderia divergir do nome do gatilho.
+    expect(lista()!.hasAttribute('aria-label')).toBe(false);
+  });
+});

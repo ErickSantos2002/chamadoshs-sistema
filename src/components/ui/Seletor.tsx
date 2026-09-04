@@ -56,7 +56,12 @@ export interface SeletorProps {
   valor: string;
   aoMudar: (valor: string) => void;
   opcoes: OpcaoDoSeletor[];
-  /** O que se escolhe aqui. Vira o `aria-label`; o gatilho mostra só a opção. */
+  /**
+   * O que se escolhe aqui — "Status", "Prioridade", "Técnico responsável".
+   *
+   * Vai para um rótulo `sr-only` que o gatilho referencia por
+   * `aria-labelledby`. **Não** é `aria-label`: ver a nota longa no componente.
+   */
   rotulo: string;
   /** Para o `htmlFor` de um rótulo visível apontar para o gatilho. */
   id?: string;
@@ -78,6 +83,14 @@ export const Seletor: React.FC<SeletorProps> = ({
   className,
 }) => {
   const id = useId();
+
+  // Os três ids que a costura de acessibilidade precisa. O do gatilho respeita
+  // o `id` externo quando ele vem — é o que um rótulo visível usa no `htmlFor`
+  // — e cai no gerado quando não vem, porque `aria-labelledby` precisa
+  // apontar para algo que exista sempre.
+  const idDoRotulo = `${id}-rotulo`;
+  const idDoGatilho = idExterno ?? `${id}-gatilho`;
+  const idDaLista = `${id}-lista`;
   const [aberto, setAberto] = useState(false);
   const [destacado, setDestacado] = useState(0);
   // Valor de partida, nunca desenhado: a posição de verdade é medida no
@@ -253,8 +266,11 @@ export const Seletor: React.FC<SeletorProps> = ({
     ? createPortal(
         <div
           ref={listaRef}
+          id={idDaLista}
           role="listbox"
-          aria-label={rotulo}
+          // Mesmo rótulo do gatilho, pelo mesmo elemento: a lista não pode ter
+          // um nome próprio que possa divergir daquele.
+          aria-labelledby={idDoRotulo}
           aria-activedescendant={`${id}-${destacado}`}
           tabIndex={-1}
           onKeyDown={aoTeclarNaLista}
@@ -312,14 +328,42 @@ export const Seletor: React.FC<SeletorProps> = ({
 
   return (
     <div className={cn('relative', className)}>
+      {/*
+        ── O RÓTULO É REFERENCIADO, E NÃO ESCRITO NO GATILHO ───────────
+
+        Aqui havia `aria-label={rotulo}` no botão, e ele **apagava o valor**.
+
+        `aria-label` não soma ao conteúdo do elemento: substitui. O gatilho
+        mostra "Em Andamento" na tela e anunciava só "Status, caixa de
+        combinação" — a escolha atual, que é a única informação que este
+        controle carrega, não existia no canal não visual. Quem navega por
+        leitor de tela sabia o que o campo É e nunca o que ele TEM.
+
+        A saída é a do padrão de combobox de seleção do APG: o nome acessível
+        é montado por `aria-labelledby` com DOIS ids — o do rótulo e o do
+        próprio gatilho. Assim o leitor lê "Status, Em Andamento", e o valor
+        volta a fazer parte do nome em vez de ser apagado por ele.
+
+        O rótulo é `sr-only` porque neste sistema quem o mostra na tela é o
+        contexto — o `<dt>` da lista de definições do detalhe, o cabeçalho da
+        coluna de filtro. Um segundo rótulo visível seria repetição; nenhum
+        rótulo referenciável era o defeito.
+      */}
+      <span id={idDoRotulo} className="sr-only">
+        {rotulo}
+      </span>
       <button
         ref={gatilhoRef}
-        id={idExterno}
+        id={idDoGatilho}
         type="button"
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={aberto}
-        aria-label={rotulo}
+        aria-labelledby={`${idDoRotulo} ${idDoGatilho}`}
+        // Só quando a lista existe. Ela vive num portal e só é montada aberta;
+        // apontar para ela o tempo todo seria ponteiro quebrado — o mesmo
+        // defeito que o `Campo` já trava por teste.
+        aria-controls={aberto ? idDaLista : undefined}
         disabled={disabled}
         onClick={() => (aberto ? fechar(false) : abrir(indiceAtual))}
         onKeyDown={aoTeclarNoGatilho}
