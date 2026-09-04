@@ -90,6 +90,7 @@ export const Seletor: React.FC<SeletorProps> = ({
   // apontar para algo que exista sempre.
   const idDoRotulo = `${id}-rotulo`;
   const idDoGatilho = idExterno ?? `${id}-gatilho`;
+  const idDoValor = `${id}-valor`;
   const idDaLista = `${id}-lista`;
   const [aberto, setAberto] = useState(false);
   const [destacado, setDestacado] = useState(0);
@@ -339,10 +340,37 @@ export const Seletor: React.FC<SeletorProps> = ({
         controle carrega, não existia no canal não visual. Quem navega por
         leitor de tela sabia o que o campo É e nunca o que ele TEM.
 
-        A saída é a do padrão de combobox de seleção do APG: o nome acessível
-        é montado por `aria-labelledby` com DOIS ids — o do rótulo e o do
-        próprio gatilho. Assim o leitor lê "Status, Em Andamento", e o valor
-        volta a fazer parte do nome em vez de ser apagado por ele.
+        A saída é montar o nome por `aria-labelledby` com DOIS ids — o do
+        rótulo e o do VALOR. Assim o leitor lê "Status, Em Andamento", e o
+        valor volta a fazer parte do nome em vez de ser apagado por ele.
+
+        ── E por que o segundo id NÃO é o do próprio gatilho ────────────
+
+        O padrão de combobox do APG usa auto-referência: `aria-labelledby` com
+        o id do rótulo e o do PRÓPRIO elemento. Foi assim que este componente
+        ficou na primeira versão, e ela **não funciona nas duas variantes**.
+
+        A sessão do HelpHS mediu o nome computado dos dois jeitos e achou a
+        diferença:
+
+            sem `<label for>` associado   ->  "Situação Aberto"   ✓
+            com `<label for>` associado   ->  "Situação"          ✗
+
+        A auto-referência é ambígua no algoritmo do nome acessível, e ele a
+        resolve de um jeito quando há um `<label for>` apontando para o
+        elemento e de outro quando não há. O valor some justamente no caso do
+        formulário.
+
+        E aqui esse caso EXISTE, em quatro lugares: `role_name` e `setor_id` no
+        `UsuarioModal`, `categoria` e `solicitante` no `NovoChamadoForm`, todos
+        com `RotuloDeCampo htmlFor` apontando para o gatilho. Manter a
+        auto-referência reintroduziria em quatro formulários exatamente o
+        defeito que esta correção existe para fechar.
+
+        Apontando para o `<span>` do valor — que é filho do gatilho, e não o
+        gatilho — não há auto-referência e não há ambiguidade. O `<label for>`
+        externo continua existindo e é ignorado, como manda a precedência:
+        `aria-labelledby` vence.
 
         O rótulo é `sr-only` porque neste sistema quem o mostra na tela é o
         contexto — o `<dt>` da lista de definições do detalhe, o cabeçalho da
@@ -359,7 +387,7 @@ export const Seletor: React.FC<SeletorProps> = ({
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={aberto}
-        aria-labelledby={`${idDoRotulo} ${idDoGatilho}`}
+        aria-labelledby={`${idDoRotulo} ${idDoValor}`}
         // Só quando a lista existe. Ela vive num portal e só é montada aberta;
         // apontar para ela o tempo todo seria ponteiro quebrado — o mesmo
         // defeito que o `Campo` já trava por teste.
@@ -398,7 +426,9 @@ export const Seletor: React.FC<SeletorProps> = ({
             style={{ backgroundColor: escolhida.cor }}
           />
         )}
-        <span className="flex-1 truncate text-left">{escolhida?.rotulo}</span>
+        <span id={idDoValor} className="flex-1 truncate text-left">
+          {escolhida?.rotulo}
+        </span>
         <IconeSeta
           className={cn(
             'h-4 w-4 shrink-0 text-conteudo-tenue transition-transform',

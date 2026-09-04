@@ -198,6 +198,53 @@ describe('Seletor — o nome diz o campo E a escolha', () => {
     expect(document.getElementById(alvo!)).toBe(lista());
   });
 
+  /**
+   * NENHUM dos ids pode ser o do proprio gatilho.
+   *
+   * ── Por que este caso e o mais importante dos cinco ──────────────────
+   *
+   * A primeira versao seguia o padrao de combobox do APG ao pe da letra:
+   * `aria-labelledby` com o id do rotulo e o do PROPRIO elemento
+   * (auto-referencia). A sessao do HelpHS mediu o nome COMPUTADO das duas
+   * variantes e achou que ele nao e estavel:
+   *
+   *     sem `<label for>` associado   ->  "Situacao Aberto"   ok
+   *     com `<label for>` associado   ->  "Situacao"          o valor some
+   *
+   * A auto-referencia e ambigua no algoritmo do nome acessivel, e ele a
+   * resolve de um jeito quando existe um `<label for>` apontando para o
+   * elemento e de outro quando nao existe.
+   *
+   * E aqui esse caso EXISTE em quatro lugares -- `role_name` e `setor_id` no
+   * UsuarioModal, `categoria` e `solicitante` no NovoChamadoForm --, todos com
+   * `RotuloDeCampo htmlFor` apontando para o gatilho. A auto-referencia
+   * reintroduziria em quatro formularios o defeito que esta correcao fecha.
+   *
+   * ── E por que os outros casos NAO pegavam isso ───────────────────────
+   *
+   * Porque `nomeDoGatilho`, ali em cima, resolve os ids CONCATENANDO o texto
+   * de cada um. Isso e a minha suposicao de como o navegador monta o nome, e
+   * nao o algoritmo dele. Com auto-referencia a funcao devolvia
+   * "Solicitante Gabriel" alegremente, e o navegador devolveria "Solicitante".
+   *
+   * Ou seja: os outros quatro casos mediam a marcacao contra a minha propria
+   * expectativa. Este mede a PROPRIEDADE que torna a ambiguidade impossivel --
+   * apontar para um filho, e nunca para si mesmo -- e e verificavel sem
+   * depender de quem monta o nome.
+   */
+  it('nenhum id do rotulo aponta para o proprio gatilho', () => {
+    montar({ valor: '2', id: 'campo-externo' });
+
+    const ids = gatilho().getAttribute('aria-labelledby')!.split(/\s+/);
+    expect(ids).not.toContain(gatilho().id);
+
+    // E o segundo id aponta para um elemento DENTRO do gatilho: o valor.
+    const alvo = document.getElementById(ids[1])!;
+    expect(alvo).toBeTruthy();
+    expect(gatilho().contains(alvo)).toBe(true);
+    expect(alvo).not.toBe(gatilho());
+  });
+
   it('a lista usa o MESMO rotulo do gatilho, e nao um proprio', () => {
     montar();
     abrir();
