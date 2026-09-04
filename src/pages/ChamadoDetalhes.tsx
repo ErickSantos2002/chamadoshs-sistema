@@ -647,18 +647,35 @@ const ChamadoDetalhes: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2">
                   {!modoEdicao ? (
                     <>
-                      {/* Botão Cancelar Chamado */}
+                      {/* Botão Cancelar Chamado.
+
+                          Era vermelho VAZADO — moldura e texto, sem
+                          preenchimento —, e o pacote não tem essa variante.
+                          Ficou como decisão aberta do Checkpoint 3, e o
+                          operador decidiu pelo refinamento que está no
+                          DECISOES.md: **o gatilho que só abre confirmação é
+                          neutro; quem carrega o vermelho é o botão que
+                          confirma**, dentro do modal.
+
+                          O gatilho não cancela nada. Ele abre uma janela que
+                          ainda exige um motivo escrito e um segundo clique —
+                          e é ESSE segundo clique que não tem volta, porque a
+                          API tem `arquivar`/`desarquivar` mas não tem
+                          descancelar. O vermelho fica onde o compromisso é
+                          assumido, e não onde ele é cogitado.
+
+                          (O "Excluir" logo abaixo continua `perigo` no
+                          gatilho. É a exceção registrada, e a nota dele
+                          explica: é a única ação da página que apaga o
+                          chamado, e ela não pode parecer irmã de "Arquivar".) */}
                       {!chamado?.cancelado && (
-                        <button
+                        <Button
+                          variante="secundario"
                           onClick={() => setMostrarModalCancelar(true)}
-                          className="flex items-center gap-2 rounded-lg border border-perigo/40
-                                    px-4 py-2 text-sm font-semibold
-                                    text-on-tint-danger transition-colors
-                                    hover:bg-perigo/10"
                         >
                           <IconeProibido className="h-4 w-4" />
                           Cancelar Chamado
-                        </button>
+                        </Button>
                       )}
 
                       {/* Botão Arquivar/Desarquivar.
