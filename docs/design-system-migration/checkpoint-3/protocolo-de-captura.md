@@ -41,17 +41,30 @@ node scripts/sonda-captura.js --tema=claro --tabela > node_modules/.sondas/cap.j
 No console da página:
 
 ```js
-eval(await (await fetch('/@fs/<raiz>/node_modules/.sondas/cap.js')).text())
+eval(await (await fetch('/@fs/<raiz>/node_modules/.sondas/cap.js?v=' + Date.now(),
+  { cache: 'no-store' })).text())
 ```
+
+O `?v=` e o `no-store` **não são zelo**: sem eles o navegador serve a sonda do
+cache, e já aconteceu — a sonda voltou `ok: true` sem os campos novos porque era
+a versão anterior. Uma sonda de frescor servida velha é a piada que ela conta
+sobre si mesma, e o modo de falha é o mesmo de sempre: parece que passou.
 
 **Não fotografe com `ok: false`.** A foto sairia parecendo certa — é esse o
 ponto dos três modos de falha que a sonda cobre:
 
 | | o que pega | por que não se vê |
 |---|---|---|
+| 0 | API de produção | a tela funciona — e é a real |
 | 1 | CSS servido velho | classes sem regra, elementos herdam a cor do pai |
 | 2 | tema por efeito | a primeira pintura sai no tema errado |
 | 3 | tabela com 1 linha | o divisor entre linhas não existe sem a segunda |
+
+O zero é o mais grave e o menos visível dos quatro: contra produção **tudo
+funciona**, e é justamente esse o problema. A captura leva dado real para
+dentro de `docs/`, e o passo "derrube a API" da 17–18 vira uma
+indisponibilidade. Regra no `DECISOES.md`; a sonda confere o `.env` e também
+para onde a página de fato falou.
 
 O terceiro é o mais fácil de deixar passar: uma tabela de uma linha **parece**
 uma tabela normal, e a captura sai sem o elemento que a E14 mudou.

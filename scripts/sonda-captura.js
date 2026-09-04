@@ -33,14 +33,42 @@
  */
 
 const { sonda: sondaDoCanario } = require('./canario-css.js');
+const fs = require('node:fs');
+const path = require('node:path');
 
-const args = process.argv.slice(2);
-const tema = (args.find((a) => a.startsWith('--tema=')) ?? '').split('=')[1];
-const exigirTabela = args.includes('--tabela');
+/**
+ * O endereço é local?
+ *
+ * Compara o **hostname**, e não a string inteira. A versão ingênua seria
+ * `url.includes('localhost')`, e ela aprova `https://localhost.exemplo.com`,
+ * que é um domínio de terceiro com `localhost` no nome — a armadilha clássica
+ * de casar prefixo em vez de estrutura. Aqui a URL é parseada e o hostname
+ * comparado por igualdade.
+ *
+ * Devolve `null` para o que não é URL válida, e quem chama trata: uma sonda
+ * que chuta "local" diante de lixo é pior que uma que reclama.
+ */
+function ehLocal(url) {
+  if (typeof url !== 'string' || !url.trim()) return null;
+  let host;
+  try {
+    host = new URL(url.trim()).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1';
+}
 
-if (tema !== 'claro' && tema !== 'escuro') {
-  console.error('Uso: node scripts/sonda-captura.js --tema=claro|escuro [--tabela]');
-  process.exit(1);
+/** O `VITE_API_URL` do `.env`, sem interpretar nada além da própria linha. */
+function apiDoEnv() {
+  const arquivo = path.join(__dirname, '..', '.env');
+  if (!fs.existsSync(arquivo)) return null;
+  const linha = fs
+    .readFileSync(arquivo, 'utf8')
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l.startsWith('VITE_API_URL='));
+  return linha ? linha.slice('VITE_API_URL='.length).trim() : null;
 }
 
 /**
@@ -51,10 +79,60 @@ if (tema !== 'claro' && tema !== 'escuro') {
  * classe entrou e o CSS não acompanhou — que é o modo de falha 1 disfarçado de
  * modo de falha 2.
  */
-const sonda = `(() => {
+/**
+ * Monta a sonda. Funcao, e nao constante de modulo, por um motivo concreto:
+ * a validacao de argumentos ficava no escopo do arquivo e chamava
+ * `process.exit(1)`. Um `require` daqui -- que e o que os casos de prova fazem
+ * -- derrubava o processo do teste antes de a primeira asercao rodar.
+ *
+ * E a mesma guarda que o `validar-paleta.js` ja tinha, e que aqui faltou.
+ * Achada ao escrever a prova positiva da trava de producao.
+ */
+function montarSonda(tema, exigirTabela) {
+  const apiNoDisco = apiDoEnv();
+  const apiEhLocal = ehLocal(apiNoDisco);
+
+  return `(() => {
   const TEMA = ${JSON.stringify(tema)};
   const EXIGIR_TABELA = ${exigirTabela};
+  const API_NO_DISCO = ${JSON.stringify(apiNoDisco)};
+  const API_EH_LOCAL = ${JSON.stringify(apiEhLocal)};
   const problemas = [];
+
+  // ── 0. A captura está apontada para PRODUÇÃO? ─────────────────────
+  //
+  // Duas camadas, porque as duas falham de jeitos diferentes.
+  //
+  // DISCO: o \`.env\` diz para onde o front deveria falar. Se não for local,
+  // a captura levaria dado real de gente real para dentro de \`docs/\` — e o
+  // passo "derrube a API" da captura do estado de erro deixaria de ser um
+  // teste e viraria uma indisponibilidade.
+  //
+  // AO VIVO: o \`.env\` pode ter sido corrigido DEPOIS de o servidor subir, e
+  // o Vite serve o valor com que foi iniciado. É a mesma família do canário:
+  // o disco diz uma coisa e o que está no ar diz outra. Por isso a segunda
+  // camada olha para onde a página de fato falou.
+  if (API_EH_LOCAL === null) {
+    problemas.push('VITE_API_URL ausente ou inválida no .env: "' + API_NO_DISCO + '"');
+  } else if (!API_EH_LOCAL) {
+    problemas.push(
+      'VITE_API_URL aponta para "' + API_NO_DISCO + '", que não é local. ' +
+      'Captura de evidência não aponta para produção.'
+    );
+  }
+
+  const daPagina = location.origin;
+  const externas = [...new Set(
+    performance.getEntriesByType('resource')
+      .map((e) => { try { return new URL(e.name).origin; } catch { return null; } })
+      .filter((o) => o && o !== daPagina)
+  )].filter((o) => {
+    const h = new URL(o).hostname.toLowerCase();
+    return !(h === 'localhost' || h === '127.0.0.1' || h === '[::1]');
+  });
+  if (externas.length) {
+    problemas.push('a página falou com origem NÃO local: ' + externas.join(', '));
+  }
 
   // ── 1. O CSS servido é o do disco? ────────────────────────────────
   const canario = ${sondaDoCanario};
@@ -106,6 +184,9 @@ const sonda = `(() => {
   return {
     ok,
     tema: TEMA,
+    api_no_disco: API_NO_DISCO,
+    api_e_local: API_EH_LOCAL,
+    origens_externas: externas,
     marcador: marcador || '(ausente)',
     fundo,
     canario: canario.ok ? 'ok' : 'REPROVADO',
@@ -113,11 +194,18 @@ const sonda = `(() => {
     problemas,
   };
 })()`;
-
-if (require.main === module) {
-  // Sempre em várias linhas. Ver a nota do `canario-css.js`: achatar quebra,
-  // porque os comentários `//` engolem tudo que vem depois.
-  console.log(sonda);
 }
 
-module.exports = { sonda };
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const tema = (args.find((a) => a.startsWith('--tema=')) ?? '').split('=')[1];
+  if (tema !== 'claro' && tema !== 'escuro') {
+    console.error('Uso: node scripts/sonda-captura.js --tema=claro|escuro [--tabela]');
+    process.exit(1);
+  }
+  // Sempre em várias linhas. Ver a nota do `canario-css.js`: achatar quebra,
+  // porque os comentários `//` engolem tudo que vem depois.
+  console.log(montarSonda(tema, args.includes('--tabela')));
+}
+
+module.exports = { montarSonda, ehLocal, apiDoEnv };
