@@ -117,8 +117,36 @@
     --superficie: 19 34 56;            /* --surface          #132238 */
     --superficie-elevada: 26 47 74;    /* --surface-elevated #1A2F4A */
 
-    --borda: 30 58 95;                 /* --border-color     #1E3A5F */
-    --borda-suave: 19 34 56;           /* --border-muted     #132238 — = superfície */
+    /* E14 do pacote — a rampa de borda do escuro sobe um degrau.
+     *
+     * `--border-muted` era `#132238`, o MESMO valor de `--surface`: contraste
+     * 1,00 contra ela, ou seja, um divisor invisível dentro de qualquer Card.
+     * O `--border-color` cede o próprio valor ao muted e sobe; o
+     * `--border-strong` fica onde estava, e a hierarquia se preserva.
+     *
+     * Medido aqui, contra as três superfícies do escuro:
+     *
+     *                     bg-base  surface  elevada
+     *   suave   antes       1,09     1,00     1,18
+     *   suave   depois      1,51     1,39     1,18
+     *   borda   antes       1,51     1,39     1,18
+     *   borda   depois      1,74     1,60     1,36
+     *   forte   (igual)     2,50     2,29     1,94
+     *
+     * Nada piora: o suave na elevada fica em 1,18, que é exatamente onde o
+     * `--borda` já estava. E nenhum dos três é limite de CONTROLE — esse é o
+     * `--border-control`, que a E7 criou e que dá 5,29:1 na elevada. Estes
+     * separam superfície, e por isso o piso de 3:1 da 1.4.11 não se aplica a
+     * eles.
+     *
+     * A ponte tinha os valores ANTIGOS cravados e não teria acompanhado a
+     * recópia: o `colors.css` do pacote é lido para `var(--border-*)`, mas o
+     * Tailwind precisa dos canais `R G B` para o modificador de alfa, e é essa
+     * conversão que mora aqui. É uma segunda fonte de verdade que a §5.4
+     * tolera por necessidade — e que, por isso mesmo, precisa ser conferida a
+     * cada recópia. Esta ficou dois valores atrás por uma tarde. */
+    --borda: 42 68 99;                 /* --border-color     #2A4463 */
+    --borda-suave: 30 58 95;           /* --border-muted     #1E3A5F */
     --borda-forte: 49 93 129;          /* --border-strong    #315D81 */
 
     --conteudo: 241 245 249;           /* --text-heading     slate-100 #F1F5F9  14,59 · 15,88 · 12,37 */

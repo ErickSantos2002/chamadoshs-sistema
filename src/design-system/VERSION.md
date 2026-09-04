@@ -61,6 +61,68 @@ O pacote foi **emendado** em 02/09/2026, em três pontos, todos registrados em
 | **E7-b** | visto e traço do `Checkbox` saem de `--color-white` para `--text-on-primary` | `components/forms/Checkbox.jsx` | HelpHS |
 | **E8** | os três pares `on-tint` que a E2 não mediu passam a AA sobre `--surface-elevated` | `tokens/colors.css` | ChamadosHS |
 | **E9** | `Checkbox` e `Switch` do pacote passam a mostrar foco | `components/forms/{Checkbox,Switch}.jsx` | HelpHS |
+| **E10** | a seta do `Select` deixa de ser um data URI cravado | `components/forms/Select.jsx` | HelpHS |
+| **E11** | o erro do formulário passa a chegar a quem não o vê | 4 componentes de formulário | HelpHS |
+| **E11-b** | o rótulo do `SearchSelect` passa a rotular alguma coisa | `components/forms/SearchSelect.jsx` | HelpHS |
+| **E12** | três componentes declaravam papel de widget sem entregar o contrato | `Alert.jsx`, `Modal.jsx`, `Tabs.jsx` | HelpHS |
+| **E13** | a casca declarava dois marcos, um com o papel errado e nenhum com nome | `components/navigation/AppShell.jsx` | ChamadosHS |
+| **E14** | a rampa de borda do escuro sobe um degrau | `tokens/colors.css` | HelpHS |
+| **E15** | o pacote passa a ter um piso de foco | `tokens/base.css` | HelpHS |
+| **E16** | a paleta de gráfico, porque gráfico não é interface | `tokens/colors.css` | HelpHS |
+
+**Só E14, E15 e E16 pedem recópia.** De E9 a E13 tudo foi componente, e este
+repositório não copia componentes — são referência, não dependência. As três de
+token entraram nesta cópia em 04/09/2026.
+
+### O que as três de token significam aqui
+
+- **E14 — a borda do escuro deixa de ser invisível.** `--border-muted` era
+  `#132238`, o MESMO valor de `--surface`: contraste **1,00** contra ela, ou
+  seja, um divisor que não existia dentro de nenhum Card. O `--border-color`
+  cede o próprio valor ao muted e sobe para `#2a4463`; o `--border-strong` fica.
+  Medido aqui, nas três superfícies do escuro:
+
+  |  | bg-base | surface | elevada |
+  |---|---:|---:|---:|
+  | suave, antes | 1,09 | 1,00 | 1,18 |
+  | suave, depois | 1,51 | 1,39 | 1,18 |
+  | borda, antes | 1,51 | 1,39 | 1,18 |
+  | borda, depois | 1,74 | 1,60 | 1,36 |
+  | forte, igual | 2,50 | 2,29 | 1,94 |
+
+  **Nada piora**, e a hierarquia se preserva nas três superfícies —
+  1,51 < 1,74 < 2,50 na base, 1,39 < 1,60 < 2,29 na surface,
+  1,18 < 1,36 < 1,94 na elevada. Não há piso de 3:1 aqui: os três separam
+  SUPERFÍCIE e não delimitam controle. Quem delimita controle é o
+  `--border-control` da E7.
+
+  **A ponte do D3-a foi atualizada no mesmo commit**, de `30 58 95` / `19 34 56`
+  para `42 68 99` / `30 58 95`. Sem isso a recópia não chegaria à tela: o
+  Tailwind lê os canais `R G B` da ponte, não o hex do pacote. É a mesma lição
+  da E5 — e desta vez a ponte ficou desatualizada por uma tarde antes de
+  alguém olhar.
+
+- **E15 — o pacote passa a ter piso de foco.** `:focus-visible` com `outline`
+  no `base.css`, e vale para tudo que receba foco por teclado. É a diferença
+  entre um defeito que se conserta cinquenta vezes e um que se conserta uma: o
+  levantamento do HelpHS achou ~50 controles à mão sem foco visível nenhum.
+
+  Medido aqui, nas três superfícies dos dois temas, contra o piso de **3:1** da
+  1.4.11 (anel de foco é indicador não textual):
+
+  | tema | bg-base | surface | elevada |
+  |---|---:|---:|---:|
+  | claro, primary-600 | 5,05 | 5,29 | 4,83 |
+  | escuro, primary-400 | 6,47 | 5,95 | 5,04 |
+
+  Seis de seis passam, com folga. **É piso e não teto:** onde o componente já
+  desenha o próprio anel — `Button`, `Campo`, `Seletor`, `Card` — ele continua
+  ganhando, porque a especificidade dele é maior.
+
+- **E16 — a paleta de gráfico. Declarada, e NÃO consumida.** Ela entra na
+  cópia porque a recópia é do arquivo inteiro, mas nada aqui lê `--chart-*`:
+  `src/lib/graficos.ts` segue sendo a fonte dos gráficos. O uso fica para a
+  Fase 16, e há motivo para não ter pressa — ver a ressalva abaixo.
 
 O que cada uma significa aqui:
 
@@ -158,15 +220,21 @@ A E7-b e a E9 não aparecem aqui: as duas mudaram componentes em
 são referência, não dependência. Só `styles.css`, `tokens/` e `fonts/` vêm
 para cá.
 
+Reconferidos em **04/09/2026**, na recópia de E14+E15+E16. Os dois arquivos que
+mudaram estão marcados; os outros cinco continuam nos hashes de 03/09.
+
 ```
 1EF6324844AA066488F0D8A015B39E3CA0756C629512FCE4E1BD95CA8B93B9B2  styles.css
-BDD047CE432E74B33FA7F752DA08CF025419E83EA18485BD947C889C0AC1C221  tokens/base.css
-73550E08F6F951571068EEC741278FC2A7EDB5CEEC9CDDFC997111BC0F741139  tokens/colors.css      <- E1+E2+E5+E7+E8
+DE714476FA019334CC3DD096E84BD7EF29BFA7B3E2DACF071F3DA5FB68D98410  tokens/base.css        <- E15   (era BDD047CE…)
+E17CFDE67277A38721EC9415B0EE3DC7CCD85A6D6A37990BD53E1331703C076D  tokens/colors.css      <- E1+E2+E5+E7+E8+E14+E16   (era 73550E08…)
 C70D51A982AE0B91BD53ECE150D8D16E0E70BEF9CA59586541A9A7177228478E  tokens/motion.css
 7BCFBBC585D3EA8C7F689A27EEB3AE13DE0C2A9DCC3C6CC0C8F41D440D193F7D  tokens/shape.css
 C093B261C6893A893A418CDF64798555326D4586A8ADB37CC7ECA457FABAE420  tokens/spacing.css
 1DD9B29E47D31005DA89BBE96F1C7883A89371173E0FA8862D868480EEE839C9  tokens/typography.css  <- E3
 ```
+
+`Compare-Object` por hash contra `design-system/tokens/`, os seis arquivos:
+**sem diferença**. LF, 0 CR, 0 bytes de controle nos dois recopiados.
 
 E os doze arquivos de fonte, que a **E3** trouxe (diretório novo):
 
@@ -210,10 +278,41 @@ contra design-system/ (o pacote emendado)
 resolvido na raiz pela E3. Esta cópia é o pacote, byte a byte.
 
 > **Para o HelpHS:** os sete arquivos e o `fonts/` aqui são os do pacote
-> emendado. `typography.css` fecha em `1DD9B29E…` e `colors.css` em
-> `66BE0CD3…`. Quem estiver com `99D1A02B…` ou `63D96084…` está desatualizado,
-> não divergente. O `VERSION.md` continua diferindo por natureza — é o registro
-> local de cada repositório.
+> emendado. Em 04/09/2026, `colors.css` fecha em `E17CFDE6…` e `base.css` em
+> `DE714476…` — o estado `f25f128` do pacote, com E14, E15 e E16. Quem estiver
+> com `73550E08…` / `BDD047CE…` está desatualizado, não divergente. O
+> `VERSION.md` continua diferindo por natureza — é o registro local de cada
+> repositório.
+>
+> *(A versão anterior desta nota citava `66BE0CD3…` para `colors.css`, que não
+> bate com nenhum estado deste arquivo — o bloco de hashes logo acima dizia
+> `73550E08…` na mesma data. Era erro de transcrição, e fica dito para o número
+> errado não ser perseguido.)*
+
+## Uma ressalva sobre a E16, antes que alguém a consuma
+
+**Quatro das seis séries reprovam o piso de 3:1 que a própria emenda declara.**
+Medido aqui, e o mesmo resultado que a sessão do HelpHS obteve por outro
+caminho:
+
+| série | pior no claro | pior no escuro | 3:1 |
+|---|---:|---:|---|
+| `--chart-1` primary-500 | 3,49 | 3,54 | ok |
+| `--chart-2` success-500 | **2,32** | 5,34 | reprova no claro |
+| `--chart-3` warning-500 | **1,96** | 6,31 | reprova no claro |
+| `--chart-4` danger-500 | 3,44 | 3,60 | ok |
+| `--chart-5` primary-800 | 9,30 | **1,33** | reprova no escuro |
+| `--chart-6` slate-400 | **2,34** | 5,29 | reprova no claro |
+
+É a mesma família do `perigo-forte` como substituto de cor de texto: **degrau
+fixo da rampa não inverte por tema**, então passa de um lado e reprova do
+outro. A E16 cita os números das cores como texto e então afirma o piso de
+preenchimento — sem medir esse piso.
+
+A paleta de `graficos.ts` que está em uso hoje passa nos dois temas e ainda é
+validada por ΔE nas três formas de daltonismo, que a E16 não faz. **Adotar a
+E16 como está seria trocar uma paleta medida por uma declarada.** Fica para a
+Fase 16, com a correção do pacote, e não antes.
 
 ---
 
@@ -377,6 +476,6 @@ O que o design system **não** define, e a conduta adotada aqui:
 | **z-index** | Escala existente preservada: gaveta `z-40`, fundo da gaveta `z-[35]`, menu do usuário `z-50`, toast `z-[9999]`, atalho de teclado `z-[100]`. Modal fica acima da topbar e da barra lateral |
 | **Skeleton** | Não existe no projeto e não foi criado. O carregamento é `Spinner` centralizado, como manda o pacote |
 | **DatePicker** | `<input type="date">` nativo, como já era. Nenhuma biblioteca instalada |
-| **Paleta categórica de gráfico** | O pacote não define. Mantida a de `src/lib/graficos.ts`, validada por contraste e por ΔE em três formas de daltonismo (`npm run validar:paleta`) |
+| **Paleta categórica de gráfico** | **O pacote passou a definir, pela E16 — e ela não é adotada ainda.** Continua valendo a de `src/lib/graficos.ts`, validada por contraste e por ΔE em três formas de daltonismo (`npm run validar:paleta`). A adoção é da Fase 16, e a ressalva abaixo é o motivo de não ser automática |
 | **Tokens de tamanho de ícone** | Não existem como CSS var. Regra do `Icon.d.ts`: 16 em botão, 20 em nav, 24 em cabeçalho; stroke 1.75 na navegação, 2 em botão e aviso |
 | **Breadcrumb, Banner** | Não existem no pacote nem no projeto. Não foram criados |
