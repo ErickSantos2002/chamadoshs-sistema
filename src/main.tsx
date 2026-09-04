@@ -61,6 +61,12 @@ import './styles/index.css'; // Importa o Tailwind e estilos globais
  * próxima visita. É o mesmo que as galerias já faziam, e é aceitável num
  * build de desenvolvimento — mas quem for capturar precisa saber, porque a
  * alternativa seria a captura mentir sobre o tema.
+ *
+ * ── Este bloco SAI NA FASE 20 ────────────────────────────────────────
+ *
+ * É o item 3 da lista de remoção, que mora inteira em `router.tsx`, na
+ * declaração das galerias — junto com as duas rotas de `/dev/`. Aqui fica só
+ * o ponteiro, para não existirem duas listas que possam divergir.
  */
 if (import.meta.env.DEV) {
   const tema = new URLSearchParams(location.search).get('tema');

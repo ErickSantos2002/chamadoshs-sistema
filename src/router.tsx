@@ -37,7 +37,27 @@ const GaleriaDaCasca = import.meta.env.DEV
  * primitivos em todos os estados, nos dois temas, com a razão de contraste
  * medida na hora sob cada amostra. É o que fecha o Checkpoint 2 da §26.
  *
- * Sai na Fase 20, junto com a outra.
+ * ── O QUE SAI NA FASE 20 ─────────────────────────────────────────────
+ *
+ * Esta é a lista, e ela mora aqui para não haver duas:
+ *
+ *   1. `pages/dev/GaleriaDaCasca.tsx` e a rota `/dev/galeria`
+ *   2. `pages/dev/GaleriaDeComponentes.tsx` e a rota `/dev/componentes`
+ *   3. **o gancho de tema por URL em `main.tsx`** — o bloco `?tema=` que
+ *      escreve a classe e o `data-tema-pronto` antes da primeira pintura
+ *
+ * As três são andaimes de captura, e as três já são inertes em produção pelo
+ * `import.meta.env.DEV`. Sair da Fase 20 é tirar o andaime do código-fonte,
+ * não do bundle — no bundle elas nunca estiveram.
+ *
+ * O terceiro item entrou na lista em 04/09/2026, quando o gancho deixou de
+ * valer só para `/dev/` e passou a valer para qualquer caminho com `?tema=`,
+ * para as dezesseis capturas do Checkpoint 3. Ficou mais útil e mais largo, e
+ * por isso mais importante de não esquecer aqui.
+ *
+ * Quem tirar: `scripts/canario-css.js`, `scripts/sonda-captura.js` e
+ * `docs/design-system-migration/checkpoint-3/protocolo-de-captura.md` dependem
+ * do item 3, e saem junto ou perdem o sentido.
  */
 const GaleriaDeComponentes = import.meta.env.DEV
   ? lazy(() => import('./pages/dev/GaleriaDeComponentes'))

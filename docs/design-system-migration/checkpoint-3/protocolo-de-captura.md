@@ -28,6 +28,10 @@ pintura sai no tema errado e troca um quadro depois — e uma foto tirada nesse
 intervalo mostra a cor errada com a legenda certa. Já aconteceu aqui: o DOM
 dizia `dark`, a tela estava clara, e o painel dizia "claro".
 
+> **`?tema=` reescreve `localStorage.theme`.** A última captura deixa o sistema
+> no tema dela para a próxima visita — inclusive fora das capturas. Só no build
+> de desenvolvimento.
+
 ## Antes de cada foto, a sonda
 
 ```bash
@@ -81,12 +85,17 @@ A quinta é a que importa para as dezesseis: o marcador passou a existir fora de
 3. **Pelo menos duas linhas** na listagem e na tabela de recentes do painel.
    A sonda bloqueia se não houver, mas é melhor saber antes.
 
-## Um efeito colateral, dito
+## O andaime, e quando ele sai
 
-Com `?tema=` numa página do app, a chave `localStorage.theme` é reescrita. A
-captura deixa o tema trocado para a próxima visita. É o que as galerias já
-faziam; a alternativa seria a captura mentir sobre o tema.
+O gancho de tema por URL é o **item 3 da lista de remoção da Fase 20**, que
+mora em `src/router.tsx`, ao lado das duas rotas de `/dev/`. Este protocolo, o
+`canario-css.js` e o `sonda-captura.js` dependem dele e saem junto.
 
-Vale só no build de desenvolvimento: o bloco inteiro está dentro de
+Vale só no build de desenvolvimento: o bloco está dentro de
 `import.meta.env.DEV`, e foi conferido no bundle de produção — zero ocorrências
 de `temaPronto`.
+
+A alternativa a reescrever o `localStorage` seria a captura aplicar o tema por
+efeito, depois de montar — e aí a primeira pintura sairia no tema errado, que é
+o defeito que este gancho existe para não ter. O preço é o tema ficar trocado
+depois; o benefício é a foto não mentir.
