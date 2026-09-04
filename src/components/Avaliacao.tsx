@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { chamadosService } from '../services/chamadoshsapi';
@@ -54,6 +54,49 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
   const [salvando, setSalvando] = useState(false);
   const [sobre, setSobre] = useState<number | null>(null);
 
+  /**
+   * A nota em voo, em DOIS lugares, e cada um faz uma coisa.
+   *
+   * O estado desenha: é ele que desabilita as cinco estrelas e apaga o brilho.
+   * A REF trava: é ela que impede a segunda chamada.
+   *
+   * Precisa dos dois pelo mesmo motivo do reset de senha da `UsuariosTab`:
+   * `setSalvando(true)` não atualiza `salvando` no mesmo tique, e o `disabled`
+   * só chega ao DOM no render seguinte. Um duplo clique de mouse são dois
+   * eventos em milissegundos, antes de qualquer pintura — os dois liam `false`
+   * e os dois passavam.
+   *
+   * Aqui a consequência é pior que lá. Duas gravações partem em paralelo, nada
+   * garante a ordem, e **quem vence é a última RESPOSTA a chegar, não o último
+   * clique**: dá para clicar 5, mudar para 4, e ficar com 5 registrado. A nota
+   * gravada deixa de ser a que a pessoa deu.
+   */
+  const notaEmVoo = useRef(false);
+
+  /**
+   * Descarte de resposta superada.
+   *
+   * O caminho real é a resposta que chega DEPOIS que o componente saiu da
+   * tela: a avaliação aparece dentro do `ChamadoModal`, e fechar a janela com
+   * a gravação em voo é trivial. Sem esta marca, o `aoAvaliar` do pai e o
+   * `toast` disparam para uma tela que a pessoa já deixou.
+   *
+   * ── Por que NÃO há um contador de sequência aqui ─────────────────────
+   *
+   * Foi a primeira ideia, e ela é inerte. Dentro de uma montagem a trava
+   * acima garante que só existe uma requisição em voo, então dois números de
+   * sequência nunca convivem. Entre montagens, o fechamento antigo segura as
+   * refs ANTIGAS — e a `montado` delas já é `false`, então quem pega o caso é
+   * esta marca, e o contador nunca chegaria a divergir.
+   *
+   * Fica escrito porque a linha pareceria uma proteção a mais, e não é: seria
+   * mais uma engrenagem sem caminho que chega até ela.
+   */
+  const montado = useRef(true);
+  useEffect(() => () => {
+    montado.current = false;
+  }, []);
+
   const nota = chamado.avaliacao ?? null;
 
   const encerrado =
@@ -62,6 +105,12 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
     encerrado && !chamado.cancelado && chamado.solicitante_id === user?.id;
 
   const salvar = async (valor: number) => {
+    // A trava vem ANTES de tudo, e lê a REF e não o estado — ver a nota na
+    // declaração. As estrelas desabilitadas são o aviso visual; esta linha é o
+    // que de fato impede a segunda gravação.
+    if (notaEmVoo.current) return;
+    notaEmVoo.current = true;
+
     try {
       setSalvando(true);
 
@@ -70,9 +119,17 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
       // deveria avaliar.
       const atualizado = await chamadosService.avaliar(chamado.id, valor);
 
+      // A gravação chegou ao fim depois que a tela saiu: não há a quem avisar,
+      // e o pai já seguiu adiante.
+      if (!montado.current) return;
+
       aoAvaliar?.(atualizado);
       toast.success('Obrigado pela avaliação!');
     } catch (err: any) {
+      // Mesma regra do sucesso: erro de requisição cuja tela já fechou não
+      // vira aviso numa tela que a pessoa nem estava olhando.
+      if (!montado.current) return;
+
       const status = err?.response?.status;
 
       if (status === 409) {
@@ -83,7 +140,11 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
         toast.error(err?.response?.data?.detail || 'Erro ao salvar avaliação.');
       }
     } finally {
-      setSalvando(false);
+      // A trava solta sempre, inclusive nos dois `return` acima: se o
+      // componente voltar, ele precisa aceitar nota de novo. `setSalvando` só
+      // corre montado, porque desmontado ele não tem o que desenhar.
+      notaEmVoo.current = false;
+      if (montado.current) setSalvando(false);
     }
   };
 
