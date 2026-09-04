@@ -44,8 +44,25 @@ import './styles/index.css'; // Importa o Tailwind e estilos globais
  * Fica inteiro dentro do `import.meta.env.DEV`, que o Vite troca por `false`
  * literal: em produção o bloco não existe. Escrito aqui, e não num módulo
  * importado, justamente para não deixar rastro no grafo de produção.
+ *
+ * ── Vale para QUALQUER caminho, e não só para `/dev/` ────────────────
+ *
+ * Nasceu preso a `/dev/`, porque quem capturava eram as galerias. As dezesseis
+ * capturas do Checkpoint 3 são de páginas do APP — painel, listagem,
+ * formulário e detalhe —, e ali o marcador simplesmente não existia: o tema
+ * vinha do `localStorage` por efeito, que é exatamente o caminho com os três
+ * defeitos descritos acima.
+ *
+ * O gatilho passa a ser o `?tema=` na URL, e não o caminho. Sem o parâmetro,
+ * nada muda em lugar nenhum — quem navega normalmente não vê diferença.
+ *
+ * O efeito colateral fica dito: com `?tema=` numa página do app, a chave do
+ * `localStorage` é reescrita, então a captura deixa o tema trocado para a
+ * próxima visita. É o mesmo que as galerias já faziam, e é aceitável num
+ * build de desenvolvimento — mas quem for capturar precisa saber, porque a
+ * alternativa seria a captura mentir sobre o tema.
  */
-if (import.meta.env.DEV && location.pathname.startsWith('/dev/')) {
+if (import.meta.env.DEV) {
   const tema = new URLSearchParams(location.search).get('tema');
   if (tema === 'claro' || tema === 'escuro') {
     const escuro = tema === 'escuro';

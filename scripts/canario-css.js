@@ -29,8 +29,13 @@
  *
  * ── Uso ───────────────────────────────────────────────────────────────
  *
- *   node scripts/canario-css.js          # imprime a sonda para colar no console
- *   node scripts/canario-css.js --json   # a mesma sonda em uma linha
+ *   node scripts/canario-css.js   # imprime a sonda, para colar no console
+ *
+ * **Não há modo de uma linha.** Houve, e era quebrado: achatar a sonda
+ * transforma cada comentário `//` num comentário até o fim, e o que se cola no
+ * console é um `(() => {` sem fechamento. O erro só aparecia na hora de colar,
+ * e por isso passou — quem o usou de verdade pela primeira vez foi a sonda de
+ * captura, que embute esta aqui inteira e não pôde ser colada.
  *
  * A saída da sonda é o que se cola no relatório como prova, junto das capturas.
  */
@@ -180,11 +185,7 @@ const sonda = `(() => {
 /* A mesma guarda de `validar-paleta.js`: sem ela, um `require` deste arquivo
  * imprime a sonda inteira no meio da saída de quem importou. */
 if (require.main === module) {
-  if (process.argv.includes('--json')) {
-    console.log(sonda.replace(/\n\s*/g, ' '));
-  } else {
-    console.log(sonda);
-  }
+  console.log(sonda);
 }
 
 module.exports = { sonda, esperado, CLASSES, TOKENS };
