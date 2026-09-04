@@ -34,7 +34,7 @@ import { readFileSync } from 'node:fs';
 const requerer = createRequire(import.meta.url);
 const canario = requerer(resolve(__dirname, '../scripts/canario-css.js')) as {
   sonda: string;
-  esperado: Record<string, string>;
+  esperado: Record<':root' | '.dark', Record<string, string>>;
   CLASSES: string[];
   TOKENS: string[];
 };
@@ -48,12 +48,52 @@ describe('canário do CSS', () => {
   it('os valores esperados saem do index.css, e não de uma cópia', () => {
     // Se alguém cravar a paleta na sonda, este caso reprova no dia em que o
     // disco mudar — que é exatamente o dia em que o canário precisa funcionar.
-    for (const [token, valor] of Object.entries(canario.esperado)) {
-      expect(
-        FONTE,
-        `${token} devia sair do index.css, e o valor "${valor}" não está lá`
-      ).toContain(`${token}: ${valor};`);
+    for (const tema of [':root', '.dark'] as const) {
+      for (const [token, valor] of Object.entries(canario.esperado[tema])) {
+        expect(
+          FONTE,
+          `${tema} ${token}: o valor "${valor}" não está no index.css`
+        ).toContain(`${token}: ${valor};`);
+      }
     }
+  });
+
+  /**
+   * O canário conhece OS DOIS TEMAS, e compara com o que está na tela.
+   *
+   * ── O defeito que este caso trava ────────────────────────────────────
+   *
+   * A primeira versão lia só o `:root`. Ela **reprovava toda página no tema
+   * escuro**: cinco dos seis tokens "divergiam", porque os valores servidos
+   * eram os do `.dark`. O sexto, `--perigo`, passava — e foi ele que
+   * denunciou, por ser o único da lista com o mesmo valor nos dois temas.
+   *
+   * Um canário que grita quando não há fogo é pior que canário nenhum: ele
+   * ensina quem o lê a ignorá-lo, e aí ele também não grita quando há.
+   *
+   * ── E por que os testes anteriores não pegaram ───────────────────────
+   *
+   * Porque o caso acima confere que os valores **saem da fonte**, e eles
+   * saíam. Da fonte errada. "Vem do arquivo certo" e "vem do BLOCO certo" são
+   * perguntas diferentes, e só a segunda distingue os temas.
+   *
+   * Achado ao rodar a sonda pela primeira vez numa página de verdade. Nenhum
+   * teste de unidade acharia: o tema é do navegador.
+   */
+  it('conhece os dois temas, e escolhe pelo que está na tela', () => {
+    expect(Object.keys(canario.esperado).sort()).toEqual(['.dark', ':root']);
+
+    // Os que MUDAM com o tema têm de diferir entre os dois blocos.
+    expect(canario.esperado[':root']['--superficie']).not.toBe(
+      canario.esperado['.dark']['--superficie']
+    );
+    // E os fixos têm de ser iguais — é a queda para o `:root` pela cascata.
+    expect(canario.esperado[':root']['--perigo']).toBe(
+      canario.esperado['.dark']['--perigo']
+    );
+
+    // A sonda decide pela classe no `<html>`, e não por um palpite.
+    expect(canario.sonda).toContain("classList.contains('dark')");
   });
 
   it('cobre as três famílias de token que a migração tocou', () => {

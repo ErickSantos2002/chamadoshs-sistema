@@ -92,20 +92,48 @@ function tokensDoBloco(css, seletor) {
 }
 
 const css = fs.readFileSync(CSS, 'utf8');
-const claro = tokensDoBloco(css, ':root');
 
-const esperado = {};
+/**
+ * Os dois temas, e não só o claro.
+ *
+ * A primeira versão lia apenas o `:root`, e **reprovava toda página no tema
+ * escuro** — cinco dos seis tokens "divergiam", porque os valores servidos
+ * eram os do `.dark`. O sexto, `--perigo`, passava, e foi ele que denunciou:
+ * é o único da lista que tem o mesmo valor nos dois temas.
+ *
+ * Um canário que grita quando não há fogo é pior que canário nenhum: ele
+ * ensina quem o lê a ignorá-lo, e aí ele também não grita quando há.
+ *
+ * Achado ao rodá-lo pela primeira vez numa página de verdade — que é a única
+ * forma de achar isto, porque o teste dele conferia que os valores saem da
+ * fonte, e eles saíam. Da fonte errada.
+ */
+const claro = tokensDoBloco(css, ':root');
+const escuro = tokensDoBloco(css, '.dark');
+
+const esperado = { ':root': {}, '.dark': {} };
 for (const t of TOKENS) {
-  if (!claro[t]) throw new Error(`token ${t} não encontrado em index.css`);
-  esperado[t] = claro[t];
+  if (!claro[t]) throw new Error(`token ${t} não encontrado no :root de index.css`);
+  esperado[':root'][t] = claro[t];
+  // O `.dark` só redeclara o que muda com o tema. O que ele não redeclara cai
+  // no `:root` pela cascata — é o caso das cores de significado, que são fixas
+  // de propósito.
+  esperado['.dark'][t] = escuro[t] ?? claro[t];
 }
 
 // A sonda. Roda no navegador, na página que vai ser fotografada.
 const sonda = `(() => {
-  const ESPERADO = ${JSON.stringify(esperado)};
+  const POR_TEMA = ${JSON.stringify(esperado)};
   const CLASSES = ${JSON.stringify(CLASSES)};
   const raiz = getComputedStyle(document.documentElement);
   const falhas = [];
+
+  // Qual tema está na tela AGORA. Sem isto a sonda compara os valores do
+  // escuro com os do claro e reprova cinco de seis — foi o que ela fez na
+  // primeira vez que rodou numa página de verdade.
+  const escuro = document.documentElement.classList.contains('dark');
+  const tema = escuro ? '.dark' : ':root';
+  const ESPERADO = POR_TEMA[tema];
 
   // 1. O valor computado do token bate com o do disco?
   const tokens = Object.entries(ESPERADO).map(([nome, disco]) => {
@@ -137,7 +165,7 @@ const sonda = `(() => {
   });
 
   const veredito = falhas.length === 0;
-  console.log('%c CANARIO DO CSS ' + (veredito ? 'OK' : 'REPROVADO') + ' ',
+  console.log('%c CANARIO DO CSS ' + (veredito ? 'OK' : 'REPROVADO') + ' — tema ' + tema + ' ',
     'background:' + (veredito ? '#065f46' : '#b91c1c') + ';color:#fff;font-weight:bold');
   console.table(tokens);
   console.table(classes);
@@ -146,7 +174,7 @@ const sonda = `(() => {
     console.error('Derrube o servidor de desenvolvimento e suba de novo.');
     falhas.forEach((f) => console.error('  - ' + f));
   }
-  return { ok: veredito, tokens, classes, falhas };
+  return { ok: veredito, tema, tokens, classes, falhas };
 })()`;
 
 /* A mesma guarda de `validar-paleta.js`: sem ela, um `require` deste arquivo
