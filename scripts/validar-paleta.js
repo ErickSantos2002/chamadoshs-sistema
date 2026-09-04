@@ -374,32 +374,31 @@ function exigirSemModificadorDeOpacidade() {
  * Número de linha muda a cada edição acima dele, e uma catraca que grita por
  * causa de uma linha em branco é uma catraca que alguém desliga.
  */
-const PARES_CONHECIDOS = new Map([
-  // A catraca desceu de 12 para 3 entre 03 e 04/09/2026.
-  //
-  //   12 -> 11   o "Confirmar" do CategoriasTab virou Button variante="perigo"
-  //              no template de listagem da Fase 11
-  //   11 ->  3   os oito botoes de acao do ChamadoDetalhes que TINHAM variante
-  //              correspondente foram migrados na Fase 15: tres `bg-sinal`
-  //              para primario, tres `bg-perigo` para perigo, dois
-  //              `bg-sucesso` para sucesso
-  //
-  // OS TRES QUE SOBRAM SAO O MESMO CASO, e nao teimosia: sao os botoes
-  // "Marcar como Resolvido" e o de reabrir, em `bg-info` com texto branco.
-  // `--info` e o degrau 500 e da 3,68:1 — reprova.
-  //
-  // Nao ha variante `info` no `Button`, nem aqui nem no `Button.jsx` do
-  // pacote, e nao ha `--action-info` nos tokens. Inventar qualquer um dos dois
-  // seria criar API que o pacote nao tem.
-  //
-  // O conserto tem a forma exata da emenda E2, que criou `--action-danger`
-  // (danger-600) e `--action-success` (success-700) pelo mesmo motivo: o
-  // degrau 500 nao carrega texto branco. `info-600` daria 5,17:1.
-  //
-  // Levado ao operador como candidato a emenda. Enquanto nao houver decisao,
-  // os tres ficam aqui — visiveis, contados, e impedindo que a linha suba.
-  ['src/pages/ChamadoDetalhes.tsx  bg-info  repouso', 3],
-]);
+// A catraca chegou a ZERO em 04/09/2026, e por isso esta lista esta vazia.
+//
+// Ela nasceu com DOZE pares — fundo de cor cheia carregando texto branco
+// abaixo de 4,5:1 — e desceu assim:
+//
+//   12 -> 11   o "Confirmar" da exclusao de categoria, no template de
+//              listagem da Fase 11
+//   11 ->  3   oito botoes de acao do ChamadoDetalhes que tinham variante
+//              correspondente no Button (tres sinal, tres perigo, dois sucesso)
+//    3 ->  0   os oito ultimos, depois de o operador decidir que as cinco
+//              variantes do pacote bastam: "Marcar como Resolvido" vai a
+//              sucesso, e "Reabrir", "Desativar" e "Aguardando Retorno" vao a
+//              secundario, porque reversivel e neutro e o rotulo carrega o
+//              sentido
+//
+// De agora em diante QUALQUER par novo reprova. Nao ha mais linha de base para
+// tolerar: a catraca deixou de conter e passou a impedir.
+//
+// UM DEFEITO QUE ELA NAO VIA, e vale saber que existe: o botao de arquivar
+// tinha `bg-sucesso` com branco (2,54:1) dentro de um LITERAL INTERPOLADO, e o
+// scanner exclui esses de proposito — foi o conserto do falso positivo da
+// Fase 7. Ele foi achado por leitura, nao por varredura, e corrigido junto.
+// Conferido depois: nao ha nenhum outro botao com `text-white` dentro de
+// template com interpolacao em todo o src.
+const PARES_CONHECIDOS = new Map([]);
 
 /** Os fundos de cor cheia que podem carregar texto, e de onde sai o valor. */
 const FUNDOS_CHEIOS = {

@@ -488,12 +488,10 @@ const UsuariosTab: React.FC = () => {
                           </BotaoDeAcao>
                         ) : confirmDelete === usuario.id ? (
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleDesativarUsuario(usuario.id)}
-                              className="rounded-lg bg-alerta-forte px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-110"
-                            >
+                            <Button variante="secundario"
+                              onClick={() => handleDesativarUsuario(usuario.id)}>
                               Desativar
-                            </button>
+                            </Button>
                             <button
                               onClick={() => setConfirmDelete(null)}
                               className="rounded-lg border border-borda bg-superficie-elevada px-3 py-1.5 text-xs font-semibold text-conteudo transition-colors hover:bg-borda"

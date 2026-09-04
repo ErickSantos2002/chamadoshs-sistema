@@ -425,27 +425,19 @@ const ChamadoDetalhes: React.FC = () => {
       /* ================== EM ANDAMENTO ================== */
       case StatusEnum.EM_ANDAMENTO:
         botoesComuns.push(
-          <button
+          <Button variante="secundario"
             key="aguardando"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.AGUARDANDO)}
-            className="flex items-center gap-2 rounded-lg bg-alerta-forte px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.AGUARDANDO)}>
             <IconeRelogio className="h-4 w-4" />
             Aguardando Retorno
-          </button>,
+          </Button>,
 
-          <button
+          <Button variante="sucesso"
             key="resolver"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}
-            className="flex items-center gap-2 rounded-lg bg-info px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:bg-info-forte"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}>
             <IconeConfereCirculo className="h-4 w-4" />
             Marcar como Resolvido
-          </button>
+          </Button>
         );
         break;
 
@@ -459,48 +451,36 @@ const ChamadoDetalhes: React.FC = () => {
             Retomar Atendimento
           </Button>,
 
-          <button
+          <Button variante="sucesso"
             key="resolver"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}
-            className="flex items-center gap-2 rounded-lg bg-info px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:bg-info-forte"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}>
             <IconeConfereCirculo className="h-4 w-4" />
             Marcar como Resolvido
-          </button>
+          </Button>
         );
         break;
 
       /* ================== RESOLVIDO ================== */
       case StatusEnum.RESOLVIDO:
         botoesComuns.push(
-          <button
+          <Button variante="secundario"
             key="reabrir"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="flex items-center gap-2 rounded-lg bg-alerta-forte px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}>
             <IconeDesfazer className="h-4 w-4" />
             Reabrir
-          </button>
+          </Button>
         );
         break;
 
       /* ================== FECHADO (unificado com Resolvido visualmente) ================== */
       case StatusEnum.FECHADO:
         botoesComuns.push(
-          <button
+          <Button variante="secundario"
             key="reabrir"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="flex items-center gap-2 rounded-lg bg-alerta-forte px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}>
             <IconeDesfazer className="h-4 w-4" />
             Reabrir
-          </button>
+          </Button>
         );
         break;
     }
@@ -1110,16 +1090,11 @@ const ChamadoDetalhes: React.FC = () => {
                         focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
               />
 
-              <button
+              <Button variante="primario"
                 onClick={handleEnviarComentario}
-                disabled={!novoComentario.trim() || enviandoComentario}
-                className="mt-2 rounded-lg bg-info px-4 py-2
-                        text-sm font-semibold text-white
-                        transition-colors hover:bg-info-forte
-                        disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                disabled={!novoComentario.trim() || enviandoComentario}>
                 {enviandoComentario ? 'Enviando...' : 'Enviar Comentário'}
-              </button>
+              </Button>
             </div>
 
             {/* Lista de comentários.
@@ -1456,26 +1431,30 @@ const ChamadoDetalhes: React.FC = () => {
           largura="sm"
           rodape={
             <>
-              <button
+              <Button
+                variante="secundario"
                 onClick={() => setMostrarModalArquivar(false)}
                 disabled={processando}
-                className="rounded-lg border border-borda px-4 py-2
-                          text-sm font-semibold text-conteudo-suave
-                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                          disabled:opacity-50"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              {/* A cor deixa de depender do estado.
+                  
+                  Era verde para desarquivar e ambar para arquivar, com texto
+                  branco cravado — `bg-sucesso` com branco da 2,54:1, e a
+                  catraca NAO o via: a classe estava dentro de um literal
+                  interpolado, que o scanner exclui de proposito para nao
+                  repetir o falso positivo da Fase 7.
+                  
+                  Agora e `primario` nos dois casos. Arquivar e reversivel — o
+                  botao ao lado desarquiva —, entao pela regra do operador nao
+                  pede vermelho; e e a acao principal do modal, entao nao pode
+                  ser neutra como o Cancelar ao lado, que sumiria contra ela.
+                  Quem carrega a diferenca e o rotulo, que ja muda. */}
+              <Button
+                variante="primario"
                 onClick={handleArquivarChamado}
                 disabled={processando}
-                className={`flex items-center gap-2 rounded-lg px-4 py-2
-                          text-sm font-semibold text-white transition-colors
-                          disabled:opacity-50 ${
-                            chamado?.arquivado
-                              ? 'bg-sucesso hover:bg-sucesso-forte'
-                              : 'bg-alerta-forte hover:brightness-110'
-                          }`}
               >
                 {chamado?.arquivado ? (
                   <>
@@ -1488,7 +1467,7 @@ const ChamadoDetalhes: React.FC = () => {
                     {processando ? 'Arquivando...' : 'Sim, arquivar'}
                   </>
                 )}
-              </button>
+              </Button>
             </>
           }
         >
