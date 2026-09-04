@@ -375,15 +375,30 @@ function exigirSemModificadorDeOpacidade() {
  * causa de uma linha em branco é uma catraca que alguém desliga.
  */
 const PARES_CONHECIDOS = new Map([
-  // O par do `CategoriasTab` saiu em 03/09/2026: o botao "Confirmar" da
-  // exclusao era `bg-perigo` com `text-white`, 3,76:1, e virou
-  // `Button variante="perigo"` no template de listagem da Fase 11.
+  // A catraca desceu de 12 para 3 entre 03 e 04/09/2026.
   //
-  // Os quatro que restam sao todos de `ChamadoDetalhes`, que e a Fase 15.
+  //   12 -> 11   o "Confirmar" do CategoriasTab virou Button variante="perigo"
+  //              no template de listagem da Fase 11
+  //   11 ->  3   os oito botoes de acao do ChamadoDetalhes que TINHAM variante
+  //              correspondente foram migrados na Fase 15: tres `bg-sinal`
+  //              para primario, tres `bg-perigo` para perigo, dois
+  //              `bg-sucesso` para sucesso
+  //
+  // OS TRES QUE SOBRAM SAO O MESMO CASO, e nao teimosia: sao os botoes
+  // "Marcar como Resolvido" e o de reabrir, em `bg-info` com texto branco.
+  // `--info` e o degrau 500 e da 3,68:1 — reprova.
+  //
+  // Nao ha variante `info` no `Button`, nem aqui nem no `Button.jsx` do
+  // pacote, e nao ha `--action-info` nos tokens. Inventar qualquer um dos dois
+  // seria criar API que o pacote nao tem.
+  //
+  // O conserto tem a forma exata da emenda E2, que criou `--action-danger`
+  // (danger-600) e `--action-success` (success-700) pelo mesmo motivo: o
+  // degrau 500 nao carrega texto branco. `info-600` daria 5,17:1.
+  //
+  // Levado ao operador como candidato a emenda. Enquanto nao houver decisao,
+  // os tres ficam aqui — visiveis, contados, e impedindo que a linha suba.
   ['src/pages/ChamadoDetalhes.tsx  bg-info  repouso', 3],
-  ['src/pages/ChamadoDetalhes.tsx  bg-perigo  repouso', 3],
-  ['src/pages/ChamadoDetalhes.tsx  bg-sinal  repouso', 3],
-  ['src/pages/ChamadoDetalhes.tsx  bg-sucesso  repouso', 2],
 ]);
 
 /** Os fundos de cor cheia que podem carregar texto, e de onde sai o valor. */

@@ -12,7 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
-import { BlocoCarregando, Modal, Seletor } from '../components/ui';
+import { BlocoCarregando, Button, Modal, Seletor } from '../components/ui';
 import { MarcaBadge } from '../components/SelosDeChamado';
 import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
 import { IconeApagar, IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
@@ -413,16 +413,12 @@ const ChamadoDetalhes: React.FC = () => {
       /* ================== ABERTO ================== */
       case StatusEnum.ABERTO:
         botoesComuns.push(
-          <button
+          <Button variante="primario"
             key="iniciar"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="flex items-center gap-2 rounded-lg bg-sinal px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}>
             <IconeIniciar className="h-4 w-4" />
             Iniciar Atendimento
-          </button>
+          </Button>
         );
         break;
 
@@ -456,16 +452,12 @@ const ChamadoDetalhes: React.FC = () => {
       /* ================== AGUARDANDO ================== */
       case StatusEnum.AGUARDANDO:
         botoesComuns.push(
-          <button
+          <Button variante="primario"
             key="retomar"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="flex items-center gap-2 rounded-lg bg-sinal px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}>
             <IconeIniciar className="h-4 w-4" />
             Retomar Atendimento
-          </button>,
+          </Button>,
 
           <button
             key="resolver"
@@ -609,12 +601,10 @@ const ChamadoDetalhes: React.FC = () => {
                         text-sm text-on-tint-danger">
           {error || 'Chamado não encontrado'}
         </div>
-        <button
-          onClick={() => navigate('/chamados')}
-          className="rounded-lg bg-sinal px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-110"
-        >
+        <Button variante="primario"
+          onClick={() => navigate('/chamados')}>
           Voltar para Chamados
-        </button>
+        </Button>
       </div>
     );
   }
@@ -719,15 +709,11 @@ const ChamadoDetalhes: React.FC = () => {
                           teste — administrador, e só em chamado que já saiu do
                           fluxo. */}
                       {chamado && podeExcluir(chamado, user?.role) && (
-                        <button
-                          onClick={() => setMostrarModalExcluir(true)}
-                          className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
-                                    text-sm font-semibold text-white
-                                    transition-colors hover:bg-perigo-forte"
-                        >
+                        <Button variante="perigo"
+                          onClick={() => setMostrarModalExcluir(true)}>
                           <IconeApagar className="h-4 w-4" />
                           Excluir
-                        </button>
+                        </Button>
                       )}
 
                       {/* Botão Editar */}
@@ -755,15 +741,11 @@ const ChamadoDetalhes: React.FC = () => {
                       </button>
 
                       {/* Botão Salvar */}
-                      <button
-                        onClick={handleSalvarEdicao}
-                        className="flex items-center gap-2 rounded-lg bg-sucesso px-4 py-2
-                                  text-sm font-semibold text-white
-                                  transition-colors hover:bg-sucesso-forte"
-                      >
+                      <Button variante="sucesso"
+                        onClick={handleSalvarEdicao}>
                         <IconeSalvar className="h-4 w-4" />
                         Salvar
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -1277,19 +1259,14 @@ const ChamadoDetalhes: React.FC = () => {
                 Cancelar
               </button>
 
-              <button
+              <Button variante="sucesso"
                 onClick={handleConfirmarResolucao}
-                disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}
-                className="flex items-center gap-2 rounded-lg bg-sucesso px-4 py-2
-                          text-sm font-semibold text-white
-                          transition-colors hover:bg-sucesso-forte
-                          disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}>
                 <IconeConfereCirculo className="h-4 w-4" />
                 {statusAlvo === StatusEnum.RESOLVIDO
                   ? "Marcar como Resolvido"
                   : "Fechar Chamado"}
-              </button>
+              </Button>
             </>
           }
         >
@@ -1345,20 +1322,15 @@ const ChamadoDetalhes: React.FC = () => {
               >
                 Não, voltar
               </button>
-              <button
+              <Button variante="perigo"
                 onClick={handleCancelarChamado}
                 disabled={
                   processando ||
                   validarMinimo(motivoCancelamento, MINIMO_SOLUCAO, 'Motivo') !== null
-                }
-                className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
-                          text-sm font-semibold text-white
-                          transition-colors hover:bg-perigo-forte
-                          disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                }>
                 <IconeProibido className="h-4 w-4" />
                 {processando ? 'Cancelando...' : 'Sim, cancelar'}
-              </button>
+              </Button>
             </>
           }
         >
@@ -1424,17 +1396,12 @@ const ChamadoDetalhes: React.FC = () => {
               >
                 Não, voltar
               </button>
-              <button
+              <Button variante="perigo"
                 onClick={handleExcluirChamado}
-                disabled={processando || !protocoloConfere}
-                className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
-                          text-sm font-semibold text-white
-                          transition-colors hover:bg-perigo-forte
-                          disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                disabled={processando || !protocoloConfere}>
                 <IconeApagar className="h-4 w-4" />
                 {processando ? 'Excluindo...' : 'Excluir'}
-              </button>
+              </Button>
             </>
           }
         >
