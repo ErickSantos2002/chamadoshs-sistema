@@ -35,6 +35,23 @@
  *    alfa próprio — a regra (a′) do D8-a. É o mesmo modo de falha das outras
  *    três: não quebra nada, só fica errado na tela.
  *
+ * 5. Que nenhum nome acessível APAGUE o conteúdo visível do elemento —
+ *    `aria-label` num gatilho de combobox, num botão com rótulo escrito. Ver a
+ *    nota da seção própria, mais abaixo.
+ *
+ * ── Uma observação sobre o nome deste arquivo ─────────────────────────
+ *
+ * Ele já não valida só paleta: o item 4 é sobre classe do Tailwind e o 5 é
+ * sobre nome acessível. O que os cinco têm em comum não é cor — é o **modo de
+ * falha**: nenhum deles quebra teste, tipo ou build, e todos ficam errados na
+ * tela ou no leitor de tela sem avisar ninguém.
+ *
+ * O nome ficou porque renomear mexe no `package.json`, no `paleta.test.ts` e
+ * em toda referência escrita nos relatórios das quinze fases. Fica anotado
+ * como dívida pequena, e não desfeita de passagem: renomear um arquivo que
+ * quinze documentos citam é o tipo de arrumação que se faz de propósito ou não
+ * se faz.
+ *
  * A simulação usa as matrizes de Machado, Oliveira e Fernandes (2009),
  * aplicadas em RGB linear. A distância é ΔE*ab (CIE76) em Lab D65 — mais
  * grosseira que a CIEDE2000, e escolhida por isso: o limiar fica folgado o
@@ -337,6 +354,200 @@ function exigirSemModificadorDeOpacidade() {
   );
 }
 
+
+// ──────────────────────────────────────────────────────────────────────
+// Nome acessível que APAGA o conteúdo visível — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * `aria-label` e `aria-labelledby` não somam ao conteúdo do elemento:
+ * **substituem**. Quando o conteúdo visível É a informação, isso a apaga.
+ *
+ * O caso que originou a regra: o gatilho do `Seletor` tinha
+ * `aria-label={rotulo}` e mostrava "Em Andamento" na tela enquanto anunciava
+ * só "Status, caixa de combinação". A escolha atual — a única informação que
+ * o controle carrega — não existia no canal não visual, em onze telas.
+ *
+ * A WCAG 2.5.3 (Label in Name) diz o mesmo pelo outro lado: o nome acessível
+ * precisa CONTER o rótulo visível.
+ *
+ * ── Duas regras, e a primeira é absoluta ────────────────────────────
+ *
+ * **(c1) `role="combobox"` nunca leva `aria-label`.** Sem exceção. O conteúdo
+ * de um gatilho de combobox é, por definição, o valor escolhido. Se ele tem
+ * rótulo, o rótulo se referencia por `aria-labelledby` — e junto com o id do
+ * próprio gatilho, como faz o padrão do APG, para o nome ficar "Status, Em
+ * Andamento".
+ *
+ * **(c2) Elemento interativo com `aria-label` literal não pode ter texto
+ * estático que não caiba nesse rótulo.** Aqui há exceções legítimas, e elas
+ * ficam na lista abaixo, com motivo escrito.
+ *
+ * ── O que esta varredura NÃO enxerga, e é deliberado ────────────────
+ *
+ * `aria-label={expressao}` com valor calculado fica de fora da (c2): não dá
+ * para saber, sem rodar, se `{`Ver detalhes do chamado ${p}`}` contém o texto
+ * visível "Ver detalhes" — e contém. Numa catraca, **deixar passar é erro e
+ * inventar par é sabotagem da confiança na ferramenta**: entre os dois, a
+ * escolha é não acusar o que não dá para provar.
+ *
+ * Texto vindo de expressão fica de fora pelo mesmo motivo: `{titulo}` pode ser
+ * qualquer coisa. Só o texto ESTÁTICO é lido — mas o da subárvore inteira, e
+ * não só o dos filhos diretos, porque é isso que `aria-label` apaga.
+ *
+ * O limite fica escrito porque uma catraca que não diz o que não vê é lida
+ * como se visse tudo.
+ */
+
+/** Papéis cujo conteúdo visível é lido e acionado por quem vê. */
+const PAPEIS_DE_WIDGET = new Set([
+  'combobox',
+  'button',
+  'link',
+  'tab',
+  'menuitem',
+  'menuitemcheckbox',
+  'menuitemradio',
+  'switch',
+  'checkbox',
+  'radio',
+  'option',
+]);
+
+/**
+ * As exceções da (c2), com motivo escrito.
+ *
+ * Vazia de propósito, e é isto que a torna uma catraca: se um dia entrar uma
+ * linha aqui, ela carrega o porquê, e quem vier depois discute o motivo em vez
+ * de descobrir uma lista de silêncios.
+ */
+const NOMES_CONHECIDOS = new Map([]);
+
+/**
+ * Todo o texto estático DENTRO da tag aberta em `fim`, inclusive o que está em
+ * elementos-filhos.
+ *
+ * Descendente, e não só filho direto, porque é o que `aria-label` apaga: a
+ * substituição vale para a subárvore inteira. Um `<button aria-label="Salvar">`
+ * com `<span>Publicar</span>` dentro anuncia "Salvar", e "Publicar" some.
+ */
+function textoVisivelDe(conteudo, fim, tag) {
+  const abre = new RegExp(`<${tag}(?=[\\s/>])`, 'g');
+  const fecha = new RegExp(`</${tag}\\s*>`, 'g');
+
+  // Onde este elemento termina, contando aninhamento da MESMA tag — o mesmo
+  // cuidado que `ramosDoTemplate` tem com chaves (armadilha 8).
+  let profundidade = 1;
+  let i = fim;
+  while (i < conteudo.length && profundidade > 0) {
+    abre.lastIndex = i;
+    fecha.lastIndex = i;
+    const a = abre.exec(conteudo);
+    const f = fecha.exec(conteudo);
+    if (!f) return '';
+    if (a && a.index < f.index) {
+      profundidade += 1;
+      i = a.index + 1;
+    } else {
+      profundidade -= 1;
+      i = f.index + (profundidade === 0 ? 0 : 1);
+    }
+  }
+  const dentro = conteudo.slice(fim, i);
+
+  // Fora as tags aninhadas e as interpolações. As chaves são contadas, e não
+  // casadas por regex: `{cn({ a }, 'b')}` tem chave dentro de chave.
+  let limpo = '';
+  let chaves = 0;
+  let emTag = false;
+  for (const c of dentro) {
+    if (chaves === 0 && !emTag && c === '<') emTag = true;
+    else if (emTag && c === '>') emTag = false;
+    else if (!emTag && c === '{') chaves += 1;
+    else if (!emTag && c === '}') chaves = Math.max(0, chaves - 1);
+    else if (!emTag && chaves === 0) limpo += c;
+  }
+  return limpo.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Os achados de UM arquivo, a partir do texto dele.
+ *
+ * Separada da varredura de propósito: assim os casos de prova a dirigem por
+ * string, sem plantar arquivo em `src/` — o que, aqui, seria fatal. A
+ * varredura lê todo `.tsx` que não é teste, então uma amostra com um defeito
+ * plantado faria a catraca reprovar para sempre. É a mesma razão pela qual os
+ * casos de `ramosDoTemplate` não viraram fixture.
+ */
+function achadosDeNome(conteudo, rel) {
+  const achados = [];
+
+  // Cada tag de abertura, com os atributos dela.
+  for (const m of conteudo.matchAll(/<([a-zA-Z][\w.]*)((?:[^<>{}]|\{[^{}]*\})*?)>/g)) {
+    const [inteiro, tag, atributos] = m;
+    const linha = conteudo.slice(0, m.index).split('\n').length;
+    const papel = /\brole="([a-z]+)"/.exec(atributos)?.[1];
+    const temLabel = /\baria-label[=\s]/.test(atributos);
+
+    // (c1) — absoluta.
+    if (papel === 'combobox' && temLabel) {
+      achados.push(
+        `${rel}:${linha}  role="combobox" com aria-label — o valor escolhido some do nome`
+      );
+      continue;
+    }
+
+    // (c2) — só com rótulo LITERAL, e só em elemento interativo.
+    const literal = /\baria-label="([^"]*)"/.exec(atributos)?.[1];
+    const interativo =
+      tag === 'button' || tag === 'a' || (papel && PAPEIS_DE_WIDGET.has(papel));
+    if (!literal || !interativo || inteiro.endsWith('/>')) continue;
+
+    const texto = textoVisivelDe(conteudo, m.index + inteiro.length, tag);
+    if (!/[A-Za-zÀ-ÿ]/.test(texto)) continue;
+    if (literal.toLowerCase().includes(texto.toLowerCase())) continue;
+
+    const chave = `${rel}:${linha}`;
+    if (NOMES_CONHECIDOS.has(chave)) continue;
+    achados.push(
+      `${chave}  <${tag} aria-label="${literal}"> apaga o texto visível "${texto}"`
+    );
+  }
+
+  return achados;
+}
+
+function exigirNomeQueNaoApagaConteudo() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx$/.test(nome) && !/\.test\.tsx$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(...achadosDeNome(fs.readFileSync(arquivo, 'utf8'), rel));
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `nome acessível apagando conteúdo visível: ${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — nome acessível que apaga o conteúdo visível ===` +
+      `\n  ${arquivos.length} arquivos varridos, ${achados.length} ocorrência(s), ` +
+      `${NOMES_CONHECIDOS.size} exceção(ões) escrita(s)`
+  );
+}
 
 // ──────────────────────────────────────────────────────────────────────
 // Fundo de cor cheia com texto branco cravado — catraca
@@ -778,6 +989,7 @@ function main() {
   }
 
   exigirSemModificadorDeOpacidade();
+  exigirNomeQueNaoApagaConteudo();
   exigirCatracaDeFundoCheio();
 
   console.log(linhas.join('\n'));
@@ -799,4 +1011,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { ramosDoTemplate, variantesDe, contido };
+module.exports = { ramosDoTemplate, variantesDe, contido, achadosDeNome };
