@@ -134,14 +134,50 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             const categoria = nomeDaCategoria(chamado.categoria_id);
 
             return (
-              <button
+              /*
+                ── O CARTÃO ERA UM BOTÃO INTEIRO, E ISSO CUSTAVA CARO ────
+
+                Um `<button>` envolvendo protocolo, título, três selos, avatar
+                e barra de SLA tem UM nome acessível: a concatenação de tudo
+                que há dentro. Quem navega por leitor de tela ouvia, de uma vez
+                só, algo como "HS-4187 Impressora não imprime Financeiro Alta
+                Avaliar Responsável Lidisay 80 por cento, botão" — e ouvia
+                isso vinte vezes seguidas ao percorrer uma coluna cheia.
+
+                Pior: sendo tudo um botão, **o título deixava de ser um
+                título**. Não havia cabeçalho nenhum no quadro, e a navegação
+                por cabeçalhos — que é como se percorre uma lista longa sem
+                ler tudo — não tinha onde pegar.
+
+                Agora é `<article>` com `<h4>`, e o alvo focável é só o título,
+                com nome curto: "Abrir chamado HS-4187: Impressora não
+                imprime". O resto do cartão continua sendo lido, mas como
+                CONTEÚDO do artigo, e não como parte do nome de um controle.
+
+                ── O cartão inteiro continua clicável, e sem JavaScript ──
+
+                Pelo `after:absolute after:inset-0` no botão: o pseudo-elemento
+                dele cobre o cartão, então o clique em qualquer ponto atinge o
+                PRÓPRIO botão. Não há reencaminhamento a manter, não há risco
+                de disparo duplo, e o foco de teclado cai onde a ação está.
+
+                ── Por que botão, e não link ────────────────────────────
+
+                Porque `aoAbrir` é uma função de efeito desconhecido daqui: o
+                quadro decide se abre modal ou navega, e hoje abre modal. Um
+                `<a href>` prometeria endereço, nova aba e menu de contexto que
+                não existem. Quando o quadro passar a navegar, o alvo troca
+                junto — é o mesmo critério que fez o "Voltar" e o "Ver
+                detalhes" virarem `Link` nesta migração.
+              */
+              <article
                 key={chamado.id}
-                type="button"
-                onClick={() => aoAbrir(chamado)}
                 className={cn(
-                  'w-full space-y-2 rounded-lg border border-l-4 border-borda bg-superficie p-3 text-left',
+                  'relative w-full space-y-2 rounded-lg border border-l-4 border-borda bg-superficie p-3 text-left',
                   'shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
+                  // O anel acende quando o foco está no título lá dentro: o
+                  // cartão é a moldura, e o alvo é o botão.
+                  'focus-within:ring-2 focus-within:ring-[var(--focus-ring)]',
                   BORDA_PRIORIDADE[chamado.prioridade]
                 )}
               >
@@ -159,9 +195,35 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   />
                 </div>
 
-                {/* Título */}
+                {/* Título — e o único alvo focável do cartão. */}
                 <h4 className="line-clamp-2 text-sm font-medium leading-snug text-conteudo">
-                  {chamado.titulo}
+                  <button
+                    type="button"
+                    onClick={() => aoAbrir(chamado)}
+                    // `after:*` estica a área de clique até as bordas do
+                    // `<article>` (que é `relative`). É o que faz o cartão
+                    // inteiro continuar clicável sendo o botão pequeno.
+                    //
+                    // `outline-none` sem anel próprio: quem desenha o foco é o
+                    // `focus-within` do cartão, senão apareceriam dois anéis,
+                    // um deles rente ao texto.
+                    className="text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+                  >
+                    {/*
+                      O prefixo é só para quem ouve, e existe para o nome do
+                      alvo dizer o que ele FAZ e sobre QUAL chamado.
+
+                      É `sr-only` e não `aria-label` de propósito: `aria-label`
+                      substituiria o conteúdo, e aí o título — que é o texto na
+                      tela — sairia do nome. Foi exatamente o defeito que o
+                      `Seletor` acabou de corrigir. Assim o nome CONTÉM o
+                      rótulo visível, que é o que a 2.5.3 pede.
+                    */}
+                    <span className="sr-only">
+                      Abrir chamado {chamado.protocolo}:{' '}
+                    </span>
+                    {chamado.titulo}
+                  </button>
                 </h4>
 
                 {/* Categoria, prioridade e responsável */}
@@ -207,7 +269,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 </div>
 
                 <SlaProgresso sla={chamado.sla} status={chamado.status} />
-              </button>
+              </article>
             );
           })
         )}
