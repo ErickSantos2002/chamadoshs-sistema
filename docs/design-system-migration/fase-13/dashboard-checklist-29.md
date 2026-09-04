@@ -141,3 +141,45 @@ A causa é simples: depois daquele commit eu rodei `typecheck` e `test`, e não
 
 A linha de base desceu de 12 para 11. Os quatro pares que restam são todos de
 `ChamadoDetalhes`, que é a Fase 15.
+
+---
+
+## Adendo do Checkpoint 3 — o que esta ficha não viu
+
+Escrito depois, ao montar as evidências do checkpoint. **Esta ficha estava
+incompleta quando foi dada por pronta**, e vale registrar o que ela deixou
+passar, porque o motivo é instrutivo.
+
+Ela conferiu os dezoito itens da §29 e todos passaram. E ainda assim **três
+controles interativos continuavam escritos à mão** nesta tela, dois deles com
+defeito de acessibilidade:
+
+| Onde | O que era | O defeito |
+|---|---|---|
+| atalhos de período (×4) | `<button>` à mão | o ativo era dito **só pela cor** |
+| interruptor de cancelados | `<button>` à mão | rótulo e `title` se contradiziam por largura |
+| "Ver detalhes" da tabela | `<button>` com `navigate()` | botão que navega, e dez com o mesmo nome |
+
+Mais o `<label>` "Período", que nomeia um grupo e não tinha como ter `htmlFor`.
+
+### Por que a ficha não pegou
+
+Porque **a §29 pergunta se a FUNÇÃO sobreviveu, não se o controle foi
+migrado.** "Filtra" estava marcado, e filtrava mesmo — antes e depois. Os
+quatro atalhos funcionavam perfeitamente para quem os vê.
+
+A lista de dezoito itens é uma rede de preservação: ela pega o que a migração
+teria QUEBRADO. Não pega o que a migração deixou de FAZER — um controle não
+tocado atravessa a ficha inteira sem disparar nada, porque continua fazendo o
+que sempre fez.
+
+É a mesma forma do que apareceu na Fase 12: lá o template tinha o conserto e a
+cópia não, e cada cópia passava sozinha na conferência. Aqui a tela passava
+sozinha na ficha. Nos dois casos o que faltava só aparece **contando**, e não
+conferindo.
+
+O que teria pego, das duas vezes: uma contagem do que resta escrito à mão por
+arquivo, rodada no fim de cada fase. É de uma linha, e virou item da proposta
+do Checkpoint 3.
+
+Corrigido em `fab2b8e`.
