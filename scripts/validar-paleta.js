@@ -466,35 +466,123 @@ const variantesDe = (prefixo) => (prefixo ? prefixo.split(':').filter(Boolean) :
 const contido = (a, b) => a.every((v) => b.includes(v));
 
 /**
- * Recorta cada interpolação de template contando chaves — armadilha 8.
+ * Os RAMOS de um literal de template, para o pareamento.
  *
- * Devolve os trechos ESTÁTICOS do literal, na ordem. Recortar até o primeiro
- * `}` erra quando a interpolação tem chaves dentro, como em
- * `cn({ ativo }, '...')`, e mistura pedaços de ramos diferentes. Aqui isso só
- * produzia cegueira — a classe precisa vir depois de espaço, e no pedaço ela
- * vinha depois de aspa — mas na varredura do HelpHS produzia falso positivo.
+ * ── O que mudou, e por que a versão anterior tinha um buraco ─────────
+ *
+ * A primeira versão devolvia só os trechos ESTÁTICOS e jogava fora o conteúdo
+ * das interpolações. Isso fechava a armadilha 4 — um `${a ? 'X' : 'Y'}` junta
+ * dois ramos de ternário no mesmo literal, e parear entre eles conta um par que
+ * não existe em pixel nenhum — mas abria um FALSO NEGATIVO no caminho.
+ *
+ * O caso real, achado por leitura e não por esta varredura:
+ *
+ *     className={`... text-white ... ${arquivado
+ *        ? 'bg-sucesso hover:bg-sucesso-forte'
+ *        : 'bg-alerta-forte hover:brightness-110'}`}
+ *
+ * O `text-white` está no estático e o `bg-sucesso` está num ramo. Descartando a
+ * interpolação, os dois nunca se encontram — e `bg-sucesso` com branco dá
+ * 2,54:1. A catraca chegou a ZERO com esse defeito vivo.
+ *
+ * ── O modelo agora ──────────────────────────────────────────────────
+ *
+ * O literal vira uma sequência de partes: texto estático, ou um conjunto de
+ * ALTERNATIVAS (as strings encontradas dentro de uma interpolação). Um ramo é
+ * o estático inteiro mais UMA alternativa de cada interpolação.
+ *
+ * Isso pareia dentro do ramo e com a parte estática, e **nunca entre ramos** —
+ * que é exatamente a distinção que faltava. `${a ? 'bg-perigo' : 'text-white'}`
+ * continua não produzindo par: os dois estão em ramos opostos.
+ *
+ * Interpolações DIFERENTES não são ramos uma da outra e podem valer juntas —
+ * `cn(a && 'bg-x', b && 'text-white')` aplica as duas quando as duas condições
+ * valem. Por isso elas se combinam entre si, e só as alternativas de uma MESMA
+ * interpolação se excluem.
+ *
+ * Uma alternativa vazia entra quando a interpolação tem UMA string só, porque
+ * aí é `cond && 'classe'` e a classe pode não aparecer. Com duas ou mais é
+ * ternário, e alguma sempre aparece.
+ *
+ * ── O teto, e por que ele não esconde nada ──────────────────────────
+ *
+ * O produto cartesiano cresce rápido. Acima de `TETO_DE_RAMOS` a função troca
+ * para o modo LINEAR: o estático inteiro mais uma alternativa por vez. Isso
+ * pareia toda alternativa com o estático — que é o caso que aparece de verdade
+ * — e deixa de parear alternativas de interpolações diferentes entre si.
+ *
+ * O modo linear pode perder um par; nunca inventa um. Numa catraca, errar para
+ * o lado de não acusar é ruim, mas errar para o lado de acusar o que não
+ * existe é pior: destrói a confiança na ferramenta, e foi o que a armadilha 4
+ * fez na Fase 7.
  */
-function semInterpolacao(texto) {
+const TETO_DE_RAMOS = 64;
+
+function ramosDoTemplate(texto) {
   const CIFRAO = String.fromCharCode(36);
-  const trechos = [];
+  const ASPAS = /(['"`])((?:(?!\1)[\s\S])*?)\1/g;
+
+  // Cada parte é uma string (estático) ou { alternativas: [...] }.
+  const partes = [];
   let atual = '';
+
   for (let i = 0; i < texto.length; i++) {
     if (texto[i] === CIFRAO && texto[i + 1] === '{') {
-      trechos.push(atual);
+      partes.push(atual);
       atual = '';
+
+      // Contagem de chaves — armadilha 8. Cortar no primeiro `}` erra em
+      // `cn({ ativo }, '...')` e mistura pedaços de ramos diferentes.
       let nivel = 1;
+      const inicio = i + 2;
       i += 2;
       for (; i < texto.length && nivel > 0; i++) {
         if (texto[i] === '{') nivel++;
         else if (texto[i] === '}') nivel--;
       }
+      const dentro = texto.slice(inicio, i - 1);
       i--;
+
+      const literais = [...dentro.matchAll(ASPAS)].map((x) => x[2]);
+      partes.push({
+        alternativas:
+          literais.length === 0 ? [''] :
+          literais.length === 1 ? [literais[0], ''] :
+          literais,
+      });
     } else {
       atual += texto[i];
     }
   }
-  trechos.push(atual);
-  return trechos;
+  partes.push(atual);
+
+  const interpolacoes = partes.filter((x) => typeof x !== 'string');
+  const tamanho = interpolacoes.reduce((n, p) => n * p.alternativas.length, 1);
+
+  if (tamanho > TETO_DE_RAMOS) {
+    const estatico = partes.filter((x) => typeof x === 'string').join(' ');
+    const ramos = [estatico];
+    for (const p of interpolacoes) {
+      for (const alt of p.alternativas) {
+        if (alt) ramos.push(estatico + ' ' + alt);
+      }
+    }
+    return ramos;
+  }
+
+  let ramos = [''];
+  for (const parte of partes) {
+    if (typeof parte === 'string') {
+      ramos = ramos.map((r) => r + parte);
+    } else {
+      const novos = [];
+      for (const r of ramos) {
+        for (const alt of parte.alternativas) novos.push(r + ' ' + alt + ' ');
+      }
+      ramos = novos;
+    }
+  }
+  return ramos;
 }
 
 function varrerFundoCheio() {
@@ -522,11 +610,12 @@ function varrerFundoCheio() {
     const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
 
     for (const m of txt.matchAll(/(["'`])((?:(?!\1)[\s\S]){0,600}?)\1/g)) {
-      // Armadilha 4: um `${...}` dentro de um template junta ramos de
-      // ternario no MESMO literal. O conteudo da interpolacao vira separador;
-      // as strings de dentro dela sao lidas por conta propria, porque o
-      // matchAll continua correndo o arquivo inteiro.
-      for (const lista of semInterpolacao(m[2])) {
+      // Armadilha 4: um `${...}` junta ramos de ternario no MESMO literal, e
+      // parear ENTRE eles conta um par que nao existe. `ramosDoTemplate`
+      // expande o literal em um ramo por combinacao — estatico mais uma
+      // alternativa de cada interpolacao —, entao o pareamento acontece dentro
+      // do ramo e nunca entre ramos. Ver a nota longa na funcao.
+      for (const lista of ramosDoTemplate(m[2])) {
         // `text-` não é só cor: `text-xs`, `text-left` e `text-nowrap` usam o
         // mesmo prefixo. Sem este filtro, "o texto deste estado" devolvia o
         // TAMANHO da fonte e o pareamento parava de achar qualquer coisa —
@@ -677,4 +766,12 @@ function main() {
   console.log('\nPaleta validada.');
 }
 
-main();
+/* Rodado direto pelo `npm run validar:paleta`, e importado pelos testes.
+ *
+ * Sem esta guarda, um `require` deste arquivo executaria a varredura inteira e
+ * poderia derrubar o processo do teste com `process.exit(1)`. */
+if (require.main === module) {
+  main();
+}
+
+module.exports = { ramosDoTemplate, variantesDe, contido };
