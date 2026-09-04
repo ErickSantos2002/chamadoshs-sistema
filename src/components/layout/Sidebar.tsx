@@ -77,7 +77,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       />
     )}
 
-    <aside
+    {/*
+      `div`, e nao `aside`.
+
+      `<aside>` e o marco `complementary` -- "conteudo tangencialmente
+      relacionado". Esta barra nao e tangencial: ela E a navegacao principal
+      do sistema, e quem carrega esse sentido e o `<nav>` la dentro, agora
+      nomeado.
+
+      Antes havia dois marcos aninhados, o de fora com o papel errado e sem
+      nome nenhum. Na lista de marcos do leitor de tela aparecia
+      "complementar" envolvendo "navegacao" -- e quem pulasse para o
+      complementar cairia na navegacao sem saber que era ela.
+    */}
+    <div
       id="menu-lateral"
       className={cn(
         'fixed inset-y-0 left-0 z-40 flex flex-col',
@@ -125,7 +138,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-2 py-3">
+      <nav
+        aria-label="Navegação principal"
+        className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-2 py-3"
+      >
         {GRUPOS_DO_MENU.map(({ grupo, itens }) => (
           <div key={grupo}>
             {/* Título do grupo aberto; recolhida, vira um traço curto — o
@@ -234,7 +250,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </p>
         </div>
       )}
-    </aside>
+    </div>
   </>
 );
 

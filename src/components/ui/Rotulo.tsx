@@ -8,6 +8,14 @@ interface RotuloProps {
   como?: 'span' | 'p' | 'label' | 'dt' | 'h2' | 'h3';
   /** Para quando `como="label"`. */
   htmlFor?: string;
+  /**
+   * Para um `aria-labelledby` de fora apontar para este texto.
+   *
+   * Existe porque marco nomeado não pode ter o nome escrito duas vezes: o
+   * `<aside>` do histórico da conta referencia este `<h3>` em vez de repetir
+   * a string num `aria-label`.
+   */
+  id?: string;
 }
 
 /**
@@ -63,8 +71,10 @@ export const Rotulo: React.FC<RotuloProps> = ({
   className,
   como: Tag = 'span',
   htmlFor,
+  id,
 }) => (
   <Tag
+    id={id}
     htmlFor={htmlFor}
     className={cn(
       // `tracking-widest` do Tailwind É 0.1em, e `text-xs` É 12px — os dois

@@ -114,7 +114,11 @@ const Login: React.FC = () => {
         {/* ── Painel de apresentação ───────────────────────────────────
             Some abaixo de `lg`: num celular ele empurraria o formulário
             para baixo da dobra, e quem abre o login quer o formulário. */}
-        <aside className="relative hidden flex-col justify-between overflow-hidden bg-superficie px-14 py-12 lg:flex lg:w-3/5">
+        {/* `div`, e nao `aside`: isto e o painel de marca, decoracao e
+            frase de efeito. Como marco `complementary` ele entrava na lista de
+            marcos da tela de login prometendo conteudo, e nao ha conteudo --
+            e abaixo de `lg` ele nem existe. */}
+        <div className="relative hidden flex-col justify-between overflow-hidden bg-superficie px-14 py-12 lg:flex lg:w-3/5">
           {/* Dois halos desfocados, como os do HelpHS. São decoração e nada
               mais — daí `aria-hidden` e `pointer-events-none`. */}
           <span
@@ -178,7 +182,7 @@ const Login: React.FC = () => {
           <p className="relative z-10 text-xs text-conteudo-tenue">
             © 2026 Health &amp; Safety Tech
           </p>
-        </aside>
+        </div>
 
         {/* ── Coluna do formulário ─────────────────────────────────── */}
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:w-2/5">

@@ -488,9 +488,22 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
 
         {/* A trilha fica ao lado, não abaixo: quem abre a conta para conferir
             quem mexeu nela precisa ver o cadastro e o histórico juntos. */}
+        {/* Este continua `aside`, e é o único dos quatro que continua.
+
+            Aqui o conteúdo É complementar de verdade: o assunto da janela é o
+            cadastro, e o histórico é apoio para quem está decidindo sobre ele
+            — exatamente o caso que o marco `complementary` descreve.
+
+            O que faltava era o NOME. Marco sem nome numa lista de marcos é uma
+            linha escrita "complementar", que não ajuda a escolher. O nome sai
+            do próprio `<h3>` que já está na tela, por `aria-labelledby`, para
+            não existirem duas fontes do mesmo texto. */}
         {mostrarHistorico && usuario && (
-          <aside className="lg:border-l lg:border-borda lg:pl-5">
-            <Rotulo como="h3" className="mb-1 block">
+          <aside
+            aria-labelledby="historico-da-conta"
+            className="lg:border-l lg:border-borda lg:pl-5"
+          >
+            <Rotulo id="historico-da-conta" como="h3" className="mb-1 block">
               Histórico da conta
             </Rotulo>
             <HistoricoDaConta usuarioId={usuario.id} />

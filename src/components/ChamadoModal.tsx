@@ -345,7 +345,11 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
           </div>
 
           {/* Ficha */}
-          <aside className="space-y-4 rounded-xl border border-borda bg-superficie-elevada p-4">
+          {/* `div`, e nao `aside`. A ficha e o resumo do proprio chamado
+              que a janela abre -- e o assunto, e nao algo tangencial a ele.
+              Como `complementary` ela virava um marco sem nome dentro de um
+              dialogo, prometendo conteudo lateral que nao existe. */}
+          <div className="space-y-4 rounded-xl border border-borda bg-superficie-elevada p-4">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={chamado.status} />
               <PrioridadeBadge prioridade={chamado.prioridade} />
@@ -429,7 +433,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
               aoAvaliar={registrarMudanca}
               className="border-t border-borda pt-4"
             />
-          </aside>
+          </div>
         </div>
       )}
     </Modal>
