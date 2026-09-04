@@ -36,7 +36,7 @@ const VARIANTES: Record<
   alerta: {
     classe: 'border-alerta/30 bg-tint-warning text-on-tint-warning',
     Icone: IconeAlerta,
-    papel: 'alert',
+    papel: 'status',
   },
   perigo: {
     classe: 'border-perigo/30 bg-tint-danger text-on-tint-danger',
@@ -89,8 +89,16 @@ interface AvisoProps {
  * atropelar a leitura com algo que podia esperar a próxima pausa. `role="status"`
  * é a mesma região viva em modo educado: entra na fila.
  *
- *     info, sucesso   → status   (espera a pausa)
- *     alerta, perigo  → alert    (interrompe)
+ *     perigo                   → alert    (interrompe)
+ *     info, sucesso, alerta    → status   (espera a pausa)
+ *
+ * **Só `perigo` interrompe**, e é decisão do operador, gravada na emenda E12
+ * do pacote. Eu tinha posto `alerta` em `alert` — parecia razoável, aviso de
+ * atenção pede atenção. O critério dele é mais estreito e melhor: aviso de
+ * atenção quase nunca é urgente a ponto de cortar a fala do leitor de tela, e
+ * quando é, a tela usa `perigo`. Se `alerta` também interrompesse, sobrariam
+ * duas variantes assertivas e a distinção entre elas deixaria de significar
+ * algo no canal não visual.
  *
  * Hoje as doze chamadas do sistema são todas `perigo`, então isto não muda uma
  * linha do que se ouve. Muda o que acontece na PRÓXIMA: o primeiro
@@ -98,9 +106,25 @@ interface AvisoProps {
  * sem variante — que cai em `info` — deixa de ser o pior caso.
  *
  * Achado pela sessão do HelpHS, no `Alert.jsx` do pacote, que tem o mesmo
- * defeito e do qual este componente descende. Lá ficou registrado como
- * candidata a emenda; aqui é conserto local, porque o `Aviso` é código deste
- * repositório e não cópia do pacote.
+ * defeito e do qual este componente descende. Lá virou a emenda E12; aqui é
+ * conserto local, porque o `Aviso` é código deste repositório e não cópia do
+ * pacote.
+ *
+ * ── O que o pacote tem e aqui NÃO entrou: a prop `live` ──────────────
+ *
+ * A E12 acrescentou `live={false}`, para o aviso que JÁ ESTÁ na tela quando a
+ * página carrega. O argumento é bom: região viva anuncia MUDANÇA, e conteúdo
+ * que sempre esteve ali não mudou — anunciá-lo faz o leitor ler o aviso fora
+ * de ordem, antes do conteúdo que lhe dá contexto.
+ *
+ * Não entrou porque **as doze chamadas deste sistema são todas condicionais a
+ * um estado de erro** — `{error && <Aviso>}` ou um `return` de falha. Nenhuma
+ * é parte permanente da página. Uma prop sem consumidor é especulação, e é a
+ * mesma régua que manteve o `Switch` documentado como sem uso em vez de
+ * inventar um.
+ *
+ * No dia em que aparecer um aviso permanente de estado — "chamado encerrado",
+ * "setor inativo" —, a prop entra com ele.
  *
  * ── O ícone é decorativo, e por quê ──────────────────────────────────
  *

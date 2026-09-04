@@ -219,6 +219,12 @@ describe('aviso', () => {
    * inclusive para a `info`, que e o PADRAO. "Salvo com sucesso" cortando a
    * frase que a pessoa estava ouvindo e atropelo, nao urgencia.
    *
+   * SO `perigo` interrompe, por decisao do operador gravada na E12 do pacote.
+   * Eu tinha posto `alerta` em `alert` tambem; o criterio dele e mais estreito
+   * e melhor -- aviso de atencao quase nunca precisa cortar a fala, e quando
+   * precisa a tela usa `perigo`. Com duas variantes assertivas, a distincao
+   * entre elas deixaria de significar algo no canal nao visual.
+   *
    * Hoje as doze chamadas do sistema sao todas `perigo`, entao a troca nao
    * muda uma linha do que se ouve. Este caso existe pela PROXIMA: o primeiro
    * `<Aviso variante="info">` que alguem escrever ja nasce certo.
@@ -228,11 +234,11 @@ describe('aviso', () => {
   const PAPEL: Record<VarianteAviso, string> = {
     info: 'status',
     sucesso: 'status',
-    alerta: 'alert',
+    alerta: 'status',
     perigo: 'alert',
   };
 
-  it('so alerta e perigo interrompem', () => {
+  it('so o perigo interrompe', () => {
     for (const [variante, papel] of Object.entries(PAPEL)) {
       const html = comTema(
         <Aviso variante={variante as VarianteAviso}>x</Aviso>
