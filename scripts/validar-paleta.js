@@ -39,6 +39,12 @@
  *    `aria-label` num gatilho de combobox, num botão com rótulo escrito. Ver a
  *    nota da seção própria, mais abaixo.
  *
+ * 6. Que a ponte do D3-a não divirja do pacote. Ela declara os tokens em
+ *    canais `R G B` porque o Tailwind exige isso para o modificador de
+ *    opacidade, e por isso o valor existe DUAS vezes. Quando as duas cópias
+ *    divergem, os seis hashes de token continuam batendo e a tela pinta o
+ *    valor antigo — aconteceu na E14, e a ponte ficou uma tarde atrás.
+ *
  * ── Uma observação sobre o nome deste arquivo ─────────────────────────
  *
  * Ele já não valida só paleta: o item 4 é sobre classe do Tailwind e o 5 é
@@ -354,6 +360,147 @@ function exigirSemModificadorDeOpacidade() {
   );
 }
 
+
+// ──────────────────────────────────────────────────────────────────────
+// A ponte do D3-a contra o pacote — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * A ponte é uma segunda fonte de verdade, e por isso precisa de guarda.
+ *
+ * `src/styles/index.css` declara os tokens em português no formato de três
+ * canais `R G B`, porque o Tailwind exige isso para aplicar o modificador de
+ * opacidade — `rgb(#2a4463 / 0.3)` não é CSS válido. É o desvio D3-a, aprovado
+ * e temporário.
+ *
+ * O preço é que **o valor existe duas vezes**: em hexadecimal no pacote e em
+ * canais aqui. E o modo de falha é o pior possível — os dois arquivos ficam
+ * sintaticamente perfeitos, o `Compare-Object` dos seis arquivos de token dá
+ * "sem diferença", e a tela pinta o valor antigo.
+ *
+ * Aconteceu em 04/09/2026, na recópia da E14: os seis hashes bateram com o
+ * pacote e **nada mudaria de cor**, porque `--borda` e `--borda-suave` ficaram
+ * nos valores pré-emenda. A ponte esteve dois valores atrás por uma tarde. E o
+ * comentário da própria linha documentava o defeito que a emenda conserta —
+ * `#132238 — = superfície` —, escrito e não lido.
+ *
+ * Já tinha acontecido uma vez, na E5, e a lição foi anotada e não instrumentada.
+ * Esta é a instrumentação.
+ *
+ * ── O mapa sai do COMENTÁRIO, e isso é deliberado ───────────────────
+ *
+ * Cada linha da ponte já nomeia o token de origem:
+ *
+ *     --borda: 42 68 99;    // --border-color   #2A4463
+ *
+ * A checagem lê o NOME do token no comentário, resolve esse token no pacote e
+ * compara o valor. O hexadecimal escrito no comentário é ignorado de propósito:
+ * ele é anotação, e se a checagem confiasse nele bastaria alguém atualizar os
+ * dois lados errado para tudo passar. Assim o pacote continua sendo a única
+ * fonte, e o comentário só diz ONDE olhar.
+ */
+/** Os `--nome: valor;` de um bloco, sem entrar nos blocos vizinhos. */
+function blocoDe(css, seletor) {
+  const i = css.indexOf(seletor + ' {');
+  if (i === -1) throw new Error(`bloco "${seletor}" não encontrado`);
+  // Conta chaves para não parar no primeiro `}` de uma regra aninhada.
+  let nivel = 0;
+  let j = css.indexOf('{', i);
+  const abre = j;
+  for (; j < css.length; j++) {
+    if (css[j] === '{') nivel++;
+    else if (css[j] === '}' && --nivel === 0) break;
+  }
+  return css.slice(abre, j);
+}
+
+function declaracoes(bloco) {
+  const m = {};
+  for (const [, nome, valor] of bloco.matchAll(/--([\w-]+):\s*([^;]+);/g)) {
+    m['--' + nome] = valor.trim();
+  }
+  return m;
+}
+
+/**
+ * Resolve um token do pacote a RGB, seguindo `var()` e caindo no `:root`.
+ *
+ * A queda para o `:root` NÃO é conveniência: é o que a cascata do CSS faz. Os
+ * degraus da rampa (`--color-danger-500`) e as cores de significado vivem só no
+ * `:root` de propósito — rampa não tem tema, e o `.dark` troca qual degrau um
+ * alias aponta, nunca o valor do degrau. Sem a queda, metade dos pares do tema
+ * escuro seria acusada de "não resolve".
+ */
+function resolverDoPacote(PACOTE, nome, tema, saltos = 0) {
+  if (saltos > 8) return null;
+  const valor = PACOTE[tema][nome] ?? PACOTE[':root'][nome];
+  if (!valor) return null;
+  const v = valor.trim();
+  if (v.startsWith('#')) return doHex(v);
+  const ref = /^var\(\s*(--[\w-]+)\s*\)$/.exec(v);
+  if (ref) return resolverDoPacote(PACOTE, ref[1], tema, saltos + 1);
+  return null;
+}
+
+/** O pacote lido em dois blocos, pronto para `resolverDoPacote`. */
+function pacoteDeTokens(css) {
+  return {
+    ':root': declaracoes(blocoDe(css, ':root')),
+    '.dark': declaracoes(blocoDe(css, '.dark')),
+  };
+}
+
+function exigirPonteFiel() {
+  const ponte = fs.readFileSync(CSS, 'utf8');
+  const PACOTE = pacoteDeTokens(
+    fs.readFileSync(
+      path.join(RAIZ, 'src', 'design-system', 'tokens', 'colors.css'),
+      'utf8'
+    )
+  );
+  const resolver = (nome, tema) => resolverDoPacote(PACOTE, nome, tema);
+
+  const achados = [];
+  let conferidos = 0;
+
+  for (const [seletor, tema] of [[':root', ':root'], ['.dark', '.dark']]) {
+    const bloco = blocoDe(ponte, seletor);
+    // `--nome: R G B;` seguido do comentário que nomeia a origem.
+    for (const [, pt, r, g, b, pkg] of bloco.matchAll(
+      /--([\w-]+):\s*(\d+)\s+(\d+)\s+(\d+);[^\n]*?\/\*\s*(--[\w-]+)/g
+    )) {
+      conferidos++;
+      const esperado = resolver(pkg, tema);
+      const daPonte = [+r, +g, +b];
+
+      if (!esperado) {
+        achados.push(
+          `${seletor}  --${pt}  aponta para ${pkg}, que não resolve a cor no pacote`
+        );
+        continue;
+      }
+      if (esperado.join(' ') !== daPonte.join(' ')) {
+        achados.push(
+          `${seletor}  --${pt}: ponte ${daPonte.join(' ')} (${paraHex(daPonte)})` +
+            `  !=  ${pkg} ${esperado.join(' ')} (${paraHex(esperado)})`
+        );
+      }
+    }
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `a ponte do D3-a divergiu do pacote: ${achados.length} par(es)\n      ` +
+        achados.join('\n      ') +
+        `\n\n      A ponte NÃO acompanha a recópia sozinha. Corrija os canais` +
+        `\n      em src/styles/index.css com o valor do token do pacote.`
+    );
+  }
+  linhas.push(
+    `\n=== catraca — a ponte do D3-a contra o pacote ===` +
+      `\n  ${conferidos} par(es) conferidos, ${achados.length} divergência(s)`
+  );
+}
 
 // ──────────────────────────────────────────────────────────────────────
 // Nome acessível que APAGA o conteúdo visível — catraca
@@ -989,6 +1136,7 @@ function main() {
   }
 
   exigirSemModificadorDeOpacidade();
+  exigirPonteFiel();
   exigirNomeQueNaoApagaConteudo();
   exigirCatracaDeFundoCheio();
 
@@ -1011,4 +1159,11 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { ramosDoTemplate, variantesDe, contido, achadosDeNome };
+module.exports = {
+  ramosDoTemplate,
+  variantesDe,
+  contido,
+  achadosDeNome,
+  pacoteDeTokens,
+  resolverDoPacote,
+};
