@@ -72,20 +72,55 @@ describe('ramosDoTemplate', () => {
     expect(algumRamoCom(ramos, 'bg-perigo', 'text-white')).toBe(false);
   });
 
-  it('a classe de um `&&` pode não aparecer, e o ramo sem ela existe', () => {
-    const ramos = ramosDoTemplate("bg-perigo ${erro && 'text-white'}");
+  it('a alternativa vazia de um `&&` EXPÕE par que o outro ramo esconde', () => {
+    // A sessão do HelpHS argumentou que a alternativa vazia é inerte:
+    // acrescentar um ramo só pode ADICIONAR pares, e o ramo que tem a classe
+    // já carrega o par. Na implementação deles é verdade, e eles provaram por
+    // mutação — o teste que a defendia passava com a lógica removida.
+    //
+    // Aqui NÃO é, e o motivo é a regra de precedência desta varredura: entre
+    // classes de texto de mesma especificidade vence a ÚLTIMA escrita. Uma
+    // classe de texto condicional SOBRESCREVE a base, e o ramo que a contém
+    // esconde o par:
+    //
+    //   com  'text-conteudo'  ->  textos [text-white, text-conteudo], vence a
+    //                             última: nenhum par com bg-perigo
+    //   sem  (alternativa vazia) ->  só text-white: PAR
+    //
+    // E o par é real: quando a condição é falsa, o elemento renderiza
+    // `bg-perigo text-white` de verdade, a 3,76:1.
+    //
+    // A asserção é sobre o RESULTADO — existe um ramo onde o par é detectável —
+    // e não sobre a existência de um ramo vazio, que seria testar a
+    // implementação em vez do efeito dela.
+    const ramos = ramosDoTemplate("bg-perigo text-white ${cond && 'text-conteudo'}");
 
-    expect(algumRamoCom(ramos, 'bg-perigo', 'text-white')).toBe(true);
-    // O ramo em que a condição é falsa também precisa existir: é ele que
-    // descreve a tela quando não há erro.
-    expect(ramos.some((r) => !/text-white/.test(r) && /bg-perigo/.test(r))).toBe(true);
+    const expõeOPar = ramos.some(
+      (r) => /(^|\s)bg-perigo(\s|$)/.test(r) &&
+             /(^|\s)text-white(\s|$)/.test(r) &&
+             !/text-conteudo/.test(r)
+    );
+    expect(expõeOPar).toBe(true);
   });
 
   it('interpolações DIFERENTES podem valer juntas', () => {
-    // `cn(a && 'bg-x', b && 'text-white')` aplica as duas quando as duas
-    // condições valem — elas não são ramos uma da outra.
-    const ramos = ramosDoTemplate("${a && 'bg-perigo'} ${b && 'text-white'}");
+    // `cn(a ? 'x' : 'bg-perigo', b ? 'y' : 'text-white')` aplica as duas
+    // quando as duas condições caem no mesmo lado — elas não são ramos uma da
+    // outra.
+    //
+    // O par está na ÚLTIMA combinação de propósito. A primeira versão deste
+    // caso usava `${a && 'bg-perigo'} ${b && 'text-white'}`, e ali o par cai no
+    // ramo 0 — uma implementação de caminho único, que devolvesse só a
+    // primeira combinação, passaria igual. O caso não provava o produto
+    // cartesiano; provava que a função devolve alguma coisa.
+    //
+    // Apontado pela sessão do HelpHS, que achou a mesma falha no caso deles
+    // mutando a implementação para usar só `ramos[0]`.
+    const ramos = ramosDoTemplate("${a ? 'px-2' : 'bg-perigo'} ${b ? 'py-1' : 'text-white'}");
+
     expect(algumRamoCom(ramos, 'bg-perigo', 'text-white')).toBe(true);
+    // E a prova de que veio do produto, e não do primeiro ramo:
+    expect(algumRamoCom([ramos[0]], 'bg-perigo', 'text-white')).toBe(false);
   });
 
   it('conta chaves, e não corta no primeiro fecha-chaves', () => {
