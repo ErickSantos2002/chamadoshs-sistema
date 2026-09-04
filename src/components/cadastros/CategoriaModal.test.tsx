@@ -189,6 +189,33 @@ describe('CategoriaModal — o template de formulário', () => {
     );
   });
 
+  it('com erro E dica, os dois ids apontam para algo que EXISTE', () => {
+    // O defeito que este caso impede, achado pela sessão do HelpHS no `Campo`
+    // deles: se a dica deixar de ser renderizada quando há erro — que é o que
+    // o `Field` do pacote faz —, o `aria-describedby` continua apontando para
+    // o id dela, e o apontamento fica quebrado.
+    //
+    // Um `aria-describedby` que aponta para fora do documento é PIOR que
+    // nenhum: a árvore diz que há uma descrição, o leitor vai buscá-la, e não
+    // acha nada. Parece resolvido.
+    //
+    // Aqui a dica é o contador de caracteres, e ela continua útil durante o
+    // erro — então os dois convivem de propósito. Este caso trava essa
+    // decisão: quem tornar a dica condicional ao erro quebra o teste.
+    montar();
+    digitar(campo('descricao'), 'x'.repeat(501));
+    digitar(campo('nome'), 'ab');
+    enviar();
+
+    const descricao = campo('descricao');
+    const ids = (descricao.getAttribute('aria-describedby') ?? '').split(' ');
+    expect(ids.length).toBeGreaterThan(1);
+
+    for (const id of ids) {
+      expect(document.getElementById(id), `#${id} não está no documento`).not.toBeNull();
+    }
+  });
+
   it('campo válido não mente sobre estar inválido', () => {
     montar();
     // Sem submissão, nada é inválido — `aria-invalid` ausente e não "false",

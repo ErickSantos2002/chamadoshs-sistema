@@ -3,17 +3,25 @@ import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import {
   Aviso,
+  Badge,
   BlocoCarregando,
   BotaoDeAcao,
   Button,
   Input,
   Modal,
   RotuloDeCampo,
+  Tabela,
+  TabelaCabecalho,
+  TabelaCelula,
+  TabelaCelulaDeCabecalho,
+  TabelaCorpo,
+  TabelaLinha,
+  type VarianteBadge,
 } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
-import { IconeBusca, IconeChave, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor, IconeUsuarios } from '../ui/icones';
+import { IconeBusca, IconeChave, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSetor, IconeUsuarios } from '../ui/icones';
 import type {
   Usuario,
   ModalMode,
@@ -262,13 +270,27 @@ const UsuariosTab: React.FC = () => {
     return setor?.nome || '-';
   };
 
-  const getRoleColor = (role: string): string => {
-    const roleColors: Record<string, string> = {
-      'Administrador': 'bg-alerta/15 text-on-tint-warning',
-      'Tecnico': 'bg-info/15 text-on-tint-info',
-      'Usuario': 'bg-superficie-elevada text-conteudo-tenue',
+  /**
+   * O perfil de quem usa, em variante de `Badge`.
+   *
+   * Era um mapa de CLASSES — `bg-alerta/15 text-on-tint-warning` e companhia —
+   * renderizado num `<span rounded-full>`, que e a aparencia do `Badge` copiada
+   * sem ser um. As tres cores casam exatamente com variantes que ja existem:
+   *
+   *   Administrador  alerta     ambar, o mesmo do aviso
+   *   Tecnico        info       azul
+   *   Usuario        discreto   a tinta neutra, que E `--surface-elevated`
+   *
+   * O canto tambem muda: era `rounded-full`, e a D2-a lista o selo entre o que
+   * e reto neste repositorio.
+   */
+  const varianteDoPerfil = (role: string): VarianteBadge => {
+    const mapa: Record<string, VarianteBadge> = {
+      Administrador: 'alerta',
+      Tecnico: 'info',
+      Usuario: 'discreto',
     };
-    return roleColors[role] || roleColors['Usuario'];
+    return mapa[role] ?? 'discreto';
   };
 
   // ========================================
@@ -284,9 +306,7 @@ const UsuariosTab: React.FC = () => {
           <h2 className="text-sm font-semibold text-conteudo">
             Usuários
           </h2>
-          <span className="rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-on-tint-warning">
-            Admin
-          </span>
+          <Badge variante="alerta">Admin</Badge>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -348,71 +368,46 @@ const UsuariosTab: React.FC = () => {
             )}
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-borda">
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('id')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    ID
-                    {ordenacao.campo === 'id' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('nome')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    Usuário
-                    {ordenacao.campo === 'nome' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  Perfil
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  Setor
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('created_at')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    Criado em
-                    {ordenacao.campo === 'created_at' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-conteudo-suave">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuariosOrdenados.map((usuario) => (
-                <tr
-                  key={usuario.id}
-                  className={`border-b border-borda-suave transition-colors hover:bg-superficie-elevada ${
-                    usuario.ativo ? '' : 'opacity-60'
-                  }`}
+          <Tabela>
+            <TabelaCabecalho>
+              <tr>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('id')}
+                  ordenadaPor={
+                    ordenacao.campo === 'id' ? ordenacao.direcao : null
+                  }
                 >
-                  <td className="px-4 py-3 text-sm text-conteudo">
-                    #{usuario.id}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  ID
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('nome')}
+                  ordenadaPor={
+                    ordenacao.campo === 'nome' ? ordenacao.direcao : null
+                  }
+                >
+                  Usuário
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho>Perfil</TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho>Setor</TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('created_at')}
+                  ordenadaPor={
+                    ordenacao.campo === 'created_at' ? ordenacao.direcao : null
+                  }
+                >
+                  Criado em
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho aDireita>Ações</TabelaCelulaDeCabecalho>
+              </tr>
+            </TabelaCabecalho>
+            <TabelaCorpo>
+              {usuariosOrdenados.map((usuario) => (
+                <TabelaLinha
+                  key={usuario.id}
+                  className={usuario.ativo ? undefined : 'opacity-60'}
+                >
+                  <TabelaCelula>#{usuario.id}</TabelaCelula>
+                  <TabelaCelula>
                     <div className="flex items-center gap-2">
                       <IconeUsuarios className="h-4 w-4 text-conteudo-tenue" />
                       <span className="text-sm font-medium text-conteudo">
@@ -422,29 +417,25 @@ const UsuariosTab: React.FC = () => {
                           dos chamados que a pessoa abriu. Sem este selo, a linha
                           volta idêntica à ativa e parece que a ação falhou. */}
                       {!usuario.ativo && (
-                        <span className="inline-flex rounded-full bg-superficie-elevada px-2 py-0.5 text-[11px] font-medium text-conteudo-tenue">
-                          Inativo
-                        </span>
+                        <Badge variante="discreto">Inativo</Badge>
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${getRoleColor(getUserRole(usuario))}`}>
+                  </TabelaCelula>
+                  <TabelaCelula>
+                    <Badge variante={varianteDoPerfil(getUserRole(usuario))}>
                       {getUserRole(usuario)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                    </Badge>
+                  </TabelaCelula>
+                  <TabelaCelula>
                     <div className="flex items-center gap-2">
-                      <IconeSetor className="h-4 w-4 text-conteudo-tenue" />
-                      <span className="text-sm text-conteudo-suave">
+                      <IconeSetor className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+                      <span className="text-conteudo-suave">
                         {getSetorNome(usuario.setor_id)}
                       </span>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-conteudo-suave">
-                    {formatDate(usuario.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
+                  </TabelaCelula>
+                  <TabelaCelula tenue>{formatDate(usuario.created_at)}</TabelaCelula>
+                  <TabelaCelula className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {/* Visualizar sempre disponível. Tom neutro: ler não
                           altera nada, e não precisa da cor de quem altera. */}
@@ -528,11 +519,11 @@ const UsuariosTab: React.FC = () => {
                         )
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TabelaCelula>
+                </TabelaLinha>
               ))}
-            </tbody>
-          </table>
+            </TabelaCorpo>
+          </Tabela>
         )}
       </div>
 
