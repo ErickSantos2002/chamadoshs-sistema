@@ -79,16 +79,29 @@ describe('ramosDoTemplate', () => {
     // mutação — o teste que a defendia passava com a lógica removida.
     //
     // Aqui NÃO é, e o motivo é a regra de precedência desta varredura: entre
-    // classes de texto de mesma especificidade vence a ÚLTIMA escrita. Uma
-    // classe de texto condicional SOBRESCREVE a base, e o ramo que a contém
-    // esconde o par:
+    // classes de texto de mesma especificidade vence a ÚLTIMA escrita.
+    //
+    // Atenção ao que essa frase é: o critério **da varredura**, e não o do
+    // Tailwind. No CSS gerado quem vence é a utilidade que sai depois na
+    // FOLHA, ordenação interna do Tailwind sem relação com a ordem no
+    // atributo. A varredura do HelpHS usa o critério oposto (vence a
+    // primeira), e as duas sessões concluíram juntas que os dois são chute.
+    // A nota longa está em `scripts/validar-paleta.js`, sobre
+    // `textoDoEstado`. Isto não invalida o caso abaixo — ver o parágrafo do
+    // ramo vazio, que não depende de desempate nenhum.
+    //
+    // Uma classe de texto condicional SOBRESCREVE a base, e o ramo que a
+    // contém esconde o par:
     //
     //   com  'text-conteudo'  ->  textos [text-white, text-conteudo], vence a
     //                             última: nenhum par com bg-perigo
     //   sem  (alternativa vazia) ->  só text-white: PAR
     //
-    // E o par é real: quando a condição é falsa, o elemento renderiza
-    // `bg-perigo text-white` de verdade, a 3,76:1.
+    // E o par é real, sem depender de desempate: quando a condição é falsa,
+    // `text-conteudo` não está na lista, sobra `text-white` sozinha, e o
+    // elemento renderiza `bg-perigo` com branco a 3,76:1. É por isso que a
+    // heurística acima não contamina este caso — ela decide o que acontece no
+    // OUTRO ramo, e o ramo vazio existe justamente para não depender dela.
     //
     // A asserção é sobre o RESULTADO — existe um ramo onde o par é detectável —
     // e não sobre a existência de um ramo vazio, que seria testar a

@@ -85,7 +85,24 @@ mutação de teste.
 | `ui/Aviso` | `role="alert"` nas quatro variantes | assertivo onde cabia educado |
 | `SelosDeChamado` | papéis separados por 5% de alfa | distinção que não existe |
 
-## As duas decisões abertas
+## Estado depois da aprovação
+
+O operador aprovou o checkpoint com cinco pendências. Quatro estão fechadas:
+
+| | Pendência | Estado |
+|---|---|---|
+| 1 | "Cancelar Chamado" → `secundario`, confirmar do modal fica `danger` | feito, `5f7eecb` |
+| 2 | `Avaliacao`: `useRef` + descarte de resposta antiga | feito, `0793ea6` |
+| 3 | Cor cheia como texto vira item da Fase 16 | regra registrada; execução na 16 |
+| 4 | Contagem do que resta à mão entra na §32 | registrada; primeira contagem abaixo |
+| 5 | Screenshots: operador sobe a API, a sessão captura | **aguardando o ambiente** |
+
+As três regras foram para o `DECISOES.md` com escopo "vale para os dois".
+
+Com a pendência 1, **`ChamadoDetalhes` chega a zero controle escrito à mão**:
+24 botões, 6 campos e 12 rótulos antes; nenhum agora.
+
+## As duas decisões que estavam abertas
 
 ### 1. "Cancelar Chamado" — a única variante que não coube
 
@@ -96,10 +113,11 @@ o pacote não tem essa variante — `perigo` é cheio, e converter põe dois bot
 vermelhos cheios ao lado um do outro, apagando a distinção que a nota do código
 defende: "Excluir" é o único em vermelho cheio porque é a única ação sem volta.
 
-**Recomendação: `secundario`.** O cancelamento não apaga o chamado; ele segue
-visível, buscável e com o histórico inteiro. O rótulo, o ícone de proibido e o
-modal com motivo obrigatório já carregam o peso — o mesmo argumento que decidiu
-os três "Desativar".
+**Decidido: `secundario`**, com um refinamento da regra que o operador
+acrescentou e que vale mais que o caso — **o gatilho que só abre confirmação é
+neutro; o vermelho é do botão que confirma**. O gatilho não cancela nada; o
+segundo clique, dentro do modal, é que não tem volta. Registrado no
+`DECISOES.md`, com o gatilho de exclusão como exceção anotada.
 
 ### 2. "Fechado" mostrado como "Resolvido"
 
@@ -107,17 +125,18 @@ Já registrada no `DECISOES.md` como pergunta aberta de produto, sem decisão
 minha. Continua valendo: o rótulo não mudou, e o `Badge` usa a variante que o
 mapa dá ao status real.
 
-## O defeito achado e NÃO corrigido
+## O defeito que estava achado e não corrigido
 
-`Avaliacao.tsx` guarda o clique duplo por `useState`, e não por `useRef`. É
-**o mesmo defeito** já corrigido em `UsuariosTab.tsx:567` — dois cliques no
-mesmo tique leem `salvando === false` os dois, e o `disabled` ainda não foi
-aplicado. Consequência: duas notas gravadas, e quem vence é a última resposta a
-chegar, não o último clique.
+`Avaliacao.tsx` guardava o clique duplo por `useState`, e não por `useRef` — o
+mesmo defeito já corrigido em `UsuariosTab.tsx:567`. Aprovado e corrigido em
+`0793ea6`, com quatro casos conferidos por mutação.
 
-Não foi corrigido porque **mudança funcional pede aprovação explícita**, e as
-três anteriores desta migração seguiram esse caminho. A correção é conhecida e
-tem teste modelo pronto.
+Uma nota do conserto que vale além dele: **não há contador de sequência**, e
+isso está escrito no código para ninguém acrescentar depois achando que falta.
+Ele seria inerte — dentro de uma montagem a trava garante uma requisição só, e
+entre montagens o fechamento antigo segura as refs antigas, cuja marca de
+montagem já é falsa. É a mesma lição do `?? 'neutro'` no `PapelBadge`: uma
+linha que parece proteção a mais e é engrenagem sem caminho que chegue até ela.
 
 ## O achado grande, medido e não aplicado
 
@@ -157,8 +176,42 @@ grep -rc "<button\|<input\|<textarea\|<select" src --include=*.tsx \
   | grep -v "\.test\.\|components/ui/" | grep -v ":0$"
 ```
 
-Proposta: rodar isso no fim de cada fase, e colar o resultado na ficha. Não
-substitui a §29 — responde outra pergunta, que é a que faltava.
+Aprovada pelo operador, registrada no `DECISOES.md` com escopo "vale para os
+dois", e daqui em diante entra no relatório da §32 de cada fase.
+
+### A contagem desta fase, anotada
+
+A regra diz que a contagem é **lista de conferência, não veredito** — ela conta
+ocorrências e não julga. A primeira rodada mostra por quê: das 31 ocorrências,
+**oito são o padrão aparecendo dentro de comentários** (inclusive comentários
+que explicam a própria migração daquele controle).
+
+| Arquivo | Bruto | Reais | Leitura |
+|---|---|---|---|
+| `Topbar.tsx` | 8 | 8 | fora do escopo das Fases 11–15 |
+| `Dashboard.tsx` | 5 | 2 | ver abaixo |
+| `UsuarioModal.tsx` | 3 | 3 | fora do escopo |
+| `Auditoria.tsx` | 3 | 3 | fora do escopo |
+| `dev/GaleriaDeComponentes.tsx` | 3 | 3 | rota de desenvolvimento |
+| `Avaliacao.tsx` | 1 | 1 | **legítimo** — as cinco estrelas |
+| `KanbanColumn.tsx` | 1 | 1 | **legítimo** — o cartão É um botão |
+| `Chamados.tsx` | 1 | 0 | comentário |
+| `CategoriasTab.tsx` | 1 | 0 | comentário |
+| `Sidebar`, `CentralButton`, `NovoChamadoForm`, `CadastrosBasicos`, `NovoChamado` | 1 cada | 1 cada | fora do escopo |
+
+**Os dois reais do `Dashboard` são os interruptores** que acabaram de receber
+`aria-pressed`: os quatro atalhos de período e o de cancelados.
+
+Os atalhos são **candidatos diretos a conversão**, e vale registrar porque o
+mapeamento é exato: ativo é `bg-sinal text-[var(--text-on-primary)]`, que é
+`Button variante="primario"`; inativo é `bg-superficie-elevada border-borda`,
+que é `secundario`. `Button` estende `ButtonHTMLAttributes`, então o
+`aria-pressed` passa direto. Não converti porque não estava entre os cinco
+itens aprovados — fica para a Fase 16, junto do resto.
+
+O de cancelados **não tem variante correspondente**: ligado ele é
+`bg-perigo/20` com `text-on-tint-danger`, um interruptor tingido de perigo, e o
+pacote não modela isso. Fica escrito à mão, com motivo.
 
 ### E a proposta de ferramenta
 

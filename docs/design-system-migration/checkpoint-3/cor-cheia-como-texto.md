@@ -60,11 +60,37 @@ O pior é `text-alerta` sobre `--surface-elevated` no claro: **1,96:1**.
 | `TarefasRecorrentes.tsx:417` | ícone de atenção, `text-alerta` | 3 | 2,15 | reprova |
 | `TarefasRecorrentes.tsx:433` | ícone de repetir, `text-info` | 3 | 3,68 | passa |
 | `TarefasRecorrentes.tsx:579` | botão, `text-perigo` | 4,5 | 3,76 | reprova |
-| `Avaliacao.tsx:99` | estrela acesa, `fill-alerta text-alerta` | 3 | 2,15 | reprova |
+| `Avaliacao.tsx:160` | estrela acesa, `fill-alerta text-alerta` | 3 | 2,15 | reprova |
+| `Chamados.tsx:448` | `hover:text-info` no link de tarefa | 4,5 | 3,68 | reprova |
 
-A lista veio de `grep` e **por isso não é a evidência final**: uma varredura por
-padrão de texto pode não achar tudo, e a decisão de escopo merece a contagem
-exata. A ferramenta certa é a catraca, estendida — ver abaixo.
+### A contagem, refeita com fronteira exata
+
+A primeira versão desta lista veio de um `grep` frouxo, e **estava errada em
+dois sentidos**. A correta usa fronteira de classe dos dois lados:
+
+```bash
+grep -rn -P "(?<![\w-])(?:text|fill|stroke)-(?:perigo|alerta|sucesso|info)(?![-\w])" \
+  src --include=*.tsx | grep -v "\.test\."
+```
+
+- **Faltava um**: o `hover:text-info` do `Chamados.tsx:448` — que é o link que
+  esta mesma rodada criou, ao trocar um botão-que-navega por `Link`. Entrou com
+  a cor errada no mesmo dia em que o defeito foi descoberto.
+- **Sobravam dois**: `Topbar.tsx:245` e `Spinner.tsx:179` casam o padrão dentro
+  de **comentários**, e não são uso.
+
+São **12 sites reais**, e não os 11 que eu tinha escrito.
+
+O `-P` com fronteira também responde à pergunta que faltava: **zero** usos de
+`text-perigo-forte` / `-suave` e equivalentes. Isso importa porque os degraus
+são cores diferentes, com contraste diferente, e um `grep` sem a fronteira à
+direita os contaria junto — o `\b` do POSIX casa antes do hífen.
+
+A sessão do HelpHS caiu exatamente nessa: contou `text-danger\b` e chegou a
+**106** usos, quando o número real era **24** — o resto eram degraus da rampa,
+já corretos. Pegou porque quatro dos "achados" estavam num primitivo que ela
+sabia migrado, e a conta não fechava. Se tivesse publicado 106, teria dimensionado
+uma fase inteira em cima de um regex.
 
 Duas dessas doem mais que as outras:
 
@@ -92,6 +118,27 @@ Medido nas três superfícies, em cada tema, com o valor daquele tema:
 
 **Pior caso: 5,91:1.** Os vinte e quatro passam o piso de texto com folga, e
 portanto também o de forma.
+
+### E o palpite óbvio, que é errado
+
+`perigo-forte` — o degrau 700 — parece a resposta e não é: **6,47 no claro e
+2,47 no escuro**, porque é degrau FIXO, com o mesmo defeito da cor cheia, em
+espelho. Quem resolve é o token que inverte por tema.
+
+Isso **já estava escrito neste repositório**, no item "Sair" do `Topbar`, que
+passou por esta mesma correção numa fase anterior, com a mesma tabela e o mesmo
+alerta. A regra existia; só não tinha sido generalizada dos quatro pares
+daquele menu para o sistema.
+
+Vale dizer porque muda o risco da Fase 16: não é caminho novo, é caminho já
+percorrido uma vez e não estendido.
+
+### As duas medições bateram, sem se olharem
+
+A sessão do HelpHS mediu as mesmas 24 combinações no lado dela, com outra
+ferramenta e sem ver esta tabela, e chegou às mesmas células — incluindo o
+5,91 do pior caso do substituto. Dois métodos independentes com o mesmo
+resultado é o que separa "eu calculei" de "isto é assim".
 
 A troca é `text-perigo` → `text-on-tint-danger` e equivalentes. Não muda
 estrutura, não muda comportamento, não muda uma medida de layout — é a mesma

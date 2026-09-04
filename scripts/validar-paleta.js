@@ -640,6 +640,31 @@ function varrerFundoCheio() {
         // O modelo do Tailwind e conteudo + especificidade: vale o texto cujas
         // variantes estao CONTIDAS nas do fundo, e entre os candidatos ganha o
         // de mais variantes (no empate, o ultimo escrito).
+        //
+        // ── O DESEMPATE É HEURÍSTICA, E ISSO PRECISA FICAR DITO ─────────
+        //
+        // "No empate vence o último escrito" **não é a regra do Tailwind**.
+        // Entre duas utilidades de mesma especificidade, quem vence é a que
+        // sai depois **na folha gerada** — ordenação interna do Tailwind, que
+        // não tem relação nenhuma com a ordem dentro do atributo `class`.
+        //
+        // Então `bg-perigo text-white text-conteudo` e
+        // `bg-perigo text-conteudo text-white` produzem a MESMA tela, e esta
+        // varredura os lê como casos diferentes.
+        //
+        // A varredura do HelpHS usa o critério oposto — `find()`, vence o
+        // primeiro da lista — e as duas sessões descobriram juntas que
+        // nenhuma das duas está certa: são dois chutes com sinais trocados.
+        //
+        // O que isso custa, na prática: um literal que traga cor de texto no
+        // trecho ESTÁTICO **e** dentro de uma interpolação pode ter o par
+        // medido contra a classe errada. Hoje não existe nenhum assim nos dois
+        // repositórios — procurado, zero ocorrências —, então é dívida
+        // registrada e não defeito vivo.
+        //
+        // Quem for consertar: a saída honesta é ler a ordem da folha gerada,
+        // não escolher um lado do atributo. Enquanto isso não existir, o caso
+        // de um fundo com DUAS cores de texto candidatas é o ponto cego.
         const textoDoEstado = (variantesDoFundo) => {
           let melhor = null;
           for (const tx of textos) {
