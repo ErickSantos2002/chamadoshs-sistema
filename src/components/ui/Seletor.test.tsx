@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { computeAccessibleName } from 'dom-accessibility-api';
 import { Seletor } from './Seletor';
 
 /**
@@ -148,16 +149,23 @@ describe('Seletor', () => {
  * `aria-labelledby` duplo para outra coisa, os casos continuam valendo.
  */
 describe('Seletor — o nome diz o campo E a escolha', () => {
-  /** O nome acessivel, montado como o navegador monta: na ordem dos ids. */
-  const nomeDoGatilho = () => {
-    const ids = gatilho().getAttribute('aria-labelledby');
-    if (!ids) return null;
-    return ids
-      .split(/\s+/)
-      .map((i) => document.getElementById(i)?.textContent?.trim() ?? '')
-      .filter(Boolean)
-      .join(' ');
-  };
+  /**
+   * O nome acessível, calculado pelo ALGORITMO — e não pela minha leitura dele.
+   *
+   * A primeira versão desta função resolvia `aria-labelledby` concatenando o
+   * texto de cada id. Isso é a minha suposição de como o navegador monta o
+   * nome, e ela é boa o bastante para os casos fáceis e errada exatamente onde
+   * importa: com auto-referência ela devolvia "Solicitante Gabriel" alegremente,
+   * enquanto o navegador devolve "Solicitante" quando há um `<label for>`
+   * associado. Quatro casos passaram medindo a marcação contra a minha própria
+   * expectativa.
+   *
+   * `computeAccessibleName` é a implementação da especificação — a mesma que a
+   * Testing Library usa para resolver papel e nome. Ela não é o navegador, e
+   * isso está dito no bloco de baixo; é o oráculo mais próximo que roda no
+   * jsdom.
+   */
+  const nomeDoGatilho = () => computeAccessibleName(gatilho());
 
   it('o nome traz o rotulo e a opcao escolhida', () => {
     montar({ valor: '2' });
@@ -256,5 +264,120 @@ describe('Seletor — o nome diz o campo E a escolha', () => {
     expect(doGatilho).toContain(daLista);
     // Nome proprio na lista poderia divergir do nome do gatilho.
     expect(lista()!.hasAttribute('aria-label')).toBe(false);
+  });
+});
+
+/**
+ * As DUAS variantes, medidas pelo algoritmo do nome acessível.
+ *
+ * ── Por que este bloco existe separado ───────────────────────────────
+ *
+ * Todos os casos acima montam o `Seletor` sozinho, sem rótulo visível. É a
+ * variante de FILTRO — a do quadro, a do Dashboard —, e nela a auto-referência
+ * do APG funcionava. Foi por isso que ela passou despercebida.
+ *
+ * A variante de FORMULÁRIO é outra: um `<label for>` aponta para o gatilho, e o
+ * algoritmo do nome resolve a auto-referência de outro jeito. O valor sumia
+ * exatamente ali, e em quatro telas.
+ *
+ * Estes casos reproduzem a FORMA das quatro — `RotuloDeCampo htmlFor="x"` mais
+ * `Seletor id="x"` —, e o caso estático abaixo confere que as quatro de fato
+ * têm essa forma. Montar os modais inteiros traria quatro contextos e um
+ * punhado de mocks para provar a mesma coisa.
+ */
+describe('Seletor — o nome nas duas variantes', () => {
+  const montarComRotulo = (valor: string) => {
+    act(() => {
+      root.render(
+        <>
+          <label htmlFor="perfil">Perfil</label>
+          <Seletor
+            id="perfil"
+            rotulo="Perfil"
+            valor={valor}
+            aoMudar={aoMudar}
+            opcoes={OPCOES}
+          />
+        </>
+      );
+    });
+  };
+
+  it('variante de FILTRO: o nome traz rótulo e valor', () => {
+    montar({ valor: '2' });
+    const nome = computeAccessibleName(gatilho());
+    expect(nome).toContain('Solicitante');
+    expect(nome).toContain('Gabriel');
+  });
+
+  /**
+   * A variante que quebrava. Se um dia alguém voltar à auto-referência, é aqui
+   * que aparece — e não nos casos de filtro, que continuariam verdes.
+   */
+  it('variante de FORMULÁRIO, com <label for>: o valor NÃO some', () => {
+    montarComRotulo('2');
+    const nome = computeAccessibleName(gatilho());
+    expect(nome).toContain('Perfil');
+    expect(nome).toContain('Gabriel');
+  });
+
+  it('e sem escolha, o nome é só o rótulo — sem sobra de valor', () => {
+    montarComRotulo('');
+    const nome = computeAccessibleName(gatilho());
+    expect(nome).toContain('Perfil');
+    expect(nome).not.toContain('Gabriel');
+  });
+});
+
+/**
+ * ── O ORÁCULO NÃO É O NAVEGADOR, e a diferença foi medida ────────────
+ *
+ * Mutando o componente de volta para a auto-referência do APG,
+ * `computeAccessibleName` devolve `"Solicitante"` — valor apagado — nas DUAS
+ * variantes. O navegador, medido pela sessão do HelpHS, devolve
+ * `"Situação Aberto"` na variante de filtro: ali a auto-referência funciona.
+ *
+ * Ou seja: **a biblioteca é mais severa que o navegador neste ponto.** Ela
+ * reprova um caso que na tela funcionaria.
+ *
+ * Isso é aceitável para o que estes casos são — uma guarda contra um padrão
+ * ambíguo, que não queremos nem onde funciona por acidente de implementação.
+ * Mas não é aceitável chamá-la de prova: `dom-accessibility-api` é uma
+ * implementação da especificação, e a especificação é justamente ambígua aqui,
+ * que é a razão do defeito existir.
+ *
+ * **A prova final é a árvore de acessibilidade do DevTools**, no navegador de
+ * verdade, nas duas variantes. Estes casos existem para o defeito não voltar
+ * entre uma conferência e outra — não para substituí-la.
+ */
+
+/**
+ * E as quatro telas de verdade têm a forma que os casos acima reproduzem?
+ *
+ * Os casos de cima montam `<label for>` + `Seletor id` à mão. Isso só prova
+ * algo sobre as quatro telas reais se elas usarem essa mesma forma — senão o
+ * teste é sobre um formulário que só existe dentro dele.
+ */
+describe('Seletor — as quatro telas com rótulo visível', () => {
+  const QUATRO: Array<[string, string]> = [
+    ['../cadastros/UsuarioModal.tsx', 'role_name'],
+    ['../cadastros/UsuarioModal.tsx', 'setor_id'],
+    ['../NovoChamadoForm.tsx', 'categoria'],
+    ['../NovoChamadoForm.tsx', 'solicitante'],
+  ];
+
+  it('as quatro pareiam RotuloDeCampo htmlFor com Seletor id', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+
+    for (const [arquivo, id] of QUATRO) {
+      const fonte = readFileSync(resolve(__dirname, arquivo), 'utf8');
+      expect(fonte, `${arquivo}: falta htmlFor="${id}"`).toContain(
+        `htmlFor="${id}"`
+      );
+      expect(fonte, `${arquivo}: falta Seletor id="${id}"`).toContain(
+        `id="${id}"`
+      );
+    }
   });
 });
