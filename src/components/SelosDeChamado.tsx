@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge, type VarianteBadge } from './ui';
 import { PrioridadeEnum, StatusEnum } from '../types/api';
+import { getRoleName } from '../utils/roleMapper';
 
 /**
  * O mapa de status e prioridade do ChamadosHS, num lugar só.
@@ -119,5 +120,70 @@ export const MarcaBadge: React.FC<SeloProps & { marca: Marca }> = ({
 }) => (
   <Badge variante={MARCAS[marca].variante} className={className}>
     {MARCAS[marca].rotulo}
+  </Badge>
+);
+
+/**
+ * O papel de quem aparece na tela: Administrador, Técnico ou Usuário.
+ *
+ * ── Papel não é estado, e mesmo assim vinha do mesmo lugar errado ─────
+ *
+ * Status e prioridade descrevem o chamado; papel descreve a PESSOA, e não muda
+ * quando o chamado anda. Por isso não entra no mapa da §16 — mas entrava no
+ * mesmo defeito que ele existe para resolver: a cor era decidida em três
+ * pontos de uso do `ChamadoDetalhes`, por um `getRoleBadgeColor` local.
+ *
+ * ── O que aquele `switch` estava fazendo, e não dava para ver ─────────
+ *
+ * ```
+ * Administrador  bg-info/15 text-on-tint-info
+ * Tecnico        bg-info/20 text-on-tint-info
+ * ```
+ *
+ * A ÚNICA diferença entre os dois papéis eram **5% de alfa** sobre o mesmo
+ * azul. Não é distinção discreta; é distinção que não existe — a §16 já manda
+ * nunca separar por cor sozinha, e aqui nem por cor sozinha separava. Quem
+ * distingue Administrador de Técnico é o rótulo, que sempre esteve escrito.
+ *
+ * Por isso os dois caem em `info`: é o que a tela já mostrava. `Administrador`
+ * era exatamente `bg-tint-info` (a mesma cor, aos mesmos 15%); `Tecnico` era
+ * 5% mais forte, e desce a esses mesmos 15%.
+ *
+ * O terceiro caso, `Usuario`, era `bg-superficie-elevada text-conteudo-suave`,
+ * e vira `neutro` — cujo fundo `bg-tint-neutral` é o MESMO valor de
+ * `--surface-elevated` (renomear, não repintar, como diz a nota do `Badge`).
+ * Só o texto troca, de `--text-body` para `--on-tint-neutral`: 6,92:1, medido
+ * na mesma nota, com folga sobre o piso de 4,5:1.
+ *
+ * ── O `default` tinha duas cores de texto na mesma string ─────────────
+ *
+ * ```
+ * 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave'
+ * ```
+ *
+ * `text-conteudo` e `text-conteudo-suave` juntas, e a classe de fundo repetida.
+ * Quem vence não é a última escrita: é a que vier depois na FOLHA de estilo,
+ * que nenhuma das duas controla. O resultado era "o que o Tailwind decidir" —
+ * e por isso ninguém percebeu, porque uma das duas sempre aparecia.
+ *
+ * Aqui o desconhecido cai em `neutro`, o mesmo de `Usuario`. É deliberado e
+ * casa com o `getRoleName`, que devolve `'Usuario'` para id que não conhece:
+ * assim rótulo e cor não podem divergir. (O `nomeCanonicoDaRole`, ao lado
+ * dele, escolheu o oposto — devolve `null` para não rebaixar em silêncio um
+ * perfil novo da API. As duas decisões convivem no `roleMapper` desde antes
+ * desta migração, e mudar isso é mudança funcional: fica como está.)
+ */
+const VARIANTE_DE_PAPEL: Record<number, VarianteBadge> = {
+  1: 'info', // Administrador
+  2: 'info', // Tecnico
+  3: 'neutro', // Usuario
+};
+
+export const PapelBadge: React.FC<SeloProps & { roleId: number }> = ({
+  roleId,
+  className,
+}) => (
+  <Badge variante={VARIANTE_DE_PAPEL[roleId] ?? 'neutro'} className={className}>
+    {getRoleName(roleId)}
   </Badge>
 );
