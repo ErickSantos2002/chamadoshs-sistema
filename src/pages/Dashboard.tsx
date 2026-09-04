@@ -14,7 +14,7 @@ import {
 import { useChamados } from '../hooks/useChamados';
 import { useAuth } from '../hooks/useAuth';
 import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -107,7 +107,6 @@ const Dashboard: React.FC = () => {
 
   const { categorias } = useChamados();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   // Estados locais
   const [chamados, setChamados] = useState<Chamado[]>([]);
@@ -523,9 +522,22 @@ const Dashboard: React.FC = () => {
               <h2 className="text-sm font-semibold text-conteudo">Filtros</h2>
             </div>
 
-            {/* Botão Toggle Cancelados */}
+            {/* Botão Toggle Cancelados.
+
+                `aria-pressed` porque isto e um INTERRUPTOR, e nao um botao de
+                acao: ele tem estado, e o estado precisa ser dito.
+
+                O rotulo visivel ja diz ("Exibindo cancelados" / "Cancelados
+                ocultos"), mas ele e `hidden sm:inline` — em tela estreita some
+                e sobram o icone e a cor. Ai o nome acessivel cai no `title`,
+                que diz a ACAO e nao o estado ("Mostrar cancelados"), e os dois
+                se contradizem conforme a largura da janela.
+
+                Com `aria-pressed` o estado passa a ser dito pelo canal proprio,
+                em qualquer largura, sem depender de qual texto sobrou. */}
             <button
               onClick={() => setIncluirCancelados(!incluirCancelados)}
+              aria-pressed={incluirCancelados}
               className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                 incluirCancelados
                   ? 'border-perigo/30 bg-perigo/20 text-on-tint-danger hover:bg-perigo/30'
@@ -549,12 +561,32 @@ const Dashboard: React.FC = () => {
 
           {/* Período */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-conteudo-suave mb-2">
+            {/* Era um `<label>` sem `htmlFor`, e nao havia como ter um: ele
+                nomeia um GRUPO — quatro atalhos e dois campos de data —, e nao
+                um controle. `<p>` mais `aria-labelledby` diz a mesma coisa
+                pelo mecanismo certo. */}
+            <p
+              id="dashboard-periodo"
+              className="block text-sm font-medium text-conteudo-suave mb-2"
+            >
               Período
-            </label>
+            </p>
 
-            {/* Atalhos */}
-            <div className="flex flex-wrap gap-2 mb-3">
+            {/* Atalhos.
+
+                `aria-pressed` em cada um. Qual esta ativo era dito SO pela cor
+                (`bg-sinal` contra `bg-superficie-elevada`) — nao ha visto, nao
+                ha moldura diferente, nao ha palavra a mais. A §16 proibe cor
+                sozinha, e aqui ela nao estava so informando mal: para quem usa
+                leitor de tela, os quatro eram indistinguiveis.
+
+                `aria-pressed` e nao `aria-current`: sao alternativas de um
+                mesmo controle de filtro, e nao itens de navegacao. */}
+            <div
+              role="group"
+              aria-labelledby="dashboard-periodo"
+              className="flex flex-wrap gap-2 mb-3"
+            >
               {([
                 { key: 'mes', label: 'Este mês' },
                 { key: 'mesPassado', label: 'Mês passado' },
@@ -564,6 +596,7 @@ const Dashboard: React.FC = () => {
                 <button
                   key={p.key}
                   onClick={() => aplicarPreset(p.key)}
+                  aria-pressed={presetAtivo === p.key}
                   className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                     presetAtivo === p.key
                       ? 'border-transparent bg-sinal text-[var(--text-on-primary)]'
@@ -1081,13 +1114,25 @@ const Dashboard: React.FC = () => {
                       </TabelaCelula>
 
                       <TabelaCelula className="text-center">
-                        <button
-                          onClick={() => navigate(`/chamados/${chamado.id}`)}
-                          className="text-sinal hover:brightness-110 font-medium inline-flex items-center gap-1"
+                        {/* Terceiro `<button>` com `navigate()` desta rodada,
+                            depois do "Voltar" do ChamadoDetalhes e do lembrete
+                            de tarefas do quadro. Vai para uma rota, logo e
+                            link: leitor de tela anuncia "link", e voltam o
+                            abrir em nova aba, o menu do botao direito e o
+                            endereco na barra de status.
+
+                            O nome acessivel leva o protocolo. Numa tabela de
+                            dez linhas havia dez "Ver detalhes" identicos, e a
+                            lista de links do leitor de tela nao dizia qual era
+                            qual. */}
+                        <Link
+                          to={`/chamados/${chamado.id}`}
+                          aria-label={`Ver detalhes do chamado ${chamado.protocolo}`}
+                          className="text-sinal hover:brightness-110 font-medium inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                         >
                           Ver detalhes
                           <IconeSetaDireita className="h-4 w-4" aria-hidden="true" />
-                        </button>
+                        </Link>
                       </TabelaCelula>
                     </TabelaLinha>
                   ))}
