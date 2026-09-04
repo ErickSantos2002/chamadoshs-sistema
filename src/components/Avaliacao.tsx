@@ -135,7 +135,7 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
             // tela não vê o preenchimento das anteriores.
             aria-label={`Avaliar com ${n} de 5`}
             className="rounded-lg transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal"
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
             {estrela(sobre !== null ? n <= sobre : n <= (nota ?? 0))}
           </button>

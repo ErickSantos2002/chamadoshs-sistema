@@ -91,7 +91,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   };
 
   const botaoDeIcone =
-    'rounded-lg p-2 text-conteudo-suave transition-colors hover:bg-superficie-elevada hover:text-conteudo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal';
+    'rounded-lg p-2 text-conteudo-suave transition-colors hover:bg-superficie-elevada hover:text-conteudo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]';
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-borda bg-superficie px-4 md:px-6">
@@ -136,7 +136,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           type="button"
           className={cn(
             'flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors',
-            'hover:bg-superficie-elevada focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal',
+            'hover:bg-superficie-elevada focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
             menuAberto && 'bg-superficie-elevada'
           )}
           onClick={() => setMenuAberto((v) => !v)}

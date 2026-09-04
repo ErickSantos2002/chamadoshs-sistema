@@ -141,7 +141,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 className={cn(
                   'w-full space-y-2 rounded-lg border border-l-4 border-borda bg-superficie p-3 text-left',
                   'shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
                   BORDA_PRIORIDADE[chamado.prioridade]
                 )}
               >

@@ -229,7 +229,7 @@ const Auditoria: React.FC = () => {
               value={de}
               onChange={(e) => aoFiltrar(() => setDe(e.target.value))}
               className="w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm text-conteudo
-                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
+                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
             />
           </div>
 
@@ -241,7 +241,7 @@ const Auditoria: React.FC = () => {
               value={ate}
               onChange={(e) => aoFiltrar(() => setAte(e.target.value))}
               className="w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm text-conteudo
-                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
+                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
             />
           </div>
         </div>

@@ -2,10 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ThemeProvider } from '../context/ThemeContext';
 import { PrioridadeEnum, StatusEnum } from '../types/api';
+import { ROLE_MAP } from '../utils/roleMapper';
 import {
   MarcaBadge,
+  PapelBadge,
   PrioridadeBadge,
   StatusBadge,
+  VARIANTE_DE_PAPEL,
   VARIANTE_DE_PRIORIDADE,
   VARIANTE_DE_STATUS,
 } from './SelosDeChamado';
@@ -114,5 +117,69 @@ describe('selos', () => {
     const html = comTema(<StatusBadge status={StatusEnum.EM_ANDAMENTO} />);
     expect(html).toContain('bg-tint-primary');
     expect(html).toContain('text-on-tint-primary');
+  });
+});
+
+describe('selo de papel', () => {
+  it('cobre todos os papéis que o roleMapper conhece', () => {
+    // Se a API ganhar um quarto papel e alguém acrescentar em `ROLE_MAP` sem
+    // vir aqui, o selo cai no `neutro` do fallback — que é o certo, mas em
+    // silêncio. Este caso obriga a decisão a ser tomada.
+    for (const id of Object.keys(ROLE_MAP).map(Number)) {
+      expect(VARIANTE_DE_PAPEL[id]).toBeDefined();
+    }
+  });
+
+  it('o rótulo vem do roleMapper, não de um texto escrito no selo', () => {
+    // É o que impede rótulo e cor de divergirem: os dois saem do mesmo id.
+    for (const [id, nome] of Object.entries(ROLE_MAP)) {
+      expect(comTema(<PapelBadge roleId={Number(id)} />)).toContain(nome);
+    }
+  });
+
+  /**
+   * Administrador e Técnico DIVIDEM a variante, e isso é deliberado.
+   *
+   * É o contrário do que os casos de status travam ali em cima, então precisa
+   * estar escrito, senão alguém "conserta" um dia. O `switch` que este selo
+   * substituiu separava os dois por **5% de alfa** sobre o mesmo azul —
+   * `bg-info/15` contra `bg-info/20`. Isso não é distinção discreta: é
+   * distinção que ninguém enxerga, e a §16 já manda nunca separar só por cor.
+   *
+   * Quem distingue os dois é o rótulo, travado pelo caso acima. Igualar as
+   * variantes não perde informação nenhuma — só para de fingir que havia.
+   */
+  it('Administrador e Técnico dividem a variante, de propósito', () => {
+    expect(VARIANTE_DE_PAPEL[1]).toBe(VARIANTE_DE_PAPEL[2]);
+  });
+
+  /**
+   * Papel desconhecido cai em `neutro`, e o rótulo cai em "Usuario".
+   *
+   * Os dois lados combinam de propósito: `getRoleName` já devolve `'Usuario'`
+   * para id que não conhece, e um selo neutro escrito "Usuario" é coerente.
+   * O `default` do `switch` antigo não era: trazia `text-conteudo` e
+   * `text-conteudo-suave` na MESMA string de classes, e quem vencia era
+   * decidido pela ordem da folha de estilo, não pela ordem escrita.
+   *
+   * ── O que a mutação mostrou, e fica dito para ninguém "limpar" ───────
+   *
+   * Este caso passa MESMO se o `?? 'neutro'` sair do `PapelBadge`, porque o
+   * `Badge` já tem `variante = 'neutro'` como parâmetro padrão e `undefined`
+   * cai nele. Ou seja, hoje a garantia é dupla.
+   *
+   * O caso continua valendo, e é de propósito: ele trava o RESULTADO — papel
+   * desconhecido sai neutro e nomeado —, não o mecanismo que produz o
+   * resultado. Era a falha dos dois casos de `ramosDoTemplate` que a sessão do
+   * HelpHS apontou: testar a existência da engrenagem em vez do efeito dela.
+   *
+   * E o `?? 'neutro'` FICA, mesmo redundante hoje. Sem ele, a cor de um papel
+   * desconhecido passaria a depender do valor padrão de outro componente, à
+   * distância: trocar o padrão do `Badge` mudaria este selo em silêncio.
+   */
+  it('papel desconhecido não fica sem cor nem sem nome', () => {
+    const html = comTema(<PapelBadge roleId={99} />);
+    expect(html).toContain('bg-tint-neutral');
+    expect(html).toContain('Usuario');
   });
 });

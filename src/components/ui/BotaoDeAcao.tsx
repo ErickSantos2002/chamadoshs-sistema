@@ -72,7 +72,7 @@ export const BotaoDeAcao: React.FC<BotaoDeAcaoProps> = ({
     aria-label={descricao ?? titulo}
     className={cn(
       'rounded-lg p-2 text-conteudo-tenue transition-colors',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
       TONS[tom]
     )}
   >

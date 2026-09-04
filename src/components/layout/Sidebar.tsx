@@ -215,7 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={aoAbrirNovidades}
-              className="flex items-center gap-1.5 rounded-lg text-xs font-medium text-conteudo-tenue transition-colors hover:text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal"
+              className="flex items-center gap-1.5 rounded-lg text-xs font-medium text-conteudo-tenue transition-colors hover:text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
               ChamadosHS {versao}
               {temNovidade && (

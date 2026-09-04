@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
@@ -425,10 +425,28 @@ const Chamados: React.FC = () => {
                 const atrasada = t.proxima_data < hoje;
                 return (
                   <li key={t.id} className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={() => navigate('/tarefas-recorrentes')}
+                    {/*
+                      Era um `<button>` com `navigate()` dentro, e a tela
+                      inteira dizia "link": sublinha no hover, sem moldura, sem
+                      preenchimento, e o clique leva para outra rota.
+
+                      Botao que navega e o mesmo defeito de familia da linha
+                      clicavel e do `disabled` que significava "atual" -- o
+                      sinal certo pelo mecanismo errado. Quem usa leitor de tela
+                      ouve "botao" e nao sabe que vai sair da pagina; e o
+                      navegador tira junto o que so link tem: abrir em nova aba
+                      pelo meio ou pelo Ctrl, o menu do botao direito, e o
+                      endereco na barra de status antes de clicar.
+
+                      `Link` devolve as tres coisas sem mudar um pixel: o
+                      preflight do Tailwind ja tira o sublinhado e a cor padrao
+                      do `<a>`, entao as classes seguem valendo iguais.
+                    */}
+                    <Link
+                      to="/tarefas-recorrentes"
                       className={cn(
                         'text-left text-sm font-medium transition-colors hover:text-info hover:underline',
+                        'rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
                         !pendente && realizadaHoje
                           ? 'text-conteudo-tenue'
                           : 'text-conteudo'
@@ -436,7 +454,7 @@ const Chamados: React.FC = () => {
                       title="Ir para Tarefas Recorrentes"
                     >
                       {t.titulo}
-                    </button>
+                    </Link>
 
                     {/* Os selos são os mesmos do resto do sistema: fundo de
                         significado a 20% e texto na cor cheia, desenhados

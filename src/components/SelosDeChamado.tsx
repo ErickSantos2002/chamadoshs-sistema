@@ -173,7 +173,7 @@ export const MarcaBadge: React.FC<SeloProps & { marca: Marca }> = ({
  * perfil novo da API. As duas decisões convivem no `roleMapper` desde antes
  * desta migração, e mudar isso é mudança funcional: fica como está.)
  */
-const VARIANTE_DE_PAPEL: Record<number, VarianteBadge> = {
+export const VARIANTE_DE_PAPEL: Record<number, VarianteBadge> = {
   1: 'info', // Administrador
   2: 'info', // Tecnico
   3: 'neutro', // Usuario

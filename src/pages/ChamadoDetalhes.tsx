@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
 import ContadorMinimo from '../components/ContadorMinimo';
@@ -12,6 +12,7 @@ import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
 import {
+  Aviso,
   Badge,
   BlocoCarregando,
   Button,
@@ -571,10 +572,16 @@ const ChamadoDetalhes: React.FC = () => {
   if (error || !chamado) {
     return (
       <div className="space-y-5">
-        <div className="rounded-xl border border-perigo/30 bg-perigo/10 px-5 py-4
-                        text-sm text-on-tint-danger">
-          {error || 'Chamado não encontrado'}
-        </div>
+        {/*
+          Era a decima copia literal do `Aviso`, e a unica que sobreviveu a
+          Fase 8 -- porque esta num `return` antecipado, longe do corpo da
+          tela, onde a varredura por bloco de erro nao passou.
+
+          Alem da forma, ela perdia o `role="alert"`: a falha de carga
+          aparecia so para quem enxerga. A cor tambem era outra, `bg-perigo/10`
+          contra os 15% do `--tint-danger` do pacote.
+        */}
+        <Aviso variante="perigo">{error || 'Chamado não encontrado'}</Aviso>
         <Button variante="primario"
           onClick={() => navigate('/chamados')}>
           Voltar para Chamados
@@ -589,15 +596,18 @@ const ChamadoDetalhes: React.FC = () => {
         {/* Cabeçalho */}
         <div className="rounded-2xl border border-borda bg-superficie">
           <div className="px-5 py-4">
-            {/* Botão Voltar */}
-            <button
-              onClick={() => navigate('/chamados')}
-              className="mb-2 flex items-center gap-1 text-sm font-medium text-sinal
-                        transition-colors hover:brightness-110"
+            {/* Botão Voltar — que e link, e nao botao: vai para uma rota
+                fixa (`/chamados`), nao desfaz nada nem volta no historico.
+                Mesmo caso do lembrete de tarefas em `Chamados.tsx`. */}
+            <Link
+              to="/chamados"
+              className="mb-2 inline-flex items-center gap-1 rounded text-sm font-medium text-action
+                        transition-colors hover:brightness-110
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
               <IconeVoltar className="h-4 w-4" />
               Voltar
-            </button>
+            </Link>
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               {/* Título e subtítulo */}
@@ -651,15 +661,20 @@ const ChamadoDetalhes: React.FC = () => {
                         </button>
                       )}
 
-                      {/* Botão Arquivar/Desarquivar */}
-                      <button
+                      {/* Botão Arquivar/Desarquivar.
+
+                          Era verde quando arquivado e ambar quando nao, e as
+                          duas cores saem pela regra registrada no DECISOES.md:
+                          "info e alerta sao semanticas de selo e aviso, nao de
+                          botao". Arquivar tambem nao e conclusao, entao o verde
+                          nao cabia nem por esse lado.
+
+                          `secundario` pela mesma regra que os tres "Desativar":
+                          a acao e reversivel -- `arquivar` e `desarquivar` sao
+                          um par na API --, e o rotulo ja carrega o sentido. */}
+                      <Button
+                        variante="secundario"
                         onClick={() => setMostrarModalArquivar(true)}
-                        className={`flex items-center gap-2 rounded-lg border px-4 py-2
-                                  text-sm font-semibold transition-colors ${
-                                    chamado?.arquivado
-                                      ? 'border-sucesso/40 text-on-tint-success hover:bg-sucesso/10'
-                                      : 'border-alerta/40 text-on-tint-warning hover:bg-alerta/10'
-                                  }`}
                       >
                         {chamado?.arquivado ? (
                           <>
@@ -672,7 +687,7 @@ const ChamadoDetalhes: React.FC = () => {
                             Arquivar
                           </>
                         )}
-                      </button>
+                      </Button>
 
                       {/* Botão Excluir.
                           Último da fileira e o único em vermelho cheio: é a
@@ -691,28 +706,24 @@ const ChamadoDetalhes: React.FC = () => {
                       )}
 
                       {/* Botão Editar */}
-                      <button
+                      <Button
+                        variante="secundario"
                         onClick={() => setModoEdicao(true)}
-                        className="flex items-center gap-2 rounded-lg border border-borda
-                                  px-4 py-2 text-sm font-semibold text-conteudo-suave
-                                  transition-colors hover:bg-superficie-elevada hover:text-conteudo"
                       >
                         <IconeEditar className="h-4 w-4" />
                         Editar Detalhes
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>
                       {/* Botão Cancelar Edição */}
-                      <button
+                      <Button
+                        variante="secundario"
                         onClick={() => setModoEdicao(false)}
-                        className="flex items-center gap-2 rounded-lg border border-borda
-                                  px-4 py-2 text-sm font-semibold text-conteudo-suave
-                                  transition-colors hover:bg-superficie-elevada hover:text-conteudo"
                       >
                         <IconeFechar className="h-4 w-4" />
                         Cancelar
-                      </button>
+                      </Button>
 
                       {/* Botão Salvar */}
                       <Button variante="sucesso"
@@ -1259,17 +1270,15 @@ const ChamadoDetalhes: React.FC = () => {
           largura="md"
           rodape={
             <>
-              <button
+              <Button
+                variante="secundario"
                 onClick={() => {
                   setMostrarModalResolucao(false);
                   setSolucaoModal("");
                 }}
-                className="rounded-lg border border-borda px-4 py-2
-                          text-sm font-semibold text-conteudo-suave
-                          transition-colors hover:bg-superficie-elevada hover:text-conteudo"
               >
                 Cancelar
-              </button>
+              </Button>
 
               <Button variante="sucesso"
                 onClick={handleConfirmarResolucao}
@@ -1322,19 +1331,16 @@ const ChamadoDetalhes: React.FC = () => {
           largura="md"
           rodape={
             <>
-              <button
+              <Button
+                variante="secundario"
                 onClick={() => {
                   setMostrarModalCancelar(false);
                   setMotivoCancelamento('');
                 }}
                 disabled={processando}
-                className="rounded-lg border border-borda px-4 py-2
-                          text-sm font-semibold text-conteudo-suave
-                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                          disabled:opacity-50"
               >
                 Não, voltar
-              </button>
+              </Button>
               <Button variante="perigo"
                 onClick={handleCancelarChamado}
                 disabled={
@@ -1396,19 +1402,16 @@ const ChamadoDetalhes: React.FC = () => {
           largura="sm"
           rodape={
             <>
-              <button
+              <Button
+                variante="secundario"
                 onClick={() => {
                   setMostrarModalExcluir(false);
                   setConfirmacaoProtocolo('');
                 }}
                 disabled={processando}
-                className="rounded-lg border border-borda px-4 py-2
-                          text-sm font-semibold text-conteudo-suave
-                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                          disabled:opacity-50"
               >
                 Não, voltar
-              </button>
+              </Button>
               <Button variante="perigo"
                 onClick={handleExcluirChamado}
                 disabled={processando || !protocoloConfere}>
