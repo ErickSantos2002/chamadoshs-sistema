@@ -312,12 +312,15 @@ const UsuariosTab: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Busca */}
           <div className="w-full sm:w-64">
+            {/* Ver a nota igual na SetoresTab: rotulo acessivel, tipo de
+                busca, e o icone marcado como decoracao. */}
             <Input
-              type="text"
+              type="search"
+              aria-label="Buscar usuários"
               placeholder="Buscar usuários..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              icone={<IconeBusca className="h-4 w-4" />}
+              icone={<IconeBusca className="h-4 w-4" aria-hidden="true" />}
             />
           </div>
 
@@ -492,12 +495,13 @@ const UsuariosTab: React.FC = () => {
                               onClick={() => handleDesativarUsuario(usuario.id)}>
                               Desativar
                             </Button>
-                            <button
+                            <Button
+                              variante="secundario"
+                              tamanho="sm"
                               onClick={() => setConfirmDelete(null)}
-                              className="rounded-lg border border-borda bg-superficie-elevada px-3 py-1.5 text-xs font-semibold text-conteudo transition-colors hover:bg-borda"
                             >
                               Cancelar
-                            </button>
+                            </Button>
                           </div>
                         ) : (
                           // Ícone de ligar/desligar, não lixeira: aqui a ação

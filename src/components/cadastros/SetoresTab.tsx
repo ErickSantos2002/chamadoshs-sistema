@@ -169,12 +169,17 @@ const SetoresTab: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Busca */}
           <div className="w-full sm:w-64">
+            {/* `aria-label` porque o campo nao tem rotulo visivel e o
+                placeholder some no primeiro caractere. `type="search"` porque
+                e busca. O icone e decoracao e nao pode ser lido junto do
+                nome — o mesmo tratamento que o template ja tinha. */}
             <Input
-              type="text"
+              type="search"
+              aria-label="Buscar setores"
               placeholder="Buscar setores..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              icone={<IconeBusca className="h-4 w-4" />}
+              icone={<IconeBusca className="h-4 w-4" aria-hidden="true" />}
             />
           </div>
 
@@ -338,12 +343,13 @@ const SetoresTab: React.FC = () => {
                               onClick={() => handleDesativarSetor(setor.id)}>
                               Desativar
                             </Button>
-                            <button
+                            <Button
+                              variante="secundario"
+                              tamanho="sm"
                               onClick={() => setConfirmDelete(null)}
-                              className="rounded-lg border border-borda bg-superficie-elevada px-3 py-1.5 text-xs font-semibold text-conteudo transition-colors hover:bg-borda"
                             >
                               Cancelar
-                            </button>
+                            </Button>
                           </div>
                         ) : (
                           // Ícone de ligar/desligar, não lixeira: aqui a ação

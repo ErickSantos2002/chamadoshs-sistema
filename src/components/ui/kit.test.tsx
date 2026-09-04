@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ThemeProvider } from '../../context/ThemeContext';
 import { Avatar } from './Avatar';
+import { Aviso, type VarianteAviso } from './Aviso';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { Card } from './Card';
@@ -207,5 +208,42 @@ describe('cartão', () => {
   it('card clicável é botão de verdade', () => {
     expect(comTema(<Card onClick={() => {}}>x</Card>)).toContain('<button');
     expect(comTema(<Card>x</Card>)).not.toContain('<button');
+  });
+});
+
+describe('aviso', () => {
+  /**
+   * Assertivo INTERROMPE o leitor de tela; educado espera a pausa.
+   *
+   * O `role="alert"` estava escrito no JSX e valia para as quatro variantes,
+   * inclusive para a `info`, que e o PADRAO. "Salvo com sucesso" cortando a
+   * frase que a pessoa estava ouvindo e atropelo, nao urgencia.
+   *
+   * Hoje as doze chamadas do sistema sao todas `perigo`, entao a troca nao
+   * muda uma linha do que se ouve. Este caso existe pela PROXIMA: o primeiro
+   * `<Aviso variante="info">` que alguem escrever ja nasce certo.
+   *
+   * Achado pela sessao do HelpHS, no `Alert.jsx` do pacote.
+   */
+  const PAPEL: Record<VarianteAviso, string> = {
+    info: 'status',
+    sucesso: 'status',
+    alerta: 'alert',
+    perigo: 'alert',
+  };
+
+  it('so alerta e perigo interrompem', () => {
+    for (const [variante, papel] of Object.entries(PAPEL)) {
+      const html = comTema(
+        <Aviso variante={variante as VarianteAviso}>x</Aviso>
+      );
+      expect(html).toContain(`role="${papel}"`);
+    }
+  });
+
+  it('o padrao e educado, e nao assertivo', () => {
+    // `<Aviso>` sem variante cai em `info`. Era o pior caso: o uso mais
+    // descuidado produzia a interrupcao mais gratuita.
+    expect(comTema(<Aviso>x</Aviso>)).toContain('role="status"');
   });
 });

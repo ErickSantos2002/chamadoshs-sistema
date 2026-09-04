@@ -11,7 +11,7 @@ export type VarianteAviso = 'info' | 'sucesso' | 'alerta' | 'perigo';
 
 const VARIANTES: Record<
   VarianteAviso,
-  { classe: string; Icone: React.FC<PropsDeIcone> }
+  { classe: string; Icone: React.FC<PropsDeIcone>; papel: 'alert' | 'status' }
 > = {
   // O fundo é o alias `--tint-*`, e não a cor cheia com modificador.
   //
@@ -19,18 +19,29 @@ const VARIANTES: Record<
   // o alias. Os blocos que este componente substitui escreviam `bg-perigo/10`,
   // a ponte a 10%; o alias é a mesma cor a 15%, e é alias justamente para a
   // opacidade não ficar escrita à mão em nove lugares.
-  info: { classe: 'border-info/30 bg-tint-info text-on-tint-info', Icone: IconeInfo },
+  //
+  // O `papel` vive AQUI, no mesmo mapa da cor, por um motivo: uma variante
+  // nova não pode entrar sem que alguém decida como ela é anunciada. Enquanto
+  // o `role` estava escrito no JSX, ele valia para todas por omissão.
+  info: {
+    classe: 'border-info/30 bg-tint-info text-on-tint-info',
+    Icone: IconeInfo,
+    papel: 'status',
+  },
   sucesso: {
     classe: 'border-sucesso/30 bg-tint-success text-on-tint-success',
     Icone: IconeConfereCirculo,
+    papel: 'status',
   },
   alerta: {
     classe: 'border-alerta/30 bg-tint-warning text-on-tint-warning',
     Icone: IconeAlerta,
+    papel: 'alert',
   },
   perigo: {
     classe: 'border-perigo/30 bg-tint-danger text-on-tint-danger',
     Icone: IconeAlerta,
+    papel: 'alert',
   },
 };
 
@@ -67,6 +78,30 @@ interface AvisoProps {
  * entra na tela. Sendo o aviso um componente, isso deixa de depender de alguém
  * lembrar.
  *
+ * ── Mas assertivo NÃO serve para as quatro ───────────────────────────
+ *
+ * `role="alert"` estava escrito no JSX, o que o aplicava a todas as variantes,
+ * inclusive à `info` — que é o PADRÃO. Assertivo interrompe: o leitor de tela
+ * corta a frase que estava dizendo para ler o aviso.
+ *
+ * Para "Erro ao carregar" isso é o certo — a pessoa precisa saber agora, antes
+ * de continuar agindo sobre uma tela que não vale. Para "Salvo com sucesso" é
+ * atropelar a leitura com algo que podia esperar a próxima pausa. `role="status"`
+ * é a mesma região viva em modo educado: entra na fila.
+ *
+ *     info, sucesso   → status   (espera a pausa)
+ *     alerta, perigo  → alert    (interrompe)
+ *
+ * Hoje as doze chamadas do sistema são todas `perigo`, então isto não muda uma
+ * linha do que se ouve. Muda o que acontece na PRÓXIMA: o primeiro
+ * `<Aviso variante="info">` que alguém escrever já nasce educado, e o `<Aviso>`
+ * sem variante — que cai em `info` — deixa de ser o pior caso.
+ *
+ * Achado pela sessão do HelpHS, no `Alert.jsx` do pacote, que tem o mesmo
+ * defeito e do qual este componente descende. Lá ficou registrado como
+ * candidata a emenda; aqui é conserto local, porque o `Aviso` é código deste
+ * repositório e não cópia do pacote.
+ *
  * ── O ícone é decorativo, e por quê ──────────────────────────────────
  *
  * `aria-hidden`: ele repete o que a cor e o texto já dizem. Um triângulo
@@ -83,11 +118,11 @@ export const Aviso: React.FC<AvisoProps> = ({
   children,
   className,
 }) => {
-  const { classe, Icone } = VARIANTES[variante];
+  const { classe, Icone, papel } = VARIANTES[variante];
 
   return (
     <div
-      role="alert"
+      role={papel}
       className={cn(
         'flex gap-3 rounded-lg border px-4 py-3 text-sm',
         classe,
