@@ -116,3 +116,27 @@ describe('cartão do quadro', () => {
     expect(botao).not.toContain('Alta');
   });
 });
+
+describe('cartão do quadro — o ponto de prioridade', () => {
+  /**
+   * O ponto tinha `title="Prioridade Alta"`, e o `title` nao dava conta.
+   *
+   * Num `<span>` sem papel nem foco, `title` e dica de MOUSE: nao aparece no
+   * toque, nao aparece pelo teclado, e o suporte dos leitores de tela a ele em
+   * elemento nao interativo e irregular. Informacao que depende disso nao esta
+   * informada.
+   *
+   * A informacao nao sumiu porque nunca dependeu dali: o `PrioridadeBadge`
+   * esta no mesmo cartao, com a palavra escrita. O `title` era a segunda fonte
+   * -- a que podia divergir, e a que ninguem garante que e lida.
+   */
+  it('a prioridade continua escrita, e o ponto e so cor', () => {
+    const html = marcacao();
+
+    // A palavra, que e quem informa.
+    expect(html).toContain('Alta');
+
+    // E o ponto nao promete mais carregar a informacao sozinho.
+    expect(html).not.toContain('title="Prioridade');
+  });
+});

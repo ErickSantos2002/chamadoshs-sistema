@@ -42,8 +42,16 @@ const PONTO_PRIORIDADE: Record<PrioridadeEnum, string> = {
  * quadro com vinte cartões, um ponto de 8px no canto superior direito não é
  * lido de relance. Uma faixa de 4px na lateral é.
  *
- * O ponto continua ali, ao lado do protocolo, porque ele carrega o `title`
- * com o nome da prioridade — a faixa é cor, e cor sozinha não informa.
+ * O ponto continua ali, ao lado do protocolo, como reforço visual da mesma
+ * cor. Quem informa é o `PrioridadeBadge`, no corpo do cartão, com a palavra
+ * escrita — a faixa e o ponto são cor, e cor sozinha não informa.
+ *
+ * A versão anterior desta nota dizia que o ponto carregava um `title` com o
+ * nome da prioridade, e era nele que a §16 se apoiava. Não servia: `title` em
+ * `<span>` sem papel nem foco é dica de mouse, não aparece no toque nem pelo
+ * teclado, e o suporte dos leitores de tela a ele é irregular. O selo, que
+ * entrou depois, resolveu de verdade — e o `title` virou uma segunda fonte
+ * para o mesmo dado. Saiu; o ponto é `aria-hidden`.
  */
 const BORDA_PRIORIDADE: Record<PrioridadeEnum, string> = {
   [PrioridadeEnum.CRITICA]: 'border-l-perigo',
@@ -186,8 +194,29 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   <span className="font-mono text-[11px] text-conteudo-tenue">
                     {chamado.protocolo}
                   </span>
+                  {/*
+                    Decoração, e agora dito como tal.
+
+                    O ponto tinha `title="Prioridade Alta"`, e o `title` estava
+                    fazendo dois trabalhos que não são dele. Num `<span>` sem
+                    papel nem foco, `title` é dica de mouse: não aparece no
+                    toque, não aparece pelo teclado, e o suporte dos leitores
+                    de tela a `title` em elemento não interativo é irregular —
+                    alguns leem, outros ignoram, e a configuração de quem usa
+                    decide. Informação que depende disso não está informada.
+
+                    Só que a informação não sumiu: `PrioridadeBadge` está no
+                    mesmo cartão, logo abaixo, com a palavra escrita. O `title`
+                    era uma segunda fonte para o mesmo dado — a que podia
+                    divergir e a que ninguém garante que é lida.
+
+                    Some o `title` e entra `aria-hidden`: o ponto passa a ser o
+                    que sempre foi, o reforço visual de cor de uma informação
+                    que está escrita ao lado. É o mesmo tratamento do ícone
+                    dentro do `Aviso` e da faixa lateral deste cartão.
+                  */}
                   <span
-                    title={`Prioridade ${chamado.prioridade}`}
+                    aria-hidden="true"
                     className={cn(
                       'h-2 w-2 shrink-0 rounded-full',
                       PONTO_PRIORIDADE[chamado.prioridade]
