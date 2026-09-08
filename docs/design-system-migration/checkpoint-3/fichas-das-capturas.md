@@ -58,7 +58,7 @@ vazios.
 | 6 | listagem | `/cadastros` | 1366×768 | escuro | `06-listagem-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 7 | listagem | `/cadastros` | 390×844 | claro | | | |
 | 8 | listagem | `/cadastros` | 390×844 | escuro | | | |
-| 9 | formulário | `/chamados/novo` | 1366×768 | claro | | | |
+| 9 | formulário | `/chamados/novo` | 1366×768 | claro | `09-formulario-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 10 | formulário | `/chamados/novo` | 1366×768 | escuro | | | |
 | 11 | formulário | `/chamados/novo` | 390×844 | claro | | | |
 | 12 | formulário | `/chamados/novo` | 390×844 | escuro | | | |
@@ -307,3 +307,33 @@ nome de arquivo do operador, e a trava fez o que devia.
 Vale registrar porque é a mesma saída de três motivos que, meses de leitura
 depois, escondeu a ausência da quarta checagem. A prova funcionou; o que ela
 nunca provou foi o que **não** estava lá.
+
+---
+
+## 9 — formulário, 1366×768, claro
+
+**Vista, e o tema da legenda confere com o pixel.**
+
+```
+SONDA  ok true   vp [1366, 768]   problemas []
+       marcador claro   fundo rgb(248, 250, 252)   canário ok   linhas []
+PINTA  tag MAIN   bg rgb(248, 250, 252)
+```
+
+`linhas []` é o esperado: a tela não tem tabela, e a captura roda a sonda
+`sem-tabela`, que não cobra.
+
+**Régua:** `09-formulario-1366x767-claro.png`, PNG RGBA 8 bits, 91.079 bytes,
+**1366×767**.
+
+**Cor por disco:** LIBERA. Quinze faixas em `x=700`, todas casando token de
+superfície do tema claro — `--superficie` no topo e nos cartões,
+`--superficie-base` nos vãos, `--superficie-elevada` no bloco de prioridade ao
+pé da tela.
+
+**O que está no quadro:** formulário **em branco**, como a leitura pura exige.
+Título e Descrição com marcador de obrigatório e texto de ajuda ("Mínimo 10
+caracteres", "Mínimo 20 caracteres"); os três `Seletor` no estado não escolhido
+("Selecione o solicitante", "Sem categoria", "Média"); e o bloco de consequência
+da prioridade, com o `Rotulo` em mono/caixa-alta. Nenhum estado de erro — que é
+o registrado como pendência, e não uma falha desta captura.
