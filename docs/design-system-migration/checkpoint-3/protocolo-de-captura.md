@@ -183,26 +183,31 @@ operação da empresa.
 
 O conserto está no código e coberto pela ficha da §29. O que falta é a foto.
 
-### Por que foi cortado, e não adiado dentro do checkpoint
+### Por que foi cortado: PRAZO, e não risco
 
-Porque fotografá-lo **exige derrubar a API**, e não há ambiente onde isso seja
-barato:
+**Derrubar a API local é `docker stop`.** Não é um passo destrutivo, não é
+perigoso, e o ambiente local está sendo montado de qualquer forma para as
+dezesseis. Reconstruí-lo custa um `docker start`.
 
-- contra **produção**, derrubar a API não é um teste, é uma indisponibilidade —
-  e a regra do `DECISOES.md` proíbe captura apontada para lá;
-- contra o **banco local**, derrubar o contêiner no meio da sessão de captura
-  custa o ambiente inteiro, que leva tempo para voltar, e as dezesseis normais
-  ficam reféns de um passo destrutivo no fim.
+O que faltou foi **tempo dentro desta sessão de captura**, e a decisão foi do
+operador: fechar as dezesseis primeiro, e não pendurar o checkpoint numa
+captura a mais.
+
+Não confunda com a regra do `DECISOES.md` que proíbe captura apontada para
+produção. Ali o "derrube a API" seria mesmo uma indisponibilidade, e por isso a
+regra existe. **Contra o banco local, nada disso se aplica** — e é contra o
+banco local que estas duas serão feitas.
 
 ### Quando será capturado
 
-**Quando houver ambiente de homologação** — onde derrubar a API é um gesto
-barato e reversível, e ninguém fica sem sistema.
+**Na próxima sessão com o ambiente local de pé** — ou em homologação, quando
+houver. Não depende de nada que ainda não exista: depende de meia hora e de
+alguém rodar a receita.
 
-A receita já está escrita e continua válida:
+A receita está escrita e continua válida:
 
 1. abrir `/dashboard?tema=claro` com a API de pé e deixar carregar;
-2. derrubar a API;
+2. derrubar a API — `docker stop` no contêiner do `chamadoshs-api`;
 3. clicar em **"Exibir cancelados"** — o efeito depende de
    `[user, incluirCancelados]`, então refaz a carga, ela falha, e o aviso
    aparece **sobre os números que já estavam lá**.
