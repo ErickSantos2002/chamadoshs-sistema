@@ -263,6 +263,32 @@ cabeçalho `IHDR` do PNG traz largura e altura nos bytes 16–23, e conferir iss
 não custa chamada nenhuma ao navegador. Toda captura entregue é conferida assim
 antes de entrar na ficha — formato PNG de verdade e dimensões exatas.
 
+**O arquivo sai sem extensão e com o nome da rota.** O "Capture screenshot"
+salva em **Downloads** como `dashboard`, `cadastros`, `chamados` — sem `.png`.
+Quem repetir precisa renomear e mover para `capturas-locais/`. O nome combinado
+não é o que o Chrome usa, e já houve um caso em que o nome combinado escondeu um
+PDF.
+
+**A densidade: DPR 1 ou DPR 2 — decisão pendente.** A barra de dispositivo tem
+um campo de *device pixel ratio*, e o "Capture screenshot" fotografa na
+densidade emulada. Com DPR 2 a captura 1 saiu **2732×1535** para um viewport de
+1366×768: o dobro exato na largura, e **1535 em vez de 1536** na altura — meio
+pixel, porque a altura real é 767,5 e `innerHeight` arredonda para 768 ao
+reportar.
+
+As duas saídas, e o que cada uma custa:
+
+- **DPR 1** — o arquivo sai exatamente 1366×768 e a régua continua sendo
+  igualdade estrita. É a opção que preserva a lição desta semana: régua que
+  admite "quase" apodrece.
+- **DPR 2** — evidência com mais detalhe, mas a régua passa a ser "múltiplo
+  exato", e o 1535 mostra que o múltiplo **não** é exato. Aceitar isso é
+  reintroduzir a fuzziness que custou meia sessão.
+
+Vale lembrar por que o detalhe extra compra pouco aqui: as cores medidas saem da
+sonda e das fichas, não de amostragem de pixel na imagem. A imagem é
+enquadramento.
+
 **Colagem no console vem bloqueada.** O DevTools exige que a frase seja digitada
 à mão uma vez por perfil, e ela é **traduzida**: no Chrome em português é
 **`permitir colar`**, não `allow pasting`. Enquanto não for digitada, a colagem
