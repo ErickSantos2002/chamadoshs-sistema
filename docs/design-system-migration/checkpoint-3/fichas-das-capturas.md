@@ -63,7 +63,7 @@ vazios.
 | 11 | formulário | `/chamados/novo` | 390×844 | claro | | | |
 | 12 | formulário | `/chamados/novo` | 390×844 | escuro | | | |
 | 13 | detalhe | `/chamados/6` | 1366×768 | claro | `13-detalhe-1366x767-claro.png` | ok | 1366×767 ✓ |
-| 14 | detalhe | `/chamados/6` | 1366×768 | escuro | | | |
+| 14 | detalhe | `/chamados/6` | 1366×768 | escuro | `14-detalhe-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 15 | detalhe | `/chamados/6` | 390×844 | claro | | | |
 | 16 | detalhe | `/chamados/6` | 390×844 | escuro | | | |
 
@@ -484,3 +484,48 @@ Mesmo tratamento já decidido para os gráficos do painel: se a §29 do detalhe
 exigir os painéis de baixo, eles viram **captura própria, nomeada como tal,
 depois das dezesseis**. Rolar antes de fotografar destrói o enquadramento que a
 régua garante.
+
+---
+
+## 14 — detalhe, 1366×768, escuro
+
+**Vista, e o tema da legenda confere com o pixel.**
+
+```
+SONDA  ok true   vp [1366, 768]   problemas []
+       marcador escuro   fundo rgb(13, 27, 42)   canário ok   linhas []
+PINTA  tag MAIN   bg rgb(13, 27, 42)
+```
+
+**Régua:** `14-detalhe-1366x767-escuro.png`, PNG RGBA 8 bits, 93.513 bytes,
+**1366×767**. **Cor por disco:** LIBERA, com a ressalva da afirmação fraca.
+
+Tela confirmada: `#CHAM-2025-0006`, Resolvido, Alta, "Estourado · 120%",
+categoria Software, solicitante Lara, técnico Welton. Par escuro exato do
+recorte da captura 13 — mesmo corte, mesmos elementos.
+
+Os cinco selos aparecem nos dois temas, e o par 13/14 é o registro deles:
+"Resolvido", "Alta", "Estourado · 120%", "Usuario" e "Administrador".
+"Cancelar Chamado" em `secondary` também nos dois.
+
+---
+
+# O corte de 767 pixels, dito com todas as letras
+
+**Vale para as capturas 13 e 14, e é a mesma consequência dos gráficos nas 1 e 2.**
+
+> **O quadro termina em "Tempo em aberto". Comentários e Histórico ficam
+> ABAIXO do corte, e o registro visual dos dois NÃO existe em 1366×767.**
+
+Foi por causa desses dois painéis que o `CHAM-2025-0006` foi escolhido, entre
+159 resolvidos varridos. A escolha **continua certa** por outro motivo: a
+prioridade **Alta** tirou o selo do tom `discreto`, que era a segunda ressalva
+da ficha, e essa parte aparece nas duas fotos.
+
+O que não se paga é a primeira metade: **Comentários (3) e Histórico (6) não
+entram no quadro em nenhuma das duas.** O `CHAM-2026-0086` teria dado um
+recorte visualmente equivalente.
+
+Encaminhamento, igual ao dos gráficos do painel: se a §29 do detalhe exigir os
+painéis de baixo, eles viram **captura própria, nomeada como tal, depois das
+dezesseis**. Rolar antes do clique destrói o enquadramento que a régua garante.
