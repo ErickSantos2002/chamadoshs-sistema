@@ -40,22 +40,42 @@ export default defineConfig({
      * ninguém mede coisa nenhuma achando que mediu.
      */
     /**
-     * ── A EXCEÇÃO DA 5173 ACABOU EM 08/09/2026 ───────────────────────
+     * ── 5174, E O MOTIVO NÃO É PRAZO: É A LISTA DE ORIGENS DA API ────
      *
-     * Ela existiu por uma razão só: o `ALLOWED_ORIGINS` da API de produção
-     * lista `http://localhost:5173`, e as dezesseis capturas do Checkpoint 3
-     * foram contra produção. Da 5191 o navegador bloqueava antes do login.
+     * A porta do acordo é a **5191** — cada produto na sua, longe da faixa
+     * 5173–5175 por onde o escorregão do Vite passa. Ela está **suspensa**, e
+     * não por escolha: o `ALLOWED_ORIGINS` da API é
      *
-     * As dezesseis saíram, o checkpoint foi aprovado, e a exceção morreu com
-     * elas. A porta volta a ser a **5191**, que é o acordo — cada produto na
-     * sua, longe da faixa 5173–5175 por onde o escorregão do Vite passa.
+     *     http://localhost:5173, http://localhost:5174,
+     *     https://chamadoshs.healthsafetytech.com
      *
-     * Vale lembrar por que o acordo importa, porque o custo já foi pago do
-     * outro lado: a suíte e2e do HelpHS, cravada na 5173 com
-     * `reuseExistingServer`, abraçou **este** servidor e mediu o produto
-     * errado. Porta compartilhada foi o que produziu aquilo.
+     * e **só pode ser esses três**. Da 5191 o navegador bloqueia a requisição
+     * antes de ela chegar ao login, então dali não se desenvolve nem se mede
+     * nada enquanto o `.env` apontar para produção — que é o estado atual, sem
+     * prazo para mudar: não há Docker nesta máquina e a credencial de
+     * superusuário do PostgreSQL 18 é desconhecida.
+     *
+     * Entre as duas locais permitidas, **5174 e não 5173**:
+     *
+     * - a **5173** é o padrão do Vite, e é exatamente a porta que os dois
+     *   produtos disputavam quando a suíte e2e do HelpHS abraçou ESTE servidor
+     *   e mediu o produto errado;
+     * - a **5174** é para onde o escorregão vai. Com `strictPort` o nosso
+     *   servidor não escorrega para lugar nenhum; e se outro Vite escorregar da
+     *   5173 para cá com a nossa já de pé, quem anda é ele, para a 5175.
+     *
+     * `strictPort` continua ligado, que é a metade que resolve o defeito: a
+     * colisão vira erro na cara em vez de escorregão silencioso.
+     *
+     * A outra metade da proteção é o `data-app` no `<html>`, que a sonda confere
+     * antes de qualquer medição. **Porta exclusiva protege por acordo;
+     * identidade protege quando o acordo não está disponível** — e aqui ele não
+     * está, por decisão de outro sistema.
+     *
+     * Volta para a 5191 quando existir API local, ou se a 5191 entrar no
+     * `ALLOWED_ORIGINS`. É uma linha.
      */
-    port: 5191,
+    port: 5174,
     strictPort: true,
     open: true,
   },

@@ -640,49 +640,51 @@ Sem o motivo, `--producao` é recusado com erro. O motivo viaja para dentro da
 saída da sonda e daí para o relatório, porque **uma exceção silenciosa é
 indistinguível de uma trava quebrada.**
 
-### E a porta volta para a 5173, também por exceção
+### A porta: 5174, e o motivo não é prazo — é a lista de origens da API
 
-A porta permanente do ChamadosHS é a **5191**, com `strictPort` — foi o
-conserto do incidente em que a suíte e2e do HelpHS abraçou este servidor. Nas
-dezesseis ela está em **5173**, e volta assim que elas saírem.
+**Corrigido em 08/09/2026, depois de um erro meu.** Fechado o Checkpoint 3, voltei
+o Vite para a **5191** dizendo que "a exceção da 5173 acabou com as capturas". O
+operador corrigiu: o `ALLOWED_ORIGINS` da API é
 
-O motivo é **CORS**, e não preferência. As capturas são contra a API de
-produção, e o `ALLOWED_ORIGINS` dela lista `http://localhost:5173` — está em
-`app/core/config.py` do `chamadoshs-api`. Da 5191 o navegador bloqueia a
-requisição **antes de ela chegar ao login**: não é credencial recusada, é
-requisição que não sai.
+```
+http://localhost:5173, http://localhost:5174, https://chamadoshs.healthsafetytech.com
+```
 
-**O conserto não foi desfeito.** `strictPort` continua ligado, e é ele que
-resolve o defeito: o escorregão silencioso para a 5174 continua impossível — se
-algo mais estiver na 5173, o servidor **morre** em vez de andar.
+e **só pode ser esses três**. Da 5191 nada funciona enquanto o `.env` apontar
+para produção — nem login, nem medição, nem desenvolvimento.
 
-O que a 5191 acrescentava era o **acordo** — cada produto na sua porta —, e é
-essa metade que está suspensa. A outra metade segue de pé: o `data-app` no
-`<html>`, conferido pela sonda antes de cada captura. Se a 5173 estiver
-servindo outra coisa, a sonda bloqueia nomeando o produto encontrado.
+**O meu enquadramento é que estava errado.** A exceção nunca foi "para as
+capturas": ela vale **enquanto o desenvolvimento for contra a API de produção**,
+e isso não tem prazo, porque não há ambiente local (sem Docker, sem credencial de
+superusuário do PostgreSQL 18). Eu tratei uma condição como se fosse um evento, e
+por isso declarei encerrado o que continuava valendo.
 
-É a formulação do `DECISOES.md` em uso: **porta exclusiva protege por acordo,
-identidade protege quando o acordo falha** — e aqui o acordo está suspenso de
-propósito, com a outra trava cobrindo.
+**Entre as duas locais permitidas, 5174 e não 5173:**
 
-### As duas mitigações
+| | permitida | risco |
+|---|---|---|
+| `5173` | sim | **é o padrão do Vite** — a porta que os dois produtos disputavam quando a suíte do HelpHS mediu este sistema |
+| `5174` | sim | é para onde o escorregão vai; com `strictPort` o nosso não escorrega, e quem escorregar da 5173 com a nossa de pé anda para a 5175 |
 
-**1. Leitura pura.** Nada é criado, editado ou excluído. Sem "Exibir
-cancelados", sem mudança de status, sem submissão de formulário — as capturas
-9–12 saem com o formulário **em branco**, e isso é deliberado.
+**Verificado contra a API, e não deduzido da lista:**
 
-O que ainda escreve, e fica dito: `?tema=` reescreve `localStorage.theme`, que
-é do navegador e não do sistema; e a própria navegação pode gerar registro na
-trilha de auditoria da API, que é efeito de ler e não há como evitar.
+```
+OPTIONS /api/v1/auth/login
+  Origin: http://localhost:5174   →  Access-Control-Allow-Origin: http://localhost:5174
+  Origin: http://localhost:5173   →  Access-Control-Allow-Origin: http://localhost:5173
+  Origin: http://localhost:5191   →  SEM Access-Control-Allow-Origin — bloqueada
+```
 
-**2. As imagens ficam fora do repositório.** Vão para
-`docs/design-system-migration/capturas-locais/`, ignorado inteiro no
-`.gitignore`. Elas contêm nome de solicitante, título de chamado e protocolo de
-gente real.
+Quatro preflights, sem autenticação e sem ler dado.
 
-**A ressalva que sobra, e é honesta:** não versionar resolve o repositório, não
-o disco. Os arquivos existem na máquina e viajam se forem compartilhados. Quem
-for movê-los precisa saber o que há dentro.
+**O que continua de pé, e é a metade que importa:** `strictPort` ligado, então
+colisão vira erro na cara — provado com um segundo Vite pedindo a porta ocupada,
+que sai com código 1 e não escorrega. E o `data-app` no `<html>`, que a sonda
+confere antes de qualquer medição.
 
-As fichas da §29 e este protocolo são texto, sem dado pessoal, e vão para o
-repositório normalmente.
+> **Porta exclusiva protege por acordo; identidade protege quando o acordo não
+> está disponível.** Aqui ele não está — não por descuido nosso, mas por decisão
+> de outro sistema. É exatamente o caso para o qual a segunda trava foi feita.
+
+Volta para a 5191 quando existir API local, ou se a 5191 entrar no
+`ALLOWED_ORIGINS`. É uma linha no `vite.config.ts`.
