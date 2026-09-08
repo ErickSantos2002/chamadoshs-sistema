@@ -59,7 +59,7 @@ vazios.
 | 7 | listagem | `/cadastros` | 390×844 | claro | | | |
 | 8 | listagem | `/cadastros` | 390×844 | escuro | | | |
 | 9 | formulário | `/chamados/novo` | 1366×768 | claro | `09-formulario-1366x767-claro.png` | ok | 1366×767 ✓ |
-| 10 | formulário | `/chamados/novo` | 1366×768 | escuro | | | |
+| 10 | formulário | `/chamados/novo` | 1366×768 | escuro | `10-formulario-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 11 | formulário | `/chamados/novo` | 390×844 | claro | | | |
 | 12 | formulário | `/chamados/novo` | 390×844 | escuro | | | |
 | 13 | detalhe | `/chamados/6` | 1366×768 | claro | | | |
@@ -331,9 +331,91 @@ superfície do tema claro — `--superficie` no topo e nos cartões,
 `--superficie-base` nos vãos, `--superficie-elevada` no bloco de prioridade ao
 pé da tela.
 
+> **O que "LIBERA" afirma, exatamente:** *nenhuma cor fora do conjunto de tokens
+> de superfície do tema*. **Não** afirma que cada faixa carrega o token que
+> deveria. Ver a mutação B, abaixo — é a prova de que a distinção existe.
+
 **O que está no quadro:** formulário **em branco**, como a leitura pura exige.
 Título e Descrição com marcador de obrigatório e texto de ajuda ("Mínimo 10
 caracteres", "Mínimo 20 caracteres"); os três `Seletor` no estado não escolhido
 ("Selecione o solicitante", "Sem categoria", "Média"); e o bloco de consequência
 da prioridade, com o `Rotulo` em mono/caixa-alta. Nenhum estado de erro — que é
 o registrado como pendência, e não uma falha desta captura.
+
+---
+
+## 10 — formulário, 1366×768, escuro
+
+**Vista, e o tema da legenda confere com o pixel.**
+
+```
+SONDA  ok true   vp [1366, 768]   problemas []
+       marcador escuro   fundo rgb(13, 27, 42)   canário ok   linhas []
+PINTA  tag MAIN   bg rgb(13, 27, 42)
+```
+
+**Régua:** `10-formulario-1366x767-escuro.png`, PNG RGBA 8 bits, 90.052 bytes,
+**1366×767**.
+
+**Cor por disco:** LIBERA — `--superficie` no topo e nos cartões,
+`--superficie-base` nos vãos, com os valores do bloco `.dark`. Vale a mesma
+ressalva da afirmação fraca.
+
+**Placar do `PINTA` no escuro:** dois certos (capturas 6 e 10) contra um errado
+(captura 2). O valor computado é intermitente, e a proporção não muda o
+diagnóstico — uma leitura errada em três é exatamente o que uma checagem de
+leitura única não pega.
+
+---
+
+# A verificação de cor por disco — o que ela afirma e o que não afirma
+
+Desenhada durante as capturas 5–10, adotada por decisão do operador em
+08/09/2026. O definitivo entra com o `fix(...)` da sonda; o protótipo viveu no
+scratchpad.
+
+> **Afirmação FRACA, e é esta que vale:** nenhuma cor de faixa está fora do
+> conjunto de tokens de superfície do tema declarado.
+>
+> **Afirmação FORTE, que ela NÃO faz:** cada faixa carrega o token que aquela
+> faixa deveria carregar.
+
+A única exceção é o **canvas**, fechado por regra própria: a primeira e a última
+faixa têm de ser `--superficie-base`. Uma regra só, sem codificar layout, e pega
+a classe de defeito que importa — o fundo da página pintado com a superfície
+errada.
+
+## Proveniência, porque sem ela a checagem nasce cega
+
+Cada linha diz a coordenada de onde veio o valor e o token contra o qual
+comparou, e a saída nomeia o arquivo de onde os tokens foram lidos:
+
+```
+y  64.. 87  rgb(248, 250, 252)  = --superficie-base  ok  (x=700)
+```
+
+Na reprovação, nomeia a faixa, a cor encontrada e o token mais próximo.
+
+## As três mutações, e por que são três
+
+| | mutação | resultado | o que ela separa |
+|---|---|---|---|
+| **tema** | captura 6 (escura) declarada clara | REPROVA, 15 faixas, saída 1 | quase nada — ver abaixo |
+| **A** | uma faixa em `rgb(240, 240, 240)` | REPROVA, nomeando a faixa | faixa plausível **de** token |
+| **B** | uma faixa em `--superficie-elevada` | **LIBERA** | token certo **de** token da faixa |
+
+**A do tema é fácil demais e quase não prova nada.** Trocar o tema muda todas as
+faixas, então qualquer coisa pega — inclusive uma heurística grosseira de "é
+claro ou escuro". Ela não distingue comparação com token de casamento com faixa
+de cor. Está aqui como piso, não como prova.
+
+**A mutação A é a que prova a comparação com token.** `rgb(240, 240, 240)` é
+claro, é plausível, e não é token nenhum. Veio da sessão do HelpHS, que
+descobriu por mutação que a bateria de provas dela não distinguia as duas
+coisas.
+
+**A mutação B é a que prova que a afirmação é FRACA — e ela fica registrada por
+isso.** Repintar o canvas com `--superficie-elevada` põe um token legítimo, do
+tema certo, no lugar errado, e a checagem **libera**. Sem este caso escrito,
+alguém relê a checagem daqui a um mês como se ela fizesse a afirmação forte — e
+essa releitura é o defeito, não a checagem.
