@@ -11,7 +11,7 @@ que este ambiente não consegue produzir**.
 | Evidência exigida | Estado |
 |---|---|
 | Checklist da §29 de cada página migrada, preenchido e conferido | **completo**, cinco fichas |
-| Screenshots antes/depois, 1366×768 e 390×844, dois temas | **não produzido** — ver abaixo |
+| Screenshots antes/depois, 1366×768 e 390×844, dois temas | **dezesseis produzidas** em 08/09/2026 — ver abaixo |
 
 ### As cinco fichas
 
@@ -27,30 +27,63 @@ Não há ficha da Fase 14 porque ela não tocou nenhuma tela que a ficha da 15 n
 cubra: trabalhou os botões de ação do `ChamadoDetalhes`, e a ficha da 15 cobre
 aquela tela de ponta a ponta.
 
-### Os screenshots, e por que não estão aqui
+### Os screenshots: as dezesseis existem, e o que elas provam
 
-As quatro telas pedidas — dashboard, listagem, formulário e detalhe — vivem
-**atrás do login**, e o login depende da API. O front rodando sozinho não passa
-da tela de entrada. Isso vale igualmente para o "antes": fotografar o estado
-anterior exigiria voltar a um commit antigo e entrar no sistema do mesmo jeito.
+Produzidas em **08/09/2026**, contra a **API de produção em leitura pura**, sob
+exceção autorizada e registrada. As imagens ficam **fora do repositório**, em
+`docs/design-system-migration/capturas-locais/`, ignorada inteira no
+`.gitignore`. As fichas ficam dentro: `fichas-das-capturas.md`, uma seção por
+captura, com a saída da sonda, as dimensões conferidas e o que cada quadro
+registra.
 
-O que existe e substitui parte disso:
+O protocolo está em `protocolo-de-captura.md`, e o caminho até elas custou mais
+que elas.
 
-- **A galeria de componentes** (`/dev/componentes`), rota de desenvolvimento sem
-  login, que mede contraste ao vivo nos dois temas. Foi a evidência do
-  Checkpoint 2 e continua valendo para os primitivos que estas páginas passaram
-  a usar.
-- **A galeria da casca**, do Checkpoint 1, pelo mesmo motivo.
+**Não houve "antes".** Fotografar o estado anterior exigiria voltar a um commit
+antigo e entrar no sistema de novo, e a §26 pede o par. O que existe é o
+**depois**, e o "antes" continua sendo o que as cinco fichas da §29 registram por
+leitura de código.
 
-**O que falta é a foto das páginas com dado real.** Dois caminhos, e a escolha
-é do operador:
+#### Como cada captura foi verificada
 
-1. O operador sobe o sistema, entra, e captura as dezesseis telas.
-2. O operador sobe o ambiente e entra; a partir daí a sessão captura pelas
-   ferramentas de navegador.
+Três checagens independentes, e a imagem aberta uma a uma:
 
-Não dá para fingir que isto está entregue: a §26 pede a foto, e a foto não
-existe.
+| | o que confere | onde roda |
+|---|---|---|
+| **sonda** | identidade da página, `.env`, canário do CSS servido, marcador de tema, tabela, viewport | console do operador, antes da foto |
+| **régua** | `IHDR` do PNG: formato e dimensões exatas | disco, depois da foto |
+| **cor por disco** | a cor dominante de cada faixa horizontal contra os tokens | disco, depois da foto |
+
+**Dezesseis de dezesseis** passam nas três, com uma lacuna escrita: a saída da
+sonda da captura 15 não foi colada no relato.
+
+#### O que as dezesseis NÃO provam
+
+Está registrado captura a captura, e vale reunir:
+
+- **Gráficos do painel** — abaixo da dobra em 1366×767. As quatro capturas do
+  painel pegam cabeçalho, filtros e a fileira de cartões, e cortam no começo do
+  bloco de SLA.
+- **Comentários, Histórico, Descrição, Solução e Avaliação** — abaixo da dobra
+  nas quatro capturas do detalhe, em **1366 e em 390**. Foram esses painéis que
+  motivaram a escolha do `CHAM-2025-0006` entre 159 resolvidos, e nenhum aparece.
+- **Distribuição por status** — a massa de produção tem **um status só**
+  (159 resolvidos, zero nos outros cinco cartões). As seis cores semânticas dos
+  cartões estão registradas; distribuição, não.
+- **Estado de erro do formulário** — cortado por prazo, pendência já registrada.
+- **Estado de EDIÇÃO da avaliação** — nenhum dos 159 resolvidos foi aberto pela
+  conta admin, então as estrelas clicáveis não são capturáveis nesta massa.
+
+#### O que elas provam, e não estava provado antes
+
+- **"Cancelar Chamado" como `secondary`** — pendência (1) deste checkpoint,
+  fotografada nas capturas 13 e 14.
+- **Cinco selos em cena nos dois temas** — "Resolvido", "Alta",
+  "Estourado · 120%", "Usuario" e "Administrador".
+- **As três superfícies batendo com os tokens no pixel**, nos dois temas, em
+  todas as dezesseis.
+- **Gaveta fechada em 390** nas oito capturas estreitas.
+- **O divisor entre linhas da tabela**, nas quatro da listagem.
 
 ## O que as cinco fases entregaram
 
