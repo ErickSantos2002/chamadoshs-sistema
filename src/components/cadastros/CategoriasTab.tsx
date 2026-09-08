@@ -188,7 +188,10 @@ const CategoriasTab: React.FC = () => {
           {podeEditar && (
             <Button onClick={handleNovaCategoria}>
               <IconeMais className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Nova Categoria</span>
+              {/* sr-only, e nao hidden: `hidden` e display:none e EXCLUI o texto do
+                  nome acessivel, e o icone e aria-hidden — abaixo de sm o botao
+                  ficava sem nome nenhum. Ver a catraca do rotulo que some. */}
+              <span className="sr-only sm:not-sr-only">Nova Categoria</span>
             </Button>
           )}
         </div>

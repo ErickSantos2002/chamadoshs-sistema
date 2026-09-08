@@ -696,6 +696,148 @@ function exigirNomeQueNaoApagaConteudo() {
   );
 }
 
+
+// ──────────────────────────────────────────────────────────────────────
+// Rótulo escondido por breakpoint que deixa o botão sem nome — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * `hidden sm:inline` faz o botão VIRAR só-ícone numa largura, e o nome
+ * acessível some junto.
+ *
+ * ── O defeito, achado por uma captura ────────────────────────────────
+ *
+ * A captura 3 do Checkpoint 3, em 390 de largura, mostrou o botão de cancelados
+ * do painel reduzido ao ícone. Fui conferir o padrão e encontrei cinco sítios;
+ * em três deles o botão fica **sem nome acessível nenhum** abaixo de 640px:
+ *
+ *   - o rótulo tem `hidden sm:inline`, e `hidden` é `display: none`, que EXCLUI
+ *     o texto do cálculo do nome acessível;
+ *   - o ícone é `aria-hidden` por padrão, declarado assim no `icones.tsx`;
+ *   - não sobra nada. O leitor de tela anuncia "botão", e mais nada.
+ *
+ * ── A regra já estava escrita, para o caso estático ──────────────────
+ *
+ * Do `src/components/ui/icones.tsx`:
+ *
+ *   "Todos são aria-hidden. Ícone aqui acompanha palavra — quando ele for o
+ *    único conteúdo de um botão, o rótulo vai no aria-label do botão."
+ *
+ * Ela foi escrita para o botão que NASCE só-ícone. `hidden sm:inline` faz o
+ * botão **virar** só-ícone num breakpoint, e ninguém ligou as duas coisas.
+ *
+ * ── E a solução existia, em um lugar só ──────────────────────────────
+ *
+ * O `Dashboard.tsx` resolveu exatamente este problema, com `title` e
+ * `aria-pressed`, e com um comentário explicando o raciocínio. A solução não se
+ * propagou para os outros três. Esta catraca é o que faz o conhecimento parar
+ * de ficar local.
+ *
+ * ── O que conta como nome que sobrevive ──────────────────────────────
+ *
+ * `aria-label` ou `title` na tag de abertura, ou um `sr-only` no corpo.
+ * `sr-only` é o preferido: ele mantém o texto no nome acessível em TODA
+ * largura, sem duplicar a string num atributo que pode divergir do rótulo
+ * visível depois — que é o defeito da catraca vizinha, o nome que apaga o
+ * conteúdo.
+ */
+/**
+ * Acha o `>` que fecha a tag aberta em `i`, ignorando os que estao dentro de
+ * chaves ou de aspas.
+ *
+ * NAO da para delimitar tag JSX com `[^>]*?`: atributo de JSX carrega `=>` o
+ * tempo todo. `onClick={() => setX(!x)}` faz a regra parar no primeiro `>` e
+ * devolver meia tag -- e foi exatamente isso que fez esta catraca acusar o
+ * `Dashboard.tsx`, que TEM `title`, por nao enxergar o atributo.
+ *
+ * E a terceira vez que o mesmo mecanismo aparece: `\b` casando `bg-alerta/10`,
+ * `[^;]+` engolindo a declaracao CSS seguinte, e agora `[^>]*?` cortando a tag.
+ * Nos tres, **o delimitador aparece dentro do conteudo**, e regex nao conta
+ * aninhamento. A saida e a mesma: varrer contando.
+ */
+function fimDaTag(texto, i) {
+  let chaves = 0;
+  let aspas = null;
+  for (let j = i; j < texto.length; j++) {
+    const c = texto[j];
+    if (aspas) {
+      if (c === aspas) aspas = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') aspas = c;
+    else if (c === '{') chaves++;
+    else if (c === '}') chaves--;
+    else if (c === '>' && chaves === 0) return j;
+  }
+  return -1;
+}
+
+function achadosDeRotuloSumido(conteudo, rel) {
+  const achados = [];
+
+  for (const m of conteudo.matchAll(/<(Button|button)\b/g)) {
+    const tag = m[1];
+    const abre = fimDaTag(conteudo, m.index + m[0].length);
+    if (abre === -1) continue;
+    const atributos = conteudo.slice(m.index + m[0].length, abre);
+    if (atributos.trimEnd().endsWith('/')) continue; // tag sem corpo
+
+    const fecha = conteudo.indexOf('</' + tag + '>', abre);
+    if (fecha === -1) continue;
+    const corpo = conteudo.slice(abre + 1, fecha);
+
+    const escondido = /hidden\s+(sm|md|lg|xl):(inline|block|flex)/.exec(corpo);
+    if (!escondido) continue;
+
+    const temNome =
+      /\baria-label[=\s]/.test(atributos) ||
+      /\btitle[=\s]/.test(atributos) ||
+      /\bsr-only\b/.test(corpo);
+    if (temNome) continue;
+
+    const linha = conteudo.slice(0, m.index).split('\n').length;
+    const rotulo = /:(?:inline|block|flex)">([^<]{0,40})/.exec(corpo)?.[1]?.trim();
+    achados.push(
+      `${rel}:${linha}  <${tag}> com rotulo "${rotulo ?? '?'}" em ` +
+        `${escondido[0]} e nenhum nome acessivel: abaixo de ${escondido[1]} ` +
+        `sobra so o icone, que e aria-hidden`
+    );
+  }
+
+  return achados;
+}
+
+function exigirRotuloQueSobreviveAoBreakpoint() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx$/.test(nome) && !/\.test\.tsx$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(...achadosDeRotuloSumido(fs.readFileSync(arquivo, 'utf8'), rel));
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `rótulo escondido por breakpoint sem nome acessível: ${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — rótulo que some no breakpoint ===` +
+      `\n  ${arquivos.length} arquivos varridos, ${achados.length} ocorrência(s)`
+  );
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // Fundo de cor cheia com texto branco cravado — catraca
 // ──────────────────────────────────────────────────────────────────────
@@ -1139,6 +1281,7 @@ function main() {
   exigirPonteFiel();
   exigirNomeQueNaoApagaConteudo();
   exigirCatracaDeFundoCheio();
+  exigirRotuloQueSobreviveAoBreakpoint();
 
   console.log(linhas.join('\n'));
 
@@ -1164,6 +1307,7 @@ module.exports = {
   variantesDe,
   contido,
   achadosDeNome,
+  achadosDeRotuloSumido,
   pacoteDeTokens,
   resolverDoPacote,
 };
