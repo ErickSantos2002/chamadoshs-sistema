@@ -9,10 +9,22 @@ interface SlaProgressoProps {
   status: StatusEnum;
 }
 
+/* Preenchimento usa --fill-*, e nao o degrau 500 da rampa.
+ *
+ * Medido contra as tres superficies do claro, piso de 3:1 de nao-texto:
+ * `--sucesso` da 2,54 / 2,42 / 2,32 e `--alerta` da 2,15 / 2,05 / 1,96 -- os
+ * dois reprovam, e so no claro. `--fill-success` (#059669) sobe para
+ * 3,77 / 3,60 / 3,44 e `--fill-warning` (#B45309) para 5,02 / 4,80 / 4,58.
+ *
+ * E HIGIENE DE TOKEN, nao correcao de acessibilidade: ao lado da barra vem a
+ * situacao escrita, com icone, entao a cor nao e o unico portador. A regra
+ * esta no DECISOES.md, e existe para nao usar duas reguas -- a E19 da o mesmo
+ * beneficio da duvida ao anel do SlaChip do HelpHS.
+ */
 const COR_DA_BARRA: Record<string, string> = {
-  'No prazo': 'bg-sucesso',
-  'Atenção': 'bg-alerta',
-  'Estourado': 'bg-perigo',
+  'No prazo': 'bg-fill-success',
+  'Atenção': 'bg-fill-warning',
+  'Estourado': 'bg-fill-danger',
 };
 
 /**

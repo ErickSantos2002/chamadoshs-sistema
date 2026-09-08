@@ -34,9 +34,9 @@ const ORDEM: PrioridadeEnum[] = [
  * `conteudo-suave` mantém o tom neutro do selo e ainda contrasta.
  */
 const BARRA: Record<PrioridadeEnum, string> = {
-  [PrioridadeEnum.CRITICA]: 'bg-perigo',
-  [PrioridadeEnum.ALTA]: 'bg-alerta',
-  [PrioridadeEnum.MEDIA]: 'bg-info',
+  [PrioridadeEnum.CRITICA]: 'bg-fill-danger',
+  [PrioridadeEnum.ALTA]: 'bg-fill-warning',
+  [PrioridadeEnum.MEDIA]: 'bg-fill-info',
   [PrioridadeEnum.BAIXA]: 'bg-conteudo-suave',
 };
 

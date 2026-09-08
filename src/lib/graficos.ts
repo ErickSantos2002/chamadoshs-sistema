@@ -163,7 +163,6 @@ export function estiloDoGrafico(escuro: boolean) {
     // cinza-azulado antigo dentro de cards que já eram slate. Se mexer nos
     // tokens, mexa aqui.
     grade: escuro ? '#1E3A5F' : '#E2E8F0', // --border-color  (#1E3A5F / slate-200)
-    eixo: escuro ? '#94A3B8' : '#64748B', // --text-muted    (slate-400 / slate-500)
     texto: escuro ? '#E2E8F0' : '#1E293B', // --text-body     (slate-200 / slate-800)
     dica: {
       // No escuro a dica sobe para a superfície elevada, senão ela se confunde

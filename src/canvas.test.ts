@@ -127,7 +127,7 @@ function montarDom(c: Cenario) {
       position: 'static',
       getPropertyValue: () => '',
     };
-  }) as typeof window.getComputedStyle;
+  }) as unknown as typeof window.getComputedStyle;
 
   Element.prototype.getBoundingClientRect = function () {
     const r = rects.get(this) ?? { l: 0, t: 0, r: 0, b: 0 };

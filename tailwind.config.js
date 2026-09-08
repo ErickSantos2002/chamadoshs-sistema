@@ -130,6 +130,28 @@ module.exports = {
           neutral: corDeToken("--on-tint-neutral"),
         },
 
+        /* A semantica na forca de PREENCHIMENTO — E19 do pacote.
+         *
+         * O pacote ja tinha a semantica como texto (`on-tint`), como acao
+         * (`action`) e como tinta (`tint`). Faltava a de preenchimento, e o
+         * degrau 500 nao serve: medido aqui contra as tres superficies do
+         * claro, `--sucesso` da 2,54 / 2,42 / 2,32 e `--alerta` da 2,15 / 2,05
+         * / 1,96, todos abaixo do piso de 3:1 de nao-texto.
+         *
+         * `--fill-success` e `--fill-warning` sobem um ou dois degraus no
+         * claro (600 e 700) e voltam ao 500 no escuro, porque degrau fixo de
+         * rampa nao inverte por tema — mesma familia da E1, da E8 e da E16-b.
+         *
+         * `--fill-info` e `--fill-danger` levam o mesmo degrau nos dois temas
+         * e existem assim mesmo: token e PAPEL, e papel existe nos dois lados
+         * mesmo quando o valor coincide. Foi o argumento da E16-b. */
+        fill: {
+          info: corDeToken("--fill-info"),
+          success: corDeToken("--fill-success"),
+          warning: corDeToken("--fill-warning"),
+          danger: corDeToken("--fill-danger"),
+        },
+
         // ── Ponte (temporária — decisão D3-a) ───────────────────────
         // Os nomes em português que as telas já usam, no formato de canais
         // "R G B" que o Tailwind exige para aplicar opacidade

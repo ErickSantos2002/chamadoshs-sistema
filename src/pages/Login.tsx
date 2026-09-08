@@ -20,9 +20,9 @@ import {
  */
 const COR_DO_ESTADO: Record<EstadoDoSistema, string> = {
   verificando: 'bg-conteudo-tenue',
-  ok: 'bg-sucesso',
-  degradado: 'bg-alerta',
-  'sem-resposta': 'bg-perigo',
+  ok: 'bg-fill-success',
+  degradado: 'bg-fill-warning',
+  'sem-resposta': 'bg-fill-danger',
 };
 
 const versao = typeof __VERSAO_APP__ === 'string' ? __VERSAO_APP__ : '';

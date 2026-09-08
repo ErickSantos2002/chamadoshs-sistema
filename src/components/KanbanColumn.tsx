@@ -29,9 +29,9 @@ interface KanbanColumnProps {
  * fala a mesma língua do resto da interface.
  */
 const PONTO_PRIORIDADE: Record<PrioridadeEnum, string> = {
-  [PrioridadeEnum.CRITICA]: 'bg-perigo',
-  [PrioridadeEnum.ALTA]: 'bg-alerta',
-  [PrioridadeEnum.MEDIA]: 'bg-info',
+  [PrioridadeEnum.CRITICA]: 'bg-fill-danger',
+  [PrioridadeEnum.ALTA]: 'bg-fill-warning',
+  [PrioridadeEnum.MEDIA]: 'bg-fill-info',
   [PrioridadeEnum.BAIXA]: 'bg-conteudo-tenue',
 };
 
