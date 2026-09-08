@@ -45,6 +45,12 @@ const { sonda: sondaDoCanario } = require('./canario-css.js');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const RAIZ = path.join(__dirname, '..');
+const CSS_DO_DISCO = path.join(RAIZ, 'src', 'styles', 'index.css');
+
+/** O CSS em disco — a referência que vem de FORA da coisa medida. */
+const cssDoDisco = () => fs.readFileSync(CSS_DO_DISCO, 'utf8');
+
 /**
  * O endereço é local?
  *
@@ -81,13 +87,50 @@ function apiDoEnv() {
 }
 
 /**
- * O fundo esperado por tema, para conferir o PIXEL e não só o atributo.
+ * As superfícies do tema, lidas do CSS em disco na GERAÇÃO e embutidas na sonda.
  *
- * `data-tema-pronto` é promessa: ele diz que o tema foi aplicado. O
- * `backgroundColor` computado é fato. Os dois juntos pegam o caso em que a
- * classe entrou e o CSS não acompanhou — que é o modo de falha 1 disfarçado de
- * modo de falha 2.
+ * ── Por que embutir, e não ler no navegador ──────────────────────────
+ *
+ * A sonda roda na página e não tem acesso ao disco. Se ela lesse o valor
+ * esperado do próprio CSS servido, compararia o servido consigo mesmo e
+ * aprovaria qualquer divergência — que é o defeito do canário lendo o bloco
+ * errado, uma casa adiante. O valor de referência precisa vir de FORA da coisa
+ * medida, e o único "fora" disponível é o disco no momento de gerar.
+ *
+ * ── Este bloco existe porque ele NÃO existia ─────────────────────────
+ *
+ * O comentário que estava aqui prometia "o fundo esperado por tema, para
+ * conferir o PIXEL e não só o atributo" e documentava um mapa de valores
+ * esperados. **O mapa nunca foi escrito.** Abaixo dele, `fundo` era calculado,
+ * reportado, e comparado com nada — quatro ocorrências da palavra no arquivo,
+ * nenhuma delas um `if`.
+ *
+ * Sobreviveu a oito provas negativas porque a prova que existia bloqueia com
+ * três motivos — marcador, classe \`.dark\` e canário —, todos de atributo. As
+ * três disparam juntas, e a saída fica idêntica com ou sem a quarta.
  */
+function superficiesDoTema(css, tema) {
+  const ler = (seletor) => {
+    const i = css.indexOf(seletor + ' {');
+    if (i === -1) throw new Error('bloco "' + seletor + '" não encontrado');
+    const bloco = css.slice(i, css.indexOf('}', i));
+    const achado = {};
+    for (const [, nome, r, g, b] of bloco.matchAll(
+      /--([\w-]+):\s*(\d+)\s+(\d+)\s+(\d+)\s*;/g
+    )) achado[nome] = [Number(r), Number(g), Number(b)];
+    return achado;
+  };
+  // O escuro herda do :root o que não redefine — é a cascata, não um remendo.
+  const base = ler(':root');
+  const tk = tema === 'escuro' ? { ...base, ...ler('.dark') } : base;
+  const nomes = ['superficie', 'superficie-base', 'superficie-elevada'];
+  const fora = {};
+  for (const n of nomes) {
+    if (!tk[n]) throw new Error('token --' + n + ' não encontrado para o tema ' + tema);
+    fora[n] = tk[n];
+  }
+  return fora;
+}
 /**
  * Monta a sonda. Funcao, e nao constante de modulo, por um motivo concreto:
  * a validacao de argumentos ficava no escopo do arquivo e chamava
@@ -108,6 +151,7 @@ function montarSonda(tema, exigirTabela, excecaoDeProducao, viewport) {
   const API_EH_LOCAL = ${JSON.stringify(apiEhLocal)};
   const EXCECAO = ${JSON.stringify(excecaoDeProducao || null)};
   const VIEWPORT = ${JSON.stringify(viewport || null)};
+  const SUPERFICIES = ${JSON.stringify(superficiesDoTema(cssDoDisco(), tema))};
   const problemas = [];
   const avisos = [];
 
@@ -207,8 +251,6 @@ function montarSonda(tema, exigirTabela, excecaoDeProducao, viewport) {
     problemas.push('data-tema-pronto diz "' + marcador + '", e a captura é de "' + TEMA + '"');
   }
 
-  // Atributo é promessa, pixel é fato: o fundo tem de ser o do tema pedido.
-  const fundo = getComputedStyle(document.body).backgroundColor;
   const escuroNaTela = document.documentElement.classList.contains('dark');
   if (escuroNaTela !== (TEMA === 'escuro')) {
     problemas.push('a classe .dark no <html> não corresponde ao tema pedido');
@@ -217,17 +259,123 @@ function montarSonda(tema, exigirTabela, excecaoDeProducao, viewport) {
     problemas.push('o canário mediu contra o bloco errado — tema divergente');
   }
 
+  // -- 2b. O CANVAS tem a cor do tema? Atributo e promessa, pixel e fato. --
+  //
+  // O elemento medido e o MAIOR OPACO QUE COBRE O VIEWPORT INTEIRO, e nao o
+  // "que cobre 90%". A diferenca nao e zelo: com 90%, em 1366 vencia o <main>,
+  // que exclui barra lateral e cabecalho e NAO e o canvas; em 390 vencia um
+  // card, porque em coluna unica ele cresce. Nos dois casos a cor batia por
+  // COINCIDENCIA -- card e canvas carregam tokens diferentes que, no tema
+  // claro, coincidem. Cobertura total resolve os dois: card tem margem.
+  //
+  // NAO ha recuo para o body. Recuo mascara a perda: na sessao do HelpHS o caso
+  // de prova da normalizacao passava SEM a normalizacao, porque o elemento era
+  // descartado e a sonda caia no body, que estava certo. Sem elemento que
+  // cubra, isto BLOQUEIA e diz que bloqueou.
+  const normalizar = (v) => {
+    if (!v) return null;
+    let m = v.match(/^rgba?[(](\\d+),\\s*(\\d+),\\s*(\\d+)/);
+    if (m) return [Number(m[1]), Number(m[2]), Number(m[3])];
+    // O Chromium devolve color(srgb ...) para tudo que sai de color-mix(), e o
+    // tailwind.config.js declara as cores do pacote com color-mix. Comparar
+    // string com string nunca casaria.
+    m = v.match(/^color[(]srgb\\s+([\\d.]+)\\s+([\\d.]+)\\s+([\\d.]+)/);
+    if (m) return [1, 2, 3].map((i) => Math.round(Number(m[i]) * 255));
+    return null;
+  };
+  const opaco = (v) => !!v && v !== 'transparent' && !/,\\s*0([.]0+)?[)]$/.test(v);
+
+  const cobrem = [...document.querySelectorAll('body *')].filter((el) => {
+    if (!opaco(getComputedStyle(el).backgroundColor)) return false;
+    const r = el.getBoundingClientRect();
+    return r.left <= 0 && r.top <= 0 && r.right >= innerWidth && r.bottom >= innerHeight;
+  });
+  const canvasEl = cobrem.length ? cobrem[cobrem.length - 1] : null;
+
+  // Ler DUAS vezes, com refluxo forcado entre elas, e exigir concordancia.
+  //
+  // O valor computado e INTERMITENTE: o mesmo <main>, no mesmo tema escuro,
+  // devolveu rgb(248,250,252) numa captura e rgb(13,27,42) em outra, e duas
+  // leituras seguidas na MESMA pagina chegaram a discordar entre si.
+  //
+  // O refluxo e COMPENSACAO, nao conserto. A causa do valor velho segue
+  // desconhecida, e fechar a investigacao aqui trocaria o defeito por um laco
+  // que o esconde. Esta registrado como investigacao aberta.
+  const lerCanvas = () => (canvasEl ? getComputedStyle(canvasEl).backgroundColor : null);
+  const leituras = [];
+  let assentou = false;
+  if (canvasEl) {
+    leituras.push(lerCanvas());
+    for (let i = 0; i < 4 && !assentou; i++) {
+      void document.documentElement.offsetHeight;
+      const nova = lerCanvas();
+      assentou = nova === leituras[leituras.length - 1];
+      leituras.push(nova);
+    }
+  }
+
+  const igual = (a, b) => !!a && !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+  const canvasCor = leituras.length ? normalizar(leituras[leituras.length - 1]) : null;
+  const esperadoCanvas = SUPERFICIES['superficie-base'];
+  const tokenDe = (c) => Object.keys(SUPERFICIES).find((n) => igual(SUPERFICIES[n], c)) || null;
+  const ondeVeio = canvasEl
+    ? canvasEl.tagName + (canvasEl.className ? '.' + String(canvasEl.className).trim().split(/\\s+/).join('.') : '')
+    : null;
+
+  if (!canvasEl) {
+    problemas.push(
+      'nenhum elemento opaco cobre o viewport inteiro: nao ha canvas para medir. ' +
+      'Sem recuo de proposito, porque recuo mascara a perda.'
+    );
+  } else if (!assentou) {
+    problemas.push('a cor do canvas nao parou de mudar: ' + leituras.join(' -> '));
+  } else if (!canvasCor) {
+    problemas.push('nao consegui interpretar a cor do canvas: "' + leituras[leituras.length - 1] + '"');
+  } else if (!igual(canvasCor, esperadoCanvas)) {
+    const achado = tokenDe(canvasCor);
+    problemas.push(
+      'o canvas (' + ondeVeio + ') esta em rgb(' + canvasCor.join(', ') + ')' +
+      (achado ? ', que e --' + achado : ', que nao e token de superficie deste tema') +
+      ', e o tema "' + TEMA + '" pede --superficie-base rgb(' + esperadoCanvas.join(', ') + ')'
+    );
+  }
+
   // ── 3. A tabela tem a segunda linha? ──────────────────────────────
   //
   // O divisor entre linhas é \`border-b\` na LINHA, então ele só aparece
   // quando há linha seguinte para separar. Com uma linha só, a captura sai
   // sem o elemento que a E14 mudou — e parece uma tabela normal.
+  //
+  // E conta a tabela VISIVEL, nao a maior. Em /cadastros as tres abas montam
+  // tabela no DOM ao mesmo tempo -- linhas [6, 11, 33] -- e so a primeira esta
+  // em cena. Decidindo por Math.max sobre todas, a sonda aprovaria uma captura
+  // cuja tabela visivel tivesse UMA linha, desde que qualquer aba oculta
+  // tivesse duas -- e o divisor, unica coisa que esta checagem existe para
+  // garantir, nao apareceria na foto.
+  // "Visivel" por tres sinais, e NAO por offsetParent. O offsetParent seria o
+  // quarto e foi retirado: ele e null em jsdom para tudo, entao tornaria esta
+  // checagem intestavel fora do navegador -- e uma checagem que so pode ser
+  // exercitada no lugar onde ela e mais dificil de exercitar tende a nao ser.
+  //
+  // Ele tambem e redundante aqui: elemento dentro de ancestral com display:none
+  // tem retangulo ZERO, e o terceiro sinal ja o pega.
+  const visivel = (el) => {
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  };
   const tabelas = [...document.querySelectorAll('table')];
-  const linhas = tabelas.map((t) => t.querySelectorAll('tbody tr').length);
+  const contar = (tb) => tb.querySelectorAll('tbody tr').length;
+  const tabelasVisiveis = tabelas.filter(visivel);
+  const linhas = tabelasVisiveis.map(contar);
+  const linhasTodas = tabelas.map(contar);
   if (EXIGIR_TABELA) {
     if (!tabelas.length) problemas.push('nenhuma tabela na tela, e esta captura exige uma');
+    else if (!tabelasVisiveis.length)
+      problemas.push('ha ' + tabelas.length + ' tabela(s) no DOM e nenhuma VISIVEL');
     else if (Math.max(...linhas) < 2)
-      problemas.push('a maior tabela tem ' + Math.max(...linhas) + ' linha(s): o divisor entre linhas não aparece com menos de 2');
+      problemas.push('a maior tabela VISIVEL tem ' + Math.max(...linhas) + ' linha(s): o divisor entre linhas nao aparece com menos de 2');
   }
 
   // ── 4. O quadro tem o tamanho que o protocolo crava? ────────────
@@ -280,9 +428,18 @@ function montarSonda(tema, exigirTabela, excecaoDeProducao, viewport) {
     api_e_local: API_EH_LOCAL,
     origens_externas: externas,
     marcador: marcador || '(ausente)',
-    fundo,
+    // NOME MUDADO DE PROPOSITO. Era "fundo", e "fundo" numa saida de sonda
+    // parece veredito. Ele nunca foi comparado com nada e continua nao sendo:
+    // e o backgroundColor do <body>, que nas paginas do app fica COBERTO e nao
+    // acompanha o tema. Contexto, e rotulado como tal.
+    contexto_fundo_body: getComputedStyle(document.body).backgroundColor,
+    canvas: canvasCor ? 'rgb(' + canvasCor.join(', ') + ')' : null,
+    canvas_elemento: ondeVeio,
+    canvas_esperado: 'rgb(' + esperadoCanvas.join(', ') + ')',
+    canvas_leituras: leituras,
     canario: canario.ok ? 'ok' : 'REPROVADO',
     linhas_por_tabela: linhas,
+    linhas_no_dom: linhasTodas,
     viewport: [innerWidth, innerHeight],
     viewport_exigido: VIEWPORT,
     problemas,
