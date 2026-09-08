@@ -174,6 +174,57 @@ A captura 1 chegou a ser tirada em 672×448 e foi descartada. Era uma foto de
 aparência perfeitamente normal, no tamanho errado, com o número certo escrito ao
 lado — o modo de falha de sempre.
 
+### A ferramenta de captura mexe no viewport, e não devolve
+
+**Este é o motivo de as dezesseis não saírem pela ferramenta de automação, e de
+a régua só ser honesta fora dela.**
+
+Medido dentro de uma única chamada, sem nada entre as linhas além da própria
+foto:
+
+```
+antes:    1368×912  dpr2
+          [screenshot]
+depois:   1026×684  dpr1
+de novo:  1026×684  dpr1
+```
+
+A ação de fotografar aplica a própria emulação de dispositivo para tirar a foto
+e **não restaura** o que estava. A ação de navegar faz o mesmo, no outro
+sentido: depois de um `navigate`, o viewport volta para 1368×912 e a barra de
+dispositivo do operador é perdida. Só as chamadas de JavaScript deixam o
+viewport quieto.
+
+Isso explica de uma vez tudo que parecia desconexo nesta sessão: `resize_window`
+respondendo "Successfully resized" sem redimensionar; os números alternando
+entre exatamente 1368×912 e 1026×684; o tamanho da imagem entregue oscilando
+entre 1:1 e 0,655; e a barra de dispositivo do operador não grudando.
+
+E tem a consequência que fecha o assunto: **a sexta checagem não pode passar
+por esse caminho, nem com o número certo digitado.** A sonda mediria 1366×768,
+a foto mudaria o viewport, e a imagem sairia de outro tamanho — com a sonda
+dizendo que estava tudo certo. É o modo de falha que a checagem existe para
+impedir, garantido por construção.
+
+Uma verificação que passa enquanto a foto sai de outro tamanho é pior que
+verificação nenhuma: ela ensina a confiar.
+
+### O ciclo que sobrou, e por que ele é seguro
+
+Quem fotografa é o **operador**, pelo próprio DevTools (`Ctrl+Shift+P` →
+"Capture screenshot"), que captura exatamente o viewport emulado, em PNG — sem
+JPEG e sem redução, o que para um checkpoint de cor não é detalhe.
+
+| passo | quem | mexe no viewport? |
+|---|---|---|
+| navegar para a rota com `?tema=` | operador | — |
+| fixar 1366×768 ou 390×844 na barra | operador | é ele quem fixa |
+| rodar a sonda | assistente, só JavaScript | **não** |
+| tirar a foto | operador, pelo DevTools | não |
+
+O assistente não dispara foto nem navegação pela ferramenta durante a sessão de
+captura. É essa abstinência que mantém a sexta checagem verdadeira.
+
 ### Quem fixa o tamanho
 
 O **operador**, pela barra de dispositivo do DevTools (`Ctrl+Shift+M`), em modo
