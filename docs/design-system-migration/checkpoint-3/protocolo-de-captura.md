@@ -273,6 +273,71 @@ marcador   claro          canario  ok
 esta checagem da checagem 2, que nunca foi vista falhando sozinha porque três
 outras disparavam junto com ela — e escondiam que ela não existia.
 
+## Pendência: a checagem 2 não compara nada, e o conserto já está desenhado
+
+Depois das dezesseis, em `fix(...)` próprio — decisão do operador, 08/09/2026.
+
+O campo `fundo` da sonda é **relatado, nunca asserido**. `fundo` aparece quatro
+vezes no `sonda-captura.js`: um comentário prometendo *"o fundo esperado por
+tema, para conferir o PIXEL e não só o atributo"*, um comentário dizendo
+*"atributo é promessa, pixel é fato"*, a linha que calcula, e o campo do
+relatório. **Não existe um único `if`.** O JSDoc documenta um mapa de valores
+esperados que nunca foi escrito.
+
+E ele mede o elemento errado: `document.body`. Medido na tela de detalhe em
+escuro, com a página visivelmente escura:
+
+```
+html         rgba(0, 0, 0, 0)      transparente
+body         rgb(248, 250, 252)    CLARO
+div do app   rgb(13, 27, 42)       o que de fato pinta
+```
+
+### Por que oito provas negativas não pegaram
+
+A prova que existia — sonda escura numa página clara — bloqueia com **três**
+motivos: marcador, classe `.dark` e canário. As três são de atributo, disparam
+juntas, e a saída fica idêntica com ou sem a quarta. Uma checagem que nunca foi
+vista falhando **sozinha** não está provada, está acompanhada.
+
+### O que o conserto faz
+
+**Mede o maior elemento opaco que cobre o viewport**, e não a cascata do canvas.
+
+A sessão paralela do HelpHS propôs a cascata — fundo do `html` se não for
+transparente, senão o do `body`, bloqueando se os dois forem. Lá funciona,
+porque o `base.css` pinta o `body` e nada o cobre. **Aqui ela aprovaria o
+defeito**: leria o `body`, encontraria um valor opaco e legítimo, e liberaria a
+captura com a cor do tema errado. A regra é dependente da forma do app, e a
+diferença está medida acima.
+
+**Compara com o valor do token**, resolvido do `colors.css` do pacote em disco
+pela cadeia de `var()` — nunca com uma faixa de cor.
+
+### Os casos de prova, e por que estes
+
+| caso | o que separa |
+|---|---|
+| marcador, `.dark` e canário **neutralizados** | a linha do pixel bloqueando sozinha — o que faltou às oito |
+| fundo em `rgb(240, 240, 240)` | é claro, casa qualquer faixa, e **não** é o token: separa comparação de faixa |
+| `body` certo e a div de cima errada | mata uma sonda que lê o `body`; é o caso que só existe nesta forma de app |
+
+O segundo veio da sessão do HelpHS, que rodou uma mutação e descobriu que a
+bateria de provas dela **não distinguia** "compara com o token" de "casa uma
+faixa plausível" — as duas passavam em todos os casos. O terceiro é o irmão
+local dele.
+
+### Em aberto, ainda não decidido
+
+Ler o fundo **duas vezes** e só valer quando as duas leituras concordam. Vem da
+mesma sessão, contra a transição de 150ms do `--duration-fast`, que faz o
+`getComputedStyle` devolver a cor no meio do caminho.
+
+Aqui o sintoma existe e a causa parece ser outra: o `body` foi amostrado por 12
+segundos com a página escura e ficou claro o tempo todo, virando só depois de um
+recálculo forçado de estilo. Não é transição de 150ms — é valor velho que não
+recalcula sozinho. Ler duas vezes cobriria os dois, mas a decisão é do operador.
+
 ## Consulta à API de produção pede autorização, com o número dito antes
 
 **Regra do operador, 08/09/2026.**
