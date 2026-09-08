@@ -19,8 +19,8 @@ Tamanhos: **1366×768** e **390×844**. Temas: **claro** e **escuro**.
 O tema entra **pela URL**, e não pelo interruptor:
 
 ```
-http://localhost:5173/dashboard?tema=claro
-http://localhost:5173/dashboard?tema=escuro
+http://localhost:5191/dashboard?tema=claro
+http://localhost:5191/dashboard?tema=escuro
 ```
 
 Isso aplica o tema **antes da primeira pintura**. Pelo interruptor, a primeira
@@ -51,16 +51,25 @@ a versão anterior. Uma sonda de frescor servida velha é a piada que ela conta
 sobre si mesma, e o modo de falha é o mesmo de sempre: parece que passou.
 
 **Não fotografe com `ok: false`.** A foto sairia parecendo certa — é esse o
-ponto dos três modos de falha que a sonda cobre:
+ponto dos cinco modos de falha que a sonda cobre:
 
 | | o que pega | por que não se vê |
 |---|---|---|
+| −1 | **outro produto na porta** | a tela funciona — e é bonita |
 | 0 | API de produção | a tela funciona — e é a real |
 | 1 | CSS servido velho | classes sem regra, elementos herdam a cor do pai |
 | 2 | tema por efeito | a primeira pintura sai no tema errado |
 | 3 | tabela com 1 linha | o divisor entre linhas não existe sem a segunda |
 
-O zero é o mais grave e o menos visível dos quatro: contra produção **tudo
+O menos um já custou caro, e do outro lado: duas aplicações Vite convivem nesta
+máquina e as duas nasciam na 5173. Sem `strictPort` o Vite escorrega calado para
+a 5174, e quem cravou o endereço abraça o servidor do outro produto — a suíte
+e2e do HelpHS rodou contra **este** sistema. Agora cada um tem porta própria
+(ChamadosHS 5191, HelpHS 5190) com `strictPort`, e a sonda ainda confere o
+`data-app` do `<html>` antes de liberar: **porta exclusiva protege por acordo,
+identidade protege quando o acordo falha.**
+
+O zero é o mais grave e o menos visível dos cinco: contra produção **tudo
 funciona**, e é justamente esse o problema. A captura leva dado real para
 dentro de `docs/`, e o passo "derrube a API" da 17–18 vira uma
 indisponibilidade. Regra no `DECISOES.md`; a sonda confere o `.env` e também
@@ -74,7 +83,9 @@ sem ele.
 
 ## Onde a sonda já foi vista funcionando
 
-Cinco provas negativas, no navegador, antes de o protocolo valer. É a regra do
+Oito provas negativas antes de o protocolo valer — as cinco primeiras no
+navegador, as três últimas (6–8) rodando a sonda de verdade contra documentos
+controlados, porque a extensão do Chrome caiu no meio. É a regra do
 `DECISOES.md`: verificação nova roda contra um defeito conhecido antes de o
 "passou" dela contar.
 
@@ -85,9 +96,14 @@ Cinco provas negativas, no navegador, antes de o protocolo valer. É a regra do
 | 3 | linhas devolvidas | libera de novo |
 | 4 | página sem `?tema=` na URL | bloqueia por marcador ausente |
 | 5 | `/login?tema=escuro`, página do **app** | libera: marcador `escuro`, fundo `rgb(13,27,42)`, canário ok |
+| 6 | `.env` apontando para a API de produção | bloqueia, nomeando o endereço |
+| 7 | página com `data-app="helphs"` | bloqueia: "é do produto helphs, e não do chamadoshs" |
+| 8 | página sem `data-app` nenhum | bloqueia — falha **fechada**, não libera por omissão |
 
-A quinta é a que importa para as dezesseis: o marcador passou a existir fora de
-`/dev/`, que é onde as capturas acontecem.
+A quinta é a que importa para as dezesseis: o marcador de TEMA passou a existir
+fora de `/dev/`, que é onde as capturas acontecem. A sétima e a oitava são a
+identidade do PRODUTO, e vivem em `src/identidade.test.ts` — rodam a cada
+`npm test`, e não só no dia em que foram feitas.
 
 ## O que o operador precisa fornecer
 

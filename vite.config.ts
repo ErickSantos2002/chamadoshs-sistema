@@ -15,7 +15,32 @@ export default defineConfig({
   },
   plugins: [react()],
   server: {
-    port: 5173,
+    /**
+     * Porta própria do ChamadosHS, e `strictPort` para ele MORRER em vez de
+     * escorregar.
+     *
+     * Era 5173 sem `strictPort`, que é o padrão do Vite — e o padrão é
+     * escorregar calado para a 5174, 5175, até achar uma livre. O HelpHS vive
+     * nesta mesma máquina e também nascia na 5173.
+     *
+     * O custo já foi pago, e do outro lado: a suíte e2e do HelpHS, cravada na
+     * 5173 com `reuseExistingServer`, abraçou **este** servidor e mediu o
+     * produto errado — respondia `<title>ChamadosHS</title>` e 404 nas rotas
+     * dela. Está escrito no `vite.config.ts` deles, que já se mudou para a
+     * 5190.
+     *
+     * Aqui não há Playwright, então o defeito não chega pela suíte. Chega
+     * pelas CAPTURAS: o protocolo do Checkpoint 3 crava o endereço, e nesta
+     * mesma sessão o servidor já escorregou para a 5174 sem avisar.
+     *
+     * 5191: vizinha da 5190 do HelpHS para ficarem juntas na memória, e longe
+     * da faixa 5173–5175, que é justamente por onde o escorregão passa.
+     *
+     * `strictPort` transforma a colisão em erro na cara: o servidor não sobe, e
+     * ninguém mede coisa nenhuma achando que mediu.
+     */
+    port: 5191,
+    strictPort: true,
     open: true,
   },
   build: {

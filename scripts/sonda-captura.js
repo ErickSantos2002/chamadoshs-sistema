@@ -3,8 +3,17 @@
  *
  * ── Por que uma sonda, e não uma conferência de olho ─────────────────
  *
- * Porque os três modos de falha desta captura são **silenciosos**: em nenhum
- * deles a tela parece errada. Ela parece plausível e mostra outra coisa.
+ * Porque os modos de falha desta captura são **silenciosos**: em nenhum deles a
+ * tela parece errada. Ela parece plausível e mostra outra coisa.
+ *
+ *  -1. Outro produto na porta. Duas aplicações Vite nesta máquina, as duas
+ *      nascidas na 5173; sem `strictPort` o Vite escorrega calado e quem cravou
+ *      o endereço abraça o servidor do outro. A suíte e2e do HelpHS já rodou
+ *      contra este sistema.
+ *
+ *   0. API de produção. A tela funciona — e é a real: a captura leva dado de
+ *      gente de verdade para dentro de `docs/`, e o passo "derrube a API" da
+ *      captura do estado de erro vira uma indisponibilidade.
  *
  *   1. CSS servido velho. A sessão do HelpHS perdeu uma tarde: o Playwright
  *      reusou o servidor, as classes de token não tinham regra, os elementos
@@ -26,7 +35,7 @@
  *
  * Cola-se a saída no console da página, com o tema já na URL:
  *
- *   http://localhost:5173/dashboard?tema=claro
+ *   http://localhost:5191/dashboard?tema=claro
  *
  * A sonda devolve `{ ok: false }` e diz o motivo. **Não fotografe com
  * `ok: false`** — a foto sairia parecendo certa.
@@ -98,6 +107,34 @@ function montarSonda(tema, exigirTabela) {
   const API_NO_DISCO = ${JSON.stringify(apiNoDisco)};
   const API_EH_LOCAL = ${JSON.stringify(apiEhLocal)};
   const problemas = [];
+
+  // ── -1. Esta página é MESMO do ChamadosHS? ────────────────────────
+  //
+  // Duas aplicações Vite convivem nesta máquina, e as duas nasceram na 5173.
+  // A porta exclusiva com \`strictPort\` resolve por ACORDO; esta checagem
+  // resolve quando o acordo falha — um checkout antigo ainda de pé, uma porta
+  // reaproveitada, um túnel, um endereço colado errado.
+  //
+  // O gate é o \`data-app\` no \`<html>\`, e NÃO o título: título muda por rota,
+  // marcador é estrutura e sobrevive à navegação. O título vai junto no
+  // relatório, como contexto de quem está lendo — não como critério.
+  //
+  // Falha FECHADA: marcador ausente também bloqueia. Se alguém tirar o
+  // atributo do \`index.html\`, a sonda para tudo em vez de liberar por
+  // omissão — que é o modo de falha que ela existe para não ter.
+  const APP = 'chamadoshs';
+  const marcaDoApp = document.documentElement.dataset.app;
+  if (!marcaDoApp) {
+    problemas.push(
+      'a página não tem data-app no <html>: não dá para provar que é o ' +
+      'ChamadosHS. Título: "' + document.title + '", endereço: ' + location.origin
+    );
+  } else if (marcaDoApp !== APP) {
+    problemas.push(
+      'esta página é do produto "' + marcaDoApp + '", e não do "' + APP + '". ' +
+      'Título: "' + document.title + '", endereço: ' + location.origin
+    );
+  }
 
   // ── 0. A captura está apontada para PRODUÇÃO? ─────────────────────
   //
@@ -183,6 +220,9 @@ function montarSonda(tema, exigirTabela) {
   }
   return {
     ok,
+    app: marcaDoApp || '(sem data-app)',
+    titulo: document.title,
+    endereco: location.origin,
     tema: TEMA,
     api_no_disco: API_NO_DISCO,
     api_e_local: API_EH_LOCAL,
