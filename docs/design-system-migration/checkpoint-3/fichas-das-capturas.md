@@ -50,8 +50,8 @@ vazios.
 
 | # | tela | rota | viewport | tema | arquivo | sonda | régua |
 |---|---|---|---|---|---|---|---|
-| 1 | painel | `/dashboard` | 1366×768 | claro | `01-painel-claro-dpr2-2732x1535.png` | ok | **pendente** (DPR) |
-| 2 | painel | `/dashboard` | 1366×768 | escuro | | | |
+| 1 | painel | `/dashboard` | 1366×768 | claro | `01-painel-1366x767-claro.png` | ok | 1366×767 ✓ |
+| 2 | painel | `/dashboard` | 1366×768 | escuro | `02-painel-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 3 | painel | `/dashboard` | 390×844 | claro | | | |
 | 4 | painel | `/dashboard` | 390×844 | escuro | | | |
 | 5 | listagem | `/cadastros` | 1366×768 | claro | | | |
@@ -83,11 +83,26 @@ SONDA  ok true   vp [1366, 768]   problemas []
 
 Canário: os seis tokens e as sete classes conferidos, disco e servido idênticos.
 
-**Régua: pendente.** O arquivo entregue é PNG válido de **2732×1535** — o dobro
-exato na largura (1366×2) e 1535 na altura, um pixel abaixo de 1536, porque a
-altura real do quadro é 767,5 e `innerHeight` arredonda para 768 ao reportar.
-É captura em DPR 2. A decisão entre DPR 1 (arquivo em 1366×768, régua por
-igualdade estrita) e DPR 2 está aberta no protocolo.
+**Régua: 1366×767, e é o número certo.** Decisão do operador, 08/09/2026: a
+régua deste bloco é **1366×767**, não 1366×768.
+
+A altura real do quadro emulado é **767,5**. `innerHeight` é inteiro e arredonda
+para cima, então a sonda lê 768; o rasterizador trunca para baixo, então o
+arquivo sai 767. As duas réguas discordam por um pixel, e a discordância é
+estrutural, não um erro de nenhuma das duas.
+
+Está provado dos dois lados da densidade: em DPR 2 a mesma captura saiu
+**2732×1535** — dobro exato na largura (1366×2) e um pixel abaixo do dobro na
+altura (1536). Em DPR 1 saiu 1366×767. O mesmo meio pixel, visto por dois
+caminhos.
+
+Não é tolerância. A régua é igualdade estrita contra **767**, e o motivo está
+escrito. O conserto de verdade entra no `fix(...)`: a sonda passa a reportar
+`visualViewport.height`, que é fracionário, e a régua de disco exige o piso
+exato dele.
+
+`arquivo: 01-painel-1366x767-claro.png`, PNG RGBA 8 bits, 89.219 bytes. O tiro
+em DPR 2 foi apagado depois da decisão.
 
 **Estado da tela:** filtro de período em "Tudo", campos De/Até vazios — que é o
 estado correto de "Tudo", conforme o `Dashboard.tsx`: sem início e sem fim não
@@ -116,5 +131,71 @@ apenas encostando na borda inferior. Nenhum gráfico entra no quadro.
 registrado para que ninguém leia estas quatro capturas do painel como evidência
 visual dos gráficos.
 
-**Pendente:** `backgroundColor` computado do elemento que pinta, medido em
-sessão, para o tema claro.
+**Elemento que pinta, medido em sessão:**
+
+```
+PINTA  tag MAIN   cls "flex-1 overflow-y-auto bg-superficie-base p-4 md:p"
+       bg rgb(248, 250, 252)
+```
+
+Bate com o `fundo` da sonda no claro — e é justamente essa coincidência que fez
+a checagem 2 parecer funcionar por tanto tempo. No escuro os dois divergem.
+
+A medição também expôs um erro do critério: o `main` **não** é o canvas da
+página. Ele exclui a barra lateral e o cabeçalho, e mesmo assim passa do limiar
+de 90% de cobertura — e, sendo o mais profundo, ganha o critério de "último". No
+claro carrega o mesmo token do wrapper, então o valor coincide e nada denuncia.
+Está no registro do `fix(...)`: o critério passa a exigir **cobertura total** do
+viewport, não 90%.
+
+---
+
+## 2 — painel, 1366×768, escuro
+
+**Vista, e o tema da legenda confere com o pixel.** Fundo `rgb(13, 27, 42)`,
+cartões sobre `--superficie`, texto invertido. Não há divergência.
+
+```
+SONDA (1ª)  ok true   vp [1366, 768]   problemas []
+            marcador escuro   fundo rgb(13, 27, 42)    canário ok   linhas [10]
+SONDA (2ª)  ok true   vp [1366, 768]   problemas []
+            marcador escuro   fundo rgb(248, 250, 252)  canário ok   linhas [10]
+```
+
+Canário no bloco `.dark`, seis tokens escuros conferidos. 159 chamados, filtro em
+"Tudo".
+
+**Régua:** `02-painel-1366x767-escuro.png`, PNG RGBA 8 bits, 86.753 bytes,
+**1366×767** — o mesmo meio pixel da captura 1.
+
+### As duas leituras discordaram no mesmo instante
+
+É o achado desta captura, e ele **encerra uma questão que estava em aberto**.
+
+A primeira leitura deu `rgb(13, 27, 42)` — correto. A segunda, segundos depois e
+sem nada mudar na tela, deu `rgb(248, 250, 252)` — o valor do tema claro. As duas
+com `marcador: escuro`, as duas com `ok: true`.
+
+O laço de dupla leitura proposto pela sessão do HelpHS deixa de ser hipótese:
+aqui ele teria **bloqueado**, porque as leituras discordam. Sai de "em aberto" e
+entra no `fix(...)` por decisão do operador.
+
+E o `PINTA` piorou o diagnóstico:
+
+```
+PINTA  tag MAIN   cls "flex-1 overflow-y-auto bg-superficie-base p-4 md:p"
+       bg rgb(248, 250, 252)
+```
+
+No escuro, o `main` — que a tela pinta de escuro, como a imagem mostra —
+devolveu o valor **claro**. Não é só escolher o elemento errado: **o valor
+computado é que não é confiável**. Trocar de elemento não resolve sozinho.
+
+Hipótese registrada para teste isolado no `fix(...)`: forçar refluxo antes de
+medir. Nesta sessão o valor virou correto logo depois de uma varredura que
+chamava `getBoundingClientRect` em todos os elementos, que força layout.
+
+### As mesmas duas ressalvas da captura 1
+
+Massa com status único (159/159, zero nos outros quatro) e gráficos abaixo da
+dobra. Valem igual aqui, pelos mesmos motivos.
