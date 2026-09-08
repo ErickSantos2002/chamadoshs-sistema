@@ -62,7 +62,7 @@ vazios.
 | 10 | formulário | `/chamados/novo` | 1366×768 | escuro | `10-formulario-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 11 | formulário | `/chamados/novo` | 390×844 | claro | | | |
 | 12 | formulário | `/chamados/novo` | 390×844 | escuro | | | |
-| 13 | detalhe | `/chamados/6` | 1366×768 | claro | | | |
+| 13 | detalhe | `/chamados/6` | 1366×768 | claro | `13-detalhe-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 14 | detalhe | `/chamados/6` | 1366×768 | escuro | | | |
 | 15 | detalhe | `/chamados/6` | 390×844 | claro | | | |
 | 16 | detalhe | `/chamados/6` | 390×844 | escuro | | | |
@@ -419,3 +419,68 @@ isso.** Repintar o canvas com `--superficie-elevada` põe um token legítimo, do
 tema certo, no lugar errado, e a checagem **libera**. Sem este caso escrito,
 alguém relê a checagem daqui a um mês como se ela fizesse a afirmação forte — e
 essa releitura é o defeito, não a checagem.
+
+---
+
+## 13 — detalhe, 1366×768, claro
+
+**Vista, e o tema da legenda confere com o pixel.**
+
+```
+SONDA  ok true   vp [1366, 768]   problemas []
+       marcador claro   fundo rgb(248, 250, 252)   canário ok   linhas []
+PINTA  tag MAIN   bg rgb(248, 250, 252)
+```
+
+**Régua:** `13-detalhe-1366x767-claro.png`, PNG RGBA 8 bits, 95.177 bytes,
+**1366×767**. **Cor por disco:** LIBERA, com a ressalva da afirmação fraca.
+
+### O que entrou no quadro
+
+Cabeçalho do chamado `#CHAM-2025-0006` com os três botões de ação, "Ações
+Rápidas: Reabrir", e o bloco **Informações do Chamado** inteiro.
+
+Fica registrado por evidência visual:
+
+- **"Cancelar Chamado" saiu como `secondary`**, cinza, ao lado de "Arquivar" e
+  "Editar Detalhes" — é a pendência (1) do Checkpoint 3, agora fotografada.
+- **Cinco selos em cena:** "Resolvido" (verde), "Alta" (âmbar), "Estourado ·
+  120%" (vermelho), "Usuario" e "Administrador" (azul). A prioridade **Alta**
+  sai no tom cheio, que era o motivo de trocar o chamado — essa parte da troca
+  se pagou.
+
+### O que NÃO entrou, e é a maior parte
+
+**Descrição, Solução, Avaliação, Comentários (3) e Histórico (6) ficaram abaixo
+da dobra.** Com 767 de altura o quadro termina no "Tempo em aberto" e corta no
+começo do cartão seguinte.
+
+São exatamente os cinco painéis pelos quais o `CHAM-2025-0006` foi escolhido, e
+o motivo da escolha era ter Comentários e Histórico preenchidos.
+
+**A troca de chamado, nesta parte, não mudou a evidência.** O
+`CHAM-2026-0086` teria produzido um quadro visualmente equivalente, porque a
+diferença entre os dois está toda abaixo dos 767 pixels. O que se pagou foi só o
+selo de prioridade.
+
+### A lição, e ela é do mesmo tamanho da semana
+
+A escolha do chamado foi otimizada por **conteúdo** — 159 resolvidos varridos,
+23 com comentário, 6 com nota, uma lista curta pontuada por tamanho de solução —
+e ninguém mediu se esse conteúdo **cabia no quadro** antes de escolher.
+
+Não é a família do "mede perto do que interessa": é vizinha dela. Aqui a medição
+estava certa e completa; o que faltou foi notar que ela caía **fora da fronteira
+do que a captura registra**. Uma seleção cuidadosa a respeito de algo que a
+evidência não ia mostrar.
+
+O sintoma prático é o mesmo de sempre: teria sido pego em dez segundos, antes das
+320 chamadas à API, por uma pergunta que ninguém fez — *"os painéis cabem em 767
+pixels?"*.
+
+### Encaminhamento
+
+Mesmo tratamento já decidido para os gráficos do painel: se a §29 do detalhe
+exigir os painéis de baixo, eles viram **captura própria, nomeada como tal,
+depois das dezesseis**. Rolar antes de fotografar destrói o enquadramento que a
+régua garante.
