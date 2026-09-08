@@ -39,7 +39,37 @@ export default defineConfig({
      * `strictPort` transforma a colisão em erro na cara: o servidor não sobe, e
      * ninguém mede coisa nenhuma achando que mediu.
      */
-    port: 5191,
+    /**
+     * ── 5173 É EXCEÇÃO, E TEM DATA PARA ACABAR ───────────────────────
+     *
+     * A porta permanente é a **5191**, pelos motivos acima. Ela está aqui em
+     * 5173 **só enquanto durar a sessão de captura do Checkpoint 3**, e volta
+     * assim que as dezesseis saírem.
+     *
+     * O motivo é CORS, e não escolha: as capturas são contra a API de
+     * produção, e o `ALLOWED_ORIGINS` dela lista `http://localhost:5173` —
+     * está no `app/core/config.py` do `chamadoshs-api`. Da 5191 o navegador
+     * bloqueia a requisição antes de ela chegar ao login, então não há como
+     * autenticar para capturar.
+     *
+     * Não é "voltar atrás no conserto": **`strictPort` continua ligado**, que
+     * é a parte que resolve o defeito. O escorregão silencioso para a 5174
+     * continua impossível — se algo mais estiver na 5173, este servidor MORRE
+     * em vez de andar, e é isso que a gente queria.
+     *
+     * O que a 5191 acrescentava era o acordo — cada produto na sua porta —, e
+     * é essa metade que está suspensa. A outra metade da proteção segue de pé:
+     * o `data-app` no `<html>`, que a sonda confere antes de qualquer captura.
+     * Se a 5173 estiver servindo outra coisa, a sonda bloqueia nomeando o
+     * produto encontrado.
+     *
+     * Ou seja: porta exclusiva protege por acordo, identidade protege quando o
+     * acordo falha — e aqui o acordo está temporariamente suspenso de
+     * propósito, com a outra trava cobrindo.
+     *
+     * Registrado em `docs/design-system-migration/checkpoint-3/protocolo-de-captura.md`.
+     */
+    port: 5173,
     strictPort: true,
     open: true,
   },

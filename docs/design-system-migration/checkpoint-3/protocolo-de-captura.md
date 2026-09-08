@@ -54,8 +54,8 @@ estrelas.
 O tema entra **pela URL**, e não pelo interruptor:
 
 ```
-http://localhost:5191/dashboard?tema=claro
-http://localhost:5191/dashboard?tema=escuro
+http://localhost:5173/dashboard?tema=claro
+http://localhost:5173/dashboard?tema=escuro
 ```
 
 Isso aplica o tema **antes da primeira pintura**. Pelo interruptor, a primeira
@@ -270,6 +270,31 @@ node scripts/sonda-captura.js --tema=claro --tabela \
 Sem o motivo, `--producao` é recusado com erro. O motivo viaja para dentro da
 saída da sonda e daí para o relatório, porque **uma exceção silenciosa é
 indistinguível de uma trava quebrada.**
+
+### E a porta volta para a 5173, também por exceção
+
+A porta permanente do ChamadosHS é a **5191**, com `strictPort` — foi o
+conserto do incidente em que a suíte e2e do HelpHS abraçou este servidor. Nas
+dezesseis ela está em **5173**, e volta assim que elas saírem.
+
+O motivo é **CORS**, e não preferência. As capturas são contra a API de
+produção, e o `ALLOWED_ORIGINS` dela lista `http://localhost:5173` — está em
+`app/core/config.py` do `chamadoshs-api`. Da 5191 o navegador bloqueia a
+requisição **antes de ela chegar ao login**: não é credencial recusada, é
+requisição que não sai.
+
+**O conserto não foi desfeito.** `strictPort` continua ligado, e é ele que
+resolve o defeito: o escorregão silencioso para a 5174 continua impossível — se
+algo mais estiver na 5173, o servidor **morre** em vez de andar.
+
+O que a 5191 acrescentava era o **acordo** — cada produto na sua porta —, e é
+essa metade que está suspensa. A outra metade segue de pé: o `data-app` no
+`<html>`, conferido pela sonda antes de cada captura. Se a 5173 estiver
+servindo outra coisa, a sonda bloqueia nomeando o produto encontrado.
+
+É a formulação do `DECISOES.md` em uso: **porta exclusiva protege por acordo,
+identidade protege quando o acordo falha** — e aqui o acordo está suspenso de
+propósito, com a outra trava cobrindo.
 
 ### As duas mitigações
 
