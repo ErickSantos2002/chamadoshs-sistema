@@ -54,7 +54,7 @@ vazios.
 | 2 | painel | `/dashboard` | 1366×768 | escuro | `02-painel-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 3 | painel | `/dashboard` | 390×844 | claro | | | |
 | 4 | painel | `/dashboard` | 390×844 | escuro | | | |
-| 5 | listagem | `/cadastros` | 1366×768 | claro | | | |
+| 5 | listagem | `/cadastros` | 1366×768 | claro | `05-listagem-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 6 | listagem | `/cadastros` | 1366×768 | escuro | | | |
 | 7 | listagem | `/cadastros` | 390×844 | claro | | | |
 | 8 | listagem | `/cadastros` | 390×844 | escuro | | | |
@@ -199,3 +199,46 @@ chamava `getBoundingClientRect` em todos os elementos, que força layout.
 
 Massa com status único (159/159, zero nos outros quatro) e gráficos abaixo da
 dobra. Valem igual aqui, pelos mesmos motivos.
+
+---
+
+## 5 — listagem, 1366×768, claro
+
+**Vista, e o tema da legenda confere com o pixel.** Fundo `rgb(248, 250, 252)`,
+cartão branco, texto escuro.
+
+```
+SONDA  ok true   vp [1366, 768]   problemas []
+       marcador claro   fundo rgb(248, 250, 252)   canário ok   linhas [6, 11, 33]
+PINTA  tag MAIN   bg rgb(248, 250, 252)
+```
+
+**Régua:** `05-listagem-1366x767-claro.png`, PNG RGBA 8 bits, 122.291 bytes,
+**1366×767**.
+
+**O que está no quadro:** aba **Categorias** ativa, com as quatro abas visíveis —
+Categorias, Setores, Usuários (com o selo "Admin") e SLA. Tabela de categorias
+com as cinco primeiras linhas inteiras (#1 a #5) e a sexta cortada pela borda do
+container rolável. Rodapé "Total: 6 categoria(s)".
+
+**O divisor entre linhas aparece**, que era o motivo de a captura exigir `--tabela`
+e o que a E14 mudou. Cinco divisores visíveis.
+
+O selo "Admin" da aba Usuários usa `bg-alerta/15` — **tinta**, não força cheia.
+Não é o caso dos `--fill-*`, e não entra no commit de higiene.
+
+### Achado: a checagem de linhas olha a maior tabela, não a visível
+
+As três abas montam tabela no DOM ao mesmo tempo — `linhas [6, 11, 33]` são
+Categorias, Setores e Usuários. Só a primeira está visível.
+
+A sonda decide por `Math.max(...linhas)` (`sonda-captura.js:229`). Então ela
+aprovaria uma captura em que a tabela **visível** tivesse uma linha só, desde que
+qualquer outra aba montada tivesse duas — e o divisor, que é o que a checagem
+existe para garantir, não apareceria na foto.
+
+Aqui não houve dano: a visível tem 6. Mas é a mesma forma de todos os outros
+achados desta semana — **a checagem mede algo próximo do que interessa, e a
+proximidade passa por identidade.** Entra no `fix(...)`: contar linhas da tabela
+visível, e não da maior. O caso de prova é montar uma aba oculta com muitas
+linhas e a visível com uma.
