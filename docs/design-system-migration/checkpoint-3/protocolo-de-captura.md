@@ -441,25 +441,62 @@ produzindo o resultado certo pelo motivo errado. Se o conserto tiver recuo, a
 sonda precisa **relatar o elemento de origem**, e o caso precisa afirmar qual
 foi — senão a mutação não morre.
 
-### O valor velho: investigar junto, no mesmo trecho
+### O valor velho: NÃO REPRODUZIDO, e a investigação continua aberta
 
-A sessão do HelpHS propôs ler o fundo **duas vezes** e só valer quando as duas
-leituras concordam, contra a transição de 150ms do `--duration-fast`, que faz o
-`getComputedStyle` devolver a cor no meio do caminho.
+**Rodada de 08/09/2026, exceção reaberta por rodada e fechada ao fim.** Motivo
+escrito: *reprodução do valor velho para o `fix(...)` da sonda — leitura pura,
+sem captura, sem escrita.*
 
-Aqui o sintoma existe e a causa é **outra**: o `body` foi amostrado por 12
-segundos com a página escura e ficou claro o tempo todo, virando só depois de um
-recálculo forçado de estilo. Doze segundos não cabem em 150ms — é valor velho
-que não recalcula sozinho, e o gatilho é desconhecido.
+#### O que foi descartado: ordem de cascata
 
-Decisão do operador, 08/09/2026: **investigar junto com o conserto**, no mesmo
-trecho de código, sem rodada separada. O gatilho, quando achado, volta para a
-sessão do HelpHS pelo operador — lá o comportamento não aparece, e não saber se
-é ausência ou é sorte é a pergunta aberta deles.
+A hipótese era que `:root` e `.dark` têm a **mesma especificidade** (0,1,0),
+então vence quem vier depois na folha — e que o HMR do Vite, injetando `<style>`
+fora de ordem, faria `:root` ganhar sobre `html.dark`. Isso explicaria a
+intermitência sem depender de "valor velho".
 
-O laço de dupla leitura continua **sem decisão**: ele cobriria os dois casos,
-mas cobrir por acaso é o que esta seção inteira existe para não fazer. Decide-se
-depois de a causa ser conhecida.
+Medido em `/chamados/6?tema=escuro`:
+
+```
+classe    dark          marcador  escuro
+html      13 27 42      body      13 27 42      bodyBg  rgb(13, 27, 42)
+folhas    3             estilos   2
+ordem     0.71 :root = 248 250 252     0.72 .dark = 13 27 42
+          2.71 :root = 248 250 252     2.72 .dark = 13 27 42
+```
+
+**O `.dark` vem depois do `:root` nas duas folhas** (72 depois de 71). A cascata
+está correta, `html` e `body` concordam entre si e com o pixel. Segunda rodada
+~30 segundos depois, sem recarregar: byte a byte igual.
+
+**A hipótese cai.** Não é ordem de injeção.
+
+#### O que NÃO foi testado, e é onde o defeito morava
+
+Três diferenças entre a rodada e o estado em que o defeito apareceu, e as três
+importam:
+
+- a rodada foi na **5174, com servidor reiniciado hoje**; o defeito apareceu na
+  **5173, numa página aberta havia horas, com HMR acumulado**;
+- as duas leituras foram na **mesma página carregada havia pouco**, então
+  testam **persistência curta**, e não **acúmulo**;
+- o defeito original apareceu no `PINTA` da **captura 2** e sumiu nas 6, 10 e
+  14 — sempre no mesmo trecho, **nunca sob demanda**.
+
+#### A investigação NÃO fecha
+
+Uma hipótese descartada é resultado, não conclusão. O que resta a testar é a
+sessão longa com HMR acumulado, que é justamente o caminho mais caro de montar e
+o único que reproduz o estado original.
+
+**E o laço de assentamento continua justificado pela evidência que já existe**,
+independente da causa: durante as capturas, **duas leituras da sonda no mesmo
+instante devolveram fundos diferentes** — `rgb(13, 27, 42)` e depois
+`rgb(248, 250, 252)`, as duas com `marcador: escuro` e as duas com `ok: true`.
+Isso está registrado na ficha da captura 2 e não depende de explicação para
+valer.
+
+O laço **compensa** o sintoma. Ele não é o conserto, e enquanto a causa for
+desconhecida esta seção fica aberta.
 
 ## Consulta à API de produção pede autorização, com o número dito antes
 
