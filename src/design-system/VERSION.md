@@ -193,6 +193,81 @@ nenhuma remoção. Commits do pacote: `19ef0e1` (E18) e `39474f2` (E19).
   não usar duas réguas — a E19 dá o mesmo benefício da dúvida ao anel do
   `SlaChip` do HelpHS.
 
+### A verificação da E18 e da E19 — feita aqui, e o que ela achou
+
+**Método combinado com o operador:** busca própria **antes** de abrir a tabela do
+peer, procurando a combinação que **refuta**. Revisão por leitura não serve para
+afirmação de inexistência.
+
+As funções de cor foram **reusadas do `validar-paleta.js`**, avaliando o próprio
+fonte — copiar as matrizes de Machado criaria uma segunda fonte de verdade, que é
+o defeito que esta semana inteira passou consertando. Conferência da conta: a
+reimplementação reproduz o **26,1** que o validador publica para o pior par das
+categóricas claras.
+
+Réguas deste repositório: **3:1** de forma, **ΔE ≥ 20** de separação, quatro
+visões.
+
+#### E19 — a afirmação é de MINIMALIDADE, e ela se sustenta
+
+"O degrau mais próximo do 500 que passa 3:1 nas três superfícies." Refuta-se
+achando um degrau mais próximo que passe:
+
+| família | claro | escuro |
+|---|---|---|
+| success | 500 **2,32** ✗ → **600 3,44** ✓ | **500 5,34** ✓ |
+| warning | 500 1,96 ✗, **600 2,91 ✗** → **700 4,58** ✓ | **500 6,31** ✓ |
+| danger | **500 3,44** ✓ | **500 3,60** ✓ |
+| info | **500 3,36** ✓ | **500 3,69** ✓ |
+
+Não há degrau mais próximo que passe. O candidato óbvio de refutação —
+`warning-600` no claro — reprova por **0,09**, e vale registrar essa margem: se a
+superfície mudar um pouco, 600 passa e a escolha do 700 vira conservadora demais.
+
+#### E18, existência — os dois valores passam
+
+| | pior par | contra | contraste nas três |
+|---|---|---|---|
+| claro `#7d7dcd` | **21,9** | `--chart-1` em protanopia | 3,69 / 3,53 / 3,37 |
+| escuro `#91cd82` | **24,6** | `--chart-2` em deuteranopia | 8,57 / 9,33 / 7,27 |
+
+Os pares mais apertados são **exatamente os que a emenda nomeia**. O escuro bate
+no número publicado; o claro dá **21,9** por esta régua contra os **21,7**
+publicados, e a diferença é o arredondamento de **8 bits** — o mesmo efeito já
+resolvido no 26,1 × 25,8 da E16-b. Nosso instrumento é de 8 bits.
+
+#### E18, inexistência — a tentativa de refutar FALHOU, e por dois caminhos
+
+A afirmação é que não existe escolha dentro das rampas semânticas no claro, e que
+a capacidade para em cinco matizes.
+
+A primeira busca **pareceu** refutar: varrendo os 48 degraus de todas as rampas
+`--color-*` do bloco claro, com contraste contra `--superficie` só, o maior
+conjunto mutuamente distinguível dá **sete**.
+
+O ataque ao próprio resultado o derruba:
+
+| restrição | maior conjunto |
+|---|---|
+| todas as rampas, uma superfície | 7 |
+| todas as rampas, três superfícies | 6 |
+| **só `success`/`warning`/`danger`/`info`** | **5** |
+| dentro da faixa de luminância das seis existentes | **4** |
+
+O conjunto de sete usa `primary-800`, `slate-500` e **`slate-900`, de L\* 7,96** —
+três não-semânticas, uma delas quase preta. É o `#0a1900` da emenda com outro
+rosto: passa a régua numérica e não lê como série.
+
+**Restrita ao que a afirmação diz — rampas semânticas —, a capacidade é
+exatamente CINCO**, que é o número da emenda. E dentro da faixa de luminância das
+seis, cai para quatro.
+
+A tentativa de refutação reproduziu, chegando por outro lado, a armadilha que a
+emenda já havia documentado. **A afirmação sobrevive.**
+
+O que continua valendo como ressalva: a margem é estreita e **não há folga para
+uma oitava série**. Mudar qualquer uma das seis obriga a refazer a busca.
+
 O que cada uma significa aqui:
 
 - **E1 fecha o D5-a.** A exceção local do botão primário no escuro deixa de ser
