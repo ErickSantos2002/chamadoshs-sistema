@@ -238,6 +238,37 @@ Trocando o arquivo: `cap-claro.js` / `cap-escuro.js` nas capturas 1–8, que
 exigem tabela, e `cap-claro-sem-tabela.js` / `cap-escuro-sem-tabela.js` nas
 9–16.
 
+**Como tirar a foto, sem atalho de teclado.** Na barra de dispositivo, menu
+**⋮** → **"Capture screenshot"**. Clique, não atalho, e não a opção vizinha:
+
+- `Ctrl+Shift+P` só abre o menu de comandos do DevTools **quando o DevTools
+  está com o foco**. Com o foco na página é o **Imprimir** do Chrome, cujo
+  destino padrão é "Salvar como PDF" — e o arquivo sai `%PDF-1.4`, A4
+  (`MediaBox [0 0 594.96 841.92]`), produzido por `Skia/PDF`, com `@media print`
+  aplicado e o conteúdo paginado. Não é o viewport; é outro layout. Aconteceu na
+  primeira tentativa da captura 1, e o nome combinado (`.png`) escondeu o que era.
+- **"Capture full size screenshot" NÃO serve.** Ela fotografa a página rolável
+  inteira, e sai com altura de milhares de pixels em vez dos 768 do quadro. A
+  opção certa é a simples.
+
+Nesse episódio a sonda esteve **certa**: leu 1366×768 e liberou. A divergência
+veio do passo seguinte, descrito por atalho em vez de por ação inequívoca. A
+trava estava boa; a instrução é que estava frouxa — e instrução frouxa produz
+exatamente o mesmo estrago que checagem ausente.
+
+**A régua do tamanho volta, agora por um caminho confiável.** Ela foi descartada
+enquanto a imagem vinha pela ferramenta de automação, que entregava ora 1:1 ora
+reduzida a 0,655. Vindo do DevTools e lida **do disco**, ela é sólida: o
+cabeçalho `IHDR` do PNG traz largura e altura nos bytes 16–23, e conferir isso
+não custa chamada nenhuma ao navegador. Toda captura entregue é conferida assim
+antes de entrar na ficha — formato PNG de verdade e dimensões exatas.
+
+**Colagem no console vem bloqueada.** O DevTools exige que a frase seja digitada
+à mão uma vez por perfil, e ela é **traduzida**: no Chrome em português é
+**`permitir colar`**, não `allow pasting`. Enquanto não for digitada, a colagem
+não acontece e **não aparece erro** — o sintoma é "colei e nada". Custou cinco
+rodadas na captura 1.
+
 Duas armadilhas do próprio DevTools, que custariam capturas inteiras:
 
 - **Não feche o DevTools entre a sonda e a foto.** Fechar muda o viewport, e a
