@@ -55,7 +55,7 @@ vazios.
 | 3 | painel | `/dashboard` | 390×844 | claro | | | |
 | 4 | painel | `/dashboard` | 390×844 | escuro | | | |
 | 5 | listagem | `/cadastros` | 1366×768 | claro | `05-listagem-1366x767-claro.png` | ok | 1366×767 ✓ |
-| 6 | listagem | `/cadastros` | 1366×768 | escuro | | | |
+| 6 | listagem | `/cadastros` | 1366×768 | escuro | `06-listagem-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 7 | listagem | `/cadastros` | 390×844 | claro | | | |
 | 8 | listagem | `/cadastros` | 390×844 | escuro | | | |
 | 9 | formulário | `/chamados/novo` | 1366×768 | claro | | | |
@@ -242,3 +242,68 @@ achados desta semana — **a checagem mede algo próximo do que interessa, e a
 proximidade passa por identidade.** Entra no `fix(...)`: contar linhas da tabela
 visível, e não da maior. O caso de prova é montar uma aba oculta com muitas
 linhas e a visível com uma.
+
+---
+
+## 6 — listagem, 1366×768, escuro
+
+**Vista, e o tema da legenda confere com o pixel — desta vez medido, não olhado.**
+
+```
+SONDA  ok true   vp [1366, 768]   problemas []
+       marcador escuro   fundo rgb(13, 27, 42)   canário ok   linhas [6, 11, 33]
+PINTA  tag MAIN   bg rgb(13, 27, 42)
+```
+
+**Régua:** `06-listagem-1366x767-escuro.png`, PNG RGBA 8 bits, 121.150 bytes,
+**1366×767**.
+
+### O tema conferido no pixel da imagem entregue
+
+Faixas verticais em `x=700`, comparadas com os tokens lidos do
+`src/styles/index.css`:
+
+| faixa | claro (captura 5) | escuro (captura 6) | token |
+|---|---|---|---|
+| topbar, y 0–62 | `rgb(255, 255, 255)` | `rgb(19, 34, 56)` | `--superficie` ✓ |
+| canvas, y 64–87 · 172–191 · 744–766 | `rgb(248, 250, 252)` | `rgb(13, 27, 42)` | `--superficie-base` ✓ |
+| cartões, y 89–170 · 193–742 | `rgb(255, 255, 255)` | `rgb(19, 34, 56)` | `--superficie` ✓ |
+
+Nenhuma divergência, nos dois temas. Texto sobre o cartão: 16,30:1 no claro,
+9,91:1 no escuro.
+
+### Um falso positivo, medido e descartado
+
+À vista da imagem reduzida, o `#4` da tabela parecia sair num tom avermelhado só
+no escuro. Medido: `rgb(234, 238, 249)`, idêntico ao `#1` e ao `#3`. Artefato da
+redução, não defeito. Registrado porque a suspeita foi levantada e precisa
+morrer por escrito.
+
+### O valor computado é INTERMITENTE, e isso muda o diagnóstico
+
+Achado do operador, e ele está certo:
+
+| | elemento | tema | `PINTA` devolveu |
+|---|---|---|---|
+| captura 2 | `MAIN` | escuro | `rgb(248, 250, 252)` — **errado** |
+| captura 6 | `MAIN` | escuro | `rgb(13, 27, 42)` — **certo** |
+
+Mesmo seletor, mesmo tema, momentos diferentes. Então o `getComputedStyle` não é
+sistematicamente errado: é **intermitente**. Isso pesa a favor da hipótese do
+refluxo e enfraquece a de "elemento errado".
+
+**Com uma ressalva, e as duas coisas são independentes.** O problema do critério
+continua de pé por outro motivo: o `MAIN` passa do limiar de 90% sem ser o canvas
+da página — exclui barra lateral e cabeçalho. Isso está errado mesmo nos momentos
+em que o valor vem certo. São dois defeitos que se somam, não um só visto de dois
+ângulos.
+
+### A prova negativa nº 1 rodou de novo, ao vivo
+
+Antes desta captura, a sonda **clara** foi rodada por engano na página escura e
+bloqueou com três motivos — `data-tema-pronto`, classe `.dark` e canário. Erro de
+nome de arquivo do operador, e a trava fez o que devia.
+
+Vale registrar porque é a mesma saída de três motivos que, meses de leitura
+depois, escondeu a ausência da quarta checagem. A prova funcionou; o que ela
+nunca provou foi o que **não** estava lá.
