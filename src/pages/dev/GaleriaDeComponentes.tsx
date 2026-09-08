@@ -757,6 +757,23 @@ const DadosEFeedback: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
                 <TabelaCelulaDeCabecalho aDireita>Ações</TabelaCelulaDeCabecalho>
               </tr>
             </TabelaCabecalho>
+            {/*
+              TRÊS linhas, e não duas, por causa do divisor.
+
+              O divisor é `border-b` na LINHA, com `last:border-b-0`. Com duas
+              linhas ele aparece uma vez só, e uma régua sozinha no meio de uma
+              amostra pequena se lê como borda do quadro. Com três ele aparece
+              duas vezes, e passa a ser evidentemente um separador REPETIDO —
+              que é o que a captura precisa mostrar.
+
+              Importa agora porque a E14 do pacote subiu a rampa de borda do
+              escuro um degrau, e este é o elemento que mudou: sobre `--surface`
+              o `--border-muted` saiu de 1,00 — o MESMO valor da superfície,
+              divisor que não existia — para 1,39.
+
+              A amostra ao lado tem UMA linha de propósito: é a `TabelaVazia`, o
+              estado vazio, e ali não há o que separar.
+            */}
             <TabelaCorpo>
               <TabelaLinha>
                 <TabelaCelula>Infraestrutura</TabelaCelula>
@@ -766,6 +783,11 @@ const DadosEFeedback: React.FC<{ medicoes: Medicoes }> = ({ medicoes }) => (
               <TabelaLinha>
                 <TabelaCelula>Suporte</TabelaCelula>
                 <TabelaCelula tenue>Ativa</TabelaCelula>
+                <TabelaCelula className="text-right">—</TabelaCelula>
+              </TabelaLinha>
+              <TabelaLinha>
+                <TabelaCelula>Financeiro</TabelaCelula>
+                <TabelaCelula tenue>Inativa</TabelaCelula>
                 <TabelaCelula className="text-right">—</TabelaCelula>
               </TabelaLinha>
             </TabelaCorpo>

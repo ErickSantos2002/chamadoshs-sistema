@@ -5,16 +5,51 @@ login, e o login depende da API.
 
 ## As dezesseis
 
-Quatro telas × dois tamanhos × dois temas.
+Quatro telas × dois tamanhos × dois temas. **São dezesseis, e só dezesseis** —
+ver a pendência do estado de erro no fim.
 
-| # | tela | rota |
-|---|---|---|
-| 1–4 | painel | `/dashboard` |
-| 5–8 | listagem | `/cadastros` |
-| 9–12 | formulário | `/chamados/novo` |
-| 13–16 | detalhe | `/chamados/:id` |
+| # | tela | rota | viewport | tema | sonda |
+|---|---|---|---|---|---|
+| 1 | painel | `/dashboard` | 1366×768 | claro | `--tabela` |
+| 2 | painel | `/dashboard` | 1366×768 | escuro | `--tabela` |
+| 3 | painel | `/dashboard` | 390×844 | claro | `--tabela` |
+| 4 | painel | `/dashboard` | 390×844 | escuro | `--tabela` |
+| 5 | listagem | `/cadastros` | 1366×768 | claro | `--tabela` |
+| 6 | listagem | `/cadastros` | 1366×768 | escuro | `--tabela` |
+| 7 | listagem | `/cadastros` | 390×844 | claro | `--tabela` |
+| 8 | listagem | `/cadastros` | 390×844 | escuro | `--tabela` |
+| 9 | formulário | `/chamados/novo` | 1366×768 | claro | sem |
+| 10 | formulário | `/chamados/novo` | 1366×768 | escuro | sem |
+| 11 | formulário | `/chamados/novo` | 390×844 | claro | sem |
+| 12 | formulário | `/chamados/novo` | 390×844 | escuro | sem |
+| 13 | detalhe | `/chamados/:id` | 1366×768 | claro | sem |
+| 14 | detalhe | `/chamados/:id` | 1366×768 | escuro | sem |
+| 15 | detalhe | `/chamados/:id` | 390×844 | claro | sem |
+| 16 | detalhe | `/chamados/:id` | 390×844 | escuro | sem |
 
-Tamanhos: **1366×768** e **390×844**. Temas: **claro** e **escuro**.
+A **listagem** é a aba **Categorias**, que é a que abre por padrão.
+
+Em **390×844** a barra lateral vira gaveta, e ela fica **fechada** — é o estado
+padrão, e a gaveta aberta já foi fotografada na galeria da casca no
+Checkpoint 1.
+
+### O que cada bloco consome da massa
+
+| capturas | precisa de |
+|---|---|
+| 1–4 | chamados espalhados por status e prioridade, e **2+ linhas** na tabela de recentes |
+| 5–8 | **2+ categorias ativas** |
+| 9–12 | categorias e solicitantes, para os seletores não saírem vazios |
+| 13–16 | o chamado resolvido **aberto pela conta que loga**, com 2 comentários e histórico |
+
+O perfil do login é **Administrador**: é o único em que tudo que a migração
+tocou está em cena. Como `Usuario`, `podeEditar` fecha a barra de ações inteira
+do detalhe, o painel filtra para os próprios chamados, e a aba Usuários some.
+
+E a avaliação só aparece para o SOLICITANTE (`solicitante_id === user.id`) —
+por isso o chamado resolvido precisa ter sido aberto pela mesma conta que loga,
+senão o painel mostra "Aguardando avaliação do solicitante" em vez das
+estrelas.
 
 O tema entra **pela URL**, e não pelo interruptor:
 
@@ -128,3 +163,53 @@ A alternativa a reescrever o `localStorage` seria a captura aplicar o tema por
 efeito, depois de montar — e aí a primeira pintura sairia no tema errado, que é
 o defeito que este gancho existe para não ter. O preço é o tema ficar trocado
 depois; o benefício é a foto não mentir.
+
+---
+
+## Pendência registrada: o estado de erro do Dashboard
+
+**Cortado das capturas por decisão do operador, 04/09/2026.** Seriam as 17–18.
+
+### O que fica sem registro visual
+
+O `Aviso` que o Dashboard passou a mostrar quando a carga falha — desvio
+funcional aprovado na Fase 13, item da §29 que estava falhando.
+
+Antes dele o `catch` só escrevia no console: `chamados` ficava em `[]`, o
+`loading` caía, e **o painel renderizava zeros**. Uma falha de rede ficava
+idêntica a "não há chamados", e um painel que responde "0 abertos, 0 resolvidos,
+0% no prazo" quando não conseguiu perguntar se lê como afirmação sobre a
+operação da empresa.
+
+O conserto está no código e coberto pela ficha da §29. O que falta é a foto.
+
+### Por que foi cortado, e não adiado dentro do checkpoint
+
+Porque fotografá-lo **exige derrubar a API**, e não há ambiente onde isso seja
+barato:
+
+- contra **produção**, derrubar a API não é um teste, é uma indisponibilidade —
+  e a regra do `DECISOES.md` proíbe captura apontada para lá;
+- contra o **banco local**, derrubar o contêiner no meio da sessão de captura
+  custa o ambiente inteiro, que leva tempo para voltar, e as dezesseis normais
+  ficam reféns de um passo destrutivo no fim.
+
+### Quando será capturado
+
+**Quando houver ambiente de homologação** — onde derrubar a API é um gesto
+barato e reversível, e ninguém fica sem sistema.
+
+A receita já está escrita e continua válida:
+
+1. abrir `/dashboard?tema=claro` com a API de pé e deixar carregar;
+2. derrubar a API;
+3. clicar em **"Exibir cancelados"** — o efeito depende de
+   `[user, incluirCancelados]`, então refaz a carga, ela falha, e o aviso
+   aparece **sobre os números que já estavam lá**.
+
+O passo 3 importa: com a API já derrubada na abertura, o painel mostra zeros com
+o aviso por cima. O desenho aprovado é o aviso ACIMA de dados de uma carga
+anterior, que ainda podem valer — e é esse estado que a foto precisa mostrar.
+
+Duas capturas bastam: os dois temas em 1366×768. O que muda com o tema é a
+tinta do `Aviso`, não o layout.
