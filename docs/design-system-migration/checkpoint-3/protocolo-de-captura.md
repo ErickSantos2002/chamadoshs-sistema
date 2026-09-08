@@ -361,16 +361,25 @@ produzindo o resultado certo pelo motivo errado. Se o conserto tiver recuo, a
 sonda precisa **relatar o elemento de origem**, e o caso precisa afirmar qual
 foi — senão a mutação não morre.
 
-### Em aberto, ainda não decidido
+### O valor velho: investigar junto, no mesmo trecho
 
-Ler o fundo **duas vezes** e só valer quando as duas leituras concordam. Vem da
-mesma sessão, contra a transição de 150ms do `--duration-fast`, que faz o
+A sessão do HelpHS propôs ler o fundo **duas vezes** e só valer quando as duas
+leituras concordam, contra a transição de 150ms do `--duration-fast`, que faz o
 `getComputedStyle` devolver a cor no meio do caminho.
 
-Aqui o sintoma existe e a causa parece ser outra: o `body` foi amostrado por 12
+Aqui o sintoma existe e a causa é **outra**: o `body` foi amostrado por 12
 segundos com a página escura e ficou claro o tempo todo, virando só depois de um
-recálculo forçado de estilo. Não é transição de 150ms — é valor velho que não
-recalcula sozinho. Ler duas vezes cobriria os dois, mas a decisão é do operador.
+recálculo forçado de estilo. Doze segundos não cabem em 150ms — é valor velho
+que não recalcula sozinho, e o gatilho é desconhecido.
+
+Decisão do operador, 08/09/2026: **investigar junto com o conserto**, no mesmo
+trecho de código, sem rodada separada. O gatilho, quando achado, volta para a
+sessão do HelpHS pelo operador — lá o comportamento não aparece, e não saber se
+é ausência ou é sorte é a pergunta aberta deles.
+
+O laço de dupla leitura continua **sem decisão**: ele cobriria os dois casos,
+mas cobrir por acaso é o que esta seção inteira existe para não fazer. Decide-se
+depois de a causa ser conhecida.
 
 ## Consulta à API de produção pede autorização, com o número dito antes
 
