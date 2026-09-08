@@ -22,10 +22,10 @@ ver a pendência do estado de erro no fim.
 | 10 | formulário | `/chamados/novo` | 1366×768 | escuro | sem |
 | 11 | formulário | `/chamados/novo` | 390×844 | claro | sem |
 | 12 | formulário | `/chamados/novo` | 390×844 | escuro | sem |
-| 13 | detalhe | `/chamados/:id` | 1366×768 | claro | sem |
-| 14 | detalhe | `/chamados/:id` | 1366×768 | escuro | sem |
-| 15 | detalhe | `/chamados/:id` | 390×844 | claro | sem |
-| 16 | detalhe | `/chamados/:id` | 390×844 | escuro | sem |
+| 13 | detalhe | `/chamados/6` | 1366×768 | claro | sem |
+| 14 | detalhe | `/chamados/6` | 1366×768 | escuro | sem |
+| 15 | detalhe | `/chamados/6` | 390×844 | claro | sem |
+| 16 | detalhe | `/chamados/6` | 390×844 | escuro | sem |
 
 A **listagem** é a aba **Categorias**, que é a que abre por padrão.
 
@@ -40,16 +40,32 @@ Checkpoint 1.
 | 1–4 | chamados espalhados por status e prioridade, e **2+ linhas** na tabela de recentes |
 | 5–8 | **2+ categorias ativas** |
 | 9–12 | categorias e solicitantes, para os seletores não saírem vazios |
-| 13–16 | o chamado resolvido **aberto pela conta que loga**, com 2 comentários e histórico |
+| 13–16 | **CHAM-2025-0006** (id 6): resolvido, com nota, 3 comentários e 6 entradas de histórico |
 
 O perfil do login é **Administrador**: é o único em que tudo que a migração
 tocou está em cena. Como `Usuario`, `podeEditar` fecha a barra de ações inteira
 do detalhe, o painel filtra para os próprios chamados, e a aba Usuários some.
 
-E a avaliação só aparece para o SOLICITANTE (`solicitante_id === user.id`) —
-por isso o chamado resolvido precisa ter sido aberto pela mesma conta que loga,
-senão o painel mostra "Aguardando avaliação do solicitante" em vez das
-estrelas.
+E a avaliação tem **quatro** estados, não dois — esta seção afirmava dois, e
+estava errada. `Avaliacao.tsx` decide assim:
+
+| estado | condição | o que desenha |
+|---|---|---|
+| nada | chamado não encerrado, ou cancelado | `return null` — a seção some |
+| **leitura** | não é o solicitante, **e existe nota** | cinco estrelas preenchidas até a nota + selo `N de 5` |
+| espera | não é o solicitante, e **não** existe nota | "Aguardando avaliação do solicitante" |
+| edição | `solicitante_id === user.id` | cinco `<button>` clicáveis, com foco e hover |
+
+O que estava escrito aqui — "senão mostra 'Aguardando avaliação' em vez das
+estrelas" — só vale na linha da **espera**, isto é, quando não há nota. Com nota,
+quem não é o solicitante vê as estrelas do mesmo jeito; o que ele não vê são os
+botões.
+
+Isso muda o requisito do bloco 13–16: o chamado **não** precisa ter sido aberto
+pela conta que loga. Precisa ter **nota** — e é bom que seja assim, porque
+**nenhum dos 159 resolvidos é da conta admin**, então a linha de edição não é
+capturável nesta massa de jeito nenhum. Fica registrado como ressalva da ficha
+da §29, e não como defeito.
 
 O tema entra **pela URL**, e não pelo interruptor:
 
@@ -115,6 +131,76 @@ uma tabela normal, e a captura sai sem o elemento que a E14 mudou.
 
 `--tabela` nas telas que têm tabela — listagem e painel. As outras duas rodam
 sem ele.
+
+## Depois de cada foto, a régua — a sexta checagem
+
+A sonda mede a página. Ela **não** mede o quadro. E o quadro foi justamente
+onde o Checkpoint 3 quase saiu errado.
+
+A captura devolvida é **1:1 com o viewport CSS** — provado plantando uma
+moldura `position: fixed; inset: 0` e vendo-a preencher o quadro exato. Isso dá
+uma régua de graça: **as dimensões em pixels da imagem SÃO a medida do
+viewport.**
+
+Então a regra:
+
+> **A captura só vale se a imagem voltar em exatamente 1366×768 ou 390×844.**
+> Qualquer outro número e a foto é descartada, com aviso ao operador — sem
+> aproximar, sem "quase", sem arredondar.
+
+### Por que ela precisou existir
+
+`resize_window` responde `Successfully resized` e não redimensiona nada. Foram
+pedidos 1366×768, 900×600 e 390×844 em sequência: o viewport ficou nos mesmos
+1026×684 nas três, e o pedido de 390×844 devolveu **layout desktop, com a
+gaveta aberta**. Janela aberta por script é bloqueada por falta de gesto do
+usuário, e o atalho de zoom a própria ferramenta recusa por contrato.
+
+Pior: o mesmo `/dashboard`, sem nada mudar entre as chamadas, voltou 672×448
+numa captura e 1026×684 na seguinte — dois estados de zoom diferentes. E o
+`innerWidth` lido no meio disso chegou a dizer `1368×912, dpr 2`, que era o zoom
+a 75% e não outra janela. **Nenhum dos dois lados era confiável sozinho:** nem o
+que a ferramenta respondia, nem o que a página media. A régua vale porque é a
+imagem entregue que se mede, e não uma afirmação sobre ela.
+
+A captura 1 chegou a ser tirada assim, em 672×448, e foi descartada. Era uma
+foto de aparência perfeitamente normal, no tamanho errado, com o número certo
+escrito ao lado — o modo de falha de sempre.
+
+### Quem fixa o tamanho
+
+O **operador**, pela barra de dispositivo do DevTools (`Ctrl+Shift+M`), em modo
+Responsive, digitando o número antes de cada bloco e avisando. Ele fixa; a régua
+confere.
+
+A proporção fecha o argumento: a janela desta máquina é 1,5 (1026×684), 1366×768
+é 1,78 e 390×844 é 0,46. **Nenhum dos dois sai só com zoom** — zoom muda a
+escala, não a proporção. Sem a barra de dispositivo as oito capturas de 390×844
+não existem, porque com 1026 de largura a gaveta não fecha.
+
+## Consulta à API de produção pede autorização, com o número dito antes
+
+**Regra do operador, 08/09/2026.**
+
+> Autorização para **capturar telas** em leitura pura **não** cobre **consultar
+> a API**. Cada consulta à API de produção pede autorização própria, e o número
+> de chamadas é dito **antes**.
+
+### O que a motivou
+
+Para escolher o chamado das 13–16 eu varri os 159 resolvidos atrás de quais
+tinham comentário: uma listagem mais 159 `GET /comentarios/chamado/{id}`, cerca
+de 320 chamadas contra produção. Todas de leitura, sem dano, e o resultado foi
+útil — dos 159 resolvidos só 23 têm comentário e só 6 têm comentário **e** nota,
+o que trocou o chamado escolhido.
+
+Ter dado certo não é o critério. A autorização era para fotografar telas, e
+varrer a API é outra coisa: é volume contra um serviço em produção que atende
+gente de verdade, decidido por mim sem ninguém saber o tamanho antes.
+
+O "número dito antes" é a parte que faz a regra funcionar. "Vou consultar a API"
+não deixa ninguém avaliar nada; "vou fazer cerca de 320 GETs contra produção"
+deixa — e é uma frase que teria mudado a resposta.
 
 ## Onde a sonda já foi vista funcionando
 
