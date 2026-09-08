@@ -56,8 +56,8 @@ vazios.
 | 4 | painel | `/dashboard` | 390×844 | escuro | `04-painel-390x844-escuro.png` | ok | 389×843 ✓ |
 | 5 | listagem | `/cadastros` | 1366×768 | claro | `05-listagem-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 6 | listagem | `/cadastros` | 1366×768 | escuro | `06-listagem-1366x767-escuro.png` | ok | 1366×767 ✓ |
-| 7 | listagem | `/cadastros` | 390×844 | claro | | | |
-| 8 | listagem | `/cadastros` | 390×844 | escuro | | | |
+| 7 | listagem | `/cadastros` | 390×844 | claro | `07-listagem-390x844-claro.png` | ok | 389×843 ✓ |
+| 8 | listagem | `/cadastros` | 390×844 | escuro | `08-listagem-390x844-escuro.png` | ok | 389×843 ✓ |
 | 9 | formulário | `/chamados/novo` | 1366×768 | claro | `09-formulario-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 10 | formulário | `/chamados/novo` | 1366×768 | escuro | `10-formulario-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 11 | formulário | `/chamados/novo` | 390×844 | claro | | | |
@@ -660,3 +660,66 @@ com o outro em silêncio.
 
 **Cobertura total resolve os dois primeiros de uma vez** — um card tem margem e
 nunca cobre o viewport inteiro, em largura nenhuma.
+
+---
+
+## 7 e 8 — listagem, 390×844, claro e escuro
+
+**Vistas, e o tema da legenda confere com o pixel nas duas.**
+
+```
+7  SONDA  ok true  vp [390,844]  marcador claro   fundo rgb(248, 250, 252)  canário ok  linhas [6,11,33]
+   PINTA  tag MAIN   bg rgb(248, 250, 252)
+8  SONDA  ok true  vp [390,844]  marcador escuro  fundo rgb(13, 27, 42)     canário ok  linhas [6,11,33]
+   PINTA  tag MAIN   bg rgb(13, 27, 42)
+```
+
+**Régua:** 389×843 nas duas — `07-…` 70.682 bytes, `08-…` 69.373 bytes. **Cor por
+disco:** LIBERA nas duas.
+
+### Duas previsões minhas, as duas erradas
+
+**(1) Eu disse que a tabela sairia cortada horizontalmente. Não saiu.** As três
+colunas — ID, Nome, Descrição — cabem em 390, porque o texto **quebra dentro da
+célula**: "Problemas com equipamentos físicos" ocupa três linhas de altura. O
+`overflow-x-auto` do `Tabela` existe e **não é acionado** nesta tabela nesta
+largura.
+
+O erro foi inferir o comportamento da existência da classe. Ler `overflow-x-auto`
+no componente e concluir "vai rolar" pula a única pergunta que importava: o
+conteúdo excede a largura? Aqui não excede, porque a célula quebra.
+
+**(2) Mas há corte horizontal — na barra de ABAS.** "Categorias · Setores ·
+Usuários" cabem, e o **"SLA" fica fora do quadro**, com barra de rolagem
+horizontal visível logo abaixo das abas. Ou seja: a previsão acertou que algo
+rolaria e errou o quê, o que é diferente de acertar.
+
+### O `PINTA` voltou ao `MAIN`, e isso refina o diagnóstico
+
+No mesmo 390 em que o painel devolveu um card, os cadastros devolveram o `MAIN`.
+Então a regra **não** é "em 390 vence o card":
+
+> **A heurística de cobertura depende do VIEWPORT e do LAYOUT DA TELA.** No
+> painel, em coluna única, um card cresce até cobrir ≥90%; nos cadastros nenhum
+> cobre, e o `MAIN` volta a vencer.
+
+É pior do que "depende do viewport", porque não dá para prever por largura: teria
+de se saber, tela a tela, se algum card cresce o bastante. **Cobertura total
+continua resolvendo** — card tem margem e nunca cobre o viewport inteiro, em
+largura nenhuma e em layout nenhum.
+
+### O defeito dos três botões, fotografado
+
+Nas duas capturas o "Nova Categoria" aparece como **botão só-ícone** — o `+`
+azul ao lado do botão de recarregar. É o defeito documentado na ficha 3:
+
+| arquivo | linha | rótulo escondido | nome acessível abaixo de `sm` |
+|---|---|---|---|
+| `CategoriasTab.tsx` | **189–192** | "Nova Categoria" | **nenhum** |
+| `SetoresTab.tsx` | **198–201** | "Novo Setor" | **nenhum** |
+| `UsuariosTab.tsx` | **339–342** | "Novo Usuário" | **nenhum** |
+
+O ícone é `aria-hidden` por padrão e o rótulo é `display:none` abaixo de 640px,
+então não sobra nada para o nome acessível. **A foto registra o botão; o defeito
+em si é invisível na imagem** — está aqui pelo número da linha, e é correção
+funcional fora da migração.
