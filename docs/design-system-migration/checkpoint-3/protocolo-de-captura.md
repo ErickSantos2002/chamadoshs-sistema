@@ -289,6 +289,23 @@ Vale lembrar por que o detalhe extra compra pouco aqui: as cores medidas saem da
 sonda e das fichas, não de amostragem de pixel na imagem. A imagem é
 enquadramento.
 
+**Arquivo de captura NUNCA é movido pelo nome.** O Chrome nomeia a captura pela
+**rota**, não pelo bloco, e o nome combinado é digitado à mão na hora de salvar —
+então ele erra. Aconteceu duas vezes na mesma sessão: a captura 7 chegou como
+`05-listagem-1366x767-claro.png` e a 11 como `09-formulario-1366x767-claro.png`,
+as duas medindo **389×843**. Movidas pelo nome, teriam **sobrescrito as capturas
+5 e 9**, fechadas horas antes.
+
+> **O `IHDR` decide, e a imagem é aberta para confirmar.** Nome de arquivo é
+> palpite; o cabeçalho é fato, e o conteúdo é a prova.
+
+**A régua virou verificação de identidade, e isso passou a ser exigido.** Ela
+nasceu para provar o tamanho do quadro. O uso não previsto — dizer **qual**
+captura é aquele arquivo — é hoje a única coisa entre um nome errado e a perda de
+uma captura fechada. Vale como caso do que este protocolo vem aprendendo: a
+checagem que serve para uma coisa costuma servir para outra, e a outra às vezes é
+a que salva.
+
 **Colagem no console vem bloqueada.** O DevTools exige que a frase seja digitada
 à mão uma vez por perfil, e ela é **traduzida**: no Chrome em português é
 **`permitir colar`**, não `allow pasting`. Enquanto não for digitada, a colagem

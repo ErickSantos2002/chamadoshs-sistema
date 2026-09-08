@@ -60,8 +60,8 @@ vazios.
 | 8 | listagem | `/cadastros` | 390×844 | escuro | `08-listagem-390x844-escuro.png` | ok | 389×843 ✓ |
 | 9 | formulário | `/chamados/novo` | 1366×768 | claro | `09-formulario-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 10 | formulário | `/chamados/novo` | 1366×768 | escuro | `10-formulario-1366x767-escuro.png` | ok | 1366×767 ✓ |
-| 11 | formulário | `/chamados/novo` | 390×844 | claro | | | |
-| 12 | formulário | `/chamados/novo` | 390×844 | escuro | | | |
+| 11 | formulário | `/chamados/novo` | 390×844 | claro | `11-formulario-390x844-claro.png` | ok | 389×843 ✓ |
+| 12 | formulário | `/chamados/novo` | 390×844 | escuro | `12-formulario-390x844-escuro.png` | ok | 389×843 ✓ |
 | 13 | detalhe | `/chamados/6` | 1366×768 | claro | `13-detalhe-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 14 | detalhe | `/chamados/6` | 1366×768 | escuro | `14-detalhe-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 15 | detalhe | `/chamados/6` | 390×844 | claro | | | |
@@ -723,3 +723,61 @@ O ícone é `aria-hidden` por padrão e o rótulo é `display:none` abaixo de 64
 então não sobra nada para o nome acessível. **A foto registra o botão; o defeito
 em si é invisível na imagem** — está aqui pelo número da linha, e é correção
 funcional fora da migração.
+
+---
+
+## 11 e 12 — formulário, 390×844, claro e escuro
+
+**Vistas, e o tema da legenda confere com o pixel nas duas.**
+
+```
+11 SONDA  ok true  vp [390,844]  marcador claro   fundo rgb(248, 250, 252)  canário ok  linhas []
+   PINTA  tag DIV   cls "rounded-xl border border-borda bg-superficie p-5"   bg rgb(255, 255, 255)
+12 SONDA  ok true  vp [390,844]  marcador escuro  fundo rgb(13, 27, 42)     canário ok  linhas []
+   PINTA  tag DIV   cls "rounded-xl border border-borda bg-superficie p-5"   bg rgb(19, 34, 56)
+```
+
+**Régua:** 389×843 nas duas — `11-…` 63.789 bytes, `12-…` 62.264 bytes. **Cor por
+disco:** LIBERA nas duas.
+
+**Formulário em branco:** Título e Descrição com placeholder e texto de ajuda,
+Solicitante em "Selecione o solicitante", Categoria em "Sem categoria",
+Prioridade em "Média" com o ponto da cor. Nada preenchido, nada submetido. O
+bloco de consequência da prioridade aparece cortado ao pé, com o `Rotulo` em
+mono e caixa alta.
+
+**O `PINTA` voltou ao card** — `rounded-xl border border-borda bg-superficie p-5`
+—, com os valores certos nos dois temas. Confirma o padrão da ficha 4: em coluna
+única, tela cujo cartão principal é alto o bastante faz o card vencer o `MAIN`.
+Nos cadastros não vence, porque o cartão lá é mais curto que o viewport. É a
+dependência de **layout**, não de largura.
+
+---
+
+# A barra de abas em 390: comportamento desenhado
+
+**Achado das capturas 7 e 8**, respondido por leitura de código.
+
+Em 390 a barra mostra "Categorias · Setores · Usuários" e a aba **SLA fica fora
+do quadro**, com barra de rolagem horizontal visível logo abaixo.
+
+**É desenhado.** O `<nav role="tablist">` tem `overflow-x-auto` explícito
+(`CadastrosBasicos.tsx:127`), e o comentário acima dele explica a marcação de
+`tablist`/`tab`/`tabpanel` com `aria-controls`. A rolagem é a saída escolhida
+para a barra que não cabe, e não um corte acidental.
+
+E o acesso à aba escondida está coberto pelos dois caminhos que importam:
+
+- **teclado** — em `tablist`, as setas movem entre abas e o navegador rola a aba
+  focada para dentro da vista;
+- **leitor de tela** — as quatro abas são anunciadas como alternativas do mesmo
+  grupo, com a posição no conjunto; nenhuma "some" do anúncio por estar fora da
+  vista.
+
+**Portanto não é defeito, e não é item da migração.**
+
+A ressalva honesta, que fica registrada sem virar acusação: para quem usa mouse
+ou toque, o **único** indício de que existe uma quarta aba é a barra de rolagem.
+Não sobra uma fatia da aba seguinte à mostra — o "Usuários" termina inteiro e o
+"SLA" começa fora. Deixar um pedaço visível é o refinamento clássico desse
+padrão, e seria **item de produto pós-Checkpoint 3**, não correção.
