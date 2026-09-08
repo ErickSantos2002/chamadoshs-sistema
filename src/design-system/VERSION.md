@@ -71,10 +71,21 @@ O pacote foi **emendado** em 02/09/2026, em três pontos, todos registrados em
 | **E16** | a paleta de gráfico, porque gráfico não é interface | `tokens/colors.css` | HelpHS |
 | **E16-b** | a mesma paleta, agora **medida** — quatro das seis da E16 reprovavam o piso que ela própria declarava | `tokens/colors.css` | HelpHS, do texto entregue pelo ChamadosHS |
 | **E17** | o rótulo de prioridade do pacote vai ao feminino | `components/core/Badge.jsx` | HelpHS |
+| **E18** | gráfico de status sai das rampas semânticas e vai para `--chart-*`; nasce o `--chart-7` | `tokens/colors.css` | HelpHS |
+| **E19** | nascem os quatro `--fill-*`: o degrau 500 reprova como preenchimento no claro | `tokens/colors.css` | HelpHS |
 
-**Só E14, E15, E16 e E16-b pedem recópia.** De E9 a E13 tudo foi componente, e este
-repositório não copia componentes — são referência, não dependência. As quatro
-de token entraram nesta cópia em 04/09/2026, em duas recópias.
+**Só E14, E15, E16, E16-b, E18 e E19 pedem recópia.** De E9 a E13 tudo foi
+componente, e este repositório não copia componentes — são referência, não
+dependência. As quatro primeiras de token entraram em 04/09/2026, em duas
+recópias; **E18 e E19 entraram em 08/09/2026**, na terceira.
+
+| recópia de `tokens/colors.css` | hash | bytes |
+|---|---|---|
+| antes da E18 | `DBB52E1BA0441D87CA2B080E408633B8F3A32E2D6A4210ED995C4E342A886A51` | 12.977 |
+| depois da E18 e E19 | `1F61E5CEBFBBF21798C2B2A54F7A1002B9A7EFEFCE10AD7BFFB0A7F989348216` | 16.123 |
+
+Conferida byte a byte contra o pacote — diferença zero, LF, 0 CR, 63 inserções e
+nenhuma remoção. Commits do pacote: `19ef0e1` (E18) e `39474f2` (E19).
 
 ### O que as quatro de token significam aqui
 
@@ -141,6 +152,46 @@ de token entraram nesta cópia em 04/09/2026, em duas recópias.
   reconferiu por outro caminho: as 36 células de contraste bateram na segunda
   casa, medidas por estilo computado no navegador em vez de por conta sobre os
   hexadecimais.
+
+- **E18 — o `--chart-7` nasce, e ainda NÃO é consumido.** Mesma situação da E16
+  e da E16-b: entra porque a recópia é do arquivo inteiro, mas nada aqui lê
+  `--chart-*` — `src/lib/graficos.ts` segue sendo a fonte. A adoção é da Fase 16.
+
+  `--chart-7` é `#7d7dcd` no claro e `#91cd82` no escuro. A margem é estreita de
+  um jeito que vale registrar: de 140.608 candidatos, 4.326 passam a régua no
+  claro, e só **nove** ficam dentro da faixa de luminância *e* de croma das seis
+  existentes. **Não há folga para uma oitava série**, e mudar qualquer uma das
+  seis obriga a refazer a busca.
+
+  A emenda também revoga a regra anterior — "gráfico de status usa as cores da
+  §16" — e torna a legenda obrigatória em gráfico de status.
+
+- **E19 — os quatro `--fill-*`, e este repositório TEM o problema.** O pacote
+  tinha token para a semântica como texto (`--on-tint-*`), como ação
+  (`--action-*`) e como tinta (`--tint-*`), e **nenhum para preenchimento**.
+
+  Medido aqui, contra as três superfícies do claro, piso de 3:1 da 1.4.11:
+
+  | token | `--superficie` | `--superficie-base` | `--superficie-elevada` |
+  |---|---|---|---|
+  | `--sucesso` | 2,54 | 2,42 | **2,32** |
+  | `--alerta` | 2,15 | 2,05 | **1,96** |
+  | `--perigo` | 3,76 | 3,60 | 3,44 |
+  | `--info` | 3,68 | 3,52 | 3,36 |
+
+  Duas das quatro reprovam, e só no claro — no escuro a pior é 3,60. É a mesma
+  família da E1, da E8 e da E16-b: **degrau fixo da rampa não inverte por tema.**
+
+  E a cor adjacente não é palpite: o trilho da barra do `SlaProgresso` é
+  `bg-superficie-elevada`, exatamente a pior coluna.
+
+  **Ao contrário da E18, esta vai ser consumida.** Quatro sítios usam a cor cheia
+  como preenchimento — `SlaProgresso`, `KanbanColumn`, `SlaTab` e `Login` — e
+  passam a `--fill-success` / `--fill-warning` em commit próprio de **higiene**,
+  não de acessibilidade: ao lado da barra vem a situação escrita com ícone, então
+  a cor não é o único portador. O critério está no `DECISOES.md`, e existe para
+  não usar duas réguas — a E19 dá o mesmo benefício da dúvida ao anel do
+  `SlaChip` do HelpHS.
 
 O que cada uma significa aqui:
 
