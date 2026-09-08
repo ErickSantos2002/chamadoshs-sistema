@@ -53,7 +53,7 @@ vazios.
 | 1 | painel | `/dashboard` | 1366×768 | claro | `01-painel-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 2 | painel | `/dashboard` | 1366×768 | escuro | `02-painel-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 3 | painel | `/dashboard` | 390×844 | claro | `03-painel-390x844-claro.png` | ok | 389×843 ✓ |
-| 4 | painel | `/dashboard` | 390×844 | escuro | | | |
+| 4 | painel | `/dashboard` | 390×844 | escuro | `04-painel-390x844-escuro.png` | ok | 389×843 ✓ |
 | 5 | listagem | `/cadastros` | 1366×768 | claro | `05-listagem-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 6 | listagem | `/cadastros` | 1366×768 | escuro | `06-listagem-1366x767-escuro.png` | ok | 1366×767 ✓ |
 | 7 | listagem | `/cadastros` | 390×844 | claro | | | |
@@ -620,3 +620,43 @@ comentário explicando o raciocínio — e a solução não se propagou.
 Aparece nas capturas **7 e 8**. É correção funcional fora da migração, e pede
 chave nova na catraca: hoje ela procura `aria-label` que apaga conteúdo visível,
 não rótulo escondido por breakpoint que deixa o botão sem nome.
+
+---
+
+## 4 — painel, 390×844, escuro
+
+**Vista, e o tema da legenda confere com o pixel.**
+
+```
+SONDA  ok true   vp [390, 844]   problemas []
+       marcador escuro   fundo rgb(13, 27, 42)   canário ok   linhas [10]
+PINTA  tag DIV   cls "relative rounded-xl border border-borda bg-superfi..."
+       bg rgb(19, 34, 56)
+```
+
+**Régua:** `04-painel-390x844-escuro.png`, PNG, 49.135 bytes, **389×843**.
+**Cor por disco:** LIBERA.
+
+Par escuro exato do recorte da captura 3 — gaveta fechada, coluna única, "Tudo"
+com 159, topbar reduzida ao hambúrguer e ao avatar.
+
+### O par 3/4 separa dois dos três defeitos do `PINTA`
+
+Nos dois temas o `PINTA` devolveu o **mesmo DIV de card** em vez do `MAIN`. E os
+valores vieram **certos nos dois**: `rgb(255, 255, 255)` no claro e
+`rgb(19, 34, 56)` no escuro, que são `--superficie` de cada tema.
+
+Isso separa o que estava embolado:
+
+| defeito | o par 3/4 diz |
+|---|---|
+| **limiar de 90%** | disparou — o card passa do limiar sem ser o canvas |
+| **dependência de viewport** | disparou — em 1366 vencia o `MAIN`, em 390 vence o card |
+| **valor intermitente** | **não** disparou — os dois valores vieram corretos |
+
+Ou seja: a seleção de elemento errou nos dois temas, e a leitura acertou nos
+dois. São mecanismos distintos, e o par 3/4 é a evidência de que um pode falhar
+com o outro em silêncio.
+
+**Cobertura total resolve os dois primeiros de uma vez** — um card tem margem e
+nunca cobre o viewport inteiro, em largura nenhuma.
