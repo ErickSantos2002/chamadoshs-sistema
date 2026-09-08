@@ -289,6 +289,12 @@ Vale lembrar por que o detalhe extra compra pouco aqui: as cores medidas saem da
 sonda e das fichas, não de amostragem de pixel na imagem. A imagem é
 enquadramento.
 
+**Se a sonda voltar `SyntaxError: Unexpected token '<'`, é HTML no lugar do JS.**
+O Vite às vezes responde a URL `/@fs/...` com o `index.html` em vez do arquivo —
+fallback de rota, não erro da sonda. **Rodar de novo resolve**, e aconteceu uma
+vez na captura 16. O sintoma é inconfundível: `'<'` é a primeira letra de
+`<!doctype html>`. Não é motivo para desconfiar da sonda nem da página.
+
 **Arquivo de captura NUNCA é movido pelo nome.** O Chrome nomeia a captura pela
 **rota**, não pelo bloco, e o nome combinado é digitado à mão na hora de salvar —
 então ele erra. Aconteceu duas vezes na mesma sessão: a captura 7 chegou como

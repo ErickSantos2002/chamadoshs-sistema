@@ -64,8 +64,8 @@ vazios.
 | 12 | formulário | `/chamados/novo` | 390×844 | escuro | `12-formulario-390x844-escuro.png` | ok | 389×843 ✓ |
 | 13 | detalhe | `/chamados/6` | 1366×768 | claro | `13-detalhe-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 14 | detalhe | `/chamados/6` | 1366×768 | escuro | `14-detalhe-1366x767-escuro.png` | ok | 1366×767 ✓ |
-| 15 | detalhe | `/chamados/6` | 390×844 | claro | | | |
-| 16 | detalhe | `/chamados/6` | 390×844 | escuro | | | |
+| 15 | detalhe | `/chamados/6` | 390×844 | claro | `15-detalhe-390x844-claro.png` | **não colada** | 389×843 ✓ |
+| 16 | detalhe | `/chamados/6` | 390×844 | escuro | `16-detalhe-390x844-escuro.png` | ok | 389×843 ✓ |
 
 *(preenchida à medida que cada captura sai)*
 
@@ -781,3 +781,46 @@ ou toque, o **único** indício de que existe uma quarta aba é a barra de rolag
 Não sobra uma fatia da aba seguinte à mostra — o "Usuários" termina inteiro e o
 "SLA" começa fora. Deixar um pedaço visível é o refinamento clássico desse
 padrão, e seria **item de produto pós-Checkpoint 3**, não correção.
+
+---
+
+## 15 e 16 — detalhe, 390×844, claro e escuro
+
+**Vistas, e o tema da legenda confere com o pixel nas duas.**
+
+```
+16 SONDA  ok true  vp [390,844]  marcador escuro  fundo rgb(13, 27, 42)  canário ok  linhas []
+   PINTA  tag DIV  cls "overflow-hidden rounded-xl border border-borda bg-..."  bg rgb(19, 34, 56)
+15 SONDA  — não colada no relato; ver a lacuna abaixo
+```
+
+**Régua:** 389×843 nas duas — `15-…` 60.044 bytes, `16-…` 59.216 bytes. **Cor por
+disco:** LIBERA nas duas.
+
+**Lacuna do registro, dita como lacuna:** a saída da sonda da **captura 15** não
+foi colada. O arquivo existe, passa na régua e passa na cor por disco, e a
+imagem foi aberta e conferida — mas as três checagens que só a sonda faz
+(identidade da página, `.env`, canário do CSS servido) **não têm registro** para
+esta captura. As outras quinze têm. Fica assim escrito em vez de suposto.
+
+### O quadro de 390 pega MENOS conteúdo que o de 1366
+
+844 é mais alto que 767, e ainda assim entra menos: em coluna única o bloco de
+informações empilha, e o corte cai **dentro** dele — depois de "Tempo em aberto",
+com "Técnico Responsável" começando na borda.
+
+Consequência que fecha o assunto do chamado escolhido:
+
+| | 13/14 (1366×767) | 15/16 (390×843) |
+|---|---|---|
+| botões de ação, "Cancelar Chamado" `secondary` | **sim** | **sim** |
+| selos "Resolvido", "Usuario" | **sim** | **sim** |
+| selos "Alta" e "Estourado · 120%" | **sim** | **não** |
+| Descrição, Solução, Avaliação | não | não |
+| Comentários (3), Histórico (6) | não | não |
+
+O selo de prioridade — a metade da troca de chamado que se pagou — existe **só**
+nas capturas 13 e 14.
+
+**Aqui eu não previ nada, de propósito**, depois de errar duas previsões seguidas
+nas capturas 7 e 8. A foto disse.
