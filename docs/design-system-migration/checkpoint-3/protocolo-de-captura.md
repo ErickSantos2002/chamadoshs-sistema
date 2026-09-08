@@ -174,13 +174,13 @@ A captura 1 chegou a ser tirada em 672×448 e foi descartada. Era uma foto de
 aparência perfeitamente normal, no tamanho errado, com o número certo escrito ao
 lado — o modo de falha de sempre.
 
-### A ferramenta de captura mexe no viewport, e não devolve
+### A ferramenta de automação reaplica a emulação dela a cada comando
 
-**Este é o motivo de as dezesseis não saírem pela ferramenta de automação, e de
-a régua só ser honesta fora dela.**
+**Este é o motivo de as dezesseis não saírem pela ferramenta, e de a sonda ter
+mudado de mão.**
 
-Medido dentro de uma única chamada, sem nada entre as linhas além da própria
-foto:
+O primeiro sinal foi medido dentro de uma única chamada, sem nada entre as
+linhas além da própria foto:
 
 ```
 antes:    1368×912  dpr2
@@ -189,41 +189,62 @@ depois:   1026×684  dpr1
 de novo:  1026×684  dpr1
 ```
 
-A ação de fotografar aplica a própria emulação de dispositivo para tirar a foto
-e **não restaura** o que estava. A ação de navegar faz o mesmo, no outro
-sentido: depois de um `navigate`, o viewport volta para 1368×912 e a barra de
-dispositivo do operador é perdida. Só as chamadas de JavaScript deixam o
-viewport quieto.
+A conclusão inicial foi "a foto mexe no viewport e não devolve". Estava certa e
+era **pequena demais**. O alcance real apareceu quando o operador fixou
+Responsivo 1366×768 e a leitura seguinte devolveu 1368×912 — que é exatamente o
+preset "Surface Pro 7" que ele acabara de abandonar. Ele lia 1366 no computado
+do `<html>`; a ferramenta lia 1368. Os dois não podiam estar certos.
 
-Isso explica de uma vez tudo que parecia desconexo nesta sessão: `resize_window`
+O teste que fechou: o operador olhou a barra logo **depois** de uma chamada
+minha, sem tocar em nada. Ela tinha voltado sozinha para "Surface Pro 7".
+
+> **Toda chamada da ferramenta — navegar, ler, fotografar — reaplica a emulação
+> de dispositivo dela e sobrescreve a do operador.** A interface do DevTools
+> continua exibindo o que ele digitou, porque não reflete a sobrescrita.
+
+Ou seja: **o ato de medir destrói o estado medido.** Uma sonda rodada por esse
+caminho não é imprecisa — é estruturalmente incapaz de dizer a verdade, e diria
+`ok: true` sobre um viewport que ela mesma acabou de trocar. Que é o modo de
+falha que ela existe para impedir.
+
+Isso também desfaz, retroativamente, os mistérios da sessão: `resize_window`
 respondendo "Successfully resized" sem redimensionar; os números alternando
 entre exatamente 1368×912 e 1026×684; o tamanho da imagem entregue oscilando
-entre 1:1 e 0,655; e a barra de dispositivo do operador não grudando.
+entre 1:1 e 0,655; e a barra do operador nunca grudando.
 
-E tem a consequência que fecha o assunto: **a sexta checagem não pode passar
-por esse caminho, nem com o número certo digitado.** A sonda mediria 1366×768,
-a foto mudaria o viewport, e a imagem sairia de outro tamanho — com a sonda
-dizendo que estava tudo certo. É o modo de falha que a checagem existe para
-impedir, garantido por construção.
+### O ciclo, e por que a abstinência é a trava
 
-Uma verificação que passa enquanto a foto sai de outro tamanho é pior que
-verificação nenhuma: ela ensina a confiar.
+Quem faz tudo é o **operador**. O assistente não emite **nenhuma** chamada pela
+ferramenta enquanto a sessão de captura durar — nem navegação, nem leitura, nem
+foto. Não é excesso de zelo: é a única condição sob a qual o tamanho fixado
+sobrevive.
 
-### O ciclo que sobrou, e por que ele é seguro
+| passo | quem |
+|---|---|
+| navegar para a rota com `?tema=` | operador, pela barra de endereço |
+| fixar 1366×768 ou 390×844 em Responsivo | operador |
+| rodar a sonda | operador, colando no **console dele** |
+| conferir `ok: true` | operador |
+| tirar a foto (`Ctrl+Shift+P` → "Capture screenshot") | operador |
+| preencher a ficha | assistente, depois, fora da sessão |
 
-Quem fotografa é o **operador**, pelo próprio DevTools (`Ctrl+Shift+P` →
-"Capture screenshot"), que captura exatamente o viewport emulado, em PNG — sem
-JPEG e sem redução, o que para um checkpoint de cor não é detalhe.
+A linha da sonda, com o `?v=` embutido contra o cache:
 
-| passo | quem | mexe no viewport? |
-|---|---|---|
-| navegar para a rota com `?tema=` | operador | — |
-| fixar 1366×768 ou 390×844 na barra | operador | é ele quem fixa |
-| rodar a sonda | assistente, só JavaScript | **não** |
-| tirar a foto | operador, pelo DevTools | não |
+```js
+eval(await (await fetch('/@fs/<raiz>/node_modules/.sondas/cap-claro.js?v='+Date.now(),{cache:'no-store'})).text())
+```
 
-O assistente não dispara foto nem navegação pela ferramenta durante a sessão de
-captura. É essa abstinência que mantém a sexta checagem verdadeira.
+Trocando o arquivo: `cap-claro.js` / `cap-escuro.js` nas capturas 1–8, que
+exigem tabela, e `cap-claro-sem-tabela.js` / `cap-escuro-sem-tabela.js` nas
+9–16.
+
+Duas armadilhas do próprio DevTools, que custariam capturas inteiras:
+
+- **Não feche o DevTools entre a sonda e a foto.** Fechar muda o viewport, e a
+  medição passa a valer para um quadro que não é o fotografado. `Ctrl+Shift+P`
+  exige o DevTools aberto, então basta não fechar.
+- **"Ajustar à janela" reduz só a EXIBIÇÃO.** O "Capture screenshot" fotografa
+  a resolução emulada, não a reduzida. A tela parecer menor não é problema.
 
 ### Quem fixa o tamanho
 
