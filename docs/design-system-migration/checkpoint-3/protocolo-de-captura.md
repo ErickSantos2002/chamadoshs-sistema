@@ -327,6 +327,40 @@ bateria de provas dela **não distinguia** "compara com o token" de "casa uma
 faixa plausível" — as duas passavam em todos os casos. O terceiro é o irmão
 local dele.
 
+### Três refinamentos, e um deles conserta erro já desenhado
+
+Vieram da sessão paralela do HelpHS, que adotou a regra do elemento e achou
+defeito ativo ao fazê-lo.
+
+**O último elemento que cobre, não o primeiro.** O código de sondagem usado
+aqui para levantar os candidatos parava no primeiro em ordem de documento — o
+wrapper mais externo. Não deu diferença na medição porque todos os candidatos
+tinham a mesma cor, e é exatamente aí que mora o perigo: acertar por
+**coincidência de valor** e quebrar calado no dia em que uma superfície interna
+divergir. Lá a mesma troca foi morta por mutação.
+
+**Normalizar o formato antes de comparar.** O Chromium devolve
+`color(srgb 0.051 0.106 0.165)` para tudo que sai de `color-mix()`, e o
+`tailwind.config.js` declara as cores do pacote com `color-mix` — está dito no
+`vite.config.ts`, na justificativa do `build.target`. Igualdade de string contra
+o `rgb(r, g, b)` lido do disco **nunca casaria**.
+
+Aqui o valor veio como `rgb(13, 27, 42)` porque os tokens em português passam
+pela ponte do D3-a, que usa `rgb(var(--x) / <alpha-value>)`. As classes que usam
+as cores do pacote não passam por ela. Sem normalizar, o conserto trocaria um
+erro silencioso por outro.
+
+**A prova afirma DE ONDE veio a medição, não só que passou.** Um caso deles
+nasceu cego pelo mesmo padrão desta seção: o teste da normalização passava
+**sem** a normalização, porque o elemento em `color(srgb)` era descartado, a
+sonda caía no recuo do `body`, e o `body` estava certo. O recuo mascarava a
+perda.
+
+É a mesma forma do "três motivos disparam juntos": um caminho alternativo
+produzindo o resultado certo pelo motivo errado. Se o conserto tiver recuo, a
+sonda precisa **relatar o elemento de origem**, e o caso precisa afirmar qual
+foi — senão a mutação não morre.
+
 ### Em aberto, ainda não decidido
 
 Ler o fundo **duas vezes** e só valer quando as duas leituras concordam. Vem da
