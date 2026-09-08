@@ -52,7 +52,7 @@ vazios.
 |---|---|---|---|---|---|---|---|
 | 1 | painel | `/dashboard` | 1366×768 | claro | `01-painel-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 2 | painel | `/dashboard` | 1366×768 | escuro | `02-painel-1366x767-escuro.png` | ok | 1366×767 ✓ |
-| 3 | painel | `/dashboard` | 390×844 | claro | | | |
+| 3 | painel | `/dashboard` | 390×844 | claro | `03-painel-390x844-claro.png` | ok | 389×843 ✓ |
 | 4 | painel | `/dashboard` | 390×844 | escuro | | | |
 | 5 | listagem | `/cadastros` | 1366×768 | claro | `05-listagem-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 6 | listagem | `/cadastros` | 1366×768 | escuro | `06-listagem-1366x767-escuro.png` | ok | 1366×767 ✓ |
@@ -331,9 +331,10 @@ superfície do tema claro — `--superficie` no topo e nos cartões,
 `--superficie-base` nos vãos, `--superficie-elevada` no bloco de prioridade ao
 pé da tela.
 
-> **O que "LIBERA" afirma, exatamente:** *nenhuma cor fora do conjunto de tokens
-> de superfície do tema*. **Não** afirma que cada faixa carrega o token que
-> deveria. Ver a mutação B, abaixo — é a prova de que a distinção existe.
+> **O que "LIBERA" afirma, exatamente:** *a cor **dominante** de cada faixa
+> horizontal está no conjunto de tokens de superfície do tema*. **Não** afirma
+> que cada faixa carrega o token que deveria (mutação B), nem enxerga mancha que
+> ocupe minoria da linha (mutação A). Ver a seção das mutações.
 
 **O que está no quadro:** formulário **em branco**, como a leitura pura exige.
 Título e Descrição com marcador de obrigatório e texto de ajuda ("Mínimo 10
@@ -374,16 +375,21 @@ Desenhada durante as capturas 5–10, adotada por decisão do operador em
 08/09/2026. O definitivo entra com o `fix(...)` da sonda; o protótipo viveu no
 scratchpad.
 
-> **Afirmação FRACA, e é esta que vale:** nenhuma cor de faixa está fora do
-> conjunto de tokens de superfície do tema declarado.
+> **Afirmação que ela FAZ:** a cor **dominante** de cada faixa horizontal está
+> no conjunto de tokens de superfície do tema declarado.
 >
-> **Afirmação FORTE, que ela NÃO faz:** cada faixa carrega o token que aquela
-> faixa deveria carregar.
+> **Duas coisas que ela NÃO faz:** não afirma que cada faixa carrega o token que
+> aquela faixa deveria carregar (mutação B); e não enxerga mancha de cor que
+> ocupe **minoria** da linha (mutação A).
 
-A única exceção é o **canvas**, fechado por regra própria: a primeira e a última
-faixa têm de ser `--superficie-base`. Uma regra só, sem codificar layout, e pega
-a classe de defeito que importa — o fundo da página pintado com a superfície
-errada.
+Mais uma verificação mínima de presença: **`--superficie-base` tem de aparecer em
+alguma faixa** — o canvas da página precisa estar em cena.
+
+**A regra do canvas que eu propus foi derrubada pelos dados.** Eu disse "primeira
+e última faixa são `--superficie-base`", olhando um exemplo. Em **9 de 9**
+capturas a primeira faixa é `--superficie`, que é a topbar; e a última varia —
+`--superficie` 5×, `--superficie-base` 2×, `--superficie-elevada` 2×. O que
+sobrevive às nove é só a presença.
 
 ## Proveniência, porque sem ela a checagem nasce cega
 
@@ -398,21 +404,34 @@ Na reprovação, nomeia a faixa, a cor encontrada e o token mais próximo.
 
 ## As três mutações, e por que são três
 
-| | mutação | resultado | o que ela separa |
+| | mutação | resultado | o que ela estabelece |
 |---|---|---|---|
-| **tema** | captura 6 (escura) declarada clara | REPROVA, 15 faixas, saída 1 | quase nada — ver abaixo |
-| **A** | uma faixa em `rgb(240, 240, 240)` | REPROVA, nomeando a faixa | faixa plausível **de** token |
-| **B** | uma faixa em `--superficie-elevada` | **LIBERA** | token certo **de** token da faixa |
+| **tema** | captura 6 (escura) declarada clara | REPROVA, 16 pontos | piso — ver abaixo |
+| **A′** | faixa **inteira** em `rgb(240, 240, 240)` | REPROVA, nomeando a faixa | compara com **token**, não com faixa de cor |
+| **A** | **22%** da faixa em `rgb(240, 240, 240)` | **LIBERA** | limite: mancha minoritária não é vista |
+| **B** | faixa em `--superficie-elevada` | **LIBERA** | limite: a afirmação é fraca |
 
 **A do tema é fácil demais e quase não prova nada.** Trocar o tema muda todas as
 faixas, então qualquer coisa pega — inclusive uma heurística grosseira de "é
-claro ou escuro". Ela não distingue comparação com token de casamento com faixa
-de cor. Está aqui como piso, não como prova.
+claro ou escuro". Está aqui como piso.
 
-**A mutação A é a que prova a comparação com token.** `rgb(240, 240, 240)` é
-claro, é plausível, e não é token nenhum. Veio da sessão do HelpHS, que
-descobriu por mutação que a bateria de provas dela não distinguia as duas
-coisas.
+**A A′ é a que prova a comparação com token.** `rgb(240, 240, 240)` é claro, é
+plausível, e não é token nenhum. A ideia veio da sessão do HelpHS.
+
+**A A é a mesma mutação em 22% da largura, e ela LIBERA — registrada como
+limite.** A amostragem passou a ser pela cor **dominante** da linha porque uma
+coluna única atravessa botão e texto: em 390 a coluna do meio cruzava o botão
+"Tudo" e o antialiasing de subpixel do rótulo, que produz cores como
+`rgb(255, 246, 232)` — canal por canal, de token nenhum. A modal resolve isso e
+**perde** a mancha minoritária.
+
+Vale dizer o que aconteceu, porque é a lição de novo: **a mutação A reprovava
+antes da troca de amostragem e passou a liberar depois dela.** Ganhar robustez
+contra texto custou, calado, a detecção que a checagem existe para ter. Só
+apareceu porque as mutações foram rodadas de novo depois da mudança.
+
+E não há como separar as duas coisas por estatística: widget legítimo também é
+minoria de linha.
 
 **A mutação B é a que prova que a afirmação é FRACA — e ela fica registrada por
 isso.** Repintar o canvas com `--superficie-elevada` põe um token legítimo, do
@@ -529,3 +548,75 @@ recorte visualmente equivalente.
 Encaminhamento, igual ao dos gráficos do painel: se a §29 do detalhe exigir os
 painéis de baixo, eles viram **captura própria, nomeada como tal, depois das
 dezesseis**. Rolar antes do clique destrói o enquadramento que a régua garante.
+
+---
+
+## 3 — painel, 390×844, claro
+
+**Vista, e o tema da legenda confere com o pixel.**
+
+```
+SONDA  ok true   vp [390, 844]   problemas []
+       marcador claro   fundo rgb(248, 250, 252)   canário ok   linhas [10]
+PINTA  tag DIV   cls "relative rounded-xl border border-borda bg-superfi..."
+       bg rgb(255, 255, 255)
+```
+
+**Régua: 389×843.** Um pixel a menos nos **dois** eixos — em 1366×768 faltava só
+na altura. Mesma causa, mais visível: o quadro emulado carrega meio pixel por
+eixo, `innerWidth`/`innerHeight` arredondam para cima e o rasterizador trunca.
+
+**Cor por disco:** LIBERA, 22 faixas.
+
+**O que está no quadro:** gaveta **fechada**, coluna única, filtros empilhados,
+"Tudo" selecionado, "TOTAL DE CHAMADOS 159" começando ao pé. A topbar reduz ao
+hambúrguer e ao avatar — nome e papel do usuário somem nesta largura.
+
+### O `PINTA` mudou de elemento: a heurística depende do viewport
+
+Em 1366 devolvia `MAIN` (`bg-superficie-base`). Em 390 devolveu um **DIV de
+card** (`bg-superficie`, branco): em coluna única o card cresce e passa a cobrir
+≥90% do viewport, então "último que cobre" deixa de significar canvas.
+
+**São três defeitos distintos no mesmo trecho**, e nenhum é o outro:
+
+1. **limiar errado** — 90% aceita elemento que não é o canvas (`MAIN` em 1366);
+2. **dependente de viewport** — qual elemento vence muda com a largura (o card em 390);
+3. **valor intermitente** — o mesmo `getComputedStyle` dá certo e errado em
+   momentos diferentes (capturas 2 × 6 × 10).
+
+**Cobertura total resolve 1 e 2 de uma vez:** um card tem margem, então nunca
+cobre o viewport inteiro, e o wrapper volta a vencer em qualquer largura. O 3
+continua sendo o laço de assentamento mais o refluxo.
+
+E os três hoje só afetam o **diagnóstico**, não a evidência — a verificação de
+cor mudou para o disco, e lá não há seleção de elemento nenhuma.
+
+### Um defeito real, achado por esta captura
+
+Nesta largura o botão de cancelados vira **só ícone**: o rótulo tem
+`hidden sm:inline`. Conferindo o padrão inteiro, são cinco sítios:
+
+| arquivo | rótulo escondido | nome acessível abaixo de `sm` |
+|---|---|---|
+| `Dashboard.tsx:538` | "Cancelados ocultos" | **tem** — `title` + `aria-pressed`, com comentário explicando |
+| `CategoriasTab.tsx:189` | "Nova Categoria" | **nenhum** |
+| `SetoresTab.tsx:198` | "Novo Setor" | **nenhum** |
+| `UsuariosTab.tsx:339` | "Novo Usuário" | **nenhum** |
+
+Os ícones são `aria-hidden` por padrão — está escrito no `icones.tsx`. Então os
+três últimos ficam **sem nome acessível nenhum** abaixo de 640px.
+
+E o `icones.tsx` **já enuncia a regra que eles quebram**:
+
+> "Todos são `aria-hidden`. Ícone aqui acompanha palavra — quando ele for o
+> único conteúdo de um botão, o rótulo vai no `aria-label` do botão."
+
+A regra foi escrita para o caso estático. `hidden sm:inline` faz o botão
+**virar** só-ícone num breakpoint, e ninguém ligou as duas coisas. O
+`Dashboard.tsx` resolveu esse mesmo problema uma vez, com `title` e um
+comentário explicando o raciocínio — e a solução não se propagou.
+
+Aparece nas capturas **7 e 8**. É correção funcional fora da migração, e pede
+chave nova na catraca: hoje ela procura `aria-label` que apaga conteúdo visível,
+não rótulo escondido por breakpoint que deixa o botão sem nome.
