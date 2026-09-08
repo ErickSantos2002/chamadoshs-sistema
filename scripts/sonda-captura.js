@@ -97,7 +97,7 @@ function apiDoEnv() {
  * E a mesma guarda que o `validar-paleta.js` ja tinha, e que aqui faltou.
  * Achada ao escrever a prova positiva da trava de producao.
  */
-function montarSonda(tema, exigirTabela, excecaoDeProducao) {
+function montarSonda(tema, exigirTabela, excecaoDeProducao, viewport) {
   const apiNoDisco = apiDoEnv();
   const apiEhLocal = ehLocal(apiNoDisco);
 
@@ -107,6 +107,7 @@ function montarSonda(tema, exigirTabela, excecaoDeProducao) {
   const API_NO_DISCO = ${JSON.stringify(apiNoDisco)};
   const API_EH_LOCAL = ${JSON.stringify(apiEhLocal)};
   const EXCECAO = ${JSON.stringify(excecaoDeProducao || null)};
+  const VIEWPORT = ${JSON.stringify(viewport || null)};
   const problemas = [];
   const avisos = [];
 
@@ -229,6 +230,31 @@ function montarSonda(tema, exigirTabela, excecaoDeProducao) {
       problemas.push('a maior tabela tem ' + Math.max(...linhas) + ' linha(s): o divisor entre linhas não aparece com menos de 2');
   }
 
+  // ── 4. O quadro tem o tamanho que o protocolo crava? ────────────
+  //
+  // A sonda mede a página; sem isto ela não media o QUADRO, e o quadro foi
+  // onde o Checkpoint 3 quase saiu errado. Uma captura de aparência
+  // perfeitamente normal, tirada num viewport que ninguém pediu, com o
+  // número certo escrito ao lado — o modo de falha de sempre.
+  //
+  // A medida é \`innerWidth\`/\`innerHeight\` e NÃO o tamanho da imagem
+  // entregue. A imagem foi a primeira tentativa e se mostrou imprestável: a
+  // MESMA página, sem nada mudar entre as duas chamadas, voltou 672×448 e
+  // 1026×684 — ora 1:1 com o viewport, ora reduzida a 0,655. Uma régua que
+  // oscila reprova captura boa na metade das vezes.
+  //
+  // Aqui ela bloqueia ANTES da foto, que é onde uma trava serve para alguma
+  // coisa. Depois da foto ela só diria que o trabalho foi perdido.
+  if (VIEWPORT) {
+    if (innerWidth !== VIEWPORT[0] || innerHeight !== VIEWPORT[1]) {
+      problemas.push(
+        'o viewport é ' + innerWidth + '×' + innerHeight + ', e esta captura é de ' +
+        VIEWPORT[0] + '×' + VIEWPORT[1] + '. Ajuste a barra de dispositivo do ' +
+        'DevTools (Ctrl+Shift+M), com o zoom em 100% e não em "Fit".'
+      );
+    }
+  }
+
   const ok = problemas.length === 0;
   console.log(
     '%c CAPTURA ' + (ok ? 'LIBERADA' : 'BLOQUEADA') + ' — ' + TEMA + ' ',
@@ -257,6 +283,8 @@ function montarSonda(tema, exigirTabela, excecaoDeProducao) {
     fundo,
     canario: canario.ok ? 'ok' : 'REPROVADO',
     linhas_por_tabela: linhas,
+    viewport: [innerWidth, innerHeight],
+    viewport_exigido: VIEWPORT,
     problemas,
   };
 })()`;
@@ -279,7 +307,19 @@ if (require.main === module) {
     console.error('--producao exige motivo: --producao="captura autorizada em 04/09, leitura pura"');
     process.exit(1);
   }
-  console.log(montarSonda(tema, args.includes('--tabela'), motivo || null));
+  // --viewport=1366x768. Opcional: sem ele a sonda não cobra tamanho, que é
+  // o certo para quem só quer medir uma página fora de uma sessão de captura.
+  const bruto = (args.find((a) => a.startsWith('--viewport=')) ?? '').split('=')[1];
+  let viewport = null;
+  if (bruto) {
+    const m = /^(\d+)x(\d+)$/.exec(bruto);
+    if (!m) {
+      console.error('--viewport espera LARGURAxALTURA, por exemplo --viewport=1366x768');
+      process.exit(1);
+    }
+    viewport = [Number(m[1]), Number(m[2])];
+  }
+  console.log(montarSonda(tema, args.includes('--tabela'), motivo || null, viewport));
 }
 
 module.exports = { montarSonda, ehLocal, apiDoEnv };

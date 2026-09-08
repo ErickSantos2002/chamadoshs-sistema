@@ -132,51 +132,74 @@ uma tabela normal, e a captura sai sem o elemento que a E14 mudou.
 `--tabela` nas telas que têm tabela — listagem e painel. As outras duas rodam
 sem ele.
 
-## Depois de cada foto, a régua — a sexta checagem
+## Antes de cada foto, o quadro — a sexta checagem
 
-A sonda mede a página. Ela **não** mede o quadro. E o quadro foi justamente
-onde o Checkpoint 3 quase saiu errado.
+A sonda mede a página. Sem esta checagem ela não media o **quadro**, e o quadro
+foi onde o Checkpoint 3 quase saiu errado.
 
-A captura devolvida é **1:1 com o viewport CSS** — provado plantando uma
-moldura `position: fixed; inset: 0` e vendo-a preencher o quadro exato. Isso dá
-uma régua de graça: **as dimensões em pixels da imagem SÃO a medida do
-viewport.**
+> **A sonda cobra `innerWidth × innerHeight` e bloqueia se não for exatamente o
+> tamanho da linha do protocolo** — 1366×768 ou 390×844. Gerada com
+> `--viewport=1366x768`; sem a opção, ela não cobra tamanho, que é o certo para
+> quem só quer medir uma página fora de uma sessão de captura.
 
-Então a regra:
+### A primeira régua foi descartada, e o motivo importa
 
-> **A captura só vale se a imagem voltar em exatamente 1366×768 ou 390×844.**
-> Qualquer outro número e a foto é descartada, com aviso ao operador — sem
-> aproximar, sem "quase", sem arredondar.
+A primeira versão media **o tamanho da imagem entregue**, na observação de que a
+captura saía 1:1 com o viewport CSS — verificada plantando uma moldura
+`position: fixed; inset: 0` e vendo-a preencher o quadro exato.
 
-### Por que ela precisou existir
+A observação era verdadeira e a régua não prestava. A **mesma** página, sem nada
+mudar entre as duas chamadas, voltou **672×448** e depois **1026×684** — ora 1:1
+com o viewport, ora reduzida a 0,655. A redução vai e volta sozinha. Uma régua
+que oscila reprova captura boa em metade das vezes, e o pior é que ela parece
+rigorosa enquanto faz isso.
+
+A medida boa é `innerWidth`/`innerHeight`, lida na própria página. E o lugar
+certo dela é **antes** da foto: depois, uma trava só informa que o trabalho foi
+perdido.
+
+### Por que precisou existir
 
 `resize_window` responde `Successfully resized` e não redimensiona nada. Foram
 pedidos 1366×768, 900×600 e 390×844 em sequência: o viewport ficou nos mesmos
-1026×684 nas três, e o pedido de 390×844 devolveu **layout desktop, com a
-gaveta aberta**. Janela aberta por script é bloqueada por falta de gesto do
-usuário, e o atalho de zoom a própria ferramenta recusa por contrato.
+1026×684 nas três, e o pedido de 390×844 devolveu **layout desktop, com a gaveta
+aberta**. Janela aberta por script é bloqueada por falta de gesto do usuário, e o
+atalho de zoom a própria ferramenta recusa por contrato.
 
-Pior: o mesmo `/dashboard`, sem nada mudar entre as chamadas, voltou 672×448
-numa captura e 1026×684 na seguinte — dois estados de zoom diferentes. E o
-`innerWidth` lido no meio disso chegou a dizer `1368×912, dpr 2`, que era o zoom
-a 75% e não outra janela. **Nenhum dos dois lados era confiável sozinho:** nem o
-que a ferramenta respondia, nem o que a página media. A régua vale porque é a
-imagem entregue que se mede, e não uma afirmação sobre ela.
+O `innerWidth` lido no meio disso chegou a dizer `1368×912, dpr 2`, que era o
+zoom a 75% e não outra janela — por isso a sonda cobra o número exato, e não uma
+faixa.
 
-A captura 1 chegou a ser tirada assim, em 672×448, e foi descartada. Era uma
-foto de aparência perfeitamente normal, no tamanho errado, com o número certo
-escrito ao lado — o modo de falha de sempre.
+A captura 1 chegou a ser tirada em 672×448 e foi descartada. Era uma foto de
+aparência perfeitamente normal, no tamanho errado, com o número certo escrito ao
+lado — o modo de falha de sempre.
 
 ### Quem fixa o tamanho
 
 O **operador**, pela barra de dispositivo do DevTools (`Ctrl+Shift+M`), em modo
-Responsive, digitando o número antes de cada bloco e avisando. Ele fixa; a régua
-confere.
+Responsive, com os dois campos numéricos preenchidos e o zoom em **100%**, não
+em "Fit". Ele fixa; a sonda confere.
 
 A proporção fecha o argumento: a janela desta máquina é 1,5 (1026×684), 1366×768
 é 1,78 e 390×844 é 0,46. **Nenhum dos dois sai só com zoom** — zoom muda a
 escala, não a proporção. Sem a barra de dispositivo as oito capturas de 390×844
 não existem, porque com 1026 de largura a gaveta não fecha.
+
+### Onde ela foi vista falhando, sozinha
+
+Com a barra de dispositivo em 1026×684 e a sonda pedindo 1366×768:
+
+```
+ok: false
+problemas  ["o viewport é 1026×684, e esta captura é de 1366×768. Ajuste a
+            barra de dispositivo do DevTools (Ctrl+Shift+M), com o zoom em
+            100% e não em \"Fit\"."]
+marcador   claro          canario  ok
+```
+
+**Um problema só.** Marcador e canário passando ao lado. É isso que distingue
+esta checagem da checagem 2, que nunca foi vista falhando sozinha porque três
+outras disparavam junto com ela — e escondiam que ela não existia.
 
 ## Consulta à API de produção pede autorização, com o número dito antes
 
