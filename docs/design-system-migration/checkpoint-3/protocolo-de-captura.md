@@ -198,11 +198,27 @@ produção. Ali o "derrube a API" seria mesmo uma indisponibilidade, e por isso 
 regra existe. **Contra o banco local, nada disso se aplica** — e é contra o
 banco local que estas duas serão feitas.
 
-### Quando será capturado
+### O que falta para capturar, concretamente
 
-**Na próxima sessão com o ambiente local de pé** — ou em homologação, quando
-houver. Não depende de nada que ainda não exista: depende de meia hora e de
-alguém rodar a receita.
+Não é "esperar um ambiente". É esta lista, levantada em 04/09/2026:
+
+| | estado |
+|---|---|
+| **Docker** | **ausente** na máquina do operador — não há como subir o `chamadoshs-api` em contêiner |
+| **PostgreSQL 18** | **presente**, mas a credencial de superusuário é desconhecida — não dá para criar banco nem carregar massa |
+| **suíte de testes da API** | roda em **SQLite**, sem precisar de banco — por isso ela passa e não cobre este caso |
+
+A terceira linha é a que explica por que ninguém tropeçou nisso antes: a suíte
+verde não exercita o caminho que a captura precisa.
+
+Qualquer uma das três destrava:
+
+1. instalar Docker, e subir o `chamadoshs-api` com massa de teste;
+2. recuperar ou redefinir a senha de superusuário do PostgreSQL 18 local;
+3. um ambiente de homologação, que resolve os dois de uma vez.
+
+Feita qualquer uma, a captura custa meia hora. **O que falta é acesso, não
+tempo** — e é por isso que esta lista está aqui em vez de uma data.
 
 A receita está escrita e continua válida:
 
@@ -218,3 +234,61 @@ anterior, que ainda podem valer — e é esse estado que a foto precisa mostrar.
 
 Duas capturas bastam: os dois temas em 1366×768. O que muda com o tema é a
 tinta do `Aviso`, não o layout.
+
+---
+
+## As dezesseis foram feitas contra PRODUÇÃO — a exceção, e o que ela cobre
+
+**Decisão do operador, 04/09/2026.** É exceção explícita à regra do
+`DECISOES.md` que diz que captura de evidência nunca aponta para produção.
+
+### Por que
+
+Não havia ambiente local: **Docker ausente** nesta máquina, e a credencial de
+superusuário do **PostgreSQL 18** desconhecida — os dois caminhos para levantar
+massa de teste estavam fechados. A alternativa era não ter as dezesseis.
+
+### O que a exceção cobre, e o que NÃO cobre
+
+**Cobre:** o endereço da API. A sonda deixa de bloquear por `VITE_API_URL` não
+ser local, e passa a **avisar** — em amarelo, com o motivo escrito dentro do
+resultado.
+
+**Não cobre nada mais.** Identidade da página, tema aplicado antes da primeira
+pintura, CSS servido e segunda linha na tabela continuam valendo e continuam
+bloqueando. Uma exceção que dispensasse as outras checagens junto seria como
+não ter checagem nenhuma justamente no dia mais arriscado.
+
+E ela **não foi removida**: continua no código, continua medindo, e continua
+bloqueando por omissão. Só cede diante de um motivo digitado:
+
+```bash
+node scripts/sonda-captura.js --tema=claro --tabela \
+  --producao="Checkpoint 3, 04/09/2026 — leitura pura, imagem fora do repositório"
+```
+
+Sem o motivo, `--producao` é recusado com erro. O motivo viaja para dentro da
+saída da sonda e daí para o relatório, porque **uma exceção silenciosa é
+indistinguível de uma trava quebrada.**
+
+### As duas mitigações
+
+**1. Leitura pura.** Nada é criado, editado ou excluído. Sem "Exibir
+cancelados", sem mudança de status, sem submissão de formulário — as capturas
+9–12 saem com o formulário **em branco**, e isso é deliberado.
+
+O que ainda escreve, e fica dito: `?tema=` reescreve `localStorage.theme`, que
+é do navegador e não do sistema; e a própria navegação pode gerar registro na
+trilha de auditoria da API, que é efeito de ler e não há como evitar.
+
+**2. As imagens ficam fora do repositório.** Vão para
+`docs/design-system-migration/capturas-locais/`, ignorado inteiro no
+`.gitignore`. Elas contêm nome de solicitante, título de chamado e protocolo de
+gente real.
+
+**A ressalva que sobra, e é honesta:** não versionar resolve o repositório, não
+o disco. Os arquivos existem na máquina e viajam se forem compartilhados. Quem
+for movê-los precisa saber o que há dentro.
+
+As fichas da §29 e este protocolo são texto, sem dado pessoal, e vão para o
+repositório normalmente.

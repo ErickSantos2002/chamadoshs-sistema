@@ -97,7 +97,7 @@ function apiDoEnv() {
  * E a mesma guarda que o `validar-paleta.js` ja tinha, e que aqui faltou.
  * Achada ao escrever a prova positiva da trava de producao.
  */
-function montarSonda(tema, exigirTabela) {
+function montarSonda(tema, exigirTabela, excecaoDeProducao) {
   const apiNoDisco = apiDoEnv();
   const apiEhLocal = ehLocal(apiNoDisco);
 
@@ -106,7 +106,9 @@ function montarSonda(tema, exigirTabela) {
   const EXIGIR_TABELA = ${exigirTabela};
   const API_NO_DISCO = ${JSON.stringify(apiNoDisco)};
   const API_EH_LOCAL = ${JSON.stringify(apiEhLocal)};
+  const EXCECAO = ${JSON.stringify(excecaoDeProducao || null)};
   const problemas = [];
+  const avisos = [];
 
   // ── -1. Esta página é MESMO do ChamadosHS? ────────────────────────
   //
@@ -149,13 +151,30 @@ function montarSonda(tema, exigirTabela) {
   // o Vite serve o valor com que foi iniciado. É a mesma família do canário:
   // o disco diz uma coisa e o que está no ar diz outra. Por isso a segunda
   // camada olha para onde a página de fato falou.
+  //
+  // A EXCEÇÃO existe, e ela é digitada de propósito.
+  //
+  // A trava NÃO foi removida: ela continua medindo, continua bloqueando por
+  // omissão, e só cede diante de um motivo escrito passado na geração da
+  // sonda. Sem o motivo, o comportamento é o de sempre.
+  //
+  // Quando cede, o resultado carrega o motivo e a saída grita — porque uma
+  // exceção silenciosa é indistinguível de uma trava quebrada, e daqui a um
+  // mês ninguém saberia dizer qual das duas estava rodando.
   if (API_EH_LOCAL === null) {
     problemas.push('VITE_API_URL ausente ou inválida no .env: "' + API_NO_DISCO + '"');
   } else if (!API_EH_LOCAL) {
-    problemas.push(
-      'VITE_API_URL aponta para "' + API_NO_DISCO + '", que não é local. ' +
-      'Captura de evidência não aponta para produção.'
-    );
+    if (EXCECAO) {
+      avisos.push(
+        'PRODUÇÃO, sob exceção autorizada. API: "' + API_NO_DISCO + '". ' +
+        'Motivo: ' + EXCECAO
+      );
+    } else {
+      problemas.push(
+        'VITE_API_URL aponta para "' + API_NO_DISCO + '", que não é local. ' +
+        'Captura de evidência não aponta para produção.'
+      );
+    }
   }
 
   const daPagina = location.origin;
@@ -168,7 +187,8 @@ function montarSonda(tema, exigirTabela) {
     return !(h === 'localhost' || h === '127.0.0.1' || h === '[::1]');
   });
   if (externas.length) {
-    problemas.push('a página falou com origem NÃO local: ' + externas.join(', '));
+    if (EXCECAO) avisos.push('origens não locais em uso: ' + externas.join(', '));
+    else problemas.push('a página falou com origem NÃO local: ' + externas.join(', '));
   }
 
   // ── 1. O CSS servido é o do disco? ────────────────────────────────
@@ -218,8 +238,14 @@ function montarSonda(tema, exigirTabela) {
     console.error('NÃO fotografe. A foto sairia parecendo certa.');
     problemas.forEach((p) => console.error('  - ' + p));
   }
+  if (avisos.length) {
+    console.warn('%c EXCEÇÃO ATIVA — leia antes de fotografar ', 'background:#92400e;color:#fff;font-weight:bold');
+    avisos.forEach((a) => console.warn('  ! ' + a));
+  }
   return {
     ok,
+    excecao: EXCECAO,
+    avisos,
     app: marcaDoApp || '(sem data-app)',
     titulo: document.title,
     endereco: location.origin,
@@ -245,7 +271,15 @@ if (require.main === module) {
   }
   // Sempre em várias linhas. Ver a nota do `canario-css.js`: achatar quebra,
   // porque os comentários `//` engolem tudo que vem depois.
-  console.log(montarSonda(tema, args.includes('--tabela')));
+  // A exceção precisa vir com motivo escrito. `--producao` sozinho não basta:
+  // quem a invoca tem de dizer por quê, e o motivo viaja para dentro da saída
+  // da sonda e daí para o relatório.
+  const motivo = (args.find((a) => a.startsWith('--producao=')) ?? '').split('=').slice(1).join('=');
+  if (args.includes('--producao') && !motivo) {
+    console.error('--producao exige motivo: --producao="captura autorizada em 04/09, leitura pura"');
+    process.exit(1);
+  }
+  console.log(montarSonda(tema, args.includes('--tabela'), motivo || null));
 }
 
 module.exports = { montarSonda, ehLocal, apiDoEnv };

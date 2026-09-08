@@ -39,7 +39,13 @@ import { readFileSync } from 'node:fs';
 const requerer = createRequire(import.meta.url);
 const { montarSonda } = requerer(
   resolve(__dirname, '../scripts/sonda-captura.js')
-) as { montarSonda: (tema: string, exigirTabela: boolean) => string };
+) as {
+  montarSonda: (
+    tema: string,
+    exigirTabela: boolean,
+    excecao?: string | null
+  ) => string;
+};
 
 const sonda = montarSonda('claro', false);
 
@@ -137,5 +143,75 @@ describe('o marcador está no index.html', () => {
   it('o <html> do index.html declara data-app="chamadoshs"', () => {
     const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
     expect(html).toMatch(/<html[^>]*\sdata-app="chamadoshs"/);
+  });
+});
+
+/**
+ * A exceção de produção existe, e ela NÃO é um buraco.
+ *
+ * Em 04/09/2026 o operador autorizou capturar contra produção: não há Docker
+ * nesta máquina e a credencial de superusuário do PostgreSQL 18 é desconhecida,
+ * então não houve ambiente local para levantar massa de teste. A captura é de
+ * LEITURA PURA e as imagens ficam fora do repositório.
+ *
+ * A trava continua medindo e continua bloqueando por omissão. O que muda é que
+ * ela cede diante de um MOTIVO ESCRITO, passado na geração da sonda — e quando
+ * cede, diz que cedeu.
+ *
+ * Sem estes casos, "a trava foi flexibilizada" e "a trava quebrou" seriam
+ * indistinguíveis daqui a um mês.
+ */
+describe('sonda — a exceção de produção', () => {
+  const comApiDeProducao = () => {
+    // O `.env` desta máquina aponta para produção, então a sonda gerada já
+    // carrega esse endereço. É o estado real, e não um cenário montado.
+    document.documentElement.dataset.app = 'chamadoshs';
+  };
+
+  it('sem motivo, a trava bloqueia — o padrão não mudou', () => {
+    comApiDeProducao();
+    const r = (0, eval)(montarSonda('claro', false, null)) as {
+      ok: boolean;
+      problemas: string[];
+      excecao: string | null;
+    };
+
+    expect(r.excecao).toBeNull();
+    expect(r.problemas.some((p) => /não é local/.test(p))).toBe(true);
+  });
+
+  it('com motivo, ela cede — e DIZ que cedeu, com o motivo', () => {
+    comApiDeProducao();
+    const motivo = 'captura autorizada em 04/09, leitura pura';
+    const r = (0, eval)(montarSonda('claro', false, motivo)) as {
+      problemas: string[];
+      avisos: string[];
+      excecao: string | null;
+    };
+
+    // O bloqueio por produção sai...
+    expect(r.problemas.some((p) => /não é local/.test(p))).toBe(false);
+    // ...e vira aviso, com o motivo dentro.
+    expect(r.excecao).toBe(motivo);
+    expect(r.avisos.join(' ')).toContain('PRODUÇÃO');
+    expect(r.avisos.join(' ')).toContain(motivo);
+  });
+
+  /**
+   * A exceção cobre SÓ o endereço da API.
+   *
+   * Ela não é um `--force` que libera tudo: identidade da página, tema e tabela
+   * continuam valendo. Uma exceção que dispensa as outras checagens junto é
+   * como não ter checagem nenhuma no dia em que ela é usada — e o dia em que
+   * ela é usada é justamente o dia mais arriscado.
+   */
+  it('não afrouxa a identidade da página', () => {
+    document.documentElement.dataset.app = 'helphs';
+    const r = (0, eval)(
+      montarSonda('claro', false, 'captura autorizada')
+    ) as { ok: boolean; problemas: string[] };
+
+    expect(r.ok).toBe(false);
+    expect(r.problemas.some((p) => /produto "helphs"/.test(p))).toBe(true);
   });
 });
