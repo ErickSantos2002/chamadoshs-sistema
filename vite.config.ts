@@ -40,36 +40,22 @@ export default defineConfig({
      * ninguém mede coisa nenhuma achando que mediu.
      */
     /**
-     * ── 5173 É EXCEÇÃO, E TEM DATA PARA ACABAR ───────────────────────
+     * ── A EXCEÇÃO DA 5173 ACABOU EM 08/09/2026 ───────────────────────
      *
-     * A porta permanente é a **5191**, pelos motivos acima. Ela está aqui em
-     * 5173 **só enquanto durar a sessão de captura do Checkpoint 3**, e volta
-     * assim que as dezesseis saírem.
+     * Ela existiu por uma razão só: o `ALLOWED_ORIGINS` da API de produção
+     * lista `http://localhost:5173`, e as dezesseis capturas do Checkpoint 3
+     * foram contra produção. Da 5191 o navegador bloqueava antes do login.
      *
-     * O motivo é CORS, e não escolha: as capturas são contra a API de
-     * produção, e o `ALLOWED_ORIGINS` dela lista `http://localhost:5173` —
-     * está no `app/core/config.py` do `chamadoshs-api`. Da 5191 o navegador
-     * bloqueia a requisição antes de ela chegar ao login, então não há como
-     * autenticar para capturar.
+     * As dezesseis saíram, o checkpoint foi aprovado, e a exceção morreu com
+     * elas. A porta volta a ser a **5191**, que é o acordo — cada produto na
+     * sua, longe da faixa 5173–5175 por onde o escorregão do Vite passa.
      *
-     * Não é "voltar atrás no conserto": **`strictPort` continua ligado**, que
-     * é a parte que resolve o defeito. O escorregão silencioso para a 5174
-     * continua impossível — se algo mais estiver na 5173, este servidor MORRE
-     * em vez de andar, e é isso que a gente queria.
-     *
-     * O que a 5191 acrescentava era o acordo — cada produto na sua porta —, e
-     * é essa metade que está suspensa. A outra metade da proteção segue de pé:
-     * o `data-app` no `<html>`, que a sonda confere antes de qualquer captura.
-     * Se a 5173 estiver servindo outra coisa, a sonda bloqueia nomeando o
-     * produto encontrado.
-     *
-     * Ou seja: porta exclusiva protege por acordo, identidade protege quando o
-     * acordo falha — e aqui o acordo está temporariamente suspenso de
-     * propósito, com a outra trava cobrindo.
-     *
-     * Registrado em `docs/design-system-migration/checkpoint-3/protocolo-de-captura.md`.
+     * Vale lembrar por que o acordo importa, porque o custo já foi pago do
+     * outro lado: a suíte e2e do HelpHS, cravada na 5173 com
+     * `reuseExistingServer`, abraçou **este** servidor e mediu o produto
+     * errado. Porta compartilhada foi o que produziu aquilo.
      */
-    port: 5173,
+    port: 5191,
     strictPort: true,
     open: true,
   },

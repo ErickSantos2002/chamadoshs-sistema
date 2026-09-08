@@ -64,7 +64,7 @@ vazios.
 | 12 | formulário | `/chamados/novo` | 390×844 | escuro | `12-formulario-390x844-escuro.png` | ok | 389×843 ✓ |
 | 13 | detalhe | `/chamados/6` | 1366×768 | claro | `13-detalhe-1366x767-claro.png` | ok | 1366×767 ✓ |
 | 14 | detalhe | `/chamados/6` | 1366×768 | escuro | `14-detalhe-1366x767-escuro.png` | ok | 1366×767 ✓ |
-| 15 | detalhe | `/chamados/6` | 390×844 | claro | `15-detalhe-390x844-claro.png` | **não colada** | 389×843 ✓ |
+| 15 | detalhe | `/chamados/6` | 390×844 | claro | `15-detalhe-390x844-claro.png` | ok | 389×843 ✓ |
 | 16 | detalhe | `/chamados/6` | 390×844 | escuro | `16-detalhe-390x844-escuro.png` | ok | 389×843 ✓ |
 
 *(preenchida à medida que cada captura sai)*
@@ -789,19 +789,23 @@ padrão, e seria **item de produto pós-Checkpoint 3**, não correção.
 **Vistas, e o tema da legenda confere com o pixel nas duas.**
 
 ```
-16 SONDA  ok true  vp [390,844]  marcador escuro  fundo rgb(13, 27, 42)  canário ok  linhas []
+15 SONDA  ok true  vp [390,844]  marcador claro   fundo rgb(248, 250, 252)  canário ok  linhas []
+   PINTA  tag DIV  cls "overflow-hidden rounded-xl border border-borda bg-..."  bg rgb(255, 255, 255)
+16 SONDA  ok true  vp [390,844]  marcador escuro  fundo rgb(13, 27, 42)     canário ok  linhas []
    PINTA  tag DIV  cls "overflow-hidden rounded-xl border border-borda bg-..."  bg rgb(19, 34, 56)
-15 SONDA  — não colada no relato; ver a lacuna abaixo
 ```
 
 **Régua:** 389×843 nas duas — `15-…` 60.044 bytes, `16-…` 59.216 bytes. **Cor por
 disco:** LIBERA nas duas.
 
-**Lacuna do registro, dita como lacuna:** a saída da sonda da **captura 15** não
-foi colada. O arquivo existe, passa na régua e passa na cor por disco, e a
-imagem foi aberta e conferida — mas as três checagens que só a sonda faz
-(identidade da página, `.env`, canário do CSS servido) **não têm registro** para
-esta captura. As outras quinze têm. Fica assim escrito em vez de suposto.
+**A lacuna do registro foi fechada.** A saída da sonda da captura 15 existia
+desde a hora do disparo e só não havia chegado até aqui; está acima. As
+**dezesseis** têm as três checagens registradas.
+
+Vale guardar a forma do episódio: a ficha ficou algumas horas dizendo "não
+colada" em vez de "não existe". A diferença não era cosmética — dizer que a
+evidência falta é diferente de dizer que ela não chegou, e só a segunda é
+recuperável por uma pergunta.
 
 ### O quadro de 390 pega MENOS conteúdo que o de 1366
 

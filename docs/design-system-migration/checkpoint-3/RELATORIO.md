@@ -54,8 +54,7 @@ Três checagens independentes, e a imagem aberta uma a uma:
 | **régua** | `IHDR` do PNG: formato e dimensões exatas | disco, depois da foto |
 | **cor por disco** | a cor dominante de cada faixa horizontal contra os tokens | disco, depois da foto |
 
-**Dezesseis de dezesseis** passam nas três, com uma lacuna escrita: a saída da
-sonda da captura 15 não foi colada no relato.
+**Dezesseis de dezesseis** passam nas três, sem lacuna.
 
 #### O que as dezesseis NÃO provam
 
