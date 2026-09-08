@@ -69,12 +69,14 @@ O pacote foi **emendado** em 02/09/2026, em três pontos, todos registrados em
 | **E14** | a rampa de borda do escuro sobe um degrau | `tokens/colors.css` | HelpHS |
 | **E15** | o pacote passa a ter um piso de foco | `tokens/base.css` | HelpHS |
 | **E16** | a paleta de gráfico, porque gráfico não é interface | `tokens/colors.css` | HelpHS |
+| **E16-b** | a mesma paleta, agora **medida** — quatro das seis da E16 reprovavam o piso que ela própria declarava | `tokens/colors.css` | HelpHS, do texto entregue pelo ChamadosHS |
+| **E17** | o rótulo de prioridade do pacote vai ao feminino | `components/core/Badge.jsx` | HelpHS |
 
-**Só E14, E15 e E16 pedem recópia.** De E9 a E13 tudo foi componente, e este
-repositório não copia componentes — são referência, não dependência. As três de
-token entraram nesta cópia em 04/09/2026.
+**Só E14, E15, E16 e E16-b pedem recópia.** De E9 a E13 tudo foi componente, e este
+repositório não copia componentes — são referência, não dependência. As quatro
+de token entraram nesta cópia em 04/09/2026, em duas recópias.
 
-### O que as três de token significam aqui
+### O que as quatro de token significam aqui
 
 - **E14 — a borda do escuro deixa de ser invisível.** `--border-muted` era
   `#132238`, o MESMO valor de `--surface`: contraste **1,00** contra ela, ou
@@ -119,10 +121,26 @@ token entraram nesta cópia em 04/09/2026.
   desenha o próprio anel — `Button`, `Campo`, `Seletor`, `Card` — ele continua
   ganhando, porque a especificidade dele é maior.
 
-- **E16 — a paleta de gráfico. Declarada, e NÃO consumida.** Ela entra na
-  cópia porque a recópia é do arquivo inteiro, mas nada aqui lê `--chart-*`:
-  `src/lib/graficos.ts` segue sendo a fonte dos gráficos. O uso fica para a
-  Fase 16, e há motivo para não ter pressa — ver a ressalva abaixo.
+- **E16 e E16-b — a paleta de gráfico. Declarada, e ainda NÃO consumida.**
+  Entra na cópia porque a recópia é do arquivo inteiro, mas nada aqui lê
+  `--chart-*`: `src/lib/graficos.ts` segue sendo a fonte dos gráficos. A adoção
+  é da Fase 16.
+
+  A E16 declarava um piso de 3:1 para preenchimento de série e **não media se
+  as cores o cumpriam**. Quatro das seis reprovavam — `success` 2,32 e
+  `warning` 1,96 no claro, `primary-800` 1,33 no escuro, `slate-400` 2,34 no
+  claro. Mesma família da E1 e da E8: **degrau fixo da rampa não inverte por
+  tema**, então passa de um lado e reprova do outro.
+
+  A **E16-b** substitui as seis pela paleta que este repositório já roda em
+  produção, estendida com uma sexta série e declarada nos **dois** blocos —
+  `--chart-*` não é degrau, é papel, e papel inverte com o tema. 36 células de
+  contraste, pior 3,22; 120 pares de ΔE nas quatro visões, pior **25,8**.
+
+  O texto da emenda saiu daqui e foi gravado pela sessão do HelpHS, que
+  reconferiu por outro caminho: as 36 células de contraste bateram na segunda
+  casa, medidas por estilo computado no navegador em vez de por conta sobre os
+  hexadecimais.
 
 O que cada uma significa aqui:
 
@@ -220,13 +238,15 @@ A E7-b e a E9 não aparecem aqui: as duas mudaram componentes em
 são referência, não dependência. Só `styles.css`, `tokens/` e `fonts/` vêm
 para cá.
 
-Reconferidos em **04/09/2026**, na recópia de E14+E15+E16. Os dois arquivos que
-mudaram estão marcados; os outros cinco continuam nos hashes de 03/09.
+Reconferidos em **04/09/2026**, na recópia de E14+E15+E16 e depois na da
+E16-b. Os dois arquivos que mudaram estão marcados; os outros cinco continuam
+nos hashes de 03/09. `colors.css` passou por duas recópias no mesmo dia:
+`73550E08…` → `E17CFDE6…` (E14+E16) → `DBB52E1B…` (E16-b), 12.977 bytes.
 
 ```
 1EF6324844AA066488F0D8A015B39E3CA0756C629512FCE4E1BD95CA8B93B9B2  styles.css
 DE714476FA019334CC3DD096E84BD7EF29BFA7B3E2DACF071F3DA5FB68D98410  tokens/base.css        <- E15   (era BDD047CE…)
-E17CFDE67277A38721EC9415B0EE3DC7CCD85A6D6A37990BD53E1331703C076D  tokens/colors.css      <- E1+E2+E5+E7+E8+E14+E16   (era 73550E08…)
+DBB52E1BA0441D87CA2B080E408633B8F3A32E2D6A4210ED995C4E342A886A51  tokens/colors.css      <- E1+E2+E5+E7+E8+E14+E16+E16-b   (era E17CFDE6…)
 C70D51A982AE0B91BD53ECE150D8D16E0E70BEF9CA59586541A9A7177228478E  tokens/motion.css
 7BCFBBC585D3EA8C7F689A27EEB3AE13DE0C2A9DCC3C6CC0C8F41D440D193F7D  tokens/shape.css
 C093B261C6893A893A418CDF64798555326D4586A8ADB37CC7ECA457FABAE420  tokens/spacing.css
@@ -289,32 +309,45 @@ resolvido na raiz pela E3. Esta cópia é o pacote, byte a byte.
 > `73550E08…` na mesma data. Era erro de transcrição, e fica dito para o número
 > errado não ser perseguido.)*
 
-## Uma ressalva sobre a E16, antes que alguém a consuma
+## A E16, e como ela virou E16-b
 
-**Quatro das seis séries reprovam o piso de 3:1 que a própria emenda declara.**
-Medido aqui, e o mesmo resultado que a sessão do HelpHS obteve por outro
-caminho:
+> **Resolvido em 04/09/2026 pela emenda E16-b.** A seção fica como registro do
+> que motivou a correção, e porque o modo de falha se repete.
 
-| série | pior no claro | pior no escuro | 3:1 |
-|---|---:|---:|---|
-| `--chart-1` primary-500 | 3,49 | 3,54 | ok |
-| `--chart-2` success-500 | **2,32** | 5,34 | reprova no claro |
-| `--chart-3` warning-500 | **1,96** | 6,31 | reprova no claro |
-| `--chart-4` danger-500 | 3,44 | 3,60 | ok |
-| `--chart-5` primary-800 | 9,30 | **1,33** | reprova no escuro |
-| `--chart-6` slate-400 | **2,34** | 5,29 | reprova no claro |
+A E16 declarava um piso de 3:1 para preenchimento de série e **não media se as
+cores o cumpriam**. Medido depois, por duas sessões separadamente e com
+ferramentas diferentes, **quatro das seis reprovavam**:
 
-É a mesma família do `perigo-forte` como substituto de cor de texto: **degrau
-fixo da rampa não inverte por tema**, então passa de um lado e reprova do
-outro. A E16 cita os números das cores como texto e então afirma o piso de
-preenchimento — sem medir esse piso.
+| série | pior no claro | pior no escuro |
+|---|---:|---:|
+| `--chart-1` primary-500 | 3,49 | 3,54 |
+| `--chart-2` success-500 | **2,32** | 5,34 |
+| `--chart-3` warning-500 | **1,96** | 6,31 |
+| `--chart-4` danger-500 | 3,44 | 3,60 |
+| `--chart-5` primary-800 | 9,30 | **1,33** |
+| `--chart-6` slate-400 | **2,34** | 5,29 |
 
-A paleta de `graficos.ts` que está em uso hoje passa nos dois temas e ainda é
-validada por ΔE nas três formas de daltonismo, que a E16 não faz. **Adotar a
-E16 como está seria trocar uma paleta medida por uma declarada.** Fica para a
-Fase 16, com a correção do pacote, e não antes.
+A causa tem nome nesta série de emendas: **degrau fixo da rampa não inverte por
+tema.** É a mesma da E1 (`--text-on-primary`), da E8 (os três `on-tint`) e do
+`perigo-forte` que este repositório descartou como substituto de cor de texto.
+A E16 escolheu seis degraus absolutos para os dois temas.
 
----
+E havia um segundo critério que ela não considerava: **distinção entre séries.**
+Contraste contra o fundo diz se a barra é visível; não diz se duas barras são
+distinguíveis uma da outra. Num gráfico de seis, as seis estão na tela juntas.
+
+**A E16-b substitui as seis** pela paleta que este repositório já roda em
+produção, estendida com uma sexta série, declarada nos dois blocos:
+36 células de contraste com pior caso 3,22, e 120 pares de ΔE\*ab nas quatro
+visões com pior caso 25,8.
+
+Um achado que ficou registrado na emenda e vale além dela: o papel de "outros"
+que a E16 dava ao sexto **não é realizável no tema claro** sob os dois
+critérios — das 5.615 cores que passam, nenhuma é quase-neutra e cabe na faixa
+de luminância das outras cinco. O motivo é geométrico: um neutro tem `a` e `b`
+próximos de zero em Lab, então a distância dele vem quase toda da luminosidade,
+e essa faixa já está ocupada. "Outros" pede hachura sobre neutro mais rótulo —
+não opacidade, que mudaria o contraste medido, e não uma sétima cor.
 
 ## Desvios locais aprovados
 
