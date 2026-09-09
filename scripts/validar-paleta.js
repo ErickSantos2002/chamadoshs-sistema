@@ -805,50 +805,178 @@ function exigirDicaPropria() {
  * inteira** — a afirmação e a coisa se descolando. Por isso o texto mudou no
  * mesmo commit que a função.
  *
- * ── O que conta como cópia ───────────────────────────────────────────
+ * ── O que conta como cópia, e a correção de 09/09/2026 ───────────
  *
- * Uma linha com hexadecimal literal E um `--token` no comentário. É a assinatura
- * exata do arranjo antigo, e a mesma da ponte do D3-a: valor copiado com a
- * origem anotada ao lado, mantidos em sincronia por memória humana.
+ * **O que estava escrito aqui era falso, e falso do jeito mais caro.** O texto
+ * dizia que `CATEGORICA_*`, `STATUS_*` e `PRIORIDADE_*` são cor própria "e não
+ * cópia de token nenhum", e que "o que as distingue é justamente não nomearem
+ * token de origem".
  *
- * As paletas continuam podendo ter hexadecimal — `CATEGORICA_*`, `STATUS_*` e
- * `PRIORIDADE_*` são cor própria, certificada aqui mesmo por contraste e por ΔE,
- * e não cópia de token nenhum. O que as distingue é justamente não nomearem
- * token de origem.
+ * `CATEGORICA_CLARA` e `CATEGORICA_ESCURA` são **cópia literal de `--chart-1` a
+ * `--chart-5`, nos dois temas** — dez valores idênticos, no arquivo que esta
+ * catraca lia. Ela imprimia `0 linha(s)`.
+ *
+ * O defeito não é trava fraca: é trava que **afirma o contrário do que mede**.
+ * O nome dela — "a cópia de token não voltou" — é asserção forte sobre algo que
+ * ela nunca verificou, porque só sabia ler COMENTÁRIO. **Não nomear o token de
+ * origem nunca foi prova de não ser cópia; é só a cópia sem etiqueta.**
+ *
+ * ── Por que são DOIS detectores, e nenhum basta sozinho ──────────
+ *
+ * **Por VALOR:** hexadecimal igual ao de um token do pacote, resolvido. Pega a
+ * cópia fiel — que é justamente a que o comentário não denuncia.
+ *
+ * **Por COMENTÁRIO:** hexadecimal com `--token` anotado ao lado. Continua, e não
+ * é redundância: **a cópia que DERIVOU não bate mais por valor.** Era esse o
+ * defeito da E14 — o token subiu, a cópia não, e a partir daquele instante o
+ * detector por valor teria ficado mudo. O comentário é o que sobra da intenção
+ * depois que o valor mente.
+ *
+ * Um pega a cópia fiel, o outro a infiel. A correção ACRESCENTA em vez de
+ * trocar, e é por isso.
+ *
+ * ── Onde ela PARA ──────────────────────────────────
+ *
+ * Varre `src` em `.ts` e `.tsx`, fora de `design-system/` — que é a cópia do
+ * pacote, não código nosso — e fora de `*.test.*`, onde afirmar o valor de um
+ * token é o trabalho do caso. CSS não entra: a ponte do D3-a tem catraca
+ * própria, que já compara os 32 pares contra o pacote.
+ *
+ * O detector por valor lê o texto SEM comentário. Hexadecimal citado em prosa
+ * — `--fill-success` (#059669) sobe para 3,77 — é medição registrada, não uso,
+ * e acusá-la seria a catraca cobrando de quem documentou.
  */
-function achadosDeCopiaDeToken(conteudo, rel) {
-  const achados = [];
-  conteudo.split('\n').forEach((linha, i) => {
-    const semBloco = linha.trim().startsWith('*');
-    if (semBloco) return;
-    const temHex = /'#[0-9a-fA-F]{6}'/.test(linha);
-    const comentario = linha.indexOf('//');
-    if (!temHex || comentario === -1) return;
-    const token = /(--[a-z-]+)/.exec(linha.slice(comentario));
-    if (!token) return;
-    achados.push(
-      `${rel}:${i + 1}  hexadecimal com ${token[1]} no comentário — é cópia de token. ` +
-        `A cor do gráfico se lê por CSS (ver index.css) ou por classe (ver DicaDoGrafico).`
-    );
-  });
-  return achados;
+/**
+ * O pacote indexado por VALOR, que é a forma que a cópia tem na tela.
+ *
+ * Por valor e não por nome porque a cópia não carrega o nome — se carregasse,
+ * não seria difícil de achar. Resolve `var()` antes de indexar, de modo que
+ * cópia de alias (`--fill-success`) conta igual a cópia de degrau.
+ */
+function indiceDoPacote() {
+  const PACOTE = pacoteDeTokens(
+    fs.readFileSync(
+      path.join(RAIZ, 'src', 'design-system', 'tokens', 'colors.css'),
+      'utf8'
+    )
+  );
+  const indice = new Map();
+  for (const [seletor, tema] of [[':root', 'claro'], ['.dark', 'escuro']]) {
+    for (const nome of Object.keys(PACOTE[seletor])) {
+      const rgb = resolverDoPacote(PACOTE, nome, seletor);
+      if (!rgb) continue;
+      const chave = paraHex(rgb).toLowerCase();
+      if (!indice.has(chave)) indice.set(chave, []);
+      const donos = indice.get(chave);
+      const rotulo = `${tema}:${nome}`;
+      if (!donos.includes(rotulo)) donos.push(rotulo);
+    }
+  }
+  return indice;
 }
 
-function exigirSemCopiaDeToken() {
-  const achados = achadosDeCopiaDeToken(
-    fs.readFileSync(GRAFICOS, 'utf8'),
-    'src/lib/graficos.ts'
-  );
+function achadosDeCopiaDeToken(conteudo, rel, indice) {
+  // Agrupa por linha para que uma linha que caia nos DOIS detectores apareça
+  // uma vez, com as duas razões — e não como dois achados, que se leriam como
+  // dois defeitos.
+  const porLinha = new Map();
+  const anotar = (i, razao) => {
+    const n = i + 1;
+    if (!porLinha.has(n)) porLinha.set(n, []);
+    const lista = porLinha.get(n);
+    if (!lista.includes(razao)) lista.push(razao);
+  };
 
-  if (achados.length) {
-    falhas.push(
-      `cópia de token de volta no graficos.ts: ${achados.length} linha(s)\n      ` +
-        achados.join('\n      ')
+  semComentario(conteudo)
+    .split('\n')
+    .forEach((linha, i) => {
+      for (const m of linha.matchAll(/#[0-9a-fA-F]{6}\b/g)) {
+        const donos = indice.get(m[0].toLowerCase());
+        if (donos) anotar(i, `${m[0]} é o valor de ${donos.join(', ')}`);
+      }
+    });
+
+  conteudo.split('\n').forEach((linha, i) => {
+    if (linha.trim().startsWith('*')) return;
+    if (!/'#[0-9a-fA-F]{6}'/.test(linha)) return;
+    const corte = linha.indexOf('//');
+    if (corte === -1) return;
+    const token = /(--[a-z0-9-]+)/.exec(linha.slice(corte));
+    if (token) anotar(i, `${token[1]} anotado no comentário`);
+  });
+
+  return [...porLinha.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([n, razoes]) => ({
+      // A IDENTIDADE não leva número de linha, de propósito: linha se move a
+      // cada edição, e linha de base presa a número vira falso alarme na
+      // primeira reformatação.
+      identidade: `${rel}|${razoes.join(' + ')}`,
+      texto: `${rel}:${n}  ${razoes.join(' + ')} — cópia de token.`,
+    }));
+}
+
+/**
+ * As dez que a catraca encontrou ao nascer, congeladas.
+ *
+ * A `paletaCategorica` é cópia literal de `--chart-1` a `--chart-5` nos dois
+ * temas. **Não entram como exceção: entram como DÍVIDA declarada**, por decisão
+ * do operador — elas são o quarto lado do nó de cinco (gráfico, cartão, selo,
+ * paleta categórica, prioridade), e os cinco fecham juntos.
+ *
+ * A identidade NÃO leva número de linha: linha se move, e linha de base presa a
+ * número vira falso alarme na primeira reformatação. Uma cópia NOVA, mesmo no
+ * mesmo arquivo, tem identidade diferente e reprova — conferido por mutação.
+ */
+const BASE_DE_COPIA = new Set([
+  'src/lib/graficos.ts|#174E8C é o valor de claro:--chart-1',
+  'src/lib/graficos.ts|#91633B é o valor de claro:--chart-2',
+  'src/lib/graficos.ts|#1493A3 é o valor de claro:--chart-3',
+  'src/lib/graficos.ts|#981652 é o valor de claro:--chart-4',
+  'src/lib/graficos.ts|#8F4ADE é o valor de claro:--chart-5',
+  'src/lib/graficos.ts|#4E86C6 é o valor de escuro:--chart-1',
+  'src/lib/graficos.ts|#BC7638 é o valor de escuro:--chart-2',
+  'src/lib/graficos.ts|#2ED0E5 é o valor de escuro:--chart-3',
+  'src/lib/graficos.ts|#EE1178 é o valor de escuro:--chart-4',
+  'src/lib/graficos.ts|#9E53F3 é o valor de escuro:--chart-5',
+]);
+
+function exigirSemCopiaDeToken() {
+  const indice = indiceDoPacote();
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx?$/.test(nome) && !/\.test\.tsx?$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(
+      ...achadosDeCopiaDeToken(fs.readFileSync(arquivo, 'utf8'), rel, indice)
     );
   }
+
+  const novos = achados.filter((a) => !BASE_DE_COPIA.has(a.identidade));
+
+  if (novos.length) {
+    falhas.push(
+      `cópia de token: ${novos.length} linha(s) fora da linha de base\n      ` +
+        novos.map((a) => a.texto).join('\n      ')
+    );
+  }
+
   linhas.push(
-    `\n=== catraca — a cópia de token não voltou ===` +
-      `\n  ${achados.length} linha(s) com hexadecimal apontando token`
+    `\n=== catraca — hexadecimal igual a token do pacote, ou com token anotado ===` +
+      `\n  ${arquivos.length} arquivo(s) varrido(s), ${achados.length} linha(s), ` +
+      `linha de base ${BASE_DE_COPIA.size}` +
+      (achados.length ? `\n      ` + achados.map((a) => a.texto).join('\n      ') : '')
   );
 }
 
@@ -1727,6 +1855,7 @@ module.exports = {
   achadosDeNome,
   achadosDeRotuloSumido,
   achadosDeCopiaDeToken,
+  indiceDoPacote,
   achadosDeSemanticaCheia,
   achadosDeFuncaoDuplicada,
   achadosDeDicaSemDono,
