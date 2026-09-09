@@ -62,6 +62,24 @@ As duas são defensáveis. O que não é defensável é a ponte continuar *"apro
 temporária"* indefinidamente, porque temporário sem data é permanente sem
 registro.
 
+### Decidido no mesmo dia: **a ponte fica**
+
+**O operador decidiu de imediato, para não travar a Fase 16.** A ponte deixa de
+ser desvio temporário e passa a **exceção documentada**, ao lado do canto reto e
+dos `Colchetes`. Três motivos, registrados no `DECISOES.md`, na §25 do
+PROMPT-MESTRE e no `VERSION.md`:
+
+1. os nomes em português são **vocabulário do produto**, e não atalho — mesmo
+   argumento que fez `navLabel` ser prop na E13;
+2. 1017 usos em 62 arquivos é refatoração maior que toda a migração feita até
+   aqui, com **ganho nulo para quem usa**;
+3. a ponte **deixou de ser ponto fraco** — a catraca de 32 pares fez dela uma
+   das partes mais guardadas do repositório.
+
+**Com isso a Fase 16 volta ao tamanho que eu tinha medido**: sete telas, o `Card`
+montado à mão e as fichas da §29. O parágrafo acima fica como registro de que ela
+esteve, por algumas horas, medindo o dobro da migração inteira.
+
 ---
 
 ## O tamanho, bloco a bloco

@@ -370,8 +370,23 @@ function exigirSemModificadorDeOpacidade() {
  *
  * `src/styles/index.css` declara os tokens em português no formato de três
  * canais `R G B`, porque o Tailwind exige isso para aplicar o modificador de
- * opacidade — `rgb(#2a4463 / 0.3)` não é CSS válido. É o desvio D3-a, aprovado
- * e temporário.
+ * opacidade — `rgb(#2a4463 / 0.3)` não é CSS válido. É o desvio D3-a — aprovado e,
+ * desde 09/09/2026, **PERMANENTE**.
+ *
+ * ── A ponte deixou de ser temporária, e isso muda o papel desta catraca ─
+ *
+ * Enquanto a ponte era desvio com data, esta catraca guardava um arranjo que
+ * ia sair. **Ela agora guarda um arranjo que fica**, e por isso passa a ser
+ * permanente também — não é andáime.
+ *
+ * Os três motivos estão no `DECISOES.md`; o que importa aqui é o terceiro,
+ * porque é sobre este arquivo: **a ponte deixou de ser ponto fraco exatamente
+ * porque esta catraca existe.** Tirá-la devolveria a ponte à condição em que
+ * ela esteve dois valores atrás por uma tarde, com os seis hashes batendo.
+ *
+ * E a regra que a decisão registrou vale para qualquer coisa que se descreva
+ * como temporária em comentário: **temporário sem data é permanente sem
+ * registro.** Esta linha dizia "temporário" havia quinze fases.
  *
  * O preço é que **o valor existe duas vezes**: em hexadecimal no pacote e em
  * canais aqui. E o modo de falha é o pior possível — os dois arquivos ficam

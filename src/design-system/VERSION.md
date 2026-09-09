@@ -521,7 +521,7 @@ para o `@import` do Google — traria a fonte de servidor de terceiro **além** 
 bundle, porque o Vite mantém URL externa como está: dois carregamentos da mesma
 fonte, contra o objetivo declarado da Fase 2.
 
-### D3-a — Camada de ponte em `src/styles/index.css` (**temporária**)
+### D3-a — Camada de ponte em `src/styles/index.css` (**permanente desde 09/09/2026**)
 
 **O que é:** os tokens em português (`--superficie`, `--borda`, `--conteudo`,
 `--sinal` e as cores de significado) continuam declarados, no formato de três
@@ -533,9 +533,36 @@ opacidade, e há 78 classes com opacidade escritas hoje (`bg-perigo/10`,
 `bg-sinal/10`, `border-sucesso/30`). Um alias direto para o hex do pacote
 quebraria todas: `rgb(#ffffff / 0.5)` não é CSS válido.
 
-**Quando sai:** tela a tela, nas Fases 11–16. Quando não sobrar uso dos nomes em
-português, o bloco inteiro sai e ficam só os tokens do pacote. **Este desvio tem
-data de validade.**
+~~**Quando sai:** tela a tela, nas Fases 11–16. Quando não sobrar uso dos nomes
+em português, o bloco inteiro sai e ficam só os tokens do pacote. **Este desvio
+tem data de validade.**~~
+
+> **REVOGADO em 09/09/2026, por decisão do operador. A PONTE FICA.**
+>
+> Deixa de ser desvio temporário e passa a **exceção documentada**, ao lado do
+> canto reto, dos `Colchetes` e do `Rotulo`.
+>
+> **1. Os nomes em português são vocabulário do produto, e não atalho** — mesmo
+> argumento que fez `navLabel` ser prop na E13: rótulo é conteúdo, e conteúdo
+> viaja na língua do produto. Tratar `--superficie` como dívida a pagar confunde
+> tradução com atraso.
+>
+> **2. Custo alto, ganho nulo para quem usa** — **1017 usos em 62 arquivos**,
+> medido em 09/09/2026. Refatoração maior que toda a migração feita até aqui,
+> com risco alto e nenhuma diferença na tela.
+>
+> **3. A ponte deixou de ser ponto fraco** — catraca de 32 pares, que resolve
+> contra o token **nomeado** e ignora o hexadecimal do comentário. Hoje é uma
+> das partes mais guardadas do repositório.
+>
+> E a regra que a decisão deixa, válida para os dois repositórios:
+>
+> > **Temporário sem data é permanente sem registro.**
+>
+> Um desvio "temporário" que atravessa quinze fases já é permanente; o que falta
+> é o registro. Ou se põe data e ela se cumpre, ou se assume a exceção com o
+> motivo escrito — o rótulo sobrevivendo por inércia é que não serve, porque faz
+> o desvio parecer menor do que é para quem chega depois.
 
 ### D4-a — `--text-faint` reservado a elemento não textual
 
@@ -635,6 +662,28 @@ O que o design system **não** define, e a conduta adotada aqui:
 | **z-index** | Escala existente preservada: gaveta `z-40`, fundo da gaveta `z-[35]`, menu do usuário `z-50`, toast `z-[9999]`, atalho de teclado `z-[100]`. Modal fica acima da topbar e da barra lateral |
 | **Skeleton** | Não existe no projeto e não foi criado. O carregamento é `Spinner` centralizado, como manda o pacote |
 | **DatePicker** | `<input type="date">` nativo, como já era. Nenhuma biblioteca instalada |
-| **Paleta categórica de gráfico** | **O pacote passou a definir, pela E16 — e ela não é adotada ainda.** Continua valendo a de `src/lib/graficos.ts`, validada por contraste e por ΔE em três formas de daltonismo (`npm run validar:paleta`). A adoção é da Fase 16, e a ressalva abaixo é o motivo de não ser automática |
+| **Paleta categórica de gráfico** | **NÃO adotada** — e, desde 09/09/2026, sabe-se que a de `src/lib/graficos.ts` é **cópia literal de `--chart-1` a `--chart-5` nos dois temas**, dez valores idênticos. Congelada como linha de base da catraca da cópia de token: dívida declarada que não pode crescer. É o **lado 4** do nó de cinco, e os cinco fecham juntos |
 | **Tokens de tamanho de ícone** | Não existem como CSS var. Regra do `Icon.d.ts`: 16 em botão, 20 em nav, 24 em cabeçalho; stroke 1.75 na navegação, 2 em botão e aviso |
 | **Breadcrumb, Banner** | Não existem no pacote nem no projeto. Não foram criados |
+
+
+---
+
+## Exceções do ChamadosHS — a lista da §33, e **nada além delas**
+
+A §33 pede que as exceções estejam listadas aqui, e que nada além delas exista.
+Esta é a lista fechada, em 09/09/2026:
+
+| exceção | onde | desde |
+|---|---|---|
+| **Canto reto** | escala `borderRadius` inteira em `--radius-none`; só `full` sobrevive, para pastilha e avatar | D2-a |
+| **`Colchetes`** | primitivo próprio, pele de console | D2-a |
+| **`Rotulo`** | primitivo próprio | Fase 7 |
+| **Login com malha de 46px e vinheta** | `pages/Login.tsx` — e não `fundo-login.jpeg` | §8.1 |
+| **Ponte em português (D3-a)** | 22 tokens em `R G B` no `src/styles/index.css`, guardados por catraca de 32 pares | **09/09/2026** |
+
+> **Nada além destas é exceção.** Se algo mais divergir do pacote, é defeito —
+> e a conduta é corrigir, não acrescentar linha a esta tabela.
+
+A única entrada nova em relação à lista da §33 é a ponte, e ela entrou por
+**decisão registrada com motivo**, e não por acomodação.
