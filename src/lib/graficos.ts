@@ -159,16 +159,23 @@ export function estiloDoGrafico(escuro: boolean) {
     // É o que está abaixo — cada linha nomeia o token do design system de que
     // saiu, e os dois têm de bater.
     //
-    // Esta cópia JÁ divergiu uma vez: quando a paleta mudou, a grade ficou no
-    // cinza-azulado antigo dentro de cards que já eram slate. Se mexer nos
-    // tokens, mexa aqui.
-    grade: escuro ? '#1E3A5F' : '#E2E8F0', // --border-color  (#1E3A5F / slate-200)
+    // Esta cópia JÁ divergiu DUAS vezes. A primeira, quando a paleta mudou e a
+    // grade ficou no cinza-azulado antigo dentro de cards que já eram slate. A
+    // segunda, na E14: o `--border-color` do escuro subiu de `#1E3A5F` para
+    // `#2A4463` — "cede o próprio valor ao muted e sobe" — e estes dois campos
+    // ficaram no valor de antes. A recópia do token entrou, a cópia daqui não, e
+    // nada acusou por três emendas.
+    //
+    // Agora acusa: `exigirMolduraFiel` no `validar-paleta.js` confere cada
+    // hexadecimal contra o token que o comentário ao lado nomeia. "Se mexer nos
+    // tokens, mexa aqui" deixou de ser pedido e virou catraca.
+    grade: escuro ? '#2A4463' : '#E2E8F0', // --border-color  (#2A4463 / slate-200)
     texto: escuro ? '#E2E8F0' : '#1E293B', // --text-body     (slate-200 / slate-800)
     dica: {
       // No escuro a dica sobe para a superfície elevada, senão ela se confunde
       // com o card por onde passa; no claro o branco já contrasta com a página.
       backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF', // --surface-elevated / --surface
-      border: `1px solid ${escuro ? '#1E3A5F' : '#E2E8F0'}`, // --border-color
+      border: `1px solid ${escuro ? '#2A4463' : '#E2E8F0'}`, // --border-color
       // Reto, como o resto da interface — a pele de console do ChamadosHS
       // (`--radius-none`). O Recharts desenha a dica em estilo inline, fora do
       // alcance do Tailwind, então o canto precisa ser dito aqui à mão.

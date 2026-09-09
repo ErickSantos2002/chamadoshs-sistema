@@ -697,6 +697,205 @@ function exigirNomeQueNaoApagaConteudo() {
 }
 
 
+
+
+// ──────────────────────────────────────────────────────────────────────
+// A cor da série vira TEXTO dentro da dica — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * A paleta é certificada como FORMA, e a dica do Recharts a usa como TEXTO.
+ *
+ * ── O que o Recharts faz, conferido na fonte instalada ───────────────
+ *
+ * `node_modules/recharts/lib/component/DefaultTooltipContent.js`, linha 70:
+ *
+ *     color: entry.color || '#000'
+ *
+ * Isso vai no `<li class="recharts-tooltip-item">`. Ou seja: **a cor da série é
+ * a cor do TEXTO de cada item da dica**, e o `Dashboard.tsx` não passa
+ * `itemStyle` para sobrescrever.
+ *
+ * Foi conferido na fonte e não de memória, porque a primeira versão desta
+ * checagem nasceu de uma lembrança minha sobre como o Recharts desenha a dica —
+ * e lembrança não é medição.
+ *
+ * ── Por que nenhuma trava alcançava isto ─────────────────────────────
+ *
+ * A paleta é medida contra `--superficie` com piso de FORMA, 3:1, porque é isso
+ * que ela é no gráfico: barra, fatia, linha. Dentro da dica ela muda de papel
+ * sem mudar de valor — e piso de papel novo não se herda.
+ *
+ * O fundo da dica também não é o do card: `--surface` no claro e
+ * `--surface-elevated` no escuro. Duas coisas diferentes ao mesmo tempo, e
+ * nenhuma das duas estava no laço da paleta.
+ *
+ * ── Linha de base, e por que ela existe ──────────────────────────────
+ *
+ * São 12 reprovações hoje, e a saída **não** é mexer na paleta: ela está
+ * certificada para o papel dela, com contraste e com ΔE em quatro visões, e
+ * mexer nas cores para resolver a dica quebraria a separação que custou a E16-b.
+ *
+ * A saída é `itemStyle` com cor de texto legível, mantendo a cor da série como
+ * marcador — e essa é decisão de produto, não de catraca. Até ela vir, a linha
+ * de base segura o número onde está: **só pode encolher**.
+ */
+const DICA_CONHECIDAS = new Map([
+  ['claro', 5],
+  ['escuro', 7],
+]);
+
+function achadosDeDicaIlegivel(graficos, tk, tema) {
+  const fundo = tema === 'escuro' ? tk['superficie-elevada'] : tk['superficie'];
+  const sufixo = tema === 'claro' ? 'CLARA' : 'ESCURA';
+  const cores = [
+    ...coresDe(graficos, `CATEGORICA_${sufixo}`),
+    ...coresDe(graficos, `STATUS_${tema === 'claro' ? 'CLARO' : 'ESCURO'}`),
+    ...coresDe(graficos, `PRIORIDADE_${sufixo}`),
+  ];
+  const vistas = new Set();
+  const achados = [];
+  for (const c of cores) {
+    const hex = paraHex(c);
+    if (vistas.has(hex)) continue;
+    vistas.add(hex);
+    const r = contraste(c, fundo);
+    if (r < PISO_TEXTO) achados.push(`${tema}  ${hex}  ${r.toFixed(2)}:1`);
+  }
+  return achados;
+}
+
+function exigirDicaLegivel() {
+  const css = fs.readFileSync(CSS, 'utf8');
+  const graficos = fs.readFileSync(GRAFICOS, 'utf8');
+  let total = 0;
+  const acima = [];
+
+  for (const tema of ['claro', 'escuro']) {
+    const tk = tema === 'claro'
+      ? tokens(css, ':root')
+      : { ...tokens(css, ':root'), ...tokens(css, '.dark') };
+    const achados = achadosDeDicaIlegivel(graficos, tk, tema);
+    total += achados.length;
+    const base = DICA_CONHECIDAS.get(tema) || 0;
+    if (achados.length > base) {
+      acima.push(`${tema}: ${achados.length} reprovam, linha de base ${base}\n      ` + achados.join('\n      '));
+    }
+  }
+
+  if (acima.length) {
+    falhas.push(`cor de série ilegível como texto na dica, ACIMA da linha de base:\n      ` + acima.join('\n      '));
+  }
+  linhas.push(
+    `\n=== catraca — cor de série como texto na dica ===` +
+      `\n  ${total} reprova(m) o piso de ${PISO_TEXTO}:1, linha de base ${[...DICA_CONHECIDAS.values()].reduce((a, b) => a + b, 0)}`
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// A moldura do gráfico, fiel ao token que ela nomeia — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * O `estiloDoGrafico` do `graficos.ts` é uma SEGUNDA CÓPIA dos tokens, e ela
+ * já divergiu duas vezes.
+ *
+ * ── Por que a cópia existe ───────────────────────────────────────────
+ *
+ * O Recharts escreve estes valores em ATRIBUTO de SVG (`stroke=`, `fill=`), e
+ * atributo com `var()` não resolve em todo navegador. A seção 5.4 do
+ * `adocao.md` prevê o caso: onde a biblioteca não aceita a variável, o objeto
+ * pode ser gerado a partir dos mesmos valores **com o token de origem no
+ * comentário**. É o que está lá, e o próprio arquivo diz que "os dois têm de
+ * bater".
+ *
+ * ── E ninguém conferia se batiam ─────────────────────────────────────
+ *
+ * A primeira divergência está contada no comentário do próprio `graficos.ts`:
+ * quando a paleta mudou, a grade ficou no cinza-azulado antigo dentro de cards
+ * que já eram slate.
+ *
+ * A segunda foi achada pela **tabela das catracas**, na Fase 16: a **E14** subiu
+ * o `--border-color` do escuro de `#1E3A5F` para `#2A4463` — "cede o próprio
+ * valor ao muted e sobe" — e a cópia ficou no valor de antes, em DOIS campos.
+ * A recópia do token entrou, a cópia da moldura não, e nada acusou por três
+ * emendas.
+ *
+ * É exatamente a ponte do D3-a noutro arquivo, e a catraca é a mesma ideia: o
+ * hexadecimal tem de ser igual ao token que o comentário nomeia.
+ *
+ * ── A forma do comentário ────────────────────────────────────────────
+ *
+ * Um token vale para os dois temas:
+ *
+ *     texto: escuro ? '#E2E8F0' : '#1E293B', // --text-body
+ *
+ * Dois tokens seguem a ordem do ternário — **escuro primeiro**:
+ *
+ *     backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF', // --surface-elevated / --surface
+ *
+ * O parêntese com nome de degrau (`(slate-200 / slate-800)`) é nota humana e
+ * NÃO entra: só `--token` conta. Ler o parêntese como se fosse token foi o
+ * primeiro erro desta checagem, e ele acusou um campo correto.
+ */
+function achadosDeMolduraInfiel(conteudo, PACOTE) {
+  const achados = [];
+  const i = conteudo.indexOf('export function estiloDoGrafico');
+  if (i === -1) return ['estiloDoGrafico não encontrado em graficos.ts'];
+  const trecho = conteudo.slice(i, conteudo.indexOf('\n}', i));
+
+  // campo: escuro ? '#XXXXXX' : '#YYYYYY',  // --token [/ --token]
+  const linhas = [
+    ...trecho.matchAll(
+      /(\w+):\s*escuro \?\s*'(#[0-9a-fA-F]{6})'\s*:\s*'(#[0-9a-fA-F]{6})',[^\n]*\/\/([^\n]*)/g
+    ),
+    // o `border` monta a cor dentro de um template literal
+    ...trecho.matchAll(
+      /(border):\s*`[^`]*\${escuro \?\s*'(#[0-9a-fA-F]{6})'\s*:\s*'(#[0-9a-fA-F]{6})'}`,[^\n]*\/\/([^\n]*)/g
+    ),
+  ];
+
+  for (const [, campo, hexEscuro, hexClaro, nota] of linhas) {
+    const tokens = [...nota.matchAll(/(--[a-z-]+)/g)].map((m) => m[1]);
+    if (!tokens.length) {
+      achados.push(`${campo}: sem token de origem no comentário`);
+      continue;
+    }
+    const alvo = { escuro: tokens[0], claro: tokens.length > 1 ? tokens[1] : tokens[0] };
+
+    for (const [tema, hex] of [['escuro', hexEscuro], ['claro', hexClaro]]) {
+      const esperado = resolverDoPacote(PACOTE, alvo[tema], tema === 'escuro' ? '.dark' : ':root');
+      if (!esperado) {
+        achados.push(`${campo} (${tema}): ${alvo[tema]} não resolve no pacote`);
+        continue;
+      }
+      const dele = paraHex(esperado).toUpperCase();
+      if (hex.toUpperCase() !== dele) {
+        achados.push(
+          `${campo} (${tema}): moldura ${hex.toUpperCase()}  !=  ${alvo[tema]} ${dele}`
+        );
+      }
+    }
+  }
+  return achados;
+}
+
+function exigirMolduraFiel() {
+  const PACOTE = pacoteDeTokens(fs.readFileSync(path.join(RAIZ, 'src', 'design-system', 'tokens', 'colors.css'), 'utf8'));
+  const achados = achadosDeMolduraInfiel(fs.readFileSync(GRAFICOS, 'utf8'), PACOTE);
+
+  if (achados.length) {
+    falhas.push(
+      `moldura do gráfico divergindo do token que ela nomeia: ${achados.length} campo(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — moldura do gráfico fiel ao token ===` +
+      `\n  ${achados.length} divergência(s)`
+  );
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // Rótulo escondido por breakpoint que deixa o botão sem nome — catraca
 // ──────────────────────────────────────────────────────────────────────
@@ -1249,14 +1448,42 @@ function main() {
   for (const [nome, { tk, sufixo }] of Object.entries(temas)) {
     linhas.push(`\n=== tema ${nome} ===`);
 
-    // 1. Texto sobre as duas superfícies onde ele de fato aparece.
-    for (const fundo of ['superficie', 'superficie-base']) {
+    // 1. Texto sobre as TRÊS superfícies.
+    //
+    // Eram duas, e o comentário dizia "onde ele de fato aparece" — uma
+    // afirmação sobre o layout, escrita uma vez e nunca reconferida. A
+    // `superficie-elevada` é cartão elevado, dica e trilho, e texto cai sobre
+    // ela em todos os três.
+    //
+    // A tabela das catracas da Fase 16 achou este vão. Nenhum defeito vivo: as
+    // oito combinações passam, e a mais apertada é `--sinal` sobre elevada no
+    // claro, com 4,83 contra o piso de 4,5 — folga de 0,33, que é a menor do
+    // conjunto e não estava sendo vigiada.
+    for (const fundo of ['superficie', 'superficie-base', 'superficie-elevada']) {
       for (const cor of ['conteudo', 'conteudo-suave', 'conteudo-tenue', 'sinal']) {
         exigirContraste(`${cor} sobre ${fundo}`, tk[cor], tk[fundo], PISO_TEXTO);
       }
     }
 
-    // 2. Gráficos contra a superfície do card, que é onde eles são desenhados.
+    // 2. Gráficos como FORMA, contra a superfície do card.
+    //
+    // Esta é a fronteira certa, e ela sobreviveu a uma tentativa minha de
+    // alargá-la. Na Fase 16 troquei para as três superfícies, achando que
+    // "medir mais" fosse estritamente melhor — e a mudança acusou dois status
+    // contra `--superficie-elevada`, por 0,03 e 0,07.
+    //
+    // Fui ver onde a `elevada` é fundo de gráfico, e **no claro não é**: os
+    // três usos dela no `Dashboard.tsx` são botão de filtro e caixa de ícone.
+    // Alargar ali produzia alarme falso — a forma de trava que ensina a ser
+    // ignorada.
+    //
+    // O que a `elevada` É, no escuro, é o fundo da DICA. E lá a cor da série
+    // não é forma: é TEXTO, com piso de 4,5:1. Isso não cabia neste laço, e
+    // virou catraca própria — `exigirDicaLegivel`.
+    //
+    // A lição, que é a da semana: alargar escopo sem perguntar ONDE a cor cai
+    // é o mesmo erro de medir perto do que interessa. O escopo certo não é o
+    // maior, é o que corresponde ao lugar onde a coisa aparece.
     const categoricas = coresDe(graficos, `CATEGORICA_${sufixo}`);
     const status = coresDe(graficos, `STATUS_${nome === 'claro' ? 'CLARO' : 'ESCURO'}`);
     const prioridades = coresDe(graficos, `PRIORIDADE_${sufixo}`);
@@ -1282,6 +1509,8 @@ function main() {
   exigirNomeQueNaoApagaConteudo();
   exigirCatracaDeFundoCheio();
   exigirRotuloQueSobreviveAoBreakpoint();
+  exigirMolduraFiel();
+  exigirDicaLegivel();
 
   console.log(linhas.join('\n'));
 
@@ -1308,6 +1537,8 @@ module.exports = {
   contido,
   achadosDeNome,
   achadosDeRotuloSumido,
+  achadosDeMolduraInfiel,
+  achadosDeDicaIlegivel,
   pacoteDeTokens,
   resolverDoPacote,
 };
