@@ -826,7 +826,7 @@ const TarefasRecorrentes: React.FC = () => {
         <Modal
           aberto
           aoFechar={() => setModal(null)}
-          titulo="Histórico — {selecionada.titulo}"
+          titulo={`Histórico — ${selecionada.titulo}`}
           largura="md"
         >
               {historico.length === 0 ? (
