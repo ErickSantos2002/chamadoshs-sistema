@@ -39,10 +39,12 @@ import {
   VARIANTE_DE_STATUS,
 } from '../components/SelosDeChamado';
 import { IconeAlerta, IconeArquivar, IconeAtividade, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
+import { cn } from '../lib/utils';
 import { DicaDoGrafico } from '../components/ui/DicaDoGrafico';
 import {
   corDaPrioridade,
   corDaSerie,
+  classeDeStatus,
   corDoStatus,
 } from '../lib/graficos';
 
@@ -885,9 +887,17 @@ const Dashboard: React.FC = () => {
                         dataKey="value"
                         stroke="none"
                       >
-                        {metricas.porStatus.map((entry) => (
-                          <Cell key={entry.name} fill={corDoStatus(entry.name, darkMode)} />
-                        ))}
+                        {metricas.porStatus.map((entry) => {
+                          // A cor vem da CLASSE quando o status foi adotado na
+                          // E18, e do `corDoStatus` quando nao foi. Ver a
+                          // tabela em `lib/graficos.ts`.
+                          const classe = classeDeStatus(entry.name);
+                          return classe ? (
+                            <Cell key={entry.name} className={classe} />
+                          ) : (
+                            <Cell key={entry.name} fill={corDoStatus(entry.name, darkMode)} />
+                          );
+                        })}
                       </Pie>
 
                       <Tooltip
@@ -910,10 +920,20 @@ const Dashboard: React.FC = () => {
                   {metricas.porStatus.map((item) => (
                     <div key={item.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        {/* O marcador da legenda usa a MESMA classe da fatia,
+                            que pinta `fill` e `background-color` — e por isso
+                            os dois nao podem divergir. */}
                         <span
                           aria-hidden="true"
-                          className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                          style={{ backgroundColor: corDoStatus(item.name, darkMode) }}
+                          className={cn(
+                            'h-2.5 w-2.5 shrink-0 rounded-sm',
+                            classeDeStatus(item.name)
+                          )}
+                          style={
+                            classeDeStatus(item.name)
+                              ? undefined
+                              : { backgroundColor: corDoStatus(item.name, darkMode) }
+                          }
                         />
                         <span className="text-xs text-conteudo-suave">{item.name}</span>
                       </div>

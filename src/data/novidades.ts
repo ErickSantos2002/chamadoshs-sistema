@@ -30,6 +30,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.7.7',
+    data: '2026-09-09',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'No Painel, a caixinha que aparece quando você passa o mouse por cima de um gráfico voltou a ser legível. Ela vinha com o texto na cor da fatia — azul-claro sobre branco, laranja sobre branco — e em vários casos praticamente sumia. Agora o nome e o número estão na cor normal do texto, e a cor da série ficou no quadradinho ao lado.',
+      },
+    ],
+  },
+  {
     versao: '1.7.6',
     data: '2026-09-02',
     itens: [

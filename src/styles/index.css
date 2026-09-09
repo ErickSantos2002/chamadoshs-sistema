@@ -220,6 +220,23 @@ body,
  * reprova em voz alta, em vez de a cor sumir calada.
  */
 
+/* ── O grafico de STATUS le os --chart-* da E18 ───────────────────────
+ *
+ * Uma classe por slot, e nao hexadecimal em JS: e o mesmo caminho da moldura,
+ * pelo mesmo motivo — atributo de apresentacao perde para regra CSS.
+ *
+ * Cada regra pinta `fill` E `background-color` de proposito: a mesma classe
+ * serve a fatia da rosca, que e SVG, e ao marcador da legenda, que e um `span`
+ * de HTML. Uma fonte so para os dois, e nada para manter em sincronia.
+ *
+ * A tabela e a ordem dos slots estao em `src/lib/graficos.ts`. Os slots 4 a 7
+ * existem na E18 e nao tem regra aqui: nao ha serie que os ocupe, e declarar
+ * regra sem dono seria convidar alguem a usa-los fora da tabela.
+ */
+.serie-status-1 { fill: var(--chart-1); background-color: var(--chart-1); }
+.serie-status-2 { fill: var(--chart-2); background-color: var(--chart-2); }
+.serie-status-3 { fill: var(--chart-3); background-color: var(--chart-3); }
+
 .recharts-cartesian-grid line {
   stroke: rgb(var(--borda));            /* era estiloDoGrafico.grade */
 }

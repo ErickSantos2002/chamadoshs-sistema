@@ -97,6 +97,55 @@ export function corDaPrioridade(prioridade: string, escuro: boolean): string {
 }
 
 /**
+ * A tabela status -> slot da E18, adotada em PARTE.
+ *
+ * ── A tabela e fixada para os dois repositorios ──────────────────────
+ *
+ * A E18 fixa sete status com os nomes do HelpHS. O `StatusEnum` daqui tem
+ * cinco, e `cancelado`/`arquivado` sao campos booleanos, nao status. Os slots
+ * sem dono ficam DECLARADOS e vagos: nao se remove nem se renumera, porque
+ * renumerar de um lado quebra o alinhamento entre os dois repositorios.
+ *
+ *     E18                     slot           aqui
+ *     open                    --chart-1      Abertos
+ *     in_progress             --chart-2      Em Andamento
+ *     awaiting_client         --chart-3      Aguardando
+ *     awaiting_technical      --chart-4      VAGO — este modelo nao separa
+ *     resolved                --chart-5      NAO ADOTADO — ver abaixo
+ *     closed                  --chart-6      NAO ADOTADO — ver abaixo
+ *     cancelled               --chart-7      VAGO — cancelado aqui e flag
+ *
+ * ── Por que `resolved` e `closed` ficam de fora ──────────────────────
+ *
+ * Hoje "Resolvido" e "Fechado" pintam a MESMA cor. A E18 lhes daria slots
+ * diferentes — e aplicar isso responderia por acidente a pergunta de produto
+ * registrada como aberta desde o Checkpoint 3: se "Fechado" e "Resolvido" sao
+ * estados distintos. O sistema passaria a afirmar que sim, sem ninguem ter
+ * decidido.
+ *
+ * Quando a pergunta for respondida, a adocao completa e um commit.
+ *
+ * ── A cor sai por CLASSE, e nao por hexadecimal ──────────────────────
+ *
+ * `classeDeStatus` devolve o nome da classe; as regras estao em
+ * `src/styles/index.css` e leem `var(--chart-N)`. Nao ha copia de token, pelo
+ * mesmo motivo da moldura: atributo de apresentacao perde para regra CSS, e o
+ * `Cell` do Recharts repassa `className` ao elemento.
+ *
+ * Devolve `null` para quem nao foi adotado, e quem chama continua usando
+ * `corDoStatus` nesses casos.
+ */
+export function classeDeStatus(status: string): string | null {
+  const SLOT: Record<string, string> = {
+    'Aberto': 'serie-status-1',
+    'Abertos': 'serie-status-1',
+    'Em Andamento': 'serie-status-2',
+    'Aguardando': 'serie-status-3',
+  };
+  return SLOT[status] ?? null;
+}
+
+/**
  * Cor de status do chamado.
  *
  * Precisa ser a MESMA no ponto da coluna do quadro, no selo do detalhe e na
