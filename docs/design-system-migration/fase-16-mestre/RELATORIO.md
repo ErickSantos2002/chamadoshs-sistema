@@ -43,6 +43,25 @@ operador** — *cartão contém conteúdo de um item; barra organiza a página*:
 > Converter os dez teria produzido um diff grande, verde no `tsc`, limpo no
 > validador — e teria **piorado** o código.
 
+### Este é o argumento mais forte contra "adotar primitivo em tudo que se parece"
+
+**Destaque pedido pelo operador**, e ele merece o lugar que tem.
+
+Um diff de dezessete blocos convertidos passaria em **todos os instrumentos que
+este projeto construiu**: `tsc` verde, validar-paleta limpo, 639 casos passando,
+nenhuma catraca acusando nada. E teria transformado campo de data, esqueleto de
+carregamento e estado vazio em cartão.
+
+> **Nenhum instrumento distingue "converteu certo" de "converteu tudo".** A
+> diferença está na função de cada bloco, e função não é legível por regex —
+> `border border-borda bg-superficie` é o vocabulário comum de tudo que se
+> destaca do fundo, e não a assinatura de um componente.
+
+O número final da fase é **4 convertidos, 10 preservados, 3 reclassificados** —
+e os treze que ficaram custaram mais leitura que os quatro que mudaram. Uma fase
+que entrega quatro conversões e treze decisões de não converter **fez mais
+trabalho**, e não menos.
+
 ---
 
 ## O que a fase encontrou
@@ -143,6 +162,9 @@ cobertura sem a cobertura, e por isso é pior que ficha curta.
 3. **`EstadosDaTrilha` é compartilhado** entre `Auditoria` e o
    `HistoricoDaConta`, que é tela da Fase 15. Nada foi alterado nele, e a
    dependência fica escrita.
+4. **Os três vazios da `Auditoria` não têm teste** — e o de `pagina > 0`, com
+   *"Fim da lista"*, é conserto de um defeito real. **Decisão do operador: travá-
+   los na Fase 19.** *Defeito já corrigido volta calado se ninguém o prender.*
 
 ### O que fica para a Fase 18
 
