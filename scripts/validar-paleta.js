@@ -704,91 +704,77 @@ function exigirNomeQueNaoApagaConteudo() {
 // ──────────────────────────────────────────────────────────────────────
 
 /**
- * A paleta é certificada como FORMA, e a dica do Recharts a usa como TEXTO.
+ * Todo `<Tooltip>` desenha com a dica PRÓPRIA, e nunca com a do Recharts.
  *
- * ── O que o Recharts faz, conferido na fonte instalada ───────────────
+ * ── O defeito que isto impede de voltar ──────────────────────────────
  *
- * `node_modules/recharts/lib/component/DefaultTooltipContent.js`, linha 70:
+ * A dica padrão do Recharts pinta cada item **na cor da série**. Conferido na
+ * fonte instalada, `recharts/lib/component/DefaultTooltipContent.js` linha 70:
  *
  *     color: entry.color || '#000'
  *
- * Isso vai no `<li class="recharts-tooltip-item">`. Ou seja: **a cor da série é
- * a cor do TEXTO de cada item da dica**, e o `Dashboard.tsx` não passa
- * `itemStyle` para sobrescrever.
+ * A paleta é certificada como FORMA, piso 3:1 contra o card. Dentro da dica ela
+ * vira TEXTO, piso 4,5:1 — e **doze das treze reprovavam**: cinco no claro,
+ * sete no escuro, a pior a 2,93. Papel novo não herda piso antigo.
  *
- * Foi conferido na fonte e não de memória, porque a primeira versão desta
- * checagem nasceu de uma lembrança minha sobre como o Recharts desenha a dica —
- * e lembrança não é medição.
+ * ── Por que a catraca é sobre a PRESENÇA, e não sobre a cor ──────────
  *
- * ── Por que nenhuma trava alcançava isto ─────────────────────────────
+ * O conserto é o `content={<DicaDoGrafico />}`. Medir cor aqui não guardaria
+ * nada: a dica própria usa classe, e o valor certo já está garantido pelos
+ * tokens. O que pode dar errado é alguém **remover** o `content` — e aí o
+ * Recharts volta a desenhar a dica dele, com o defeito inteiro de volta, sem
+ * que nenhuma medição de cor perceba.
  *
- * A paleta é medida contra `--superficie` com piso de FORMA, 3:1, porque é isso
- * que ela é no gráfico: barra, fatia, linha. Dentro da dica ela muda de papel
- * sem mudar de valor — e piso de papel novo não se herda.
- *
- * O fundo da dica também não é o do card: `--surface` no claro e
- * `--surface-elevated` no escuro. Duas coisas diferentes ao mesmo tempo, e
- * nenhuma das duas estava no laço da paleta.
- *
- * ── Linha de base, e por que ela existe ──────────────────────────────
- *
- * São 12 reprovações hoje, e a saída **não** é mexer na paleta: ela está
- * certificada para o papel dela, com contraste e com ΔE em quatro visões, e
- * mexer nas cores para resolver a dica quebraria a separação que custou a E16-b.
- *
- * A saída é `itemStyle` com cor de texto legível, mantendo a cor da série como
- * marcador — e essa é decisão de produto, não de catraca. Até ela vir, a linha
- * de base segura o número onde está: **só pode encolher**.
+ * Foi exigência do operador, e a razão dele é a que vale: uma linha de base de
+ * doze seria MEDIÇÃO, não guarda. Guarda é isto.
  */
-const DICA_CONHECIDAS = new Map([
-  ['claro', 5],
-  ['escuro', 7],
-]);
-
-function achadosDeDicaIlegivel(graficos, tk, tema) {
-  const fundo = tema === 'escuro' ? tk['superficie-elevada'] : tk['superficie'];
-  const sufixo = tema === 'claro' ? 'CLARA' : 'ESCURA';
-  const cores = [
-    ...coresDe(graficos, `CATEGORICA_${sufixo}`),
-    ...coresDe(graficos, `STATUS_${tema === 'claro' ? 'CLARO' : 'ESCURO'}`),
-    ...coresDe(graficos, `PRIORIDADE_${sufixo}`),
-  ];
-  const vistas = new Set();
+function achadosDeDicaSemDono(conteudo, rel) {
   const achados = [];
-  for (const c of cores) {
-    const hex = paraHex(c);
-    if (vistas.has(hex)) continue;
-    vistas.add(hex);
-    const r = contraste(c, fundo);
-    if (r < PISO_TEXTO) achados.push(`${tema}  ${hex}  ${r.toFixed(2)}:1`);
+  for (const m of conteudo.matchAll(/<Tooltip\b/g)) {
+    const fim = fimDaTag(conteudo, m.index + m[0].length);
+    if (fim === -1) continue;
+    const atributos = conteudo.slice(m.index + m[0].length, fim);
+    if (atributos.includes('content=\{<DicaDoGrafico')) continue;
+    const linha = conteudo.slice(0, m.index).split('\n').length;
+    achados.push(
+      `${rel}:${linha}  <Tooltip> sem content={<DicaDoGrafico />}: o Recharts ` +
+        `desenha a dica dele, e lá a cor da série vira TEXTO`
+    );
   }
   return achados;
 }
 
-function exigirDicaLegivel() {
-  const css = fs.readFileSync(CSS, 'utf8');
-  const graficos = fs.readFileSync(GRAFICOS, 'utf8');
-  let total = 0;
-  const acima = [];
-
-  for (const tema of ['claro', 'escuro']) {
-    const tk = tema === 'claro'
-      ? tokens(css, ':root')
-      : { ...tokens(css, ':root'), ...tokens(css, '.dark') };
-    const achados = achadosDeDicaIlegivel(graficos, tk, tema);
-    total += achados.length;
-    const base = DICA_CONHECIDAS.get(tema) || 0;
-    if (achados.length > base) {
-      acima.push(`${tema}: ${achados.length} reprovam, linha de base ${base}\n      ` + achados.join('\n      '));
+function exigirDicaPropria() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx$/.test(nome) && !/\.test\.tsx$/.test(nome)) {
+        arquivos.push(caminho);
+      }
     }
+  })(FONTE);
+
+  const achados = [];
+  let tooltips = 0;
+  for (const arquivo of arquivos) {
+    const conteudo = fs.readFileSync(arquivo, 'utf8');
+    tooltips += [...conteudo.matchAll(/<Tooltip\b/g)].length;
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(...achadosDeDicaSemDono(conteudo, rel));
   }
 
-  if (acima.length) {
-    falhas.push(`cor de série ilegível como texto na dica, ACIMA da linha de base:\n      ` + acima.join('\n      '));
+  if (achados.length) {
+    falhas.push(
+      `<Tooltip> desenhando com a dica do Recharts: ${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
   }
   linhas.push(
-    `\n=== catraca — cor de série como texto na dica ===` +
-      `\n  ${total} reprova(m) o piso de ${PISO_TEXTO}:1, linha de base ${[...DICA_CONHECIDAS.values()].reduce((a, b) => a + b, 0)}`
+    `\n=== catraca — a dica do gráfico é a nossa ===` +
+      `\n  ${tooltips} <Tooltip> encontrado(s), ${achados.length} sem dica própria`
   );
 }
 
@@ -1510,7 +1496,7 @@ function main() {
   exigirCatracaDeFundoCheio();
   exigirRotuloQueSobreviveAoBreakpoint();
   exigirMolduraFiel();
-  exigirDicaLegivel();
+  exigirDicaPropria();
 
   console.log(linhas.join('\n'));
 
@@ -1538,7 +1524,7 @@ module.exports = {
   achadosDeNome,
   achadosDeRotuloSumido,
   achadosDeMolduraInfiel,
-  achadosDeDicaIlegivel,
+  achadosDeDicaSemDono,
   pacoteDeTokens,
   resolverDoPacote,
 };

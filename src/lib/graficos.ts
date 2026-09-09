@@ -171,18 +171,16 @@ export function estiloDoGrafico(escuro: boolean) {
     // tokens, mexa aqui" deixou de ser pedido e virou catraca.
     grade: escuro ? '#2A4463' : '#E2E8F0', // --border-color  (#2A4463 / slate-200)
     texto: escuro ? '#E2E8F0' : '#1E293B', // --text-body     (slate-200 / slate-800)
-    dica: {
-      // No escuro a dica sobe para a superfície elevada, senão ela se confunde
-      // com o card por onde passa; no claro o branco já contrasta com a página.
-      backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF', // --surface-elevated / --surface
-      border: `1px solid ${escuro ? '#2A4463' : '#E2E8F0'}`, // --border-color
-      // Reto, como o resto da interface — a pele de console do ChamadosHS
-      // (`--radius-none`). O Recharts desenha a dica em estilo inline, fora do
-      // alcance do Tailwind, então o canto precisa ser dito aqui à mão.
-      borderRadius: '0px',
-      color: escuro ? '#F1F5F9' : '#0F172A', // --text-heading (slate-100 / slate-900)
-      padding: '8px 12px',
-      boxShadow: '0 4px 14px rgb(0 0 0 / 0.25)',
-    },
+    //
+    // A DICA saiu daqui, e com ela tres copias de token.
+    //
+    // Ela copiava fundo, borda e cor de texto porque este objeto copia — mas a
+    // dica NAO e SVG: o Recharts a desenha num `div` sobreposto
+    // (`recharts-tooltip-wrapper`), que e HTML comum e le token por classe.
+    // Ver `components/ui/DicaDoGrafico.tsx`.
+    //
+    // Sobram os dois de baixo, que sao atributo de SVG de verdade -- `stroke=`
+    // na grade e `fill=` no rotulo das marcas -- e continuam sob a catraca
+    // `exigirMolduraFiel`. A copia encolheu de cinco campos para dois.
   };
 }

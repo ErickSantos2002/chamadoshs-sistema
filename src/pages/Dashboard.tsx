@@ -39,6 +39,7 @@ import {
   VARIANTE_DE_STATUS,
 } from '../components/SelosDeChamado';
 import { IconeAlerta, IconeArquivar, IconeAtividade, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
+import { DicaDoGrafico } from '../components/ui/DicaDoGrafico';
 import {
   corDaPrioridade,
   corDaSerie,
@@ -893,8 +894,7 @@ const Dashboard: React.FC = () => {
 
                       <Tooltip
                         wrapperStyle={{ outline: 'none' }}
-                        contentStyle={estilo.dica}
-                        labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                        content={<DicaDoGrafico />}
                       />
                     </RChart>
                   </ResponsiveContainer>
@@ -958,8 +958,7 @@ const Dashboard: React.FC = () => {
                   <Tooltip
                     cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
                     wrapperStyle={{ outline: 'none' }}
-                    contentStyle={estilo.dica}
-                    labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                    content={<DicaDoGrafico />}
                   />
 
                   <Bar dataKey="value" name="Chamados" radius={[6, 6, 0, 0]}>
@@ -1018,8 +1017,7 @@ const Dashboard: React.FC = () => {
                 <Tooltip
                   cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
                   wrapperStyle={{ outline: 'none' }}
-                  contentStyle={estilo.dica}
-                  labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                  content={<DicaDoGrafico />}
                 />
 
                 {/* A cor sai da POSIÇÃO na lista, e o índice vem do dado — não

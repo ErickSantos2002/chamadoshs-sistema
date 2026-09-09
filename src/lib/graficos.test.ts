@@ -119,26 +119,28 @@ describe('estiloDoGrafico', () => {
 
     expect(claro.grade).not.toBe(escuro.grade);
     expect(claro.texto).not.toBe(escuro.texto);
-    expect(claro.dica.backgroundColor).not.toBe(escuro.dica.backgroundColor);
   });
 
-  it('a dica acompanha o canto do resto da interface', () => {
-    // A dica é desenhada pelo Recharts em estilo inline, fora do alcance do
-    // Tailwind — o canto do resto da interface precisa ser dito aqui, à mão.
-    //
-    // Este valor já foi de `0px` para `8px` e voltou, e as três vezes pelo
-    // mesmo motivo: ele copia à mão uma decisão que mora noutro lugar.
-    //
-    // Voltou a `0px` na adoção do design system oficial (02/09/2026, decisão
-    // D2-a): a pele de console do ChamadosHS é canto RETO em tudo — é a
-    // exceção documentada na seção 8.1 do prompt mestre e em `DS/readme.md`
-    // ("ChamadosHS: reto, em tudo"), e a escala de `borderRadius` do Tailwind
-    // voltou a ser zerada por `--radius-none`.
-    //
-    // O motivo do teste não mudou: este é o único lugar do sistema onde o
-    // canto não vem do Tailwind, e portanto o único que fica para trás sem
-    // ninguém perceber.
-    expect(estiloDoGrafico(false).dica.borderRadius).toBe('0px');
-    expect(estiloDoGrafico(true).dica.borderRadius).toBe('0px');
+  /**
+   * A dica SAIU deste objeto, e o teste do canto dela saiu junto.
+   *
+   * Ele existia por um motivo escrito: "este é o único lugar do sistema onde o
+   * canto não vem do Tailwind, e portanto o único que fica para trás sem
+   * ninguém perceber". O valor já tinha ido de `0px` para `8px` e voltado, três
+   * vezes, sempre porque copiava à mão uma decisão que mora noutro lugar.
+   *
+   * **O motivo deixou de existir.** A dica virou `components/ui/DicaDoGrafico`,
+   * que é HTML e usa classe — o canto agora vem do Tailwind como no resto da
+   * interface, e `--radius-none` o zera sem ninguém repetir nada.
+   *
+   * O teste não foi apagado por conveniência: foi apagado porque o defeito que
+   * ele guardava passou a ser impossível de escrever. O que guarda a dica agora
+   * é a catraca `exigirDicaPropria`, que impede o Recharts de voltar a desenhar
+   * a dica padrão.
+   */
+  it('só copia o que é atributo de SVG — dois campos, não cinco', () => {
+    const claro = estiloDoGrafico(false);
+
+    expect(Object.keys(claro).sort()).toEqual(['grade', 'texto']);
   });
 });
