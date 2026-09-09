@@ -18,12 +18,31 @@ Sem estado, sem efeito, sem chamada, sem manipulador. É markup puro.
 
 | # | funcionalidade | como se confere | depois |
 |---|---|---|---|
-| 1.1 | `<Helmet>` põe o título da aba | título da aba na rota `*` | |
-| 1.2 | mensagem de rota inexistente | texto visível | |
-| 1.3 | ocupa a altura do `main` sem calcular cabeçalho (`min-h-full`) | não corta em tela estreita | |
+| 1.1 | mensagem de rota inexistente | texto visível | **preservado** |
+| 1.2 | `<Link>` para `/dashboard`, com navegação de âncora | clique, e `ctrl+clique` | **preservado** |
+| 1.3 | ocupa a altura do `main` sem calcular cabeçalho (`min-h-full`) | não corta em tela estreita | **preservado** |
+| 1.4 | só o `router.tsx` a importa — **sem tela vizinha** | busca por `NotFound` | **conferido** |
 
-**Risco de regressão: mínimo.** É a tela mais segura das seis para converter
-primeiro.
+> **Correção de 09/09/2026, e ela importa.** A primeira versão desta ficha listava
+> um `<Helmet>` que **não existe** no `NotFound` — confundi com o `EmConstrucao`,
+> que tinha e foi apagado. **Ficha que lista o que não existe passa na
+> conferência sem conferir nada**, e é pior que ficha curta: dá a sensação de
+> cobertura sem a cobertura. Escrever a ficha lendo o código não basta se a
+> lembrança entrar junto.
+
+**Risco de regressão: mínimo.** Foi a primeira convertida, por isso.
+
+### O que mudou, e o que NÃO mudou
+
+`<div>` com `px-8 py-10` → `<Card padding="lg">`, com `w-full max-w-md
+text-center` preservados em `className`. O enquadramento da página já vinha do
+contêiner de fora (`px-4 py-10`) e continua vindo dali.
+
+**O `<Link>` vestido de botão primário ficou como estava.** `Button` estende
+`ButtonHTMLAttributes` e renderiza `<button>`, sem variante de link — trocá-lo
+custaria clique do meio, `ctrl+clique` e "abrir em nova aba", que é regressão
+funcional e das que nenhuma captura mostraria. É a **única** ocorrência no
+projeto de link vestido de botão cheio; fica anotada em vez de contornada.
 
 ---
 
@@ -33,13 +52,31 @@ Sem estado e sem chamada. Recebe `area` e `quemTem` por prop e monta a frase.
 
 | # | funcionalidade | como se confere | depois |
 |---|---|---|---|
-| 2.1 | recebe `area` e diz **qual** área foi negada | render com `area="Usuários"` | |
-| 2.2 | recebe `quemTem` e diz **quem** teria acesso | idem, `quemTem="administradores"` | |
-| 2.3 | é usada por **dois** chamadores: `ProtectedRoute:65` e `CadastrosBasicos:72` | os dois continuam renderizando | |
+| 2.1 | recebe `area` e diz **qual** área foi negada | render com `area="Usuários"` | **preservado** |
+| 2.2 | `quemTem` tem **padrão** `'administradores'` | render sem a prop | **preservado** |
+| 2.3 | **`<Helmet>`** troca o título da aba conforme `area` | título em `/cadastros` sem acesso | **preservado** |
+| 2.4 | lê **`user?.role`** do `useAuth`, com recuo para `'Usuário'` | perfil sem `role` | **preservado** |
+| 2.5 | `IconeCadeado` é `aria-hidden` — decorativo | leitor de tela | **preservado** |
+| 2.6 | usa o primitivo `Rotulo` com `como="p"` | render | **preservado** |
+| 2.7 | **duas** vizinhas: `ProtectedRoute:65` e `CadastrosBasicos:72` | as duas renderizam | **conferido** |
 
-**A 2.3 é a que morde.** `Bloqueio` não é página de rota: é componente de recusa
+> **Segunda correção de ficha, 09/09/2026.** A primeira versão desta listava
+> três itens e **faltavam quatro** — o `<Helmet>`, o `user?.role`, o
+> `aria-hidden` do ícone e o padrão de `quemTem`. Duas fichas com erro em seis, e
+> **as duas do mesmo feitio**: escrevi *"lendo o código"* e escrevi parte de
+> memória. Ler o arquivo inteiro antes de listar não é zelo — é o método que a
+> §29 pede, e eu o cumpri pela metade.
+
+**A 2.7 é a que morde.** `Bloqueio` não é página de rota: é componente de recusa
 usado dentro de outra tela. Mexer no enquadramento dela muda o
-`CadastrosBasicos`, que **não** é tela desta fase.
+`CadastrosBasicos`, que é tela da **Fase 15**.
+
+### O que mudou
+
+`px-8 py-10` → `<Card padding="lg">`. E o **`relative` saiu do `className`**, e
+não foi esquecido: o `Card` já o traz na base. Mantê-lo começaria a coleção de
+classes que repetem o que o primitivo faz — que é exatamente como um cartão
+montado à mão nasce.
 
 ---
 
