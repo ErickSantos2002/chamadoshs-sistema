@@ -307,18 +307,24 @@ body,
   animation: fadeIn 0.2s ease-out;
 }
 
-/* Respeita quem pediu menos movimento no sistema operacional. A interface
- * nova tem transição em borda, fundo e realce; para quem marcou essa
- * preferência, isso é desconforto, não polimento. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+/* ── A regra de movimento reduzido é DO PACOTE, e saiu daqui ────────
+ *
+ * Havia aqui um bloco `@media (prefers-reduced-motion: reduce)` **byte a byte
+ * idêntico** ao de `design-system/tokens/motion.css`. A §22 do prompt mestre é
+ * explícita: *"o `base.css`/`motion.css` já zera; NÃO SOBRESCREVA"*.
+ *
+ * E não era duplicata inofensiva: medido no CSS **compilado**, o bloco do pacote
+ * saía na linha 789 e o local na 3707. Mesma especificidade, mesmo `!important`
+ * — **o último vence, e o último era o local.**
+ *
+ * O dia em que o pacote emendasse a regra — acrescentando `scroll-behavior:
+ * auto`, por exemplo — a emenda chegaria ao arquivo e seria **silenciosamente
+ * sobrescrita** por esta cópia. É a forma exata da deriva da moldura na E14: o
+ * pacote anda, a cópia não, e nada acusa.
+ *
+ * Conferido que a remoção é segura: `design-system/styles.css` importa
+ * `tokens/motion.css` na linha 5, e a regra continua no CSS compilado.
+ */
 
 /* Peso do traço dos ícones DENTRO de botão.
  *
