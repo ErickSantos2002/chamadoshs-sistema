@@ -266,13 +266,19 @@ body,
  *
  * Voltou a ser reta com o resto do sistema (decisão D2-a): "ChamadosHS: reto,
  * em tudo" — `DS/readme.md`, Fundamentos visuais → Cantos. */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* A LARGURA e a TRILHA saem do pacote, e não daqui.
+ *
+ * Havia aqui `::-webkit-scrollbar { width: 6px; height: 6px }` e
+ * `::-webkit-scrollbar-track { background: transparent }` — os dois **byte a
+ * byte idênticos** ao `design-system/tokens/base.css`. Vieram de carona quando
+ * se copiou o bloco inteiro para customizar o polegar.
+ *
+ * Não eram decisão: eram carona. E carona custa o mesmo que cópia — no dia em
+ * que o pacote levar a barra a 8px, estas linhas seguram 6 caladas.
+ *
+ * O que fica abaixo é decisão de verdade, e por isso continua: canto reto pela
+ * D2-a, e cor por token nosso em vez do slate cravado do pacote.
+ */
 ::-webkit-scrollbar-thumb {
   border-radius: var(--radius-none);
   background-color: rgb(var(--borda-forte) / 0.6);
