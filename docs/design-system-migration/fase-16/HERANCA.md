@@ -3,6 +3,76 @@
 Escrito no fecho do **Checkpoint 3**, aprovado em 08/09/2026. É o maior bloco que
 resta antes do Checkpoint 4.
 
+---
+
+## Antes de qualquer chave nova: a TABELA DAS CATRACAS
+
+**Primeiro item de trabalho da fase.** Não é preparação nem inventário: é o que
+diz se os itens numerados abaixo são os únicos ou apenas os que a gente
+encontrou.
+
+### O que ela é
+
+Uma tabela com **cada catraca existente e a fronteira de cada uma** — o que ela
+cobre, e onde ela para.
+
+Hoje esse desenho não existe. Cada catraca foi escrita **para o defeito que
+existia na hora**:
+
+- a de opacidade, para o modificador nos sete tokens com alfa;
+- a da ponte, para os 32 pares do D3-a;
+- a do nome acessível, para o `aria-label` que apaga conteúdo visível;
+- a do fundo cheio, para os doze pares de `bg-perigo` com `text-white`;
+- a do rótulo que some, para os três botões sem nome abaixo de `sm`.
+
+Cinco instrumentos, cinco defeitos, e **ninguém desenhou onde uma termina e a
+outra começa**.
+
+### Por que isso é a mesma família, um nível acima
+
+A família registrada no `DECISOES.md` — *mede perto do que interessa e é lido
+como se medisse* — sempre apareceu **dentro** de um instrumento. Aqui ela aparece
+no **conjunto**:
+
+> **Cada catraca mede o que diz medir, e ninguém mede o espaço ENTRE elas.**
+
+O item 3 é a prova de que o vão existe e é habitável. O buraco do preenchimento
+nu não está **dentro** de nenhuma das catracas: está **entre** a do fundo cheio
+com texto branco e a da cor cheia como texto. As duas estão corretas, cada uma no
+seu escopo, e o defeito passa no meio.
+
+### O que a tabela decide
+
+**A tabela torna os vãos visíveis, e é ela que diz se o item 3 é o único vão ou
+só o primeiro que encontramos.** Escrever chave nova antes dela é continuar
+tapando buraco na ordem em que os buracos aparecem — que é exatamente como se
+chegou a cinco catracas sem mapa.
+
+---
+
+## A regra que ordena a fase inteira
+
+> **Onde a aprovação foi mais rigorosa que a trava, a trava SOBE de prioridade.**
+
+Vale para a moldura do item 4, e vale para **qualquer catraca nova** que a fase
+escrever.
+
+### O caso que a origina
+
+| | mede |
+|---|---|
+| a **aprovação** da E16-b | **36 células** de contraste contra **três** superfícies, pior **3,22** |
+| a **catraca** que a vigia daí em diante | **uma** superfície, e o menor número que ela imprime é **3,66** |
+
+O **3,22 nem aparece** na saída da catraca, porque a superfície onde ele acontece
+não é medida. Uma regressão que a aprovação teria pego passa pela guarda.
+
+**A decisão se prova uma vez; a guarda vale todo dia.** E a pergunta que a regra
+obriga, sempre que algo é aprovado por medição: **a guarda mede o mesmo que a
+aprovação mediu?** Se mede menos, a diferença é dívida e precisa estar escrita.
+
+---
+
 ## 1. A dívida da cor cheia usada como TEXTO
 
 **Item (3) das pendências do Checkpoint 3.** A medição está em
@@ -67,11 +137,26 @@ régua numérica e não lê como série. A armadilha é conhecida e está docume
 Quatro sítios já apontam para eles — `SlaProgresso`, `KanbanColumn`, `SlaTab` e
 `Login`. **Isso está feito**, no commit de higiene.
 
-**A lacuna:** nada impede que um `bg-sucesso` de força cheia volte a aparecer. A
-catraca existente cobre *fundo cheio com texto branco*, e a nova cobrirá *cor
-cheia como texto*. **Preenchimento sem texto por cima não é coberto por
-nenhuma.** É chave de catraca a escrever, e a medição já existe: `--sucesso` dá
-2,32 e `--alerta` dá 1,96 no pior caso do claro.
+**A lacuna:** nada impede que um `bg-sucesso` de força cheia volte a aparecer.
+
+E o perigo dela **não é o tamanho — é a posição.** O buraco fica **ENTRE** três
+catracas, e não dentro de nenhuma:
+
+| | cobertura |
+|---|---|
+| fundo cheio **com texto branco** por cima | **coberta** — a catraca dos doze pares |
+| cor cheia **como texto** | **coberta** pela chave que o item 1 vai escrever |
+| **preenchimento nu**, sem texto por cima | **DESCOBERTO** |
+
+As três estão corretas, cada uma no seu escopo, e o defeito passa no meio.
+
+> **Instrução do operador, e ela é a diferença entre fechar o item e fechar o
+> código:** ao escrever a chave da Fase 16, escrever **as duas** — a da dívida da
+> cor cheia como texto **e** a do preenchimento nu. **Uma só e o item 3 fecha no
+> papel e continua aberto no código.**
+
+A medição já existe e não precisa ser refeita: `--sucesso` dá **2,32** e
+`--alerta` dá **1,96** no pior caso do claro, contra o piso de 3:1.
 
 ## 4. A moldura do gráfico, e a paleta medida contra UMA superfície
 
