@@ -82,63 +82,170 @@ montado à mão nasce.
 
 ## 3. `NovoChamado` — 42 linhas
 
-Invólucro de rota para o `NovoChamadoForm`. A abertura normal virou o modal do
-quadro; esta rota responde por link direto, favorito e celular.
+**Relida por inteiro.** Invólucro de rota para o `NovoChamadoForm`. A abertura
+normal virou o modal do quadro; esta rota responde por link direto, favorito e
+celular — *"onde um formulário dentro de modal fica espremido"*.
 
-| # | funcionalidade | como se confere | depois |
-|---|---|---|---|
-| 3.1 | botão "Voltar" navega para `/chamados` | clique | |
-| 3.2 | `aoCriar` navega para `/chamados/{id}` do chamado novo | criar um chamado | |
-| 3.3 | `aoCancelar` navega para `/chamados` | cancelar no formulário | |
-| 3.4 | largura máxima `max-w-3xl` centralizada | layout em tela larga | |
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 3.1 | botão "Voltar" navega para `/chamados` | clique |
+| 3.2 | `aoCriar` navega para `/chamados/{id}` do chamado recém-criado | criar um chamado |
+| 3.3 | `aoCancelar` navega para `/chamados` | cancelar no formulário |
+| 3.4 | `max-w-3xl` centralizado, com `space-y-5` entre cabeçalho e cartão | tela larga |
+| 3.5 | só o `router.tsx` a importa — **sem tela vizinha** | busca |
 
-**Nada de estado próprio.** Toda a lógica de criação vive no
-`NovoChamadoForm`, que **não** é arquivo desta fase.
+**A lógica de criação inteira vive no `NovoChamadoForm`**, que não é arquivo
+desta fase. Esta tela não tem estado próprio.
+
+O bloco de cabeçalho (`:18`) **ficou fora da conversão**: contém "Voltar", `h1` e
+subtítulo, e pelo critério do operador é barra que organiza a página, não cartão
+que carrega um item.
 
 ---
 
 ## 4. `Login` — 313 linhas
 
-Exceção §8.1: malha de 46px e vinheta. **A §24 é explícita** — mudança visual não
-pode alterar o fluxo de autenticação.
+**Refeita em 09/09/2026 lendo o arquivo INTEIRO.** A primeira versão tinha 7
+itens; esta tem 20 — e uma das sete **estava errada**.
 
-| # | funcionalidade | como se confere | depois |
-|---|---|---|---|
-| 4.1 | `username` e `password` em estado controlado | digitar nos dois campos | |
-| 4.2 | `enviar` chama `login(...)` e trata erro | credencial errada mostra a frase | |
-| 4.3 | `useEffect` redireciona quem já está autenticado | abrir `/login` logado | |
-| 4.4 | `onSubmit` no `<form>` — **Enter envia** | Enter no campo de senha | |
-| 4.5 | botão em estado `loading` durante a chamada | envio lento | |
-| 4.6 | a versão do app aparece no rodapé | comparar com `package.json` | |
-| 4.7 | malha + vinheta, e **não** `fundo-login.jpeg` | inspeção visual | |
+### Autenticação — a §24 é literal aqui
 
-> **Trava desta ficha:** se qualquer alteração mudar o `name` de um campo ou o
-> evento de submit, **é regressão** e a fase para — §24, literal.
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 4.1 | `username` e `password` em estado controlado | digitar |
+| 4.2 | `enviar` chama `login(username, password)` — e **só isso**; o erro é tratado no hook | credencial errada |
+| 4.3 | `onSubmit` no `<form>` — **Enter envia** | Enter na senha |
+| 4.4 | os dois campos têm `required` | enviar vazio |
+| 4.5 | os dois ficam `disabled` durante `loading` | envio lento |
+| 4.6 | `autoComplete="username"` e `"current-password"` — gerenciador de senha funciona | navegador com senha salva |
+| 4.7 | erro em bloco com **`role="alert"`** | credencial errada |
+| 4.8 | botão com `carregando={loading}` e texto que vira **"Entrando…"** | envio lento |
+
+> **Trava:** mudar `name`, `id`, `autoComplete` ou o evento de submit é
+> **regressão**, e a fase para — §24, literal.
+
+### Redirecionamento e tema
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 4.9 | `useEffect` redireciona quem já tem `user`, com **`replace: true`** | abrir `/login` logado |
+| 4.10 | só redireciona **se `pathname !== '/dashboard'`** — evita o laço | idem |
+| 4.11 | `setDarkModeOnLogin()` define escuro **só para quem nunca escolheu tema** | conta nova e conta com tema escolhido |
+
+### O rodapé que o sistema diz de si
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 4.12 | `useSaudeDoSistema()` lê `/api/v1/health` e pinta o ponto por estado | derrubar o banco |
+| 4.13 | o ponto **pulsa** enquanto `verificando` | recarregar |
+| 4.14 | `useRelogio(1000)` faz a **idade da leitura** andar sem evento novo | esperar um minuto |
+| 4.15 | `descreverIdade` diz **de quando** é a informação — *indicador sem hora continua verde vinte minutos depois de o sistema cair* | idem |
+| 4.16 | versão do app e **relógio ao vivo**, em `tabular-nums` | observar |
+
+### Layout e marca
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 4.17 | painel de apresentação **some abaixo de `lg`** — no celular empurraria o formulário para baixo da dobra | 390px |
+| 4.18 | o logo aparece **uma vez só**: no painel, ou centralizado quando o painel some (`lg:hidden`) | duas larguras |
+| 4.19 | os dois halos são `aria-hidden` **e** `pointer-events-none` | leitor de tela |
+| 4.20 | `overflow-y-auto` no contêiner e `min-h-full` no miolo — centralizar sem rolagem **cortava pelos dois lados** numa TV em paisagem | janela baixa |
+
+### O item que estava ERRADO
+
+A primeira versão listava, como 4.7:
+
+> *"malha + vinheta, e não `fundo-login.jpeg`"*
+
+**`.malha` e `.vinheta` não existem no código.** A tela usa dois halos desfocados
+sobre `bg-superficie`, no formato de duas colunas do HelpHS. Copiei a linha da
+lista de exceções do prompt mestre **sem conferir se o código a cumpria** — e foi
+o mesmo erro que levei para a lista da §33 no `VERSION.md`.
+
+**Terceira ficha com erro, e a de pior tipo**: as duas primeiras listavam de
+menos ou de mais dentro do arquivo; esta afirmava conformidade com uma exceção
+oficial que o arquivo **não cumpre**.
+
+E ao conferir apareceu uma **contradição no registro, anterior a mim** — está
+escrita no `VERSION.md`, e a decisão é do operador.
+
+### Vizinhas
+
+Nenhuma. Só o `router.tsx`. **Conferido.**
 
 ---
 
 ## 5. `Auditoria` — 395 linhas
 
-Nove estados, um `useCallback`, um `useEffect`, uma chamada de serviço.
+**Refeita em 09/09/2026 lendo o arquivo INTEIRO.** A primeira versão tinha 12
+itens; esta tem 24, e o que faltava era o mais delicado da tela.
 
-| # | funcionalidade | como se confere | depois |
-|---|---|---|---|
-| 5.1 | lista eventos via `auditoriaService.listar` | abrir a tela | |
-| 5.2 | filtro por **tipo de cadastro** (`alvo`) | trocar o seletor | |
-| 5.3 | filtro por **ator** (`atorId`) | escolher pessoa | |
-| 5.4 | filtro por **data de** e **até** | preencher os dois campos | |
-| 5.5 | qualquer filtro **volta para a página 0** (`aoFiltrar`) | filtrar na página 2 | |
-| 5.6 | "Limpar" zera os quatro filtros | clicar | |
-| 5.7 | paginação por `POR_PAGINA`, com "talvez tenha mais" | avançar até o fim | |
-| 5.8 | botão "Atualizar" força recarga (`recarga`) | clicar | |
-| 5.9 | estado de **erro** com mensagem | derrubar a rede | |
-| 5.10 | estado de **carregando** | abrir a tela | |
-| 5.11 | **permissão**: técnico não vê o seletor de tipo, e vê a frase que explica | entrar como técnico | |
-| 5.12 | a lista tem rolagem **própria** (`min-h-0 flex-1 overflow-auto`) | lista longa | |
+### Busca e proteção de corrida
 
-**A 5.11 e a 5.12 são as que a captura não pegaria.** A primeira só existe para
-um perfil; a segunda é comportamento de layout, e é exatamente o que se quebra
-ao trocar um contêiner por outro.
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 5.1 | lista via `auditoriaService.listar` com `skip`/`limit` de `POR_PAGINA` = 50 | abrir a tela |
+| 5.2 | **guarda de cancelamento** (`let atual = true` + limpeza do efeito) — resposta lenta não sobrescreve a mais nova | trocar filtro duas vezes rápido |
+| 5.3 | `recarga` está nas dependências do `useCallback` **de propósito**: o botão Atualizar passa pelo mesmo efeito guardado, sem caminho paralelo | clicar Atualizar durante uma carga |
+| 5.4 | erro vem de `err.response?.data?.detail`, com recuo para *"Não foi possível carregar a trilha."* | derrubar a rede |
+| 5.5 | em erro, `eventos` volta a `null` — a tabela some, não fica velha | idem |
+| 5.6 | usuários vêm do hook `useUsuariosPorId`, e não de chamada própria | seletor "Quem fez" |
+
+### Permissão — e ela muda a CONSULTA, não só a tela
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 5.7 | `ehAdministrador` = `user?.role === 'Administrador'` | dois perfis |
+| 5.8 | **`alvoEfetivo`**: técnico consulta **sempre `'setor'`**, nunca `''` — o filtro sai diferente da API | técnico, aba de rede |
+| 5.9 | técnico não vê o seletor de tipo; vê um bloco fixo "Setores" com a frase que explica | entrar como técnico |
+| 5.10 | o vazio **muda de texto** por perfil: *"A trilha ainda não registrou nenhum evento"* para administrador, *"Nenhum evento de setor registrado"* para técnico | base vazia, dois perfis |
+
+**A 5.8 é a mais importante da ficha.** Não é tela escondida: é **pergunta
+diferente feita à API**. Oferecer "Todos" ao técnico chamaria de todos uma lista
+que traz metade, e oferecer "Usuários" seria oferecer um 403.
+
+### Filtros
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 5.11 | filtro por **tipo**, **quem fez**, **de** e **até** | os quatro |
+| 5.12 | qualquer filtro **volta à página 0** (`aoFiltrar`) | filtrar na página 2 |
+| 5.13 | "Limpar filtros" **só aparece** quando há filtro (`temFiltro`) | tela limpa |
+| 5.14 | limpar zera os quatro **e** a página | clicar |
+| 5.15 | as datas são `<input>` montados à mão, com `id` pareado ao `htmlFor` do rótulo | leitor de tela |
+| 5.16 | o seletor "Quem fez" ordena por nome (`localeCompare`) | lista longa |
+
+### Os TRÊS vazios, que não são dois
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 5.17 | `pagina > 0` → *"Fim da lista"* **com botão de voltar** | 50 eventos exatos, ir à página 2 |
+| 5.18 | com filtro → *"Nenhum evento neste recorte. Tente ampliar o período."* | filtro impossível |
+| 5.19 | sem filtro → a frase por perfil, mais a `NotaDoInicioDaTrilha` | base vazia |
+
+> O comentário do código conta por que são três: com **exatamente 50** eventos o
+> botão Próxima habilita, a página 2 volta vazia, e a versão antiga declarava que
+> a trilha nunca registrara nada — logo depois de a pessoa ter lido 50 linhas.
+
+### Paginação e tabela
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 5.20 | `talvezTenhaMais` = a página veio com **exatamente** `limit` | 50 e 49 eventos |
+| 5.21 | a barra de paginação **só existe** se `pagina > 0` ou há mais | uma página curta |
+| 5.22 | cabeçalho da tabela é **`sticky`** sobre `superficie-elevada` | rolar a lista |
+| 5.23 | a lista tem **rolagem própria** (`min-h-0 flex-1 overflow-auto`) | lista longa |
+| 5.24 | coluna **`origem`** mostra a rota que gravou — é o motivo de a tela existir | qualquer evento |
+
+### Vizinhas
+
+`EstadosDaTrilha` — `TrilhaCarregando`, `TrilhaComFalha`, `TrilhaVazia` e
+`NotaDoInicioDaTrilha` — é **compartilhado com `HistoricoDaConta`**, o painel
+dentro do modal de usuário, que é tela da **Fase 15**.
+
+Nada foi alterado neles, e o cartão de filtros ficou de fora da conversão — mas
+a dependência fica registrada: **mexer nos estados da trilha alcança duas telas de
+fases diferentes.**
 
 ---
 

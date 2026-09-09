@@ -679,7 +679,7 @@ Esta é a lista fechada, em 09/09/2026:
 | **Canto reto** | escala `borderRadius` inteira em `--radius-none`; só `full` sobrevive, para pastilha e avatar | D2-a |
 | **`Colchetes`** | primitivo próprio, pele de console | D2-a |
 | **`Rotulo`** | primitivo próprio | Fase 7 |
-| **Login com malha de 46px e vinheta** | `pages/Login.tsx` — e não `fundo-login.jpeg` | §8.1 |
+| ~~Login com malha de 46px e vinheta~~ | **NÃO EXISTE no código** — ver a contradição abaixo | — |
 | **Ponte em português (D3-a)** | 22 tokens em `R G B` no `src/styles/index.css`, guardados por catraca de 32 pares | **09/09/2026** |
 
 > **Nada além destas é exceção.** Se algo mais divergir do pacote, é defeito —
@@ -687,3 +687,37 @@ Esta é a lista fechada, em 09/09/2026:
 
 A única entrada nova em relação à lista da §33 é a ponte, e ela entrou por
 **decisão registrada com motivo**, e não por acomodação.
+
+### Correção de 09/09/2026: a linha do login estava errada, e era minha
+
+Escrevi *"Login com malha de 46px e vinheta — `pages/Login.tsx`"* como exceção
+**vigente**. Ela não é. **`.malha` e `.vinheta` não existem no código** — nem no
+CSS, nem no `Login.tsx`, que hoje usa dois halos desfocados sobre
+`bg-superficie`, no formato de duas colunas do HelpHS.
+
+Copiei a linha da lista de exceções do prompt mestre sem conferir se o código a
+cumpria. **Numa lista cujo propósito é dizer "nada além destas", afirmar uma
+exceção que não existe é o erro mais caro possível**: a lista passa a atestar
+conformidade onde não há.
+
+### E há uma contradição no registro, anterior a mim
+
+Dois documentos deste repositório dizem coisas diferentes:
+
+| onde | o que diz |
+|---|---|
+| tabela do **D2-a**, acima | `Login com malha de 46px e vinheta` — **⏳ Fase 16**, *"voltam junto com a reescrita de `pages/Login.tsx`"* |
+| comentário do próprio **`Login.tsx`** | as quatro camadas *"saíram do CSS junto com esta reescrita"*, **de propósito** — *"era de outra família; o HelpHS abre com um painel de apresentação à esquerda e o formulário à direita, e é isso que faz as duas telas parecerem do mesmo produto"* |
+
+Um diz que voltam **nesta fase**; o outro diz que saíram **por decisão**, e dá o
+motivo. A reescrita já aconteceu, e a malha não voltou.
+
+**Não resolvo isto.** É decisão do operador, e ela tem duas saídas:
+
+- **(a)** a malha e a vinheta voltam — e aí há trabalho de Fase 16 que meu
+  levantamento não contou;
+- **(b)** o formato de duas colunas é a decisão — e aí a linha do D2-a se fecha
+  como **revogada**, e a exceção do login deixa de existir.
+
+Até lá a linha fica **tachada**, e não apagada: a lista precisa mostrar que houve
+uma afirmação e que ela caiu.
