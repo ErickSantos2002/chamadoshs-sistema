@@ -876,8 +876,27 @@ const Dashboard: React.FC = () => {
                       nenhum, e some junto se o recorte for maior. */}
                   <div aria-hidden="true">
                   <ResponsiveContainer width="100%" height={190}>
-                    <RChart>
+                    {/* `tabIndex={-1}` porque `aria-hidden` NÃO tira da ordem de
+                        tabulação — tira só da árvore de acessibilidade.
+                        
+                        O Recharts 3 liga a camada de acessibilidade por padrão e
+                        põe `tabIndex={0}` na superfície
+                        (`RootSurface.js:47` — `hasAccessibilityLayer ? 0 :
+                        undefined`). Somado ao nosso `aria-hidden`, isso produzia
+                        uma PARADA DE FOCO QUE NÃO ANUNCIA NADA: quem navega por
+                        teclado parava aqui e o leitor de tela ficava calado.
+                        
+                        `inert` no `<div>` resolveria os dois de uma vez, e está
+                        errado aqui: ele mata também o ponteiro, e a rosca tem
+                        `<Tooltip>` no passar do mouse. */}
+                    <RChart tabIndex={-1}>
+                    {/* O `<Pie>` tem prop PRÓPRIA, e não `tabIndex`:
+                        `rootTabIndex`, com padrão 0 (`Pie.js:532`). Só
+                        `tabIndex` no gráfico arrumava a superfície e deixava o
+                        `g.recharts-pie` para trás — conserto pela metade, que o
+                        caso de teste pegou antes de subir. */}
                       <Pie
+                        rootTabIndex={-1}
                         data={metricas.porStatus}
                         cx="50%"
                         cy="50%"

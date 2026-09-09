@@ -743,8 +743,22 @@ function exigirNomeQueNaoApagaConteudo() {
  * Foi exigência do operador, e a razão dele é a que vale: uma linha de base de
  * doze seria MEDIÇÃO, não guarda. Guarda é isto.
  */
-function achadosDeDicaSemDono(conteudo, rel) {
+function achadosDeDicaSemDono(bruto, rel) {
   const achados = [];
+  // SEM COMENTÁRIO, e isso foi correção de 09/09/2026.
+  //
+  // A versão anterior varria o arquivo cru, e casava a marca do componente
+  // **dentro de comentário**. Um bloco que explicava, em prosa, por que
+  // `inert` estava errado — citando o componente pelo nome — foi acusado de
+  // ser um uso sem dica própria.
+  //
+  // É a família do delimitador dentro do conteúdo, aqui no próprio validador:
+  // o padrão casa mais coisa do que quem o escreveu tinha em mente. E o dano
+  // é o pior tipo de falso positivo — **catraca que reprova quem documentou**.
+  //
+  // `semComentario` preserva a contagem de linhas, então o número reportado
+  // continua apontando para a linha certa.
+  const conteudo = semComentario(bruto);
   for (const m of conteudo.matchAll(/<Tooltip\b/g)) {
     const fim = fimDaTag(conteudo, m.index + m[0].length);
     if (fim === -1) continue;
@@ -775,7 +789,14 @@ function exigirDicaPropria() {
   const achados = [];
   let tooltips = 0;
   for (const arquivo of arquivos) {
-    const conteudo = fs.readFileSync(arquivo, 'utf8');
+    // A CONTAGEM sai do mesmo texto que a verificação, e não do cru.
+    //
+    // Por um instante ela saiu do cru enquanto o detector já lia o limpo, e a
+    // catraca imprimiu "4 encontrados, 0 sem dica" com três usos reais — o
+    // quarto era a marca citada em comentário. **Número impresso que discorda
+    // do número verificado é a mesma família de sempre**, e num instrumento cujo
+    // trabalho é justamente não mentir sobre o que viu.
+    const conteudo = semComentario(fs.readFileSync(arquivo, 'utf8'));
     tooltips += [...conteudo.matchAll(/<Tooltip\b/g)].length;
     const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
     achados.push(...achadosDeDicaSemDono(conteudo, rel));
