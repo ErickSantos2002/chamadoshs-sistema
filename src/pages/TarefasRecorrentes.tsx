@@ -13,6 +13,7 @@ import {
   Textarea,
   BlocoCarregando,
   Checkbox,
+  Card,
 } from '../components/ui';
 import { IconeAgenda, IconeApagar, IconeAtencao, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
 import {
@@ -474,11 +475,14 @@ const TarefasRecorrentes: React.FC = () => {
           {tarefasOrdenadas.map((t) => {
             const st = statusData(t.proxima_data);
             return (
-              <div
+              // `md` e nao `lg`: sao muitos cartoes numa grade de duas
+              // colunas, e 24px de respiro por cartao aumentariam a altura da
+              // lista sem acrescentar leitura. Cartao de conteudo denso e
+              // cartao de pagina inteira nao pedem o mesmo respiro.
+              <Card
                 key={t.id}
-                className={`rounded-xl border border-borda bg-superficie p-5 transition-colors ${
-                  t.ativo ? '' : 'opacity-60'
-                }`}
+                padding="md"
+                className={t.ativo ? undefined : 'opacity-60'}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -582,7 +586,7 @@ const TarefasRecorrentes: React.FC = () => {
                     Excluir
                   </Button>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

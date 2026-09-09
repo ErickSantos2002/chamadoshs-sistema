@@ -645,10 +645,30 @@ o pacote fotografar o código em 23/08. Restaurada por decisão de 02/09/2026.
 | Cor de sinal só no que está ativo | ✅ já valia | `--sinal` = `--action`; item ativo, botão primário, link, foco |
 | `Rotulo` mono, caixa alta, 12px, `0.1em` | ⏳ Fase 7 | hoje em sans/10px desde `993ebc5` |
 | `Colchetes` só em painel | ⏳ Fase 7 | removido em `0f94122`; recriar e aplicar em modal, coluna do quadro, seção e login |
-| Login com malha de 46px e vinheta | ⏳ Fase 16 | `.malha`/`.vinheta` saíram do CSS em `0f94122`; voltam junto com a reescrita de `pages/Login.tsx` |
+| ~~Login com malha de 46px e vinheta~~ | ❌ **REVOGADA em 09/09/2026** | ver abaixo |
 
-**Nada além destas cinco.** Toda outra diferença em relação ao pacote é defeito a
-corrigir, não identidade a preservar (§8.2).
+**Nada além destas quatro.** Toda outra diferença em relação ao pacote é defeito
+a corrigir, não identidade a preservar (§8.2).
+
+#### A malha e a vinheta do login: REVOGADAS
+
+**Decisão do operador, 09/09/2026.** O formato de duas colunas é a decisão
+vigente; a malha e a vinheta **não voltam**.
+
+Esta linha prometia *"voltam junto com a reescrita de `pages/Login.tsx`"*. **A
+reescrita aconteceu, e elas não voltaram** — e o próprio `Login.tsx` diz por quê,
+em comentário, com o motivo:
+
+> *As quatro camadas saíram do CSS junto com esta reescrita — era de outra
+> família; o HelpHS abre com um painel de apresentação à esquerda e o formulário
+> à direita, e é isso que faz as duas telas parecerem do mesmo produto.*
+
+**Aquilo não é vestígio: é decisão registrada com o porquê.** Esta linha é que
+era promessa — promessa que a reescrita superou e que ninguém voltou para fechar.
+
+> **Registro que não acompanha a decisão vira dívida que se cobra sozinha
+> depois**, e foi o que quase aconteceu: a linha por pouco não virou trabalho de
+> Fase 16 para restaurar algo que se decidiu remover.
 
 ---
 
@@ -679,7 +699,6 @@ Esta é a lista fechada, em 09/09/2026:
 | **Canto reto** | escala `borderRadius` inteira em `--radius-none`; só `full` sobrevive, para pastilha e avatar | D2-a |
 | **`Colchetes`** | primitivo próprio, pele de console | D2-a |
 | **`Rotulo`** | primitivo próprio | Fase 7 |
-| ~~Login com malha de 46px e vinheta~~ | **NÃO EXISTE no código** — ver a contradição abaixo | — |
 | **Ponte em português (D3-a)** | 22 tokens em `R G B` no `src/styles/index.css`, guardados por catraca de 32 pares | **09/09/2026** |
 
 > **Nada além destas é exceção.** Se algo mais divergir do pacote, é defeito —
@@ -688,36 +707,20 @@ Esta é a lista fechada, em 09/09/2026:
 A única entrada nova em relação à lista da §33 é a ponte, e ela entrou por
 **decisão registrada com motivo**, e não por acomodação.
 
-### Correção de 09/09/2026: a linha do login estava errada, e era minha
+### O login SAIU desta lista, e por decisão — não por engano
 
-Escrevi *"Login com malha de 46px e vinheta — `pages/Login.tsx`"* como exceção
-**vigente**. Ela não é. **`.malha` e `.vinheta` não existem no código** — nem no
-CSS, nem no `Login.tsx`, que hoje usa dois halos desfocados sobre
-`bg-superficie`, no formato de duas colunas do HelpHS.
+**A distinção importa, e o operador exigiu que a lista a diga.**
 
-Copiei a linha da lista de exceções do prompt mestre sem conferir se o código a
-cumpria. **Numa lista cujo propósito é dizer "nada além destas", afirmar uma
-exceção que não existe é o erro mais caro possível**: a lista passa a atestar
-conformidade onde não há.
+Eu havia escrito *"Login com malha de 46px e vinheta"* como exceção **vigente**,
+copiando a linha do prompt mestre **sem conferir se o código a cumpria**. Era
+erro meu, e o pior dos três que cometi nas fichas: numa lista cujo propósito é
+dizer *"nada além destas"*, afirmar exceção inexistente **inverte a função da
+lista** — ela passa a atestar conformidade onde não há.
 
-### E há uma contradição no registro, anterior a mim
+**Mas não é por isso que ela saiu.** Ao conferir apareceu a contradição entre a
+tabela do D2-a e o comentário do `Login.tsx`, e o operador **decidiu**: o formato
+de duas colunas fica, a malha não volta, a linha do D2-a é revogada.
 
-Dois documentos deste repositório dizem coisas diferentes:
-
-| onde | o que diz |
-|---|---|
-| tabela do **D2-a**, acima | `Login com malha de 46px e vinheta` — **⏳ Fase 16**, *"voltam junto com a reescrita de `pages/Login.tsx`"* |
-| comentário do próprio **`Login.tsx`** | as quatro camadas *"saíram do CSS junto com esta reescrita"*, **de propósito** — *"era de outra família; o HelpHS abre com um painel de apresentação à esquerda e o formulário à direita, e é isso que faz as duas telas parecerem do mesmo produto"* |
-
-Um diz que voltam **nesta fase**; o outro diz que saíram **por decisão**, e dá o
-motivo. A reescrita já aconteceu, e a malha não voltou.
-
-**Não resolvo isto.** É decisão do operador, e ela tem duas saídas:
-
-- **(a)** a malha e a vinheta voltam — e aí há trabalho de Fase 16 que meu
-  levantamento não contou;
-- **(b)** o formato de duas colunas é a decisão — e aí a linha do D2-a se fecha
-  como **revogada**, e a exceção do login deixa de existir.
-
-Até lá a linha fica **tachada**, e não apagada: a lista precisa mostrar que houve
-uma afirmação e que ela caiu.
+> A linha não está fora porque uma ficha errou. Está fora porque **foi
+> revogada**. Uma lista de exceções que não distingue *"caída por engano"* de
+> *"revogada por decisão"* deixa o próximo leitor sem saber se pode reabrir.
