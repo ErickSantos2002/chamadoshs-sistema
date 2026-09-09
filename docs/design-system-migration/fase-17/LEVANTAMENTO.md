@@ -98,7 +98,7 @@ existem neste produto.*
 | `dark:` residual | **0** |
 | usam o primitivo `Card` | **nenhuma** — todas montam à mão |
 | fichas da §29 | **nenhuma** |
-| **remoção da ponte D3-a** | **1017 usos, 62 arquivos** |
+| ~~remoção da ponte D3-a~~ | **fora de escopo** — a ponte virou exceção documentada em 09/09/2026 |
 
 ### Fase 17 — responsividade
 
@@ -156,8 +156,9 @@ parada em `165d919` — conferido hoje. Ver a seção de riscos.
 
 `src/design-system/VERSION.md` existe. **A cópia local do `adocao.md` não
 existe**, e a §25 a pede. O `VERSION.md` precisa da lista de exceções do
-ChamadosHS com o *"nada além delas"* que a §33 exige — e, se a ponte D3-a virar
-permanente, ela entra nessa lista.
+ChamadosHS com o *"nada além delas"* que a §33 exige. **Feito em 09/09/2026**,
+junto com a decisão da ponte — a lista fechada tem cinco entradas, e a ponte é a
+única nova.
 
 ### Checkpoint 4
 
