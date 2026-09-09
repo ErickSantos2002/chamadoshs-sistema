@@ -44,7 +44,6 @@ import {
   corDaPrioridade,
   corDaSerie,
   corDoStatus,
-  estiloDoGrafico,
 } from '../lib/graficos';
 
 // ========================================
@@ -104,7 +103,6 @@ const Dashboard: React.FC = () => {
   const { darkMode } = useTheme();
   // Eixos, grade e dica acompanham o tema: antes eram hexadecimais fixos do
   // tema escuro, e no claro a grade sumia contra o fundo branco.
-  const estilo = estiloDoGrafico(darkMode);
 
   const { categorias } = useChamados();
   const { user } = useAuth();
@@ -950,13 +948,12 @@ const Dashboard: React.FC = () => {
                 <BarChart data={metricas.porPrioridade} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                   {/* Só a grade horizontal: as verticais competiam com as
                       próprias barras, que já marcam a posição no eixo. */}
-                  <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
 
-                  <XAxis dataKey="name" tick={{ fill: estilo.texto, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: estilo.texto, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
 
                   <Tooltip
-                    cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
                     wrapperStyle={{ outline: 'none' }}
                     content={<DicaDoGrafico />}
                   />
@@ -993,11 +990,11 @@ const Dashboard: React.FC = () => {
             >
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={metricas.porCategoria} layout="vertical" margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
 
                 <XAxis
                   type="number"
-                  tick={{ fill: estilo.texto, fontSize: 11 }}
+                  tick={{ fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   allowDecimals={false}
@@ -1008,14 +1005,13 @@ const Dashboard: React.FC = () => {
                 <YAxis
                   dataKey="name"
                   type="category"
-                  tick={{ fill: estilo.texto, fontSize: 11 }}
+                  tick={{ fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   width={120}
                 />
 
                 <Tooltip
-                  cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
                   wrapperStyle={{ outline: 'none' }}
                   content={<DicaDoGrafico />}
                 />

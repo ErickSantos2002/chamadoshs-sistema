@@ -139,48 +139,22 @@ export function corDoStatus(status: string, escuro: boolean): string {
 }
 
 /**
- * Estilo dos eixos, grade e dica.
+ * A moldura do gráfico NÃO mora mais aqui — ela virou CSS.
  *
- * Os valores acompanham os tokens de tema: grade e eixo saem das bordas, o
- * texto sai de `--conteudo-suave`. Antes eram hexadecimais soltos, que é como
- * a grade de um gráfico acabava mais escura que a borda do card ao lado.
+ * O `estiloDoGrafico` existia para copiar tokens em hexadecimal, porque o
+ * Recharts escreve cor em ATRIBUTO de apresentação e `var()` não resolve ali.
+ * A cópia divergiu duas vezes; a última na E14, e atravessou três emendas sem
+ * nada acusar.
  *
- * A dica não tem canto arredondado, como o resto da interface.
+ * Atributo de apresentação tem especificidade zero e perde para qualquer regra
+ * CSS — medido no Chrome 153 e em jsdom, sem `!important`, e preso em
+ * `graficos-css.test.ts`. As três regras estão em `src/styles/index.css`, sobre
+ * as classes que o Recharts já emite, e leem o token direto.
+ *
+ * A dica saiu antes, para `components/ui/DicaDoGrafico.tsx`, porque nunca foi
+ * SVG: o Recharts a desenha num `div` sobreposto, que lê token por classe.
+ *
+ * A cópia foi de cinco campos para dois, e de dois para ZERO. Não há mais o que
+ * manter em sincronia, e a catraca `exigirMolduraFiel` deixou de ser muro para
+ * ser rede: ela guarda contra a cópia VOLTAR.
  */
-export function estiloDoGrafico(escuro: boolean) {
-  return {
-    // Hexadecimal, e não `var(--token)`, porque o Recharts escreve estes
-    // valores em ATRIBUTO de SVG (`stroke=`, `fill=`) e não em estilo — e
-    // atributo com `var()` não resolve em todo navegador.
-    //
-    // A seção 5.4 de `DS/guidelines/adocao.md` prevê exatamente este caso:
-    // onde a biblioteca não aceita a variável, o objeto pode ser "gerado a
-    // partir dos mesmos valores com comentário apontando o token de origem".
-    // É o que está abaixo — cada linha nomeia o token do design system de que
-    // saiu, e os dois têm de bater.
-    //
-    // Esta cópia JÁ divergiu DUAS vezes. A primeira, quando a paleta mudou e a
-    // grade ficou no cinza-azulado antigo dentro de cards que já eram slate. A
-    // segunda, na E14: o `--border-color` do escuro subiu de `#1E3A5F` para
-    // `#2A4463` — "cede o próprio valor ao muted e sobe" — e estes dois campos
-    // ficaram no valor de antes. A recópia do token entrou, a cópia daqui não, e
-    // nada acusou por três emendas.
-    //
-    // Agora acusa: `exigirMolduraFiel` no `validar-paleta.js` confere cada
-    // hexadecimal contra o token que o comentário ao lado nomeia. "Se mexer nos
-    // tokens, mexa aqui" deixou de ser pedido e virou catraca.
-    grade: escuro ? '#2A4463' : '#E2E8F0', // --border-color  (#2A4463 / slate-200)
-    texto: escuro ? '#E2E8F0' : '#1E293B', // --text-body     (slate-200 / slate-800)
-    //
-    // A DICA saiu daqui, e com ela tres copias de token.
-    //
-    // Ela copiava fundo, borda e cor de texto porque este objeto copia — mas a
-    // dica NAO e SVG: o Recharts a desenha num `div` sobreposto
-    // (`recharts-tooltip-wrapper`), que e HTML comum e le token por classe.
-    // Ver `components/ui/DicaDoGrafico.tsx`.
-    //
-    // Sobram os dois de baixo, que sao atributo de SVG de verdade -- `stroke=`
-    // na grade e `fill=` no rotulo das marcas -- e continuam sob a catraca
-    // `exigirMolduraFiel`. A copia encolheu de cinco campos para dois.
-  };
-}

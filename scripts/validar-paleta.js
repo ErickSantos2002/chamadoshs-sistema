@@ -783,6 +783,159 @@ function exigirDicaPropria() {
 // ──────────────────────────────────────────────────────────────────────
 
 /**
+ * A cópia de tokens do `graficos.ts` foi a ZERO, e esta catraca guarda contra
+ * ela VOLTAR.
+ *
+ * ── O texto mudou junto com o que ela faz ────────────────────────────
+ *
+ * Ela nasceu como MURO: existia porque a cópia existia, e conferia se cada
+ * hexadecimal ainda batia com o token que o comentário ao lado nomeava. Achou
+ * duas divergências no dia em que foi escrita — `grade` e a borda da dica,
+ * paradas no valor pré-E14.
+ *
+ * Agora não há cópia. A dica virou `DicaDoGrafico`, que é HTML e lê token por
+ * classe; a grade e o rótulo das marcas viraram três regras em `index.css`,
+ * porque atributo de apresentação perde para regra CSS — medido no Chrome 153 e
+ * em jsdom, e preso em `graficos-css.test.tsx`.
+ *
+ * Então ela é REDE: não há mais o que divergir, e o que ela impede é alguém
+ * reintroduzir a cópia sem perceber que existe outro caminho.
+ *
+ * **Catraca cujo texto descreve o que ela guardava antes é a família da semana
+ * inteira** — a afirmação e a coisa se descolando. Por isso o texto mudou no
+ * mesmo commit que a função.
+ *
+ * ── O que conta como cópia ───────────────────────────────────────────
+ *
+ * Uma linha com hexadecimal literal E um `--token` no comentário. É a assinatura
+ * exata do arranjo antigo, e a mesma da ponte do D3-a: valor copiado com a
+ * origem anotada ao lado, mantidos em sincronia por memória humana.
+ *
+ * As paletas continuam podendo ter hexadecimal — `CATEGORICA_*`, `STATUS_*` e
+ * `PRIORIDADE_*` são cor própria, certificada aqui mesmo por contraste e por ΔE,
+ * e não cópia de token nenhum. O que as distingue é justamente não nomearem
+ * token de origem.
+ */
+function achadosDeCopiaDeToken(conteudo, rel) {
+  const achados = [];
+  conteudo.split('\n').forEach((linha, i) => {
+    const semBloco = linha.trim().startsWith('*');
+    if (semBloco) return;
+    const temHex = /'#[0-9a-fA-F]{6}'/.test(linha);
+    const comentario = linha.indexOf('//');
+    if (!temHex || comentario === -1) return;
+    const token = /(--[a-z-]+)/.exec(linha.slice(comentario));
+    if (!token) return;
+    achados.push(
+      `${rel}:${i + 1}  hexadecimal com ${token[1]} no comentário — é cópia de token. ` +
+        `A cor do gráfico se lê por CSS (ver index.css) ou por classe (ver DicaDoGrafico).`
+    );
+  });
+  return achados;
+}
+
+function exigirSemCopiaDeToken() {
+  const achados = achadosDeCopiaDeToken(
+    fs.readFileSync(GRAFICOS, 'utf8'),
+    'src/lib/graficos.ts'
+  );
+
+  if (achados.length) {
+    falhas.push(
+      `cópia de token de volta no graficos.ts: ${achados.length} linha(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — a cópia de token não voltou ===` +
+      `\n  ${achados.length} linha(s) com hexadecimal apontando token`
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// A cor da série vira TEXTO dentro da dica — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Todo `<Tooltip>` desenha com a dica PRÓPRIA, e nunca com a do Recharts.
+ *
+ * ── O defeito que isto impede de voltar ──────────────────────────────
+ *
+ * A dica padrão do Recharts pinta cada item **na cor da série**. Conferido na
+ * fonte instalada, `recharts/lib/component/DefaultTooltipContent.js` linha 70:
+ *
+ *     color: entry.color || '#000'
+ *
+ * A paleta é certificada como FORMA, piso 3:1 contra o card. Dentro da dica ela
+ * vira TEXTO, piso 4,5:1 — e **doze das treze reprovavam**: cinco no claro,
+ * sete no escuro, a pior a 2,93. Papel novo não herda piso antigo.
+ *
+ * ── Por que a catraca é sobre a PRESENÇA, e não sobre a cor ──────────
+ *
+ * O conserto é o `content={<DicaDoGrafico />}`. Medir cor aqui não guardaria
+ * nada: a dica própria usa classe, e o valor certo já está garantido pelos
+ * tokens. O que pode dar errado é alguém **remover** o `content` — e aí o
+ * Recharts volta a desenhar a dica dele, com o defeito inteiro de volta, sem
+ * que nenhuma medição de cor perceba.
+ *
+ * Foi exigência do operador, e a razão dele é a que vale: uma linha de base de
+ * doze seria MEDIÇÃO, não guarda. Guarda é isto.
+ */
+function achadosDeDicaSemDono(conteudo, rel) {
+  const achados = [];
+  for (const m of conteudo.matchAll(/<Tooltip\b/g)) {
+    const fim = fimDaTag(conteudo, m.index + m[0].length);
+    if (fim === -1) continue;
+    const atributos = conteudo.slice(m.index + m[0].length, fim);
+    if (atributos.includes('content=\{<DicaDoGrafico')) continue;
+    const linha = conteudo.slice(0, m.index).split('\n').length;
+    achados.push(
+      `${rel}:${linha}  <Tooltip> sem content={<DicaDoGrafico />}: o Recharts ` +
+        `desenha a dica dele, e lá a cor da série vira TEXTO`
+    );
+  }
+  return achados;
+}
+
+function exigirDicaPropria() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx$/.test(nome) && !/\.test\.tsx$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  let tooltips = 0;
+  for (const arquivo of arquivos) {
+    const conteudo = fs.readFileSync(arquivo, 'utf8');
+    tooltips += [...conteudo.matchAll(/<Tooltip\b/g)].length;
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(...achadosDeDicaSemDono(conteudo, rel));
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `<Tooltip> desenhando com a dica do Recharts: ${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — a dica do gráfico é a nossa ===` +
+      `\n  ${tooltips} <Tooltip> encontrado(s), ${achados.length} sem dica própria`
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// A moldura do gráfico, fiel ao token que ela nomeia — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
  * O `estiloDoGrafico` do `graficos.ts` é uma SEGUNDA CÓPIA dos tokens, e ela
  * já divergiu duas vezes.
  *
@@ -1495,7 +1648,7 @@ function main() {
   exigirNomeQueNaoApagaConteudo();
   exigirCatracaDeFundoCheio();
   exigirRotuloQueSobreviveAoBreakpoint();
-  exigirMolduraFiel();
+  exigirSemCopiaDeToken();
   exigirDicaPropria();
 
   console.log(linhas.join('\n'));
@@ -1523,7 +1676,7 @@ module.exports = {
   contido,
   achadosDeNome,
   achadosDeRotuloSumido,
-  achadosDeMolduraInfiel,
+  achadosDeCopiaDeToken,
   achadosDeDicaSemDono,
   pacoteDeTokens,
   resolverDoPacote,

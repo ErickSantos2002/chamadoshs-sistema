@@ -5,7 +5,6 @@ import {
   corDaPrioridade,
   corDaSerie,
   corDoStatus,
-  estiloDoGrafico,
   paletaCategorica,
 } from './graficos';
 
@@ -109,38 +108,5 @@ describe('paleta categórica', () => {
     // a categoria.
     expect(corDaSerie(1, false)).toBe(CATEGORICA_CLARA[1]);
     expect(corDaSerie(1, true)).toBe(CATEGORICA_ESCURA[1]);
-  });
-});
-
-describe('estiloDoGrafico', () => {
-  it('muda de valores entre os temas', () => {
-    const claro = estiloDoGrafico(false);
-    const escuro = estiloDoGrafico(true);
-
-    expect(claro.grade).not.toBe(escuro.grade);
-    expect(claro.texto).not.toBe(escuro.texto);
-  });
-
-  /**
-   * A dica SAIU deste objeto, e o teste do canto dela saiu junto.
-   *
-   * Ele existia por um motivo escrito: "este é o único lugar do sistema onde o
-   * canto não vem do Tailwind, e portanto o único que fica para trás sem
-   * ninguém perceber". O valor já tinha ido de `0px` para `8px` e voltado, três
-   * vezes, sempre porque copiava à mão uma decisão que mora noutro lugar.
-   *
-   * **O motivo deixou de existir.** A dica virou `components/ui/DicaDoGrafico`,
-   * que é HTML e usa classe — o canto agora vem do Tailwind como no resto da
-   * interface, e `--radius-none` o zera sem ninguém repetir nada.
-   *
-   * O teste não foi apagado por conveniência: foi apagado porque o defeito que
-   * ele guardava passou a ser impossível de escrever. O que guarda a dica agora
-   * é a catraca `exigirDicaPropria`, que impede o Recharts de voltar a desenhar
-   * a dica padrão.
-   */
-  it('só copia o que é atributo de SVG — dois campos, não cinco', () => {
-    const claro = estiloDoGrafico(false);
-
-    expect(Object.keys(claro).sort()).toEqual(['grade', 'texto']);
   });
 });

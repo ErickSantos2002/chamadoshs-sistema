@@ -184,6 +184,54 @@ body,
   @apply bg-superficie-base font-sans text-conteudo antialiased transition-colors;
 }
 
+/* ── Os gráficos leem TOKEN, e não hexadecimal copiado ────────────────
+ *
+ * O Recharts escreve cor em ATRIBUTO de apresentação — `stroke=` na linha da
+ * grade, `fill=` no rótulo das marcas —, e `var()` não resolve em atributo:
+ * `var()` é valor de propriedade CSS, não de atributo. Foi por isso que o
+ * `graficos.ts` mantinha uma segunda cópia dos tokens, em hexadecimal, com o
+ * nome do token de origem no comentário ao lado.
+ *
+ * Essa cópia divergiu DUAS vezes. A última na E14, que subiu o `--border-color`
+ * do escuro de `#1E3A5F` para `#2A4463`: a recópia do token entrou, a cópia da
+ * moldura não, e nada acusou por três emendas.
+ *
+ * ── O que resolve, e a prova ─────────────────────────────────────────
+ *
+ * Atributo de apresentação tem especificidade ZERO, e **perde para qualquer
+ * regra CSS**. Então basta mirar as classes que o Recharts já emite — e o token
+ * volta a ser lido de um lugar só.
+ *
+ * Medido, e não citado da especificação. No Chrome 153, com um `<text
+ * fill="#ff0000">` e um `<line stroke="#00ff00">` sob uma regra de classe, SEM
+ * `!important`:
+ *
+ *     fill    #ff0000  ->  computado  rgb(1, 2, 3)
+ *     stroke  #00ff00  ->  computado  rgb(4, 5, 6)
+ *
+ * O mesmo em jsdom, e o caso está preso em `src/lib/graficos-css.test.ts`.
+ *
+ * ── O custo, que é acoplamento e está declarado ──────────────────────
+ *
+ * Isto acopla aos nomes de classe do Recharts. O acoplamento anterior era
+ * INVISÍVEL — dependia de alguém lembrar de atualizar a cópia — e já falhou.
+ * Este é visível, mora aqui, e está preso por caso de teste que renderiza um
+ * gráfico e afirma que as classes saem no DOM: uma renomeação em versão maior
+ * reprova em voz alta, em vez de a cor sumir calada.
+ */
+
+.recharts-cartesian-grid line {
+  stroke: rgb(var(--borda));            /* era estiloDoGrafico.grade */
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: rgb(var(--conteudo-suave));     /* era estiloDoGrafico.texto */
+}
+
+.recharts-tooltip-cursor {
+  fill: rgb(var(--borda) / 0.3);        /* era cursor={{ fill: estilo.grade, fillOpacity: 0.3 }} */
+}
+
 /* Ícone do calendário branco no modo escuro */
 .dark input[type='date']::-webkit-calendar-picker-indicator {
   filter: invert(1);
