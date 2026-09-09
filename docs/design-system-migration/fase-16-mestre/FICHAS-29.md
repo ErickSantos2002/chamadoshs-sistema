@@ -144,30 +144,95 @@ ao trocar um contêiner por outro.
 
 ## 6. `TarefasRecorrentes` — 972 linhas
 
-A maior das seis, e a de maior risco: **doze estados, seis chamadas de serviço,
-doze manipuladores de clique, sete `toast.error` e cinco `toast.success`.**
+**Refeita em 09/09/2026 lendo o arquivo INTEIRO**, e não por varredura. A
+primeira versão tinha 15 itens; esta tem 31, e a leitura completa achou **um
+defeito vivo** que a varredura não veria.
 
-| # | funcionalidade | como se confere | depois |
-|---|---|---|---|
-| 6.1 | lista tarefas (`listar`) e usuários | abrir a tela | |
-| 6.2 | **criar** tarefa (`criar`) | modal de nova tarefa | |
-| 6.3 | **atualizar** tarefa (`atualizar`, dois pontos de chamada) | editar e salvar | |
-| 6.4 | **excluir** tarefa (`excluir`) | excluir, com confirmação | |
-| 6.5 | **realizar** tarefa (`realizar`) | marcar como feita | |
-| 6.6 | **histórico de execuções** (`listarExecucoes`) | abrir o histórico | |
-| 6.7 | alternar **mostrar inativas** | o botão de alternância | |
-| 6.8 | recorrência calculada (`recorrenciaLabel`, `sugerirPrimeiraData`) | criar semanal e mensal | |
-| 6.9 | `sugerirPrimeiraData` com `clamp` de fim de mês | dia 31 em mês de 30 | |
-| 6.10 | `proximaEditada` — data tocada à mão **não** é recalculada | editar a data e trocar a recorrência | |
-| 6.11 | ordenação (`useMemo` em `tarefasOrdenadas`) | ordem na lista | |
-| 6.12 | estado **vazio**, com texto | conta sem tarefas | |
-| 6.13 | **esqueleto** de carregamento (`h-48`) | carga lenta | |
-| 6.14 | **permissão negada**: "Você não tem permissão para acessar Tarefas Recorrentes." | perfil sem acesso | |
-| 6.15 | `salvando` desabilita durante a gravação | salvar duas vezes rápido | |
+### Carga e contexto
 
-**A 6.9 e a 6.10 são as mais frágeis e as menos visíveis.** Nenhuma captura, em
-nenhuma largura, mostraria que o dia 31 virou 30 em abril, ou que uma data
-digitada à mão foi sobrescrita por um recálculo.
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 6.1 | `carregar()` passa `{ ativo: true }` **só quando** `mostrarInativas` é falso | alternar o `Checkbox` |
+| 6.2 | `useEffect` **recarrega** a cada mudança de `mostrarInativas` | idem |
+| 6.3 | usuários carregados uma vez, com `{ ativo: true }` | abrir a tela |
+| 6.4 | falha ao carregar usuários cai em `setUsuarios([])` — **silenciosa, sem toast** | derrubar só essa rota |
+| 6.5 | `categorias` vêm do contexto `useChamados`, e não de chamada própria | — |
+| 6.6 | `nomeUsuario` / `nomeCategoria` resolvem id → nome localmente | tarefa com responsável |
+| 6.7 | erro de carga: `toast.error('Erro ao carregar tarefas recorrentes')` | derrubar a rede |
+
+### Permissão
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 6.8 | `podeGerenciar` = `Administrador` **ou** `Tecnico` | os três perfis |
+| 6.9 | sem permissão, **a tela inteira** vira o bloco de recusa — nada mais renderiza | perfil comum |
+
+### As seis ações
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 6.10 | **criar** + `toast.success('Tarefa recorrente criada')` | modal nova tarefa |
+| 6.11 | **editar** via `atualizar` + `toast.success('Tarefa atualizada')` | editar e salvar |
+| 6.12 | **realizar** com observação opcional | modal realizar |
+| 6.13 | **alternar ativo** — `atualizar(id, { ativo: !ativo })`, **terceiro ponto de chamada** do mesmo serviço | Desativar / Reativar |
+| 6.14 | **excluir** | botão Excluir |
+| 6.15 | **histórico** via `listarExecucoes`, com `historico` zerado antes | abrir Histórico |
+
+### As regras que nenhuma captura mostraria
+
+| # | funcionalidade | como se confere |
+|---|---|---|
+| 6.16 | título vazio **barra o envio** com `toast.error('Informe um título')` | salvar em branco |
+| 6.17 | `intervalo` forçado a **mínimo 1** | digitar 0 |
+| 6.18 | `dia_semana` só vai no payload se **semanal**; `dia_mes` só se **mensal** | trocar o tipo e salvar |
+| 6.19 | campos vazios viram `null`, e não string vazia | salvar sem descrição |
+| 6.20 | `sugerirPrimeiraData` **inclui hoje** | criar semanal no próprio dia |
+| 6.21 | mensal com **clamp de fim de mês** — dia 31 vira o último do mês | dia 31 em abril |
+| 6.22 | se o dia já passou, **avança o mês**, virando o ano em dezembro | dia 1 no dia 20 |
+| 6.23 | `proximaEditada` — data tocada à mão **nunca** é recalculada | editar a data, depois o tipo |
+| 6.24 | ao **editar**, `proximaEditada` já nasce `true` | abrir edição e trocar o tipo |
+| 6.25 | o recálculo só acontece no modal de **criar** | idem, no criar |
+| 6.26 | **a mensagem de exclusão MUDA quando há histórico**: diz a contagem, o plural certo e que o histórico será apagado | excluir com e sem execuções |
+| 6.27 | `statusData` marca **Atrasada** e **Hoje**; futuro não marca | três tarefas |
+| 6.28 | ordenação por `proxima_data` | lista com datas variadas |
+| 6.29 | tarefa inativa com `opacity-60` e `Badge` "Desativada" | mostrar desativadas |
+| 6.30 | `salvando` bloqueia o botão via `carregando`, que já põe `aria-busy` | salvar duas vezes |
+| 6.31 | "Excluir" **encostado à direita** (`ml-auto`), fora do grupo, para não ser clicado por vizinhança | inspeção |
+
+### Vizinhas
+
+Nenhuma. Só o `router.tsx` a importa. **Conferido.**
+
+---
+
+### DEFEITO VIVO, achado ao ler a linha 829
+
+    titulo="Histórico — {selecionada.titulo}"
+
+**Está entre aspas.** Em JSX, atributo com string literal **não interpola** — o
+modal mostra as chaves e o nome da variável, ao pé da letra.
+
+Os outros quatro títulos da mesma tela estão certos: três são texto fixo e um usa
+chaves de JSX. **Só este tentou interpolar dentro das aspas.**
+
+**Por que ninguém viu:** `tsc` fica verde — é uma `string` válida para uma prop
+`string`. O validador não olha texto. E só aparece **dentro de um modal que
+precisa ser aberto**, numa tela que dois dos três perfis nem alcançam.
+
+**Fora do escopo declarado desta fase**, que é o `Card`. Registrado, não
+corrigido — a decisão é do operador.
+
+> É a prova mais direta do que a §29 quer dizer com *"lendo o código, não a
+> tela"*: nenhuma captura de nenhuma largura pegaria isto, porque exige abrir um
+> modal específico com um perfil específico.
+
+### Uma observação de primitivo, sem ação
+
+`statusData` devolve pastilhas montadas à mão que, **pela função, são `Badge`**.
+Mesmo padrão do cartão à mão, num componente menor.
+
+Não entra nesta fase: a decisão foi sobre `Card`, e estender por conta própria
+seria a "arrumação" que a regra da adoção por função veda.
 
 ---
 
