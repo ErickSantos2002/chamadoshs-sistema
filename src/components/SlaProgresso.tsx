@@ -49,7 +49,7 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
       <div
         className={cn(
           'flex items-center gap-1.5 text-xs font-medium',
-          estourou ? 'text-perigo' : 'text-sucesso'
+          estourou ? 'text-on-tint-danger' : 'text-on-tint-success'
         )}
       >
         {estourou ? (
@@ -115,7 +115,7 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
       <div
         className={cn(
           'flex items-center gap-1.5 text-xs font-medium',
-          estourou ? 'text-perigo' : 'text-conteudo-tenue'
+          estourou ? 'text-on-tint-danger' : 'text-conteudo-tenue'
         )}
       >
         {estourou && <IconeAlerta className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}

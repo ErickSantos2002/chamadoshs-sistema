@@ -400,7 +400,7 @@ const Chamados: React.FC = () => {
       {(isAdmin || isTecnico) && (
         <div className="shrink-0 rounded-xl border border-borda bg-superficie p-5">
           <div className="mb-3 flex items-center gap-2">
-            <IconeAgenda className="h-4 w-4 text-info" />
+            <IconeAgenda className="h-4 w-4 text-on-tint-info" />
             <h2 className="text-sm font-semibold text-conteudo">
               Tarefas recorrentes do dia
             </h2>
@@ -410,7 +410,7 @@ const Chamados: React.FC = () => {
             // O ✅ era um emoji: desenhado pelo sistema, colorido por conta
             // própria e alheio ao tema. O ícone acompanha a cor do texto.
             <p className="flex items-center gap-2 text-sm text-conteudo-tenue">
-              <IconeConfereCirculo className="h-4 w-4 shrink-0 text-sucesso" />
+              <IconeConfereCirculo className="h-4 w-4 shrink-0 text-on-tint-success" />
               Nenhuma tarefa recorrente para hoje.
             </p>
           ) : (
@@ -445,7 +445,7 @@ const Chamados: React.FC = () => {
                     <Link
                       to="/tarefas-recorrentes"
                       className={cn(
-                        'text-left text-sm font-medium transition-colors hover:text-info hover:underline',
+                        'text-left text-sm font-medium transition-colors hover:text-on-tint-info hover:underline',
                         'rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
                         !pendente && realizadaHoje
                           ? 'text-conteudo-tenue'

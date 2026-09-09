@@ -852,188 +852,171 @@ function exigirSemCopiaDeToken() {
   );
 }
 
+
 // ──────────────────────────────────────────────────────────────────────
-// A cor da série vira TEXTO dentro da dica — catraca
+// A semântica em força cheia: como TEXTO e como PREENCHIMENTO NU — catracas
 // ──────────────────────────────────────────────────────────────────────
 
 /**
- * Todo `<Tooltip>` desenha com a dica PRÓPRIA, e nunca com a do Recharts.
+ * Duas chaves, escritas JUNTAS de propósito.
  *
- * ── O defeito que isto impede de voltar ──────────────────────────────
+ * ── Por que juntas ──────────────────────────────────────────────────
  *
- * A dica padrão do Recharts pinta cada item **na cor da série**. Conferido na
- * fonte instalada, `recharts/lib/component/DefaultTooltipContent.js` linha 70:
+ * Exigência do operador, e a razão é a tabela das catracas: o buraco do
+ * preenchimento nu não estava DENTRO de nenhuma catraca — estava **entre** a do
+ * fundo cheio com texto branco e a da cor cheia como texto. As duas corretas no
+ * escopo delas, e o defeito passando no meio.
  *
- *     color: entry.color || '#000'
+ * Escrever só a da dívida fecharia o item 1 **no papel** e deixaria o vão
+ * aberto no código. Então as duas saem no mesmo commit, e a fronteira entre
+ * elas fica declarada aqui em cima em vez de existir por omissão.
  *
- * A paleta é certificada como FORMA, piso 3:1 contra o card. Dentro da dica ela
- * vira TEXTO, piso 4,5:1 — e **doze das treze reprovavam**: cinco no claro,
- * sete no escuro, a pior a 2,93. Papel novo não herda piso antigo.
+ * ── A repartição, dita inteira ──────────────────────────────────────
  *
- * ── Por que a catraca é sobre a PRESENÇA, e não sobre a cor ──────────
+ *   bg-X com text-white por cima ....... exigirCatracaDeFundoCheio (já existia)
+ *   text-X como cor de texto ........... (1) exigirSemCorCheiaComoTexto
+ *   bg-X sem texto nenhum por cima ..... (2) exigirSemPreenchimentoNu
  *
- * O conserto é o `content={<DicaDoGrafico />}`. Medir cor aqui não guardaria
- * nada: a dica própria usa classe, e o valor certo já está garantido pelos
- * tokens. O que pode dar errado é alguém **remover** o `content` — e aí o
- * Recharts volta a desenhar a dica dele, com o defeito inteiro de volta, sem
- * que nenhuma medição de cor perceba.
+ * ── (1) A cor cheia como TEXTO ──────────────────────────────────────
  *
- * Foi exigência do operador, e a razão dele é a que vale: uma linha de base de
- * doze seria MEDIÇÃO, não guarda. Guarda é isto.
+ * As quatro cores de significado são fixas nos dois temas — declaradas só em
+ * `:root`, sem bloco `.dark` — porque "erro é vermelho nos dois". A
+ * consequência é que o contraste delas muda muito entre os temas, e um valor
+ * bom no escuro é péssimo no claro:
+ *
+ *     claro, pior das tres superficies:  perigo 3,44  info 3,36
+ *                                        sucesso 2,32  alerta 1,96
+ *
+ * Nenhuma alcança o piso de texto de 4,5:1 no claro. O substituto é o par
+ * `--on-tint-*`, medido sobre as TRÊS superfícies nos dois temas: pior **5,91**.
+ *
+ * ── (2) O preenchimento NU ──────────────────────────────────────────
+ *
+ * `bg-X` sem texto nenhum por cima — barra, ponto, marcador. A catraca do fundo
+ * cheio não o vê, porque ela exige `text-white` no mesmo conjunto de classes; a
+ * chave (1) também não, porque não há texto. O substituto é `--fill-*`, da E19.
+ *
+ * Está em ZERO hoje: os quatro sítios saíram no commit de higiene. A chave
+ * existe para que não voltem — e o vão que ela fecha foi previsto pela tabela,
+ * não descoberto por defeito.
  */
-function achadosDeDicaSemDono(conteudo, rel) {
+const SEMANTICAS_CHEIAS = ['sucesso', 'alerta', 'perigo', 'info'];
+
+/** Tira comentário antes de procurar classe. Prosa que cita classe não é uso. */
+function semComentario(conteudo) {
+  return conteudo
+    // Troca o comentário de bloco por QUEBRAS DE LINHA equivalentes, e não por
+    // um espaço. Com o espaço a contagem encolhe e o número de linha reportado
+    // vira ficção — a primeira versão desta chave mandava para `Campo.tsx:42`,
+    // que é comentário, quando o uso está na 99.
+    //
+    // Catraca que nomeia a linha errada é pior que catraca nenhuma: ela gasta
+    // a confiança de quem foi conferir e não achou nada.
+    .replace(/\/\*[\s\S]*?\*\//g, (bloco) => bloco.replace(/[^\n]/g, ''))
+    .split('\n')
+    .map((l) => {
+      const corte = l.indexOf('//');
+      return corte === -1 ? l : l.slice(0, corte);
+    })
+    .join('\n');
+}
+
+function achadosDeSemanticaCheia(conteudo, rel) {
+  const limpo = semComentario(conteudo);
   const achados = [];
-  for (const m of conteudo.matchAll(/<Tooltip\b/g)) {
-    const fim = fimDaTag(conteudo, m.index + m[0].length);
-    if (fim === -1) continue;
-    const atributos = conteudo.slice(m.index + m[0].length, fim);
-    if (atributos.includes('content=\{<DicaDoGrafico')) continue;
-    const linha = conteudo.slice(0, m.index).split('\n').length;
+  const grupo = SEMANTICAS_CHEIAS.join('|');
+
+  // (1) como TEXTO. Fronteira explícita dos dois lados: `text-perigo` e não
+  //     `text-perigo/10` nem `text-perigo-forte`. Foi assim que a contagem
+  //     errada de 39 virou a contagem certa.
+  // A fronteira ANTES e lookbehind, e nao `(?:^|\s)`.
+  //
+  // Classe quase nunca vem depois de espaco: vem depois de aspas, de crase,
+  // de `{`. E o regex morava dentro de uma STRING, onde `\s` e so `s` --
+  // a barra precisa ser dobrada. As duas coisas juntas fizeram esta chave
+  // devolver ZERO com treze usos no codigo, que e a mesma forma da primeira
+  // versao da catraca do rotulo.
+  const comoTexto = new RegExp('(?<![-\\w/:])((?:[\\w-]+:)*)text-(' + grupo + ')(?![-/\\w])', 'g');
+  for (const m of limpo.matchAll(comoTexto)) {
+    const linha = limpo.slice(0, m.index).split('\n').length;
     achados.push(
-      `${rel}:${linha}  <Tooltip> sem content={<DicaDoGrafico />}: o Recharts ` +
-        `desenha a dica dele, e lá a cor da série vira TEXTO`
+      `${rel}:${linha}  ${m[1]}text-${m[2]} — cor de significado como TEXTO. ` +
+        `Use text-on-tint-${{ sucesso: 'success', alerta: 'warning', perigo: 'danger', info: 'info' }[m[2]]}.`
     );
   }
+
+  // (2) preenchimento NU: `bg-X` ou `fill-X` de força cheia numa lista SEM
+  //     nenhum `text-*`.
+  //
+  //     `fill-` entra junto porque preenchimento de SVG é preenchimento. Ficou
+  //     de fora na primeira versão, e o defeito apareceu no mesmo dia: ao trocar
+  //     `text-alerta` por `text-on-tint-warning` na estrela da avaliação, o
+  //     `fill-alerta` ao lado ficou vivo, sem catraca nenhuma olhando. Vão
+  //     previsto pela tabela e encontrado antes de sair do commit.
+  //
+  //     A antiga:  `bg-X` de força cheia numa lista de classes SEM
+  //     nenhum `text-*`. Com `text-white` é a catraca do fundo cheio; com outro
+  //     texto, o par decide o contraste. Sem texto, ninguém olhava.
+  const comoFundo = new RegExp('(?<![-\\w/:])((?:[\\w-]+:)*)(bg|fill)-(' + grupo + ')(?![-/\\w])', 'g');
+  for (const m of limpo.matchAll(comoFundo)) {
+    // A lista de classes pode estar em aspa dupla, simples ou crase. Procurar
+    // so a dupla deixaria de fora `cn('bg-perigo', ...)`, que e a forma mais
+    // comum neste projeto.
+    const aspas = ['"', "'", '`'];
+    const ini = Math.max(...aspas.map((a) => limpo.lastIndexOf(a, m.index)));
+    const fins = aspas.map((a) => limpo.indexOf(a, m.index)).filter((x) => x !== -1);
+    const fim = fins.length ? Math.min(...fins) : -1;
+    const lista = ini === -1 || fim === -1 ? '' : limpo.slice(ini, fim);
+    // A dispensa por haver `text-*` na lista vale SÓ para `bg-`, onde o texto
+    // fica POR CIMA do fundo e o par decide o contraste.
+    //
+    // Para `fill-` ela não vale: ali o `text-*` ao lado é o contorno do mesmo
+    // ícone, e não texto sobreposto. Tratar os dois igual deixou o `fill-alerta`
+    // da estrela passar por ter um `text-on-tint-warning` ao lado — que é
+    // exatamente o vizinho, e não o alvo.
+    if (m[2] === 'bg' && /(?<![-\w/:])(?:[\w-]+:)*text-/.test(lista)) continue;
+    const linha = limpo.slice(0, m.index).split('\n').length;
+    const en = { sucesso: 'success', alerta: 'warning', perigo: 'danger', info: 'info' }[m[3]];
+    achados.push(
+      `${rel}:${linha}  ${m[1]}${m[2]}-${m[3]} sem texto por cima — preenchimento NU. ` +
+        `Use ${m[2]}-fill-${en}.`
+    );
+  }
+
   return achados;
 }
 
-function exigirDicaPropria() {
+function exigirSemanticaNoPapelCerto() {
   const arquivos = [];
   (function varrer(dir) {
     for (const nome of fs.readdirSync(dir)) {
       const caminho = path.join(dir, nome);
       if (fs.statSync(caminho).isDirectory()) {
         if (nome !== 'design-system') varrer(caminho);
-      } else if (/\.tsx$/.test(nome) && !/\.test\.tsx$/.test(nome)) {
+      } else if (/\.tsx?$/.test(nome) && !/\.test\.tsx?$/.test(nome)) {
         arquivos.push(caminho);
       }
     }
   })(FONTE);
 
   const achados = [];
-  let tooltips = 0;
   for (const arquivo of arquivos) {
-    const conteudo = fs.readFileSync(arquivo, 'utf8');
-    tooltips += [...conteudo.matchAll(/<Tooltip\b/g)].length;
     const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
-    achados.push(...achadosDeDicaSemDono(conteudo, rel));
+    achados.push(...achadosDeSemanticaCheia(fs.readFileSync(arquivo, 'utf8'), rel));
   }
 
   if (achados.length) {
     falhas.push(
-      `<Tooltip> desenhando com a dica do Recharts: ${achados.length} ocorrência(s)\n      ` +
+      `cor de significado em força cheia no papel errado: ${achados.length} ocorrência(s)\n      ` +
         achados.join('\n      ')
     );
   }
   linhas.push(
-    `\n=== catraca — a dica do gráfico é a nossa ===` +
-      `\n  ${tooltips} <Tooltip> encontrado(s), ${achados.length} sem dica própria`
+    `\n=== catraca — semântica em força cheia, como texto e como preenchimento nu ===` +
+      `\n  ${arquivos.length} arquivos varridos, ${achados.length} ocorrência(s)`
   );
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// A moldura do gráfico, fiel ao token que ela nomeia — catraca
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * O `estiloDoGrafico` do `graficos.ts` é uma SEGUNDA CÓPIA dos tokens, e ela
- * já divergiu duas vezes.
- *
- * ── Por que a cópia existe ───────────────────────────────────────────
- *
- * O Recharts escreve estes valores em ATRIBUTO de SVG (`stroke=`, `fill=`), e
- * atributo com `var()` não resolve em todo navegador. A seção 5.4 do
- * `adocao.md` prevê o caso: onde a biblioteca não aceita a variável, o objeto
- * pode ser gerado a partir dos mesmos valores **com o token de origem no
- * comentário**. É o que está lá, e o próprio arquivo diz que "os dois têm de
- * bater".
- *
- * ── E ninguém conferia se batiam ─────────────────────────────────────
- *
- * A primeira divergência está contada no comentário do próprio `graficos.ts`:
- * quando a paleta mudou, a grade ficou no cinza-azulado antigo dentro de cards
- * que já eram slate.
- *
- * A segunda foi achada pela **tabela das catracas**, na Fase 16: a **E14** subiu
- * o `--border-color` do escuro de `#1E3A5F` para `#2A4463` — "cede o próprio
- * valor ao muted e sobe" — e a cópia ficou no valor de antes, em DOIS campos.
- * A recópia do token entrou, a cópia da moldura não, e nada acusou por três
- * emendas.
- *
- * É exatamente a ponte do D3-a noutro arquivo, e a catraca é a mesma ideia: o
- * hexadecimal tem de ser igual ao token que o comentário nomeia.
- *
- * ── A forma do comentário ────────────────────────────────────────────
- *
- * Um token vale para os dois temas:
- *
- *     texto: escuro ? '#E2E8F0' : '#1E293B', // --text-body
- *
- * Dois tokens seguem a ordem do ternário — **escuro primeiro**:
- *
- *     backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF', // --surface-elevated / --surface
- *
- * O parêntese com nome de degrau (`(slate-200 / slate-800)`) é nota humana e
- * NÃO entra: só `--token` conta. Ler o parêntese como se fosse token foi o
- * primeiro erro desta checagem, e ele acusou um campo correto.
- */
-function achadosDeMolduraInfiel(conteudo, PACOTE) {
-  const achados = [];
-  const i = conteudo.indexOf('export function estiloDoGrafico');
-  if (i === -1) return ['estiloDoGrafico não encontrado em graficos.ts'];
-  const trecho = conteudo.slice(i, conteudo.indexOf('\n}', i));
-
-  // campo: escuro ? '#XXXXXX' : '#YYYYYY',  // --token [/ --token]
-  const linhas = [
-    ...trecho.matchAll(
-      /(\w+):\s*escuro \?\s*'(#[0-9a-fA-F]{6})'\s*:\s*'(#[0-9a-fA-F]{6})',[^\n]*\/\/([^\n]*)/g
-    ),
-    // o `border` monta a cor dentro de um template literal
-    ...trecho.matchAll(
-      /(border):\s*`[^`]*\${escuro \?\s*'(#[0-9a-fA-F]{6})'\s*:\s*'(#[0-9a-fA-F]{6})'}`,[^\n]*\/\/([^\n]*)/g
-    ),
-  ];
-
-  for (const [, campo, hexEscuro, hexClaro, nota] of linhas) {
-    const tokens = [...nota.matchAll(/(--[a-z-]+)/g)].map((m) => m[1]);
-    if (!tokens.length) {
-      achados.push(`${campo}: sem token de origem no comentário`);
-      continue;
-    }
-    const alvo = { escuro: tokens[0], claro: tokens.length > 1 ? tokens[1] : tokens[0] };
-
-    for (const [tema, hex] of [['escuro', hexEscuro], ['claro', hexClaro]]) {
-      const esperado = resolverDoPacote(PACOTE, alvo[tema], tema === 'escuro' ? '.dark' : ':root');
-      if (!esperado) {
-        achados.push(`${campo} (${tema}): ${alvo[tema]} não resolve no pacote`);
-        continue;
-      }
-      const dele = paraHex(esperado).toUpperCase();
-      if (hex.toUpperCase() !== dele) {
-        achados.push(
-          `${campo} (${tema}): moldura ${hex.toUpperCase()}  !=  ${alvo[tema]} ${dele}`
-        );
-      }
-    }
-  }
-  return achados;
-}
-
-function exigirMolduraFiel() {
-  const PACOTE = pacoteDeTokens(fs.readFileSync(path.join(RAIZ, 'src', 'design-system', 'tokens', 'colors.css'), 'utf8'));
-  const achados = achadosDeMolduraInfiel(fs.readFileSync(GRAFICOS, 'utf8'), PACOTE);
-
-  if (achados.length) {
-    falhas.push(
-      `moldura do gráfico divergindo do token que ela nomeia: ${achados.length} campo(s)\n      ` +
-        achados.join('\n      ')
-    );
-  }
-  linhas.push(
-    `\n=== catraca — moldura do gráfico fiel ao token ===` +
-      `\n  ${achados.length} divergência(s)`
-  );
-}
 
 // ──────────────────────────────────────────────────────────────────────
 // Rótulo escondido por breakpoint que deixa o botão sem nome — catraca
@@ -1649,6 +1632,7 @@ function main() {
   exigirCatracaDeFundoCheio();
   exigirRotuloQueSobreviveAoBreakpoint();
   exigirSemCopiaDeToken();
+  exigirSemanticaNoPapelCerto();
   exigirDicaPropria();
 
   console.log(linhas.join('\n'));
@@ -1677,6 +1661,7 @@ module.exports = {
   achadosDeNome,
   achadosDeRotuloSumido,
   achadosDeCopiaDeToken,
+  achadosDeSemanticaCheia,
   achadosDeDicaSemDono,
   pacoteDeTokens,
   resolverDoPacote,

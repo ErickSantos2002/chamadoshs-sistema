@@ -157,7 +157,7 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
       className={cn(
         TAMANHOS[tamanho],
         'transition-colors',
-        acesa ? 'fill-alerta text-alerta' : 'text-conteudo-tenue'
+        acesa ? 'fill-fill-warning text-on-tint-warning' : 'text-conteudo-tenue'
       )}
       aria-hidden="true"
     />

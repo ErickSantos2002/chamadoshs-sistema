@@ -414,7 +414,7 @@ const TarefasRecorrentes: React.FC = () => {
     return (
       <div className="space-y-5">
         <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-borda bg-superficie text-sm text-conteudo-tenue">
-          <IconeAtencao className="h-8 w-8 text-alerta" aria-hidden="true" />
+          <IconeAtencao className="h-8 w-8 text-on-tint-warning" aria-hidden="true" />
           <p>Você não tem permissão para acessar Tarefas Recorrentes.</p>
         </div>
       </div>
@@ -430,7 +430,7 @@ const TarefasRecorrentes: React.FC = () => {
       {/* Cabeçalho */}
       <div className="flex flex-col gap-4 rounded-2xl border border-borda bg-superficie px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeRepetir className="h-7 w-7 shrink-0 text-info" aria-hidden="true" />
+          <IconeRepetir className="h-7 w-7 shrink-0 text-on-tint-info" aria-hidden="true" />
           <div>
             <h1 className="text-xl font-extrabold tracking-tight text-conteudo">
               Tarefas Recorrentes
@@ -576,7 +576,7 @@ const TarefasRecorrentes: React.FC = () => {
                     tamanho="sm"
                     onClick={() => excluir(t)}
                     title={`Excluir ${t.titulo}`}
-                    className="ml-auto border-perigo/40 text-perigo hover:border-perigo/60 hover:bg-perigo/10"
+                    className="ml-auto border-perigo/40 text-on-tint-danger hover:border-perigo/60 hover:bg-perigo/10"
                   >
                     <IconeApagar className="h-4 w-4" aria-hidden="true" />
                     Excluir

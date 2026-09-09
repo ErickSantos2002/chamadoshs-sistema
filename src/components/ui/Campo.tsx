@@ -96,7 +96,7 @@ export const RotuloDeCampo: React.FC<RotuloDeCampoProps> = ({
             não comunica obrigatoriedade a ninguém — vira "Nome asterisco".
             Quem informa é o campo, por `required` nativo ou `aria-required`;
             o `Campo` abaixo garante que um dos dois exista. */}
-        <span aria-hidden="true" className="text-perigo">
+        <span aria-hidden="true" className="text-on-tint-danger">
           *
         </span>
       </>
@@ -130,7 +130,7 @@ export const MensagemDeErro: React.FC<{ texto?: string; id?: string }> = ({
     <p
       id={id}
       role="alert"
-      className="mt-1 flex items-center gap-1 text-sm text-perigo"
+      className="mt-1 flex items-center gap-1 text-sm text-on-tint-danger"
     >
       <IconeAlerta className="h-4 w-4 shrink-0" aria-hidden="true" />
       {texto}
