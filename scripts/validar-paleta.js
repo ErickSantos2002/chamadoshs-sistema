@@ -1019,6 +1019,71 @@ function exigirSemanticaNoPapelCerto() {
 
 
 // ──────────────────────────────────────────────────────────────────────
+// Função declarada duas vezes no próprio validador — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Nenhuma função deste arquivo pode estar declarada duas vezes.
+ *
+ * ── O que aconteceu, e por que nada acusou ───────────────────────────
+ *
+ * Uma edição que pretendia SUBSTITUIR um bloco acabou INSERINDO outro ao lado.
+ * O arquivo ficou com `achadosDeDicaSemDono` e `exigirDicaPropria` declaradas
+ * duas vezes, e com `exigirMolduraFiel` viva mas já sem quem a chamasse.
+ *
+ * **O comportamento estava certo o tempo todo.** Em JavaScript a última
+ * declaração de função vence, e a última era a nova — a suíte passou, a catraca
+ * passou, o commit saiu. 182 linhas de sombra.
+ *
+ * ── Por que isso é pior que um erro ──────────────────────────────────
+ *
+ * Erro para o programa e alguém conserta. Sombra fica: quem abrisse a PRIMEIRA
+ * cópia para corrigir alguma coisa editaria código que não roda, e ficaria sem
+ * entender por que a mudança não teve efeito.
+ *
+ * > **Edição por inserção onde se pretendia substituição não produz erro,
+ * > produz sombra.**
+ *
+ * E é a família da semana dentro do arquivo que guarda as outras: o
+ * `validar-paleta.js` vigia cinco coisas do resto do sistema e não vigiava a si
+ * mesmo. `tsc` não olha para `.js` de script, e o ESLint não roda aqui.
+ */
+function achadosDeFuncaoDuplicada(conteudo, rel) {
+  const vistas = new Map();
+  const achados = [];
+  conteudo.split('\n').forEach((linha, i) => {
+    const m = /^function ([\w]+)\s*\(/.exec(linha);
+    if (!m) return;
+    const nome = m[1];
+    if (vistas.has(nome)) {
+      achados.push(
+        `${rel}:${i + 1}  function ${nome} já declarada na linha ${vistas.get(nome)} — ` +
+          `a última vence, e a primeira vira sombra que ninguém vê rodar`
+      );
+    } else {
+      vistas.set(nome, i + 1);
+    }
+  });
+  return achados;
+}
+
+function exigirSemFuncaoDuplicada() {
+  const eu = path.join(RAIZ, 'scripts', 'validar-paleta.js');
+  const achados = achadosDeFuncaoDuplicada(fs.readFileSync(eu, 'utf8'), 'scripts/validar-paleta.js');
+
+  if (achados.length) {
+    falhas.push(
+      `função declarada duas vezes no validador: ${achados.length}\n      ` + achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — o validador não se duplica ===` +
+      `\n  ${achados.length} função(ões) declarada(s) duas vezes`
+  );
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
 // Rótulo escondido por breakpoint que deixa o botão sem nome — catraca
 // ──────────────────────────────────────────────────────────────────────
 
@@ -1633,6 +1698,7 @@ function main() {
   exigirRotuloQueSobreviveAoBreakpoint();
   exigirSemCopiaDeToken();
   exigirSemanticaNoPapelCerto();
+  exigirSemFuncaoDuplicada();
   exigirDicaPropria();
 
   console.log(linhas.join('\n'));
@@ -1662,6 +1728,7 @@ module.exports = {
   achadosDeRotuloSumido,
   achadosDeCopiaDeToken,
   achadosDeSemanticaCheia,
+  achadosDeFuncaoDuplicada,
   achadosDeDicaSemDono,
   pacoteDeTokens,
   resolverDoPacote,
