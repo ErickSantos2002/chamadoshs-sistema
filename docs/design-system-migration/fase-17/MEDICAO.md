@@ -117,17 +117,42 @@ toque de 16px de altura. Numa captura ele parece um link normal.
 
 A segunda é a mais barata: **dois pixels** separam 38 de 40.
 
-**Não corrigido nesta rodada, por decisão do operador** — a medição completa das
-quatro telas vem antes de decidir escopo de correção.
+---
+
+## Pendência dimensionada: os 52 alvos, e a ordem de conserto
+
+**Decisão do operador, 09/09/2026: registrado e NÃO corrigido nesta fase.**
+
+**São 52 alvos em quatro telas** — 9 + 26 + 9 + 8. Mexer em altura de controle é
+**mudança visual em todo o sistema**, e a comparação pede o "antes" da Fase 19.
+
+> Corrigir agora seria corrigir **às cegas**: sem linha de base, ninguém
+> distingue "o botão cresceu 2px" de "a tela inteira andou".
+
+E é a mesma ordem que a Fase 16-H estabeleceu para a tabela de cores: **mostrar
+antes de virar código**, quando a mudança carrega mais do que parece carregar.
+
+### A ordem quando chegar a vez
+
+| # | família | altura | conserto | por que nesta posição |
+|---|---|---|---|---|
+| **1** | controle de formulário | 38 | **38 → 40** | dois pixels, o mais barato e o mais espalhado — campos, seletores, `Cancelar`, `Abrir chamado`, as quatro ações do chamado |
+| **2** | botão-ícone quadrado | 32–36 | área, com o ícone no tamanho | quatro por linha de tabela; muda densidade, e aí já se vê contra a linha de base |
+| **3** | botão que é texto | 16–20 | área de toque sem virar botão desenhado | **por último, porque é o que muda a aparência de verdade** — `Voltar` e os cabeçalhos ordenáveis parecem link, e têm de continuar parecendo |
+
+A terceira é a mais séria em risco de uso e a mais delicada em desenho: dar 40px
+de altura a um "Voltar" de 54×16 sem transformá-lo num botão é o trabalho, e não
+o número.
 
 ---
 
 ## O que NÃO foi medido, e a razão
 
 **As seis larguras da §20 não foram medidas.** A janela do Chrome sob controle
-remoto não redimensiona: `resize_window` **relatou sucesso e não mudou nada**,
-três vezes seguidas, e mais duas numa aba recém-criada contra documento
-sintético.
+remoto não redimensiona: `resize_window` **relatou sucesso e não mudou nada
+CINCO vezes** — três na aba da aplicação e mais duas numa aba recém-criada,
+contra documento sintético, que era o teste para saber se a emulação vinha da
+aba antiga. Não vinha.
 
 ```
 inner 900x1271 | outer 0x0 | screen 900x1440 | dpr 1
