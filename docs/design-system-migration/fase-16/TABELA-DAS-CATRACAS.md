@@ -1,6 +1,6 @@
 # A tabela das catracas, e os vãos entre elas
 
-**Primeiro item de trabalho da Fase 16**, antes de qualquer chave nova. Derivada
+**Primeiro item de trabalho da Fase 16-H**, antes de qualquer chave nova. Derivada
 do **código**, lendo o predicado real de cada checagem — não da memória de quem
 as escreveu.
 

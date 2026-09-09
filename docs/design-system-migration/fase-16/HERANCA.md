@@ -1,4 +1,7 @@
-# O que a Fase 16 herda
+# O que a Fase 16-H herda
+
+> **Nomenclatura, fixada em 09/09/2026.** "Fase 16-H" = herança do Checkpoint 3.
+> A **Fase 16** do PROMPT-MESTRE é "demais páginas", e continua devendo.
 
 Escrito no fecho do **Checkpoint 3**, aprovado em 08/09/2026. É o maior bloco que
 resta antes do Checkpoint 4.
@@ -112,7 +115,7 @@ do fato.
 ## 2. Os `--chart-*`: declarados, e ainda NÃO consumidos
 
 E16, E16-b e E18 estão na cópia do pacote. **Nada aqui os lê** —
-`src/lib/graficos.ts` continua sendo a fonte dos gráficos. A adoção é da Fase 16.
+`src/lib/graficos.ts` continua sendo a fonte dos gráficos. A adoção é da Fase 16-H.
 
 O que a adoção herda junto:
 
@@ -151,7 +154,7 @@ catracas, e não dentro de nenhuma:
 As três estão corretas, cada uma no seu escopo, e o defeito passa no meio.
 
 > **Instrução do operador, e ela é a diferença entre fechar o item e fechar o
-> código:** ao escrever a chave da Fase 16, escrever **as duas** — a da dívida da
+> código:** ao escrever a chave da Fase 16-H, escrever **as duas** — a da dívida da
 > cor cheia como texto **e** a do preenchimento nu. **Uma só e o item 3 fecha no
 > papel e continua aberto no código.**
 
@@ -160,7 +163,7 @@ A medição já existe e não precisa ser refeita: `--sucesso` dá **2,32** e
 
 ## 4. A moldura do gráfico, e a paleta medida contra UMA superfície
 
-**Quinta ocorrência da família registrada no `DECISOES.md`**, e entra na Fase 16
+**Quinta ocorrência da família registrada no `DECISOES.md`**, e entra na Fase 16-H
 porque é a guarda do que a fase vai adotar.
 
 O `validar-paleta.js` lê o `src/lib/graficos.ts` e valida **três arrays
@@ -196,7 +199,7 @@ E há o argumento que ordena a prioridade, do `DECISOES.md`:
 Uma regressão que a aprovação teria pego passa pela catraca. **A decisão se prova
 uma vez; a guarda vale todo dia.**
 
-## 5. O que fica registrado para depois, fora da Fase 16
+## 5. O que fica registrado para depois, fora da Fase 16-H
 
 | item | onde está escrito |
 |---|---|
@@ -206,7 +209,7 @@ uma vez; a guarda vale todo dia.**
 | voltar o Vite para a **5191** quando existir API local, ou se a 5191 entrar no `ALLOWED_ORIGINS` | `vite.config.ts` |
 | aproximar os dois conjuntos de ícones — **produto**, não recópia | este documento |
 
-## 6. O que a Fase 16 NÃO herda, e é bom dizer
+## 6. O que a Fase 16-H NÃO herda, e é bom dizer
 
 - **A migração das telas está fechada.** As cinco fases entregaram, e as fichas
   da §29 estão preenchidas.

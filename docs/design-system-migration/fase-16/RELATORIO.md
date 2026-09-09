@@ -1,4 +1,10 @@
-# Fase 16 — relatório de fechamento
+# Fase 16-H — relatório de fechamento
+
+> **Nomenclatura, fixada em 09/09/2026.** Esta é a **Fase 16-H**: a *herança do
+> Checkpoint 3*. A **Fase 16** do PROMPT-MESTRE é outra coisa — "demais
+> páginas" — e **continua devendo**. As duas se chamavam "Fase 16" e não são a
+> mesma. O mestre não foi renumerado porque isso quebraria as referências já
+> escritas em relatórios e fichas.
 
 **09/09/2026.** A fase foi aberta com uma ordem explícita e uma regra de
 prioridade, e as duas se sustentaram até o fim.

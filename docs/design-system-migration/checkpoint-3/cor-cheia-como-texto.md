@@ -130,7 +130,7 @@ passou por esta mesma correção numa fase anterior, com a mesma tabela e o mesm
 alerta. A regra existia; só não tinha sido generalizada dos quatro pares
 daquele menu para o sistema.
 
-Vale dizer porque muda o risco da Fase 16: não é caminho novo, é caminho já
+Vale dizer porque muda o risco da Fase 16-H: não é caminho novo, é caminho já
 percorrido uma vez e não estendido.
 
 ### As duas medições bateram, sem se olharem

@@ -125,7 +125,7 @@ O operador aprovou o checkpoint com cinco pendências. Quatro estão fechadas:
 |---|---|---|
 | 1 | "Cancelar Chamado" → `secundario`, confirmar do modal fica `danger` | feito, `5f7eecb` |
 | 2 | `Avaliacao`: `useRef` + descarte de resposta antiga | feito, `0793ea6` |
-| 3 | Cor cheia como texto vira item da Fase 16 | regra registrada; execução na 16 |
+| 3 | Cor cheia como texto vira item da Fase 16-H | regra registrada; execução na 16 |
 | 4 | Contagem do que resta à mão entra na §32 | registrada; primeira contagem abaixo |
 | 5 | Screenshots: operador sobe a API, a sessão captura | **aguardando o ambiente** |
 
@@ -239,7 +239,7 @@ mapeamento é exato: ativo é `bg-sinal text-[var(--text-on-primary)]`, que é
 `Button variante="primario"`; inativo é `bg-superficie-elevada border-borda`,
 que é `secundario`. `Button` estende `ButtonHTMLAttributes`, então o
 `aria-pressed` passa direto. Não converti porque não estava entre os cinco
-itens aprovados — fica para a Fase 16, junto do resto.
+itens aprovados — fica para a Fase 16-H, junto do resto.
 
 O de cancelados **não tem variante correspondente**: ligado ele é
 `bg-perigo/20` com `text-on-tint-danger`, um interruptor tingido de perigo, e o
