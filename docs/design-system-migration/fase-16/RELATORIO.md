@@ -171,6 +171,30 @@ regra injetada.
 **Custo dito em voz alta:** se a regra CSS não chegar, a fatia não some — fica
 **cinza**. Degradação silenciosa. Quem a pega é o caso das classes.
 
+### A lacuna se resolve sozinha, e não é a única do mesmo tipo
+
+**Determinação do operador ao aceitar a fase, 09/09/2026.** A lacuna fica como
+está: ela **se fecha sozinha no dia em que houver ambiente com massa**. Não pede
+trabalho novo, pede um ambiente que hoje não existe.
+
+E ela não é a única. São **duas**, e vale listá-las juntas porque dependem do
+mesmo ambiente inexistente:
+
+| lacuna | o que falta ver | que ambiente resolve |
+|---|---|---|
+| **fatia da rosca com `--chart-*`** | os três status adotados desenhados, com o `fill` computado saindo do token | massa com chamado **aberto, em andamento ou aguardando** — produção só tem `Resolvido` |
+| **capturas 17–18, estado de erro do painel** | o `Aviso` que substituiu o painel de zeros quando a carga falha | uma API que se possa **derrubar** — a 17–18 foi desenhada para `docker stop` numa API local que nunca chegou a existir |
+
+As duas foram cortadas por **prazo**, não por risco, e nenhuma das duas é
+recuperável por esforço dentro do repositório: a primeira precisa de dado que a
+base não tem, a segunda de um serviço que se possa parar. Contra produção, em
+leitura pura, **nenhuma das duas é possível** — e é por isso que ficam
+registradas em vez de tentadas.
+
+O que cobre as duas enquanto isso: a fatia está presa em teste, e o estado de
+erro está coberto pela ficha da §29 e pelo código. O que falta, nos dois casos,
+é **a foto**.
+
 **Legenda:** a exigência da E18 já estava satisfeita. A lista sob a rosca dá
 quadradinho de cor **mais o nome escrito**, série por série — e é por isso que a
 rosca é `aria-hidden`. Um `<Legend>` do Recharts duplicaria.
