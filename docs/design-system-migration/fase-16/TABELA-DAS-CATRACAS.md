@@ -120,6 +120,67 @@ Distinguir isto do resto é o que impede a tabela de virar lista de reclamaçõe
 
 ---
 
+# A cópia de tokens do `graficos.ts` PODE deixar de existir
+
+**Pergunta do operador:** a catraca `exigirMolduraFiel` prende a divergência, mas
+não impede que a cópia exista. O `estiloDoGrafico` pode **ler** os tokens em vez
+de copiá-los?
+
+**Resposta: pode, e três dos cinco campos já deixaram de copiar.**
+
+## O que já foi feito
+
+A dica copiava fundo, borda e cor de texto "porque o Recharts escreve em atributo
+de SVG". **A dica não é SVG** — o Recharts a desenha num `div` sobreposto
+(`recharts-tooltip-wrapper`), que é HTML comum e lê token por classe. Os três
+campos saíram com a `DicaDoGrafico`. A cópia encolheu de **cinco para dois**.
+
+## Os dois que sobraram, e por que eles TAMBÉM podem
+
+`grade` e `texto` são atributo de apresentação de verdade — `stroke` na linha da
+grade e `fill` no rótulo das marcas. E `var()` não resolve em atributo: `var()` é
+valor de **propriedade CSS**, não de atributo.
+
+Mas a premissa que sustentava a cópia era outra, e não se sustenta. Conferido na
+fonte instalada:
+
+- `CartesianAxis.js:216` — as props do `tick` são espalhadas no `<Text>`, com a
+  classe `recharts-cartesian-axis-tick-value`;
+- `CartesianGrid.js` — as linhas saem com `recharts-cartesian-grid-horizontal` e
+  `-vertical`.
+
+Os dois viram **atributo de apresentação**, e atributo de apresentação **perde
+para qualquer regra CSS**. Então:
+
+```css
+.recharts-cartesian-axis-tick-value { fill: rgb(var(--conteudo-suave)); }
+.recharts-cartesian-grid line       { stroke: rgb(var(--borda)); }
+.recharts-tooltip-cursor            { fill: rgb(var(--borda)); }
+```
+
+resolve pelo token, sem cópia, e sem o JS participar. **A cópia pode ir a zero.**
+
+## O que isso muda na catraca
+
+Hoje a `exigirMolduraFiel` é **muro**: existe porque a cópia existe, e o trabalho
+dela é impedir que a cópia derive. Com os dois campos em CSS, ela vira **rede**:
+não haveria mais o que divergir, e ela passaria a guardar apenas contra alguém
+reintroduzir a cópia.
+
+## O custo, dito antes de a gente decidir
+
+**Acoplamento visível aos nomes de classe do Recharts.** Hoje o acoplamento
+existe e é invisível — a cópia depende de alguém lembrar de atualizá-la. O
+acoplamento por classe é declarado, mora numa folha de estilo, e **pode ser
+preso por caso de teste**: renderizar um gráfico e afirmar que os elementos
+saem com aquelas classes. Se o Recharts mudar de nome numa versão maior, o caso
+reprova em vez de a cor sumir calada.
+
+**Não implementado aqui.** É item próprio, e a decisão de trocar cópia por
+acoplamento de classe é do operador.
+
+---
+
 # O que a tabela decide para a fase
 
 **Item 3 é o primeiro vão, não o único.** Quatro no total, e três deles sem
