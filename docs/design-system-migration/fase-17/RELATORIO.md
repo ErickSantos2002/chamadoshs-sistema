@@ -143,3 +143,30 @@ produziria imagens sem par.
    dia em que uma regra de tema mexer em caixa, peso ou `letter-spacing`.
 3. **Um estado de tela por vez** — menu fechado não é menu aberto; a gaveta do
    mobile não entrou na conta.
+
+### E as pendências 2 e 3 são uma primeira vez
+
+**Observação do operador ao aceitar a fase, e ela merece estar no registro.**
+
+As duas são **vãos previstos e nomeados ANTES de morderem**. Foram escritas na
+seção "onde ela PARA" do `sonda-responsividade.js` **antes de a sonda rodar uma
+única vez** — não depois de um defeito escapar por elas.
+
+É a **primeira vez na migração inteira** que isso acontece. Todo o resto do
+inventário de vãos deste projeto nasceu ao contrário:
+
+| vão | como apareceu |
+|---|---|
+| preenchimento nu | **entre** duas catracas, achado por leitura depois de as duas existirem |
+| moldura da E14 | deriva silenciosa por três emendas |
+| `paletaCategorica` | dez cópias sob uma catraca que imprimia zero |
+| `fill-` na chave | ausente, e a estrela apareceu viva no mesmo dia |
+| `sr-only` na sonda | falso positivo no primeiro uso real |
+
+Cinco vãos descobertos **depois** de custarem alguma coisa; dois declarados
+**antes** de custarem. A tabela das catracas da Fase 16-H foi escrita justamente
+para inverter esse sinal, e esta é a primeira evidência de que inverteu.
+
+Vale dizer o que **não** prova: vão declarado continua sendo vão. Nomear não
+fecha. O que muda é o estatuto — vira item que alguém decidiu deixar aberto, e
+não descoberta futura.
