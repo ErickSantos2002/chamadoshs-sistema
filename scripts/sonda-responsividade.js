@@ -93,9 +93,18 @@ const EXPRESSAO = String.raw`
   // ── 2. ALVO DE TOQUE ──────────────────────────────────────────────
   const INTERATIVO = 'button, a[href], input, select, textarea, [role="button"], [role="tab"], [role="switch"], [tabindex]:not([tabindex="-1"])';
   const controles = [...document.querySelectorAll(INTERATIVO)].filter(visivel);
-  const pequenos = controles
-    .map((el) => ({ el, r: el.getBoundingClientRect() }))
-    .filter(({ r }) => Math.min(r.width, r.height) < ALVO)
+  const medidos = controles.map((el) => ({ el, r: el.getBoundingClientRect() }));
+
+  // O link "Pular para o conteúdo" é 1×1 até receber foco, porque é assim que
+  // se escreve um atalho de leitor de tela. Ele não é alvo de toque, e acusá-lo
+  // seria a sonda cobrando de quem fez acessibilidade direito.
+  //
+  // Vai para BALDE PRÓPRIO e não para o lixo: se um botão de verdade colapsar
+  // para 1×1, ele aparece aqui em vez de sumir. Corte silencioso é o que esta
+  // sonda existe para não ter.
+  const srOnly = medidos.filter(({ r }) => r.width <= 1 && r.height <= 1);
+  const pequenos = medidos
+    .filter(({ r }) => r.width > 1 && r.height > 1 && Math.min(r.width, r.height) < ALVO)
     .map(({ el, r }) => nome(el) + '  ' + Math.round(r.width) + '×' + Math.round(r.height));
 
   // ── 3. BOTÃO INALCANÇÁVEL ─────────────────────────────────────────
@@ -146,6 +155,7 @@ const EXPRESSAO = String.raw`
     barra_horizontal: document.documentElement.scrollWidth > W,
     cortado: cortados.length, cortado_quais: cortados.slice(0, 12),
     alvo_pequeno: pequenos.length, alvo_pequeno_quais: pequenos.slice(0, 12),
+    sr_only_ignorados: srOnly.length,
     coberto: cobertos.length, coberto_quais: cobertos.slice(0, 12),
     sobreposto: sobrepostos.length, sobreposto_quais: sobrepostos.slice(0, 12),
     controles_no_total: controles.length,

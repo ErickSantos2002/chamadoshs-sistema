@@ -35,6 +35,7 @@ uma versão de teste.
 | 10 | textos encostados, sem sobrepor | 0 | 0 ✓ |
 | 11 | pai e filho | 0 | 0 ✓ |
 | 12 | sobreposição de ~10% | 0 | 0 — **ponto cego** |
+| 13 | link `sr-only` de 1×1 + botão 36×36 + botão 48×48 | alvo 1, sr-only 1 | 1 e 1 — **acrescentado depois do primeiro uso real** |
 
 **Os casos 2, 5, 7, 10 e 11 são os que importam**, porque são os falsos positivos
 que uma sonda ingênua produziria — e cada um deles derrubaria a confiança na
@@ -65,6 +66,26 @@ não responde sobre o que está abaixo da dobra. Corte e alvo de toque são
 geométricos e valem para a página inteira; cobertura, não. A sonda **declara isso
 no próprio retorno**, em `cobertura_aferida_em`, em vez de deixar quem lê supor
 que mediu tudo.
+
+### O caso 13 só existe porque a sonda errou no primeiro uso sério
+
+Rodada contra o `/dashboard`, ela acusou **10** alvos pequenos. Um deles era
+
+    a.sr-only "Pular para o conteúdo pr"  1×1
+
+que é o atalho de leitor de tela — 1×1 até receber foco, porque é assim que se
+escreve. **Falso positivo, e do pior tipo: a sonda cobrando de quem fez
+acessibilidade direito.**
+
+Nenhum dos doze documentos controlados tinha `sr-only`, e por isso os doze
+passaram. **Prova negativa cobre o que quem a escreveu imaginou** — e foi o
+primeiro contato com a tela real que mostrou o vazio.
+
+O conserto não joga fora: manda para **balde próprio**, `sr_only_ignorados`. Se
+um botão de verdade colapsar para 1×1, ele aparece lá em vez de sumir — corte
+silencioso é o que esta sonda existe para não ter.
+
+Com o conserto, o `/dashboard` dá **9**, e os nove são reais.
 
 **Alvo de toque conta em todas as larguras**, porque a §20 não qualifica. A sonda
 não decide por conta própria que 38px é aceitável no desktop — ela reporta, e a
