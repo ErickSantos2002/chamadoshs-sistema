@@ -27,10 +27,17 @@
  * **Mede um estado de tela por vez.** Menu fechado não é menu aberto; a gaveta
  * do mobile só entra na conta se estiver aberta quando a sonda roda.
  *
- * **Não rola a página.** O que está abaixo da dobra é medido pela geometria, que
- * é o certo para corte e alvo, mas `elementFromPoint` só responde sobre o que
- * está no viewport — então a cobertura de botão é aferida SÓ para o que está
- * visível agora. Está declarado no retorno, em `cobertura_aferida_em`.
+ * **Não rola a página, e por isso "coberto" mede MENOS em tela curta.** O que
+ * está abaixo da dobra é medido pela geometria, que é o certo para corte e alvo,
+ * mas `elementFromPoint` só responde sobre o viewport.
+ *
+ * Medido em 09/09/2026, mesma página, seis larguras: **8 de 17** controles
+ * aferidos em 360×740, **14 de 17** nas médias, **16 de 17** em 2560×1440. O
+ * critério não mudou; a janela vertical mudou.
+ *
+ * Por isso o zero **não sai sozinho**: `coberto_resumo` gruda o numerador no
+ * denominador. `"coberto 0"` em 360 e `"coberto 0"` em 2560 são afirmações de
+ * tamanhos diferentes, e escrever só o zero faz as duas parecerem iguais.
  *
  * **Sobreposição exige 25% da área do menor.** Abaixo disso o ruído de
  * antialiasing e de `line-height` produz falso positivo em texto justaposto, e
@@ -156,6 +163,12 @@ const EXPRESSAO = String.raw`
     cortado: cortados.length, cortado_quais: cortados.slice(0, 12),
     alvo_pequeno: pequenos.length, alvo_pequeno_quais: pequenos.slice(0, 12),
     sr_only_ignorados: srOnly.length,
+    // O resultado de "coberto" NÃO sai sozinho: sai grudado no quanto foi
+    // aferido. Em 360×740 só 8 dos 17 controles cabem no viewport, e em
+    // 2560×1440 cabem 16 — "coberto 0" nas duas larguras NÃO é a mesma
+    // afirmação, e escrever só o zero faz parecer que é.
+    coberto_resumo:
+      cobertos.length + ' em ' + afericao.length + ' aferidos, de ' + controles.length + ' controles',
     coberto: cobertos.length, coberto_quais: cobertos.slice(0, 12),
     sobreposto: sobrepostos.length, sobreposto_quais: sobrepostos.slice(0, 12),
     controles_no_total: controles.length,

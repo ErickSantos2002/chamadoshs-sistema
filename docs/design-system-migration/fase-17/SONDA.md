@@ -61,11 +61,32 @@ a ignorá-la** — que é um defeito pior do que o que ela pegaria.
 **Mede um estado de tela por vez.** Menu fechado não é menu aberto. A gaveta do
 mobile só entra na conta se estiver aberta quando a sonda roda.
 
-**A cobertura de botão só vale para o que está no viewport.** `elementFromPoint`
-não responde sobre o que está abaixo da dobra. Corte e alvo de toque são
-geométricos e valem para a página inteira; cobertura, não. A sonda **declara isso
-no próprio retorno**, em `cobertura_aferida_em`, em vez de deixar quem lê supor
-que mediu tudo.
+**A cobertura de botão só vale para o que está no viewport, e isso ENCOLHE em
+tela curta.** `elementFromPoint` não responde sobre o que está abaixo da dobra.
+Corte e alvo de toque são geométricos e valem para a página inteira; cobertura,
+não.
+
+Medido em 09/09/2026, **mesma página, seis larguras**:
+
+| largura | controles aferidos |
+|---|---|
+| 360×740 e 390×844 | **8** de 17 |
+| 768×1024 a 1920×1080 | **14** de 17 |
+| 2560×1440 | **16** de 17 |
+
+O critério não mudou; a janela vertical mudou. E foi a série que mostrou isso —
+**uma medição só não mostraria**, porque um denominador sozinho não revela que é
+variável.
+
+Por isso o zero **deixou de sair sozinho**. Antes a cobertura ia num campo ao
+lado, e ao lado se perde na transcrição; agora `coberto_resumo` gruda os dois:
+
+    coberto_resumo: "0 em 8 aferidos, de 17 controles"
+
+`"coberto 0"` em 360 e `"coberto 0"` em 2560 são afirmações de tamanhos
+diferentes, e escrever só o zero faz as duas parecerem iguais. Mesma família do
+balde próprio do `sr-only`: **o que a checagem não alcança fica visível no
+resultado**, em vez de virar cegueira de quem lê.
 
 ### O caso 13 só existe porque a sonda errou no primeiro uso sério
 

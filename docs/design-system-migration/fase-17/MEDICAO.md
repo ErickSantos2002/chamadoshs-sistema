@@ -146,37 +146,95 @@ o número.
 
 ---
 
-## O que NÃO foi medido, e a razão
+## As seis larguras, medidas — e por que meio
 
-**As seis larguras da §20 não foram medidas.** A janela do Chrome sob controle
-remoto não redimensiona: `resize_window` **relatou sucesso e não mudou nada
-CINCO vezes** — três na aba da aplicação e mais duas numa aba recém-criada,
-contra documento sintético, que era o teste para saber se a emulação vinha da
-aba antiga. Não vinha.
+**Medidas pelo operador em 09/09/2026**, todas em `/chamados/6`, **sem
+recarregar**: nenhuma das seis custou chamada nova.
+
+### O meio importa, e muda o que eu havia escrito
+
+**Modo dispositivo do DevTools (Responsivo, DPR 1)** — e não janela real. Foi
+isso que tornou **1920 e 2560 alcançáveis** nesta máquina, cuja tela não comporta
+nenhuma das duas.
+
+Eu havia registrado as seis como **"não medidas — a janela não redimensiona por
+automação"**. A frase estava certa sobre o **`resize_window`**, que relatou
+sucesso falso cinco vezes, e **errada sobre a conclusão**: eu tratei o limite de
+uma ferramenta como limite do ambiente.
+
+> **"Não consegui" não é "não dá".** O caminho existia, era o mesmo que o
+> Checkpoint 3 já tinha usado para as dezesseis capturas, e não passava pela
+> ferramenta que falhou.
+
+Fica no registro porque a diferença é prática: **as seis foram medidas**, e a
+§20 está coberta nas seis larguras que ela pede.
+
+### A série
+
+Todas em `/chamados/6`, tema único, DPR 1.
+
+| largura | cortado | coberto | sobreposto | **alvo < 40px** | cobertura aferida |
+|---|---:|---:|---:|---:|---|
+| 360×740 | 0 | 0 | 0 | **8** | 8 de 17 |
+| 390×844 | 0 | 0 | 0 | **8** | 8 de 17 |
+| 768×1024 | 0 | 0 | 0 | **8** | 14 de 17 |
+| 1366×768 | 0 | 0 | 0 | **8** | 14 de 17 |
+| 1920×1080 | 0 | 0 | 0 | **8** | 14 de 17 |
+| 2560×1440 | 0 | 0 | 0 | **8** | 16 de 17 |
+| *900×1271* | *0* | *0* | *0* | *8* | *sétima largura, não planejada* |
+
+`sr_only_ignorados: 1` nas seis — o link de pular conteúdo, no balde próprio.
+
+### 1. O alvo de toque não depende da largura
+
+**Oito em todas as seis, com as mesmas dimensões, nome por nome:**
 
 ```
-inner 900x1271 | outer 0x0 | screen 900x1440 | dpr 1
+a.flex.items-center                    36×36
+button.md:hidden.rounded-lg            36×36   (vira button.hidden.md:flex de 768 para cima)
+a.mb-2.inline-flex "Voltar"            60×20
+button "Cancelar Chamado"             187×38
+button "Arquivar"                     113×38
+button "Editar Detalhes"              160×38
+button "Reabrir"                      106×38
+button "Enviar Comentário"            155×36
 ```
 
-`outer 0x0` com `screen` de 900×1440 é janela sob automação, não janela do
-sistema operacional.
+**É falha de altura FIXA, e não de layout responsivo.** Isso confirma as três
+famílias e **desqualifica qualquer conserto por breakpoint** — não há largura em
+que o defeito melhore, então não há largura em que valha remendar.
 
-**Quem pegou foi a régua da própria sonda** — o antídoto adotado depois da régua
-que oscilava no Checkpoint 3. Sem ela, três medições idênticas teriam entrado no
-registro como três larguras diferentes.
+O segundo item é o mais eloquente: o botão de recolher a barra **troca de
+elemento** no `md` — `button.md:hidden` abaixo, `button.hidden.md:flex` acima — e
+os dois têm 36×36. **A troca responsível preserva o defeito**, o que é a prova
+mais direta de que ele não mora no layout.
 
-| largura | estado |
-|---|---|
-| 360×740 | **não medida** — a janela não redimensiona por automação |
-| 390×844 | **não medida** — idem |
-| 768×1024 | **não medida** — idem |
-| 1366×768 | **não medida** — idem |
-| 1920×1080 | **não medida** — idem |
-| 2560×1440 | **não medida** — idem |
-| **900×1271** | medida — é a régua em que a janela ficou presa |
+### 2. Os três critérios geométricos passam nas seis
 
-A 900×1271 **não é uma das seis** e não substitui nenhuma. Fica no registro como
-o que é: uma sétima largura, não planejada, que veio de graça.
+Cortado, coberto e sobreposto: **zero de 360 a 2560**. A §20 está cumprida nos
+três, e não por uma medição única — por seis.
 
-O operador redimensiona à mão e roda `LINHA-DA-SONDA.txt` em cada largura. Como a
-página já está carregada, **nenhuma das seis custa chamada nova**.
+### 3. O que varia é o MÉTODO, e isso é limite declarado
+
+A única coluna que se mexe é a cobertura aferida: **8 de 17** nas estreitas, **14
+de 17** nas médias, **16 de 17** em 2560.
+
+Não é o defeito mudando: é a **janela vertical**. `elementFromPoint` só responde
+sobre o viewport, então em tela curta menos controles entram no teste de
+cobertura.
+
+> **Limite do método, registrado:** em viewport pequeno o critério "coberto" mede
+> **menos controles**. O número de aferidos tem de ir na ficha **ao lado do
+> resultado** — senão `"coberto 0"` em 360 parece a mesma afirmação que
+> `"coberto 0"` em 2560, **e não é**.
+
+**Consertado na sonda, e não só anotado.** O campo `coberto_resumo` passou a
+grudar numerador e denominador:
+
+```
+coberto_resumo: "0 em 8 aferidos, de 17 controles"
+```
+
+Ao lado se perde na transcrição; grudado, não se perde. É a mesma família do
+balde próprio do `sr-only`: **o que a checagem dispensa ou não alcança fica
+visível no próprio resultado**, em vez de virar cegueira de quem lê.
