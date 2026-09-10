@@ -145,11 +145,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {GRUPOS_DO_MENU.map(({ grupo, itens }) => (
           <div key={grupo}>
             {/* Título do grupo aberto; recolhida, vira um traço curto — o
-                nome não caberia em 72px e um rótulo truncado não informa. */}
+                nome não caberia em 72px e um rótulo truncado não informa.
+
+                O rótulo é de **12px**, e não de 10 — o piso do checklist do
+                `adocao.md`. Medido antes de subir, porque caixa alta com
+                `tracking-widest` parecia candidata a estourar a barra:
+
+                  "Principal"  a 10px = 60,8px  →  a 12px = 72,9px
+                  "Gestão"     a 10px = 46,8px  →  a 12px = 56,2px
+                  espaço disponível = 233px
+
+                O maior ocupa 31% da largura. A suspeita era razoável e o número
+                a derrubou. */}
             {recolhida ? (
               <div className="mx-auto mb-1 w-6 border-t border-borda" />
             ) : (
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-conteudo-tenue">
+              <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-widest text-conteudo-tenue">
                 {grupo}
               </p>
             )}

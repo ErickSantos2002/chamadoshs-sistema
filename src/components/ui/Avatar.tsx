@@ -97,7 +97,21 @@ export const Avatar: React.FC<AvatarProps> = ({ nome, title, className }) => {
         // `rounded-full` fica: é círculo de verdade, a exceção que o canto reto
         // do D2-a preserva junto com o ponto de status e o anel do spinner.
         'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-        'text-[10px] font-medium leading-none',
+        // 12px, e não 10 — o piso do checklist do `adocao.md`. Medido antes de
+    // aplicar, porque a caixa é de 24px e duas letras a 12px é apertado.
+    //
+    //   `AD` a 10px  =  17 × 15 px   (medido na variante de 32px, na topbar)
+    //   `AD` a 12px  =  20,4 × 18 px  (projeção linear)
+    //   caixa de 24px, sem padding, `justify-center`  →  folga de 3,6 × 6
+    //
+    // É **projeção medida, e não medida direta**: a variante de 24px não estava
+    // na tela onde se mediu. A projeção é sólida porque **o glifo não depende
+    // da caixa** — as mesmas duas letras, a mesma fonte, e a escala é linear.
+    //
+    // E são sempre DUAS: `iniciais()` devolve `primeira + ultima` para nome
+    // composto, `slice(0, 2)` para nome único e `'?'` sem nome. Não há ramo que
+    // produza três — que caberiam em ~30px e estourariam os 24.
+    'text-xs font-medium leading-none',
         className
       )}
     >
