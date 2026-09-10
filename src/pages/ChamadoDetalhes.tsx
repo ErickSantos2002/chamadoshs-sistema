@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
 import ContadorMinimo from '../components/ContadorMinimo';
@@ -7,12 +7,27 @@ import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { categoriasService, chamadosService } from '../services/chamadoshsapi';
-import { getRoleName } from '../utils/roleMapper';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import SlaBadge from '../components/SlaBadge';
 import Avaliacao from '../components/Avaliacao';
-import { Badge, Modal, Seletor } from '../components/ui';
+import {
+  Aviso,
+  Badge,
+  BlocoCarregando,
+  Button,
+  Campo,
+  Input,
+  Modal,
+  Seletor,
+  Textarea,
+} from '../components/ui';
+import {
+  MarcaBadge,
+  PapelBadge,
+  PrioridadeBadge,
+  VARIANTE_DE_STATUS,
+} from '../components/SelosDeChamado';
 import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
 import { IconeApagar, IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
 import {
@@ -412,102 +427,74 @@ const ChamadoDetalhes: React.FC = () => {
       /* ================== ABERTO ================== */
       case StatusEnum.ABERTO:
         botoesComuns.push(
-          <button
+          <Button variante="primario"
             key="iniciar"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="flex items-center gap-2 rounded-lg bg-sinal px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}>
             <IconeIniciar className="h-4 w-4" />
             Iniciar Atendimento
-          </button>
+          </Button>
         );
         break;
 
       /* ================== EM ANDAMENTO ================== */
       case StatusEnum.EM_ANDAMENTO:
         botoesComuns.push(
-          <button
+          <Button variante="secundario"
             key="aguardando"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.AGUARDANDO)}
-            className="flex items-center gap-2 rounded-lg bg-alerta-forte px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.AGUARDANDO)}>
             <IconeRelogio className="h-4 w-4" />
             Aguardando Retorno
-          </button>,
+          </Button>,
 
-          <button
+          <Button variante="sucesso"
             key="resolver"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}
-            className="flex items-center gap-2 rounded-lg bg-info px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:bg-info-forte"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}>
             <IconeConfereCirculo className="h-4 w-4" />
             Marcar como Resolvido
-          </button>
+          </Button>
         );
         break;
 
       /* ================== AGUARDANDO ================== */
       case StatusEnum.AGUARDANDO:
         botoesComuns.push(
-          <button
+          <Button variante="primario"
             key="retomar"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="flex items-center gap-2 rounded-lg bg-sinal px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}>
             <IconeIniciar className="h-4 w-4" />
             Retomar Atendimento
-          </button>,
+          </Button>,
 
-          <button
+          <Button variante="sucesso"
             key="resolver"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}
-            className="flex items-center gap-2 rounded-lg bg-info px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:bg-info-forte"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.RESOLVIDO)}>
             <IconeConfereCirculo className="h-4 w-4" />
             Marcar como Resolvido
-          </button>
+          </Button>
         );
         break;
 
       /* ================== RESOLVIDO ================== */
       case StatusEnum.RESOLVIDO:
         botoesComuns.push(
-          <button
+          <Button variante="secundario"
             key="reabrir"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="flex items-center gap-2 rounded-lg bg-alerta-forte px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}>
             <IconeDesfazer className="h-4 w-4" />
             Reabrir
-          </button>
+          </Button>
         );
         break;
 
       /* ================== FECHADO (unificado com Resolvido visualmente) ================== */
       case StatusEnum.FECHADO:
         botoesComuns.push(
-          <button
+          <Button variante="secundario"
             key="reabrir"
-            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}
-            className="flex items-center gap-2 rounded-lg bg-alerta-forte px-4 py-2
-                      text-sm font-semibold text-white
-                      transition-colors hover:brightness-110"
-          >
+            onClick={() => handleMudancaRapidaStatus(StatusEnum.EM_ANDAMENTO)}>
             <IconeDesfazer className="h-4 w-4" />
             Reabrir
-          </button>
+          </Button>
         );
         break;
     }
@@ -521,25 +508,19 @@ const ChamadoDetalhes: React.FC = () => {
     return status === StatusEnum.FECHADO ? 'Resolvido' : status;
   };
 
-  /**
-   * Selo de status e de prioridade.
+  /*
+   * O `seloDaCor` saiu daqui na Fase 15, como saiu do `Dashboard` na 13.
    *
-   * A cor vem de `graficos.ts`, que é a única fonte. Esta tela mantinha um
-   * `switch` próprio, e as duas tabelas discordavam em quase tudo: aqui
-   * "Aberto" era azul e no quadro era rosa, "Aguardando" era âmbar e no quadro
-   * violeta, e "Baixa" era verde — que neste sistema significa SLA no prazo.
-   * O mesmo chamado trocava de cor conforme a tela em que era aberto.
+   * Ele pintava o selo com a cor de `graficos.ts` — que é a fonte certa para
+   * GRÁFICO, e por isso continua alimentando o ponto colorido das opções do
+   * `Seletor` logo abaixo. Para SELO, a §16 manda usar o mapa
+   * `status → variante`, e o selo pela cor de gráfico era a segunda fonte de
+   * verdade que a §5.4 proíbe: as duas podiam divergir, e ninguém saberia qual
+   * está certa.
    *
-   * O texto fica em `--conteudo`, não na cor do status. A cor entra como
-   * fundo esmaecido e traço lateral: assim o contraste do texto é o do tema,
-   * garantido, em vez de depender de cada cor de status ter contraste
-   * suficiente contra a própria versão clara.
+   * O corte é o mesmo dos dois lados: cor de gráfico onde é gráfico ou
+   * amostra; `Badge` do mapa onde é estado.
    */
-  const seloDaCor = (cor: string): React.CSSProperties => ({
-    backgroundColor: `${cor}22`,
-    borderLeft: `2px solid ${cor}`,
-  });
-
 
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString('pt-BR', {
@@ -573,33 +554,17 @@ const ChamadoDetalhes: React.FC = () => {
     return semPrefixo;
   };
 
-  // Função para obter a cor do badge da role
-  const getRoleBadgeColor = (roleId: number) => {
-    switch (roleId) {
-      case 1: // Admin
-        return 'bg-info/15 text-info-forte dark:text-info-suave';
-
-      case 2: // Técnico
-        return 'bg-info/20 text-info-forte dark:text-info-suave';
-
-      case 3: // Usuário
-        return 'bg-superficie-elevada text-conteudo-suave';
-
-      default:
-        return 'bg-superficie-elevada text-conteudo bg-superficie-elevada text-conteudo-suave';
-    }
-  };
-
+  // O `getRoleBadgeColor` virou `PapelBadge`, em `SelosDeChamado.tsx`, junto
+  // dos outros mapas. A nota de lá conta o que o `switch` estava fazendo: 5%
+  // de alfa separando Administrador de Técnico, e um `default` com duas cores
+  // de texto na mesma string.
 
   if (loading && !chamado) {
     return (
       <div className="flex min-h-full items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-sinal"></div>
-          <p className="mt-4 text-sm text-conteudo-suave">
-            Carregando chamado...
-          </p>
-        </div>
+        <BlocoCarregando tamanho="lg">
+          <p className="text-sm text-conteudo-suave">Carregando chamado...</p>
+        </BlocoCarregando>
       </div>
     );
   }
@@ -607,16 +572,20 @@ const ChamadoDetalhes: React.FC = () => {
   if (error || !chamado) {
     return (
       <div className="space-y-5">
-        <div className="rounded-xl border border-perigo/30 bg-perigo/10 px-5 py-4
-                        text-sm text-perigo-forte dark:text-perigo-suave">
-          {error || 'Chamado não encontrado'}
-        </div>
-        <button
-          onClick={() => navigate('/chamados')}
-          className="rounded-lg bg-sinal px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-110"
-        >
+        {/*
+          Era a decima copia literal do `Aviso`, e a unica que sobreviveu a
+          Fase 8 -- porque esta num `return` antecipado, longe do corpo da
+          tela, onde a varredura por bloco de erro nao passou.
+
+          Alem da forma, ela perdia o `role="alert"`: a falha de carga
+          aparecia so para quem enxerga. A cor tambem era outra, `bg-perigo/10`
+          contra os 15% do `--tint-danger` do pacote.
+        */}
+        <Aviso variante="perigo">{error || 'Chamado não encontrado'}</Aviso>
+        <Button variante="primario"
+          onClick={() => navigate('/chamados')}>
           Voltar para Chamados
-        </button>
+        </Button>
       </div>
     );
   }
@@ -627,15 +596,18 @@ const ChamadoDetalhes: React.FC = () => {
         {/* Cabeçalho */}
         <div className="rounded-2xl border border-borda bg-superficie">
           <div className="px-5 py-4">
-            {/* Botão Voltar */}
-            <button
-              onClick={() => navigate('/chamados')}
-              className="mb-2 flex items-center gap-1 text-sm font-medium text-sinal
-                        transition-colors hover:brightness-110"
+            {/* Botão Voltar — que e link, e nao botao: vai para uma rota
+                fixa (`/chamados`), nao desfaz nada nem volta no historico.
+                Mesmo caso do lembrete de tarefas em `Chamados.tsx`. */}
+            <Link
+              to="/chamados"
+              className="mb-2 inline-flex items-center gap-1 rounded text-sm font-medium text-action
+                        transition-colors hover:brightness-110
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
               <IconeVoltar className="h-4 w-4" />
               Voltar
-            </button>
+            </Link>
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               {/* Título e subtítulo */}
@@ -660,8 +632,8 @@ const ChamadoDetalhes: React.FC = () => {
                     marcou soubesse do cancelamento. */}
                 {(chamado.cancelado || chamado.arquivado) && (
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {chamado.cancelado && <Badge variante="perigo">Cancelado</Badge>}
-                    {chamado.arquivado && <Badge variante="neutro">Arquivado</Badge>}
+                    {chamado.cancelado && <MarcaBadge marca="cancelado" />}
+                    {chamado.arquivado && <MarcaBadge marca="arquivado" />}
                     <span className="text-sm text-conteudo-tenue">
                       Fora do fluxo de atendimento — o status abaixo é o que ele
                       tinha quando saiu.
@@ -675,29 +647,51 @@ const ChamadoDetalhes: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2">
                   {!modoEdicao ? (
                     <>
-                      {/* Botão Cancelar Chamado */}
+                      {/* Botão Cancelar Chamado.
+
+                          Era vermelho VAZADO — moldura e texto, sem
+                          preenchimento —, e o pacote não tem essa variante.
+                          Ficou como decisão aberta do Checkpoint 3, e o
+                          operador decidiu pelo refinamento que está no
+                          DECISOES.md: **o gatilho que só abre confirmação é
+                          neutro; quem carrega o vermelho é o botão que
+                          confirma**, dentro do modal.
+
+                          O gatilho não cancela nada. Ele abre uma janela que
+                          ainda exige um motivo escrito e um segundo clique —
+                          e é ESSE segundo clique que não tem volta, porque a
+                          API tem `arquivar`/`desarquivar` mas não tem
+                          descancelar. O vermelho fica onde o compromisso é
+                          assumido, e não onde ele é cogitado.
+
+                          (O "Excluir" logo abaixo continua `perigo` no
+                          gatilho. É a exceção registrada, e a nota dele
+                          explica: é a única ação da página que apaga o
+                          chamado, e ela não pode parecer irmã de "Arquivar".) */}
                       {!chamado?.cancelado && (
-                        <button
+                        <Button
+                          variante="secundario"
                           onClick={() => setMostrarModalCancelar(true)}
-                          className="flex items-center gap-2 rounded-lg border border-perigo/40
-                                    px-4 py-2 text-sm font-semibold
-                                    text-perigo-forte transition-colors
-                                    hover:bg-perigo/10 dark:text-perigo-suave"
                         >
                           <IconeProibido className="h-4 w-4" />
                           Cancelar Chamado
-                        </button>
+                        </Button>
                       )}
 
-                      {/* Botão Arquivar/Desarquivar */}
-                      <button
+                      {/* Botão Arquivar/Desarquivar.
+
+                          Era verde quando arquivado e ambar quando nao, e as
+                          duas cores saem pela regra registrada no DECISOES.md:
+                          "info e alerta sao semanticas de selo e aviso, nao de
+                          botao". Arquivar tambem nao e conclusao, entao o verde
+                          nao cabia nem por esse lado.
+
+                          `secundario` pela mesma regra que os tres "Desativar":
+                          a acao e reversivel -- `arquivar` e `desarquivar` sao
+                          um par na API --, e o rotulo ja carrega o sentido. */}
+                      <Button
+                        variante="secundario"
                         onClick={() => setMostrarModalArquivar(true)}
-                        className={`flex items-center gap-2 rounded-lg border px-4 py-2
-                                  text-sm font-semibold transition-colors ${
-                                    chamado?.arquivado
-                                      ? 'border-sucesso/40 text-sucesso-forte hover:bg-sucesso/10 dark:text-sucesso-suave'
-                                      : 'border-alerta/40 text-alerta-forte hover:bg-alerta/10 dark:text-alerta-suave'
-                                  }`}
                       >
                         {chamado?.arquivado ? (
                           <>
@@ -710,7 +704,7 @@ const ChamadoDetalhes: React.FC = () => {
                             Arquivar
                           </>
                         )}
-                      </button>
+                      </Button>
 
                       {/* Botão Excluir.
                           Último da fileira e o único em vermelho cheio: é a
@@ -721,51 +715,39 @@ const ChamadoDetalhes: React.FC = () => {
                           teste — administrador, e só em chamado que já saiu do
                           fluxo. */}
                       {chamado && podeExcluir(chamado, user?.role) && (
-                        <button
-                          onClick={() => setMostrarModalExcluir(true)}
-                          className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
-                                    text-sm font-semibold text-white
-                                    transition-colors hover:bg-perigo-forte"
-                        >
+                        <Button variante="perigo"
+                          onClick={() => setMostrarModalExcluir(true)}>
                           <IconeApagar className="h-4 w-4" />
                           Excluir
-                        </button>
+                        </Button>
                       )}
 
                       {/* Botão Editar */}
-                      <button
+                      <Button
+                        variante="secundario"
                         onClick={() => setModoEdicao(true)}
-                        className="flex items-center gap-2 rounded-lg border border-borda
-                                  px-4 py-2 text-sm font-semibold text-conteudo-suave
-                                  transition-colors hover:bg-superficie-elevada hover:text-conteudo"
                       >
                         <IconeEditar className="h-4 w-4" />
                         Editar Detalhes
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>
                       {/* Botão Cancelar Edição */}
-                      <button
+                      <Button
+                        variante="secundario"
                         onClick={() => setModoEdicao(false)}
-                        className="flex items-center gap-2 rounded-lg border border-borda
-                                  px-4 py-2 text-sm font-semibold text-conteudo-suave
-                                  transition-colors hover:bg-superficie-elevada hover:text-conteudo"
                       >
                         <IconeFechar className="h-4 w-4" />
                         Cancelar
-                      </button>
+                      </Button>
 
                       {/* Botão Salvar */}
-                      <button
-                        onClick={handleSalvarEdicao}
-                        className="flex items-center gap-2 rounded-lg bg-sucesso px-4 py-2
-                                  text-sm font-semibold text-white
-                                  transition-colors hover:bg-sucesso-forte"
-                      >
+                      <Button variante="sucesso"
+                        onClick={handleSalvarEdicao}>
                         <IconeSalvar className="h-4 w-4" />
                         Salvar
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -786,6 +768,36 @@ const ChamadoDetalhes: React.FC = () => {
           </div>
         )}
 
+        {/*
+          ── LISTA DE DEFINIÇÕES ─────────────────────────────────────────
+
+          Este painel tem nove pares "nome do campo → valor", e os nove nomes
+          eram `<label>`. Nenhum deles apontava para nada.
+
+          Um `<label>` sem `for` e sem controle dentro é **inerte**: não cria
+          relação nenhuma. Quem lê a tela com os olhos junta "Protocolo" ao
+          `#4187` pela proximidade e pelo tamanho da fonte; quem navega por
+          leitor de tela ouve "Protocolo" e, num item à parte, "#4187", sem
+          nada dizendo que um é o nome do outro. É o mesmo defeito de família
+          que a Fase 11 achou nos campos de formulário — o sinal certo pelo
+          mecanismo errado —, só que aqui o mecanismo não existia.
+
+          Quatro dos nove ficam mais delicados: em modo de edição eles passam a
+          ter um `Seletor` do lado. A saída óbvia seria pôr `htmlFor` nesses
+          quatro, e ela é uma armadilha: o id só existe em modo de edição, e
+          fora dele o rótulo apontaria para um id inexistente — o ponteiro
+          quebrado que já está travado por teste no `Campo`. Um `<label>`
+          ENVOLVENDO o `Seletor` também não serve: o `Seletor` já se nomeia
+          sozinho (`aria-label={rotulo}`, sem rótulo visível), e envolver
+          criaria um segundo nome para o mesmo controle, que é a segunda fonte
+          de verdade da §5.4.
+
+          `<dl>`/`<dt>`/`<dd>` resolve os nove de uma vez, e é o que este bloco
+          sempre foi: a relação nome→valor passa a ser estrutural, sem ponteiro
+          para manter; o `Seletor` continua com o nome dele; e nada muda de
+          lugar na tela, porque `<dt>` e `<dd>` já são bloco e o preflight do
+          Tailwind zera a margem de 40px que o `<dd>` traria do navegador.
+        */}
         {/* Informações do Chamado */}
         <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
           {/* TÍTULO DA SEÇÃO */}
@@ -797,228 +809,236 @@ const ChamadoDetalhes: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-x-8 gap-y-6 p-5 md:grid-cols-2">
             {/* ========================== COLUNA ESQUERDA ========================== */}
-            <div className="space-y-5">
+            {/*
+              `dl` e nao `div`: ver a nota LISTA DE DEFINICOES logo acima do
+              cabecalho deste painel. Sao duas listas, uma por coluna, porque
+              `dl > div > div > dt` nao e valido — o `div` de agrupamento so
+              vale como filho DIRETO do `dl`.
+            */}
+            <dl className="space-y-5">
               {/* Solicitante */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
                   <IconeUsuario className="mr-1 inline h-3.5 w-3.5" />
                   Solicitante
-                </label>
+                </dt>
 
-                <div className="flex items-center gap-2 flex-wrap">
+                <dd className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-medium text-conteudo">
                     {usuarios[chamado.solicitante_id]?.nome ||
                       `Usuário #${chamado.solicitante_id}`}
                   </p>
 
                   {usuarios[chamado.solicitante_id] && (
-                    <span
-                      className={`px-2 py-0.5 text-xs font-semibold rounded-full 
-                    ${getRoleBadgeColor(usuarios[chamado.solicitante_id].role_id)}`}
-                    >
-                      {getRoleName(usuarios[chamado.solicitante_id].role_id)}
-                    </span>
+                    <PapelBadge roleId={usuarios[chamado.solicitante_id].role_id} />
                   )}
-                </div>
+                </dd>
               </div>
 
               {/* Status */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
                   Status
-                </label>
+                </dt>
 
-                {modoEdicao ? (
-                  <Seletor
-                    rotulo="Status"
-                    valor={statusEditado}
-                    aoMudar={(v) => setStatusEditado(v as StatusEnum)}
-                    opcoes={Object.values(StatusEnum)
-                      .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do dropdown
-                      .map((status) => ({
-                        valor: status,
-                        rotulo: status,
-                        cor: corDoStatus(getStatusDisplay(status), darkMode),
-                      }))}
-                  />
-                ) : (
-                  <span
-                    className="inline-flex px-2 py-1 text-xs font-semibold text-conteudo"
-                    style={seloDaCor(corDoStatus(getStatusDisplay(chamado.status), darkMode))}
-                  >
-                    {getStatusDisplay(chamado.status)}
-                  </span>
-                )}
+                <dd>
+                  {modoEdicao ? (
+                    <Seletor
+                      rotulo="Status"
+                      valor={statusEditado}
+                      aoMudar={(v) => setStatusEditado(v as StatusEnum)}
+                      opcoes={Object.values(StatusEnum)
+                        .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do dropdown
+                        .map((status) => ({
+                          valor: status,
+                          rotulo: status,
+                          cor: corDoStatus(getStatusDisplay(status), darkMode),
+                        }))}
+                    />
+                  ) : (
+                    /*
+                      Rotulo e variante vem de fontes DIFERENTES de proposito, e
+                      isso e a pergunta aberta registrada no DECISOES.md:
+                      `getStatusDisplay` mostra "Resolvido" para o status
+                      FECHADO, enquanto o mapa da secao 16 pinta FECHADO de
+                      `discreto` e RESOLVIDO de `sucesso`. Um chamado fechado e
+                      um resolvido leem a mesma palavra em cores diferentes.
+                      A secao 30 proibe reescrever rotulo que a tela ja mostra,
+                      entao os dois ficam como estao ate o produto decidir.
+                    */
+                    <Badge variante={VARIANTE_DE_STATUS[chamado.status]}>
+                      {getStatusDisplay(chamado.status)}
+                    </Badge>
+                  )}
+                </dd>
               </div>
 
               {/* Categoria */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
                   Categoria
-                </label>
+                </dt>
 
-                {modoEdicao ? (
-                  <Seletor
-                    rotulo="Categoria"
-                    valor={categoriaEditada ? String(categoriaEditada) : ''}
-                    aoMudar={(v) => setCategoriaEditada(v ? Number(v) : undefined)}
-                    opcoes={[
-                      { valor: '', rotulo: 'Sem categoria' },
-                      ...categorias.map((categoria) => ({
-                        valor: String(categoria.id),
-                        rotulo: categoria.nome,
-                      })),
-                    ]}
-                  />
-                ) : (
-                  <p className="text-sm text-conteudo">
-                    {categoriaNome}
-                  </p>
-                )}
+                <dd>
+                  {modoEdicao ? (
+                    <Seletor
+                      rotulo="Categoria"
+                      valor={categoriaEditada ? String(categoriaEditada) : ''}
+                      aoMudar={(v) => setCategoriaEditada(v ? Number(v) : undefined)}
+                      opcoes={[
+                        { valor: '', rotulo: 'Sem categoria' },
+                        ...categorias.map((categoria) => ({
+                          valor: String(categoria.id),
+                          rotulo: categoria.nome,
+                        })),
+                      ]}
+                    />
+                  ) : (
+                    <p className="text-sm text-conteudo">
+                      {categoriaNome}
+                    </p>
+                  )}
+                </dd>
               </div>
 
               {/* Data Abertura */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
                   Data de Abertura
-                </label>
+                </dt>
 
-                <p className="text-sm text-conteudo">
+                <dd className="text-sm text-conteudo">
                   {formatarData(chamado.data_abertura)}
-                </p>
+                </dd>
               </div>
 
               {/* Tempo em aberto (tempo útil de SLA: horas úteis, descontando pausas em Aguardando) */}
               {chamado.sla && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                  <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
                     Tempo em aberto
-                  </label>
+                  </dt>
 
-                  <p className="text-sm text-conteudo">
-                    {formatarDuracao(chamado.sla.minutos_resolucao_consumidos)}
-                    {chamado.status !== StatusEnum.RESOLVIDO &&
-                      chamado.status !== StatusEnum.FECHADO && (
-                        <span className="ml-2 text-xs text-conteudo-tenue">
-                          (em andamento)
-                        </span>
-                      )}
-                  </p>
-                  <p className="text-xs text-conteudo-tenue mt-0.5">
-                    tempo útil de atendimento
-                    {chamado.sla.minutos_pausados > 0
-                      ? `, descontado ${formatarDuracao(chamado.sla.minutos_pausados)} em Aguardando`
-                      : ''}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* ========================== COLUNA DIREITA ========================== */}
-            <div className="space-y-5">
-              {/* Técnico Responsável */}
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
-                  Técnico Responsável
-                </label>
-
-                {modoEdicao ? (
-                  <Seletor
-                    rotulo="Técnico responsável"
-                    valor={tecnicoEditado ? String(tecnicoEditado) : ''}
-                    aoMudar={(v) => setTecnicoEditado(v ? Number(v) : undefined)}
-                    opcoes={[
-                      { valor: '', rotulo: 'Sem atribuição' },
-                      ...tecnicos.map((tecnico) => ({
-                        valor: String(tecnico.id),
-                        rotulo: tecnico.nome,
-                      })),
-                    ]}
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {chamado.tecnico_responsavel_id ? (
-                      <>
-                        <p className="text-sm font-medium text-conteudo">
-                          {tecnicos.find(
-                            (t) => t.id === chamado.tecnico_responsavel_id,
-                          )?.nome || 'Não encontrado'}
-                        </p>
-
-                        {usuarios[chamado.tecnico_responsavel_id] && (
-                          <span
-                            className={`px-2 py-0.5 text-xs font-semibold rounded-full 
-                          ${getRoleBadgeColor(usuarios[chamado.tecnico_responsavel_id].role_id)}`}
-                          >
-                            {getRoleName(
-                              usuarios[chamado.tecnico_responsavel_id].role_id,
-                            )}
+                  <dd>
+                    <p className="text-sm text-conteudo">
+                      {formatarDuracao(chamado.sla.minutos_resolucao_consumidos)}
+                      {chamado.status !== StatusEnum.RESOLVIDO &&
+                        chamado.status !== StatusEnum.FECHADO && (
+                          <span className="ml-2 text-xs text-conteudo-tenue">
+                            (em andamento)
                           </span>
                         )}
-                      </>
-                    ) : (
-                      <p className="text-sm text-conteudo">
-                        Sem atribuição
-                      </p>
-                    )}
-                  </div>
-                )}
+                    </p>
+                    <p className="text-xs text-conteudo-tenue mt-0.5">
+                      tempo útil de atendimento
+                      {chamado.sla.minutos_pausados > 0
+                        ? `, descontado ${formatarDuracao(chamado.sla.minutos_pausados)} em Aguardando`
+                        : ''}
+                    </p>
+                  </dd>
+                </div>
+              )}
+            </dl>
+
+            {/* ========================== COLUNA DIREITA ========================== */}
+            <dl className="space-y-5">
+              {/* Técnico Responsável */}
+              <div>
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                  Técnico Responsável
+                </dt>
+
+                <dd>
+                  {modoEdicao ? (
+                    <Seletor
+                      rotulo="Técnico responsável"
+                      valor={tecnicoEditado ? String(tecnicoEditado) : ''}
+                      aoMudar={(v) => setTecnicoEditado(v ? Number(v) : undefined)}
+                      opcoes={[
+                        { valor: '', rotulo: 'Sem atribuição' },
+                        ...tecnicos.map((tecnico) => ({
+                          valor: String(tecnico.id),
+                          rotulo: tecnico.nome,
+                        })),
+                      ]}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {chamado.tecnico_responsavel_id ? (
+                        <>
+                          <p className="text-sm font-medium text-conteudo">
+                            {tecnicos.find(
+                              (t) => t.id === chamado.tecnico_responsavel_id,
+                            )?.nome || 'Não encontrado'}
+                          </p>
+
+                          {usuarios[chamado.tecnico_responsavel_id] && (
+                            <PapelBadge
+                              roleId={usuarios[chamado.tecnico_responsavel_id].role_id}
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-conteudo">
+                          Sem atribuição
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </dd>
               </div>
 
               {/* Prioridade */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
                   Prioridade
-                </label>
+                </dt>
 
-                {modoEdicao ? (
-                  <Seletor
-                    rotulo="Prioridade"
-                    valor={prioridadeEditada}
-                    aoMudar={(v) => setPrioridadeEditada(v as PrioridadeEnum)}
-                    opcoes={Object.values(PrioridadeEnum).map((prioridade) => ({
-                      valor: prioridade,
-                      rotulo: prioridade,
-                      cor: corDaPrioridade(prioridade, darkMode),
-                    }))}
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className="inline-flex px-2 py-1 text-xs font-semibold text-conteudo"
-                      style={seloDaCor(corDaPrioridade(chamado.prioridade, darkMode))}
-                    >
-                      {chamado.prioridade}
-                    </span>
-                    <SlaBadge sla={chamado?.sla} />
-                  </div>
-                )}
+                <dd>
+                  {modoEdicao ? (
+                    <Seletor
+                      rotulo="Prioridade"
+                      valor={prioridadeEditada}
+                      aoMudar={(v) => setPrioridadeEditada(v as PrioridadeEnum)}
+                      opcoes={Object.values(PrioridadeEnum).map((prioridade) => ({
+                        valor: prioridade,
+                        rotulo: prioridade,
+                        cor: corDaPrioridade(prioridade, darkMode),
+                      }))}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <PrioridadeBadge prioridade={chamado.prioridade} />
+                      <SlaBadge sla={chamado?.sla} />
+                    </div>
+                  )}
+                </dd>
               </div>
 
               {/* Protocolo */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
                   Protocolo
-                </label>
+                </dt>
 
-                <p className="font-mono text-sm text-conteudo">
+                <dd className="font-mono text-sm text-conteudo">
                   #{chamado.protocolo}
-                </p>
+                </dd>
               </div>
 
               {/* Última Atualização */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
                   Última Atualização
-                </label>
+                </dt>
 
-                <p className="text-sm text-conteudo">
+                <dd className="text-sm text-conteudo">
                   {chamado.updated_at
                     ? formatarData(chamado.updated_at)
                     : 'Não atualizado'}
-                </p>
+                </dd>
               </div>
-            </div>
+            </dl>
           </div>
         </div>
 
@@ -1037,15 +1057,27 @@ const ChamadoDetalhes: React.FC = () => {
 
           <div className="p-5">
             {modoEdicao ? (
-              <textarea
+              /* `readOnly` e nao `disabled`, e a diferenca nao e cosmetica.
+               *
+               * Este campo EXIBE o relato original do solicitante — ele e
+               * imutavel de proposito, e o rotulo acima diz isso. Mas
+               * `disabled` tira o elemento da ordem de tabulacao E impede
+               * selecionar o texto: justamente o texto que o tecnico precisa
+               * reler e citar enquanto escreve a solucao, logo abaixo.
+               *
+               * `readOnly` mantem o campo focavel e o conteudo copiavel, e
+               * continua recusando digitacao. `aria-readonly` vai junto porque
+               * nem todo leitor de tela expoe o `readOnly` nativo.
+               *
+               * Achado pela varredura da Fase 8 e adiado ate aqui, que e a
+               * fase desta tela. */
+              <Textarea
                 value={chamado.descricao}
-                disabled
+                readOnly
+                aria-readonly="true"
+                aria-label="Descrição do chamado, não editável"
                 rows={4}
-                className="w-full rounded-lg border border-borda
-                        bg-superficie-elevada px-3 py-2 text-sm
-                        text-conteudo-suave
-                        cursor-not-allowed opacity-75"
-                placeholder="Descrição do chamado..."
+                className="bg-superficie-elevada text-conteudo-suave"
               />
             ) : (
               <p className="text-sm text-conteudo whitespace-pre-wrap break-words overflow-wrap-anywhere">
@@ -1066,16 +1098,11 @@ const ChamadoDetalhes: React.FC = () => {
 
             <div className="p-5">
               {modoEdicao ? (
-                <textarea
+                <Textarea
+                  aria-label="Solução"
                   value={solucaoEditada}
                   onChange={(e) => setSolucaoEditada(e.target.value)}
                   rows={4}
-                  className="w-full rounded-lg border border-borda
-                          bg-superficie px-3 py-2 text-sm
-                          text-conteudo transition-colors
-                          hover:border-conteudo-tenue
-                          focus:border-transparent focus:outline-none focus:ring-2
-                          focus:ring-sinal"
                   placeholder="Descreva a solução aplicada..."
                 />
               ) : (
@@ -1119,27 +1146,27 @@ const ChamadoDetalhes: React.FC = () => {
           <div className="p-5">
             {/* Formulário de novo comentário */}
             <div className="mb-5">
-              <textarea
+              {/* O rotulo era so o placeholder, que SOME no primeiro
+                  caractere digitado — o item da secao 29 que diz que nenhum
+                  campo pode depender dele. O mesmo campo no ChamadoModal ja
+                  passava pelo primitivo; era esta tela que estava atras. */}
+              <Textarea
+                aria-label="Novo comentário"
                 value={novoComentario}
                 onChange={(e) => setNovoComentario(e.target.value)}
                 rows={3}
                 placeholder="Adicione um comentário..."
-                className="w-full rounded-lg border border-borda
-                        bg-superficie px-3 py-2 text-sm text-conteudo
-                        transition-colors hover:border-conteudo-tenue
-                        focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
               />
 
-              <button
+              <Button
+                variante="primario"
+                className="mt-2"
                 onClick={handleEnviarComentario}
-                disabled={!novoComentario.trim() || enviandoComentario}
-                className="mt-2 rounded-lg bg-info px-4 py-2
-                        text-sm font-semibold text-white
-                        transition-colors hover:bg-info-forte
-                        disabled:cursor-not-allowed disabled:opacity-50"
+                carregando={enviandoComentario}
+                disabled={!novoComentario.trim()}
               >
-                {enviandoComentario ? 'Enviando...' : 'Enviar Comentário'}
-              </button>
+                Enviar Comentário
+              </Button>
             </div>
 
             {/* Lista de comentários.
@@ -1173,14 +1200,7 @@ const ChamadoDetalhes: React.FC = () => {
                             {usuario?.nome || `Usuário #${comentario.usuario_id}`}
                           </span>
 
-                          {usuario && (
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-semibold
-                            ${getRoleBadgeColor(usuario.role_id)}`}
-                            >
-                              {getRoleName(usuario.role_id)}
-                            </span>
-                          )}
+                          {usuario && <PapelBadge roleId={usuario.role_id} />}
                         </div>
 
                         <span className="whitespace-nowrap text-xs text-conteudo-tenue">
@@ -1267,57 +1287,51 @@ const ChamadoDetalhes: React.FC = () => {
           largura="md"
           rodape={
             <>
-              <button
+              <Button
+                variante="secundario"
                 onClick={() => {
                   setMostrarModalResolucao(false);
                   setSolucaoModal("");
                 }}
-                className="rounded-lg border border-borda px-4 py-2
-                          text-sm font-semibold text-conteudo-suave
-                          transition-colors hover:bg-superficie-elevada hover:text-conteudo"
               >
                 Cancelar
-              </button>
+              </Button>
 
-              <button
+              <Button variante="sucesso"
                 onClick={handleConfirmarResolucao}
-                disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}
-                className="flex items-center gap-2 rounded-lg bg-sucesso px-4 py-2
-                          text-sm font-semibold text-white
-                          transition-colors hover:bg-sucesso-forte
-                          disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}>
                 <IconeConfereCirculo className="h-4 w-4" />
                 {statusAlvo === StatusEnum.RESOLVIDO
                   ? "Marcar como Resolvido"
                   : "Fechar Chamado"}
-              </button>
+              </Button>
             </>
           }
         >
-          {/* Campo de Solução */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-conteudo-suave">
-              Solução <span className="text-perigo">*</span>
-            </label>
-
-            <textarea
+          {/* O asterisco era um `<span>` solto dentro do rotulo: lido em voz
+              alta ele vira "Solucao asterisco", que nao comunica
+              obrigatoriedade a ninguem. O `Campo` poe `aria-required` no
+              controle, que e onde ela e procurada.
+              
+              E o rotulo passa a APONTAR para o campo: o <label> nao tinha
+              `htmlFor` e o textarea nao tinha `id`, entao clicar no texto
+              "Solucao" nao focava nada. */}
+          <Campo
+            id="solucao-resolucao"
+            rotulo="Solução"
+            obrigatorio
+            dica="É o que alguém vai ler quando o mesmo problema voltar."
+          >
+            <Textarea
               value={solucaoModal}
               onChange={(e) => setSolucaoModal(e.target.value)}
               rows={6}
               placeholder="Descreva detalhadamente a solução aplicada..."
-              className="w-full resize-none rounded-lg border border-borda
-                        bg-superficie px-3 py-2 text-sm text-conteudo
-                        transition-colors hover:border-conteudo-tenue
-                        focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
+              className="resize-none"
             />
+          </Campo>
 
-            <ContadorMinimo valor={solucaoModal} minimo={MINIMO_SOLUCAO} />
-
-            <p className="mt-1 text-sm text-conteudo-tenue">
-              É o que alguém vai ler quando o mesmo problema voltar.
-            </p>
-          </div>
+          <ContadorMinimo valor={solucaoModal} minimo={MINIMO_SOLUCAO} />
         </Modal>
       )}
 
@@ -1334,65 +1348,57 @@ const ChamadoDetalhes: React.FC = () => {
           largura="md"
           rodape={
             <>
-              <button
+              <Button
+                variante="secundario"
                 onClick={() => {
                   setMostrarModalCancelar(false);
                   setMotivoCancelamento('');
                 }}
                 disabled={processando}
-                className="rounded-lg border border-borda px-4 py-2
-                          text-sm font-semibold text-conteudo-suave
-                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                          disabled:opacity-50"
               >
                 Não, voltar
-              </button>
-              <button
+              </Button>
+              <Button variante="perigo"
                 onClick={handleCancelarChamado}
                 disabled={
                   processando ||
                   validarMinimo(motivoCancelamento, MINIMO_SOLUCAO, 'Motivo') !== null
-                }
-                className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
-                          text-sm font-semibold text-white
-                          transition-colors hover:bg-perigo-forte
-                          disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                }>
                 <IconeProibido className="h-4 w-4" />
                 {processando ? 'Cancelando...' : 'Sim, cancelar'}
-              </button>
+              </Button>
             </>
           }
         >
           <div className="mb-4 rounded-xl border border-perigo/30 bg-perigo/10 p-4">
-            <p className="text-sm text-perigo-forte dark:text-perigo-suave">
+            <p className="text-sm text-on-tint-danger">
               Esta ação irá marcar o chamado como cancelado. O chamado não será excluído, mas não aparecerá mais na listagem padrão.
             </p>
           </div>
 
-          {/* Campo de Motivo */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-conteudo-suave">
-              Motivo do Cancelamento <span className="text-perigo">*</span>
-            </label>
-
-            <textarea
+          {/* Mesmo par do modal de resolver: rotulo que aponta para o campo,
+              e obrigatoriedade no controle em vez de num asterisco solto.
+              
+              O anel de foco era `focus:ring-perigo` aqui e `ring-sinal` nos
+              outros — a quinta variacao de anel de campo do projeto. Passa a
+              ser `--focus-ring`, como todos: quem navega por teclado nao
+              deveria descobrir o assunto do modal pela cor do anel. */}
+          <Campo
+            id="motivo-cancelamento"
+            rotulo="Motivo do Cancelamento"
+            obrigatorio
+            dica="Fica registrado no chamado como o desfecho dele."
+          >
+            <Textarea
               value={motivoCancelamento}
               onChange={(e) => setMotivoCancelamento(e.target.value)}
               rows={6}
               placeholder="Descreva o motivo pelo qual este chamado está sendo cancelado..."
-              className="w-full resize-none rounded-lg border border-borda
-                        bg-superficie px-3 py-2 text-sm text-conteudo
-                        transition-colors hover:border-conteudo-tenue
-                        focus:border-transparent focus:outline-none focus:ring-2 focus:ring-perigo"
+              className="resize-none"
             />
+          </Campo>
 
-            <ContadorMinimo valor={motivoCancelamento} minimo={MINIMO_SOLUCAO} />
-
-            <p className="mt-1 text-sm text-conteudo-tenue">
-              Fica registrado no chamado como o desfecho dele.
-            </p>
-          </div>
+          <ContadorMinimo valor={motivoCancelamento} minimo={MINIMO_SOLUCAO} />
         </Modal>
       )}
 
@@ -1413,30 +1419,22 @@ const ChamadoDetalhes: React.FC = () => {
           largura="sm"
           rodape={
             <>
-              <button
+              <Button
+                variante="secundario"
                 onClick={() => {
                   setMostrarModalExcluir(false);
                   setConfirmacaoProtocolo('');
                 }}
                 disabled={processando}
-                className="rounded-lg border border-borda px-4 py-2
-                          text-sm font-semibold text-conteudo-suave
-                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                          disabled:opacity-50"
               >
                 Não, voltar
-              </button>
-              <button
+              </Button>
+              <Button variante="perigo"
                 onClick={handleExcluirChamado}
-                disabled={processando || !protocoloConfere}
-                className="flex items-center gap-2 rounded-lg bg-perigo px-4 py-2
-                          text-sm font-semibold text-white
-                          transition-colors hover:bg-perigo-forte
-                          disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                disabled={processando || !protocoloConfere}>
                 <IconeApagar className="h-4 w-4" />
                 {processando ? 'Excluindo...' : 'Excluir'}
-              </button>
+              </Button>
             </>
           }
         >
@@ -1445,35 +1443,35 @@ const ChamadoDetalhes: React.FC = () => {
               comentários e o histórico faz a pessoa pensar no que havia
               ali dentro. */}
           <div className="mb-4 rounded-xl border border-perigo/30 bg-perigo/10 p-4">
-            <p className="text-sm text-perigo-forte dark:text-perigo-suave">
+            <p className="text-sm text-on-tint-danger">
               O chamado, os {comentarios.length} comentários e as{' '}
               {historico.length} entradas de histórico dele deixam de
               existir. Não há como desfazer, e não há cópia em outro lugar.
             </p>
           </div>
 
-          <div>
-            <label
-              htmlFor="confirmacao-protocolo"
-              className="mb-1.5 block text-sm font-medium text-conteudo-suave"
-            >
-              Digite <span className="font-mono">{chamado.protocolo}</span> para confirmar
-            </label>
-
-            <input
-              id="confirmacao-protocolo"
+          {/* Este era o unico dos seis que ja tinha `htmlFor` e `id`. O que
+              faltava era o contorno: `border-borda` da 1,23:1, e os primitivos
+              foram para `--border-control` na Fase 8. */}
+          <Campo
+            id="confirmacao-protocolo"
+            rotulo={
+              <>
+                Digite <span className="font-mono">{chamado.protocolo}</span> para
+                confirmar
+              </>
+            }
+          >
+            <Input
               type="text"
               value={confirmacaoProtocolo}
               onChange={(e) => setConfirmacaoProtocolo(e.target.value)}
               autoComplete="off"
               autoFocus
               placeholder={chamado.protocolo}
-              className="w-full rounded-lg border border-borda
-                        bg-superficie px-3 py-2 font-mono text-sm
-                        text-conteudo transition-colors hover:border-conteudo-tenue
-                        focus:border-transparent focus:outline-none focus:ring-2 focus:ring-perigo"
+              className="font-mono"
             />
-          </div>
+          </Campo>
         </Modal>
       )}
 
@@ -1491,26 +1489,30 @@ const ChamadoDetalhes: React.FC = () => {
           largura="sm"
           rodape={
             <>
-              <button
+              <Button
+                variante="secundario"
                 onClick={() => setMostrarModalArquivar(false)}
                 disabled={processando}
-                className="rounded-lg border border-borda px-4 py-2
-                          text-sm font-semibold text-conteudo-suave
-                          transition-colors hover:bg-superficie-elevada hover:text-conteudo
-                          disabled:opacity-50"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              {/* A cor deixa de depender do estado.
+                  
+                  Era verde para desarquivar e ambar para arquivar, com texto
+                  branco cravado — `bg-sucesso` com branco da 2,54:1, e a
+                  catraca NAO o via: a classe estava dentro de um literal
+                  interpolado, que o scanner exclui de proposito para nao
+                  repetir o falso positivo da Fase 7.
+                  
+                  Agora e `primario` nos dois casos. Arquivar e reversivel — o
+                  botao ao lado desarquiva —, entao pela regra do operador nao
+                  pede vermelho; e e a acao principal do modal, entao nao pode
+                  ser neutra como o Cancelar ao lado, que sumiria contra ela.
+                  Quem carrega a diferenca e o rotulo, que ja muda. */}
+              <Button
+                variante="primario"
                 onClick={handleArquivarChamado}
                 disabled={processando}
-                className={`flex items-center gap-2 rounded-lg px-4 py-2
-                          text-sm font-semibold text-white transition-colors
-                          disabled:opacity-50 ${
-                            chamado?.arquivado
-                              ? 'bg-sucesso hover:bg-sucesso-forte'
-                              : 'bg-alerta-forte hover:brightness-110'
-                          }`}
               >
                 {chamado?.arquivado ? (
                   <>
@@ -1523,12 +1525,12 @@ const ChamadoDetalhes: React.FC = () => {
                     {processando ? 'Arquivando...' : 'Sim, arquivar'}
                   </>
                 )}
-              </button>
+              </Button>
             </>
           }
         >
           <div className={`rounded-xl border p-4 ${chamado?.arquivado ? 'border-sucesso/30 bg-sucesso/10' : 'border-alerta/30 bg-alerta/10'}`}>
-            <p className={`text-sm ${chamado?.arquivado ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-alerta-forte dark:text-alerta-suave'}`}>
+            <p className={`text-sm ${chamado?.arquivado ? 'text-on-tint-success' : 'text-on-tint-warning'}`}>
               {chamado?.arquivado
                 ? 'O chamado será restaurado e voltará a aparecer na listagem principal.'
                 : 'O chamado não será excluído, apenas ocultado da visualização padrão. Você poderá visualizá-lo novamente usando os filtros.'}

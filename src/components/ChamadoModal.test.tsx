@@ -130,9 +130,32 @@ describe('ChamadoModal e o quadro', () => {
       .mockResolvedValue(atribuido);
 
     // Abre o seletor de responsável e escolhe a única pessoa da lista.
-    const seletor = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.getAttribute('aria-label') === 'Responsável'
-    );
+    //
+    // Procurado pelo NOME ACESSÍVEL, resolvido como o navegador resolve, e não
+    // por um atributo específico. A primeira versão procurava
+    // `aria-label === 'Responsável'` e quebrou quando o `Seletor` deixou de
+    // usar `aria-label` — que era justamente o conserto, porque `aria-label`
+    // apagava o valor escolhido do nome.
+    //
+    // Um teste que procura pela costura reprova quando a costura melhora. Este
+    // procura pelo que a pessoa ouviria.
+    const nomeAcessivel = (el: Element): string => {
+      const ids = el.getAttribute('aria-labelledby');
+      if (ids) {
+        return ids
+          .split(/\s+/)
+          .map((i) => document.getElementById(i)?.textContent?.trim() ?? '')
+          .filter(Boolean)
+          .join(' ');
+      }
+      return el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
+    };
+
+    const seletor = Array.from(
+      document.querySelectorAll('[role="combobox"]')
+    ).find((b) => nomeAcessivel(b).includes('Responsável')) as
+      | HTMLElement
+      | undefined;
     expect(seletor, 'seletor de responsável não apareceu').toBeTruthy();
 
     await act(async () => {

@@ -5,12 +5,21 @@ import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { chamadosService } from '../services/chamadoshsapi';
 import { podeSerResponsavel } from '../utils/roleMapper';
-import { Chamado, Comentario, PrioridadeEnum, StatusEnum } from '../types/api';
-import { Avatar, Badge, Button, Modal, Seletor, Textarea, VarianteBadge } from './ui';
+import { Chamado, Comentario } from '../types/api';
+import {
+  Avatar,
+  Aviso,
+  BlocoCarregando,
+  Button,
+  Modal,
+  Seletor,
+  Textarea,
+} from './ui';
+import { MarcaBadge, PrioridadeBadge, StatusBadge } from './SelosDeChamado';
 import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
-import { IconeCarregando, IconeEnviar, IconeLinkExterno } from './ui/icones';
+import { IconeEnviar, IconeLinkExterno } from './ui/icones';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -18,21 +27,6 @@ interface ChamadoModalProps {
   /** Leva para a página inteira, onde ficam as ações. */
   aoAbrirEmPagina: (id: number) => void;
 }
-
-const VARIANTE_STATUS: Record<StatusEnum, VarianteBadge> = {
-  [StatusEnum.ABERTO]: 'info',
-  [StatusEnum.EM_ANDAMENTO]: 'info',
-  [StatusEnum.AGUARDANDO]: 'neutro',
-  [StatusEnum.RESOLVIDO]: 'sucesso',
-  [StatusEnum.FECHADO]: 'sucesso',
-};
-
-const VARIANTE_PRIORIDADE: Record<PrioridadeEnum, VarianteBadge> = {
-  [PrioridadeEnum.CRITICA]: 'perigo',
-  [PrioridadeEnum.ALTA]: 'alerta',
-  [PrioridadeEnum.MEDIA]: 'info',
-  [PrioridadeEnum.BAIXA]: 'neutro',
-};
 
 const dataHora = (valor?: string | null): string =>
   valor
@@ -70,7 +64,7 @@ const Secao: React.FC<{
   >
     <h3
       className={`mb-2 text-sm font-semibold ${
-        destaque ? 'text-sucesso-forte dark:text-sucesso-suave' : 'text-conteudo-tenue'
+        destaque ? 'text-on-tint-success' : 'text-conteudo-tenue'
       }`}
     >
       {titulo}
@@ -269,15 +263,13 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       }
     >
       {carregando && (
-        <div className="flex items-center justify-center py-12 text-conteudo-tenue">
-          <IconeCarregando className="h-6 w-6 animate-spin" aria-hidden="true" />
-        </div>
+        // Também era silencioso, e este é o pior dos três: é o modal do
+        // chamado, a tela mais usada do sistema.
+        <BlocoCarregando className="py-12" />
       )}
 
       {erro && !carregando && (
-        <div className="rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
-          {erro}
-        </div>
+        <Aviso variante="perigo">{erro}</Aviso>
       )}
 
       {chamado && !carregando && (
@@ -353,14 +345,16 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
           </div>
 
           {/* Ficha */}
-          <aside className="space-y-4 rounded-xl border border-borda bg-superficie-elevada p-4">
+          {/* `div`, e nao `aside`. A ficha e o resumo do proprio chamado
+              que a janela abre -- e o assunto, e nao algo tangencial a ele.
+              Como `complementary` ela virava um marco sem nome dentro de um
+              dialogo, prometendo conteudo lateral que nao existe. */}
+          <div className="space-y-4 rounded-xl border border-borda bg-superficie-elevada p-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variante={VARIANTE_STATUS[chamado.status]}>{chamado.status}</Badge>
-              <Badge variante={VARIANTE_PRIORIDADE[chamado.prioridade]}>
-                {chamado.prioridade}
-              </Badge>
-              {chamado.arquivado && <Badge variante="neutro">Arquivado</Badge>}
-              {chamado.cancelado && <Badge variante="perigo">Cancelado</Badge>}
+              <StatusBadge status={chamado.status} />
+              <PrioridadeBadge prioridade={chamado.prioridade} />
+              {chamado.arquivado && <MarcaBadge marca="arquivado" />}
+              {chamado.cancelado && <MarcaBadge marca="cancelado" />}
             </div>
 
             <SlaProgresso sla={chamado.sla} status={chamado.status} />
@@ -439,7 +433,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
               aoAvaliar={registrarMudanca}
               className="border-t border-borda pt-4"
             />
-          </aside>
+          </div>
         </div>
       )}
     </Modal>

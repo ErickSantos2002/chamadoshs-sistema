@@ -36,7 +36,7 @@ export const ContadorMinimo: React.FC<ContadorMinimoProps> = ({ valor, minimo, m
         : `${escritos} caracteres`;
 
   return (
-    <p className={cn('mt-1 text-xs', !vazio && faltam > 0 ? 'text-alerta' : 'text-conteudo-tenue')}>
+    <p className={cn('mt-1 text-xs', !vazio && faltam > 0 ? 'text-on-tint-warning' : 'text-conteudo-tenue')}>
       {texto}
     </p>
   );

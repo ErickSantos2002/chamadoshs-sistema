@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '../hooks/useAuth';
-import { Rotulo } from '../components/ui';
+import { Card, Rotulo } from '../components/ui';
 import { IconeCadeado } from '../components/ui/icones';
 
 interface BloqueioProps {
@@ -31,6 +31,24 @@ interface BloqueioProps {
  *
  * A tela diz três coisas, e a terceira é a que resolve: qual área, quem tem
  * acesso, e que o caminho é pedir a alguém desse perfil.
+ *
+ * ── O cartão passou a ser o primitivo, e o `relative` saiu ─────────
+ *
+ * Era `<div>` com as mesmas classes que o `Card` produz e `px-8 py-10` de
+ * respiro — 32 e 40px, assimétrico e **fora da escala do primitivo**
+ * (`p-0 / p-3 / p-4 / p-6`). Vai a `lg`, e o enquadramento da página vem do
+ * contêiner de fora, que já tem `px-4 py-10`.
+ *
+ * O `relative` foi **removido do `className`**, e não esquecido: o `Card` já o
+ * traz na base. Mantê-lo seria começar a coleção de classes que repetem o que o
+ * primitivo faz — que é exatamente como um cartão montado à mão nasce.
+ *
+ * ── Esta tela tem DUAS vizinhas ─────────────────────────────
+ *
+ * `Bloqueio` **não é página de rota**: é componente de recusa, usado pelo
+ * `ProtectedRoute:65` e também pelo `CadastrosBasicos:72` — este último uma tela
+ * da Fase 15. Mexer no enquadramento daqui muda lá, e a conferência da §29 tem
+ * de olhar as duas.
  */
 const Bloqueio: React.FC<BloqueioProps> = ({
   area,
@@ -44,7 +62,7 @@ const Bloqueio: React.FC<BloqueioProps> = ({
         <title>{area ? `${area} | ChamadosHS` : 'Sem acesso | ChamadosHS'}</title>
       </Helmet>
 
-      <div className="relative w-full max-w-md rounded-xl border border-borda bg-superficie px-8 py-10 text-center">
+      <Card padding="lg" className="w-full max-w-md text-center">
         <IconeCadeado className="mx-auto h-8 w-8 text-conteudo-tenue" aria-hidden="true" />
 
         <Rotulo como="p" className="mt-4 block">
@@ -64,7 +82,7 @@ const Bloqueio: React.FC<BloqueioProps> = ({
           Se você precisa entrar aqui, peça a um administrador — é ele quem muda
           perfil de acesso, em Cadastros.
         </p>
-      </div>
+      </Card>
     </div>
   );
 };

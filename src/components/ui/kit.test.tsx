@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ThemeProvider } from '../../context/ThemeContext';
 import { Avatar } from './Avatar';
+import { Aviso, type VarianteAviso } from './Aviso';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { Card } from './Card';
@@ -69,9 +70,76 @@ describe('cantos', () => {
     ).toContain('rounded-xl');
   });
 
-  it('selo e avatar são redondos', () => {
-    expect(comTema(<Badge>Aberto</Badge>)).toContain('rounded-full');
+  /**
+   * O avatar é redondo; o selo NÃO é.
+   *
+   * Este caso já travou os dois juntos, e estava errado no selo desde a
+   * decisão D2-a: a §8.1 lista badge e chip entre o que é reto no ChamadosHS.
+   * O avatar continua `rounded-full` porque é círculo de verdade — a mesma
+   * exceção do ponto de status e do anel do spinner.
+   */
+  it('o avatar é redondo', () => {
     expect(comTema(<Avatar nome="Rickelme David" />)).toContain('rounded-full');
+  });
+
+  it('o selo é reto, como o resto do sistema', () => {
+    expect(comTema(<Badge>Aberto</Badge>)).not.toContain('rounded-full');
+  });
+
+  /**
+   * A cor do avatar sai de TOKEN, e não de hexadecimal.
+   *
+   * Este é o caso que impede a volta do defeito: até 03/09/2026 a cor vinha da
+   * paleta categórica de `lib/graficos.ts`, que é hexadecimal cravado e é
+   * certificada só para FORMA (piso 3:1). Usada para texto, dava 14
+   * reprovações de AA em 20 combinações reais.
+   *
+   * Se alguém voltar a pintar avatar com cor de gráfico, o `#` aparece no
+   * style e este caso fica vermelho.
+   */
+  it('o avatar pinta com token, nunca com hexadecimal', () => {
+    const html = comTema(<Avatar nome="Rickelme David" />);
+    expect(html).toContain('var(--color-');
+    expect(html).not.toMatch(/background-color:s*#/);
+    expect(html).not.toMatch(/color:s*#/);
+  });
+
+  /** Mesma pessoa, mesma cor — é o que o avatar existe para permitir. */
+  it('a cor do avatar é estável para o mesmo nome', () => {
+    const a = comTema(<Avatar nome="Rickelme David" />);
+    const b = comTema(<Avatar nome="Rickelme David" />);
+    expect(a).toBe(b);
+  });
+
+  /**
+   * Sem nome, o par neutro — e não o par 0.
+   *
+   * A derivação do pacote manda nome vazio para `COLORS[0]`, que é azul.
+   * "Sem responsável" não é uma pessoa, e já era cinza antes da migração; a
+   * §30 não deixa trocar isso por motivo visual.
+   */
+  it('sem nome, o avatar é neutro e não azul', () => {
+    const html = comTema(<Avatar nome={null} />);
+    expect(html).toContain('var(--surface-elevated)');
+    // `--text-muted` e nao `--on-tint-neutral`: depois da E5 os dois resolvem
+    // para o mesmo valor, e o pacote voltou a escrever o primeiro. O que este
+    // caso trava e o par NEUTRO, nao a expressao — mas travar a expressao e o
+    // que faz a divergencia com o pacote aparecer no teste, e nao no olho.
+    expect(html).toContain('var(--text-muted)');
+    expect(html).not.toContain('var(--color-primary-100)');
+  });
+
+  /**
+   * O fundo do selo é o alias de tinta do pacote, SEM modificador de
+   * opacidade — regra (a) do D8-a. Com modificador o alfa seria multiplicado
+   * (0,15 × 0,20 = 0,03) e o selo sairia quase sem fundo; `validar:paleta`
+   * derruba o build se alguém escrever isso.
+   */
+  it('o selo usa a tinta do pacote, sem modificador', () => {
+    const html = comTema(<Badge variante="perigo">Cancelado</Badge>);
+    expect(html).toContain('bg-tint-danger');
+    expect(html).not.toContain('bg-tint-danger/');
+    expect(html).not.toContain('bg-perigo/20');
   });
 });
 
@@ -84,10 +152,28 @@ describe('foco', () => {
    * recuado, então quem navega por teclado depende do anel para saber onde
    * está.
    */
-  it('o campo acende um anel de 2px, não de 1px', () => {
+  /**
+   * Atualizado em 10/09/2026, e a regra que justifica está dita.
+   *
+   * A afirmação era `focus:ring-2`. Passou a `focus-visible:ring-2` porque o
+   * checklist do `adocao.md` do pacote, item 9, pede **`focus-visible` com anel
+   * de 2px, e não `focus`** — sem qualificar por elemento.
+   *
+   * Em `<input>` e `<textarea>` os dois **coincidem** hoje: o navegador dá
+   * indicador visível a todo controle de entrada de texto, inclusive no clique
+   * de mouse. Então esta mudança **não move um pixel** — e foi feita mesmo
+   * assim, porque divergência sem efeito hoje é divergência com efeito no dia
+   * em que o navegador mudar de critério.
+   *
+   * O caso irmão, logo abaixo, é o que **tem** efeito: o `Button` é `<button>`,
+   * e ali `:focus` acende no clique enquanto `:focus-visible` não.
+   */
+  it('o campo acende um anel de 2px, e só por focus-visible', () => {
     const campo = comTema(<Input />);
-    expect(campo).toContain('focus:ring-2');
-    expect(campo).not.toContain('focus:ring-1');
+    expect(campo).toContain('focus-visible:ring-2');
+    expect(campo).not.toContain('ring-1');
+    // E não sobrou `focus:` puro, que era o estado anterior.
+    expect(campo).not.toMatch(/(^|\s)focus:ring/);
   });
 
   it('o botão mostra o anel só para quem navega por teclado', () => {
@@ -140,5 +226,48 @@ describe('cartão', () => {
   it('card clicável é botão de verdade', () => {
     expect(comTema(<Card onClick={() => {}}>x</Card>)).toContain('<button');
     expect(comTema(<Card>x</Card>)).not.toContain('<button');
+  });
+});
+
+describe('aviso', () => {
+  /**
+   * Assertivo INTERROMPE o leitor de tela; educado espera a pausa.
+   *
+   * O `role="alert"` estava escrito no JSX e valia para as quatro variantes,
+   * inclusive para a `info`, que e o PADRAO. "Salvo com sucesso" cortando a
+   * frase que a pessoa estava ouvindo e atropelo, nao urgencia.
+   *
+   * SO `perigo` interrompe, por decisao do operador gravada na E12 do pacote.
+   * Eu tinha posto `alerta` em `alert` tambem; o criterio dele e mais estreito
+   * e melhor -- aviso de atencao quase nunca precisa cortar a fala, e quando
+   * precisa a tela usa `perigo`. Com duas variantes assertivas, a distincao
+   * entre elas deixaria de significar algo no canal nao visual.
+   *
+   * Hoje as doze chamadas do sistema sao todas `perigo`, entao a troca nao
+   * muda uma linha do que se ouve. Este caso existe pela PROXIMA: o primeiro
+   * `<Aviso variante="info">` que alguem escrever ja nasce certo.
+   *
+   * Achado pela sessao do HelpHS, no `Alert.jsx` do pacote.
+   */
+  const PAPEL: Record<VarianteAviso, string> = {
+    info: 'status',
+    sucesso: 'status',
+    alerta: 'status',
+    perigo: 'alert',
+  };
+
+  it('so o perigo interrompe', () => {
+    for (const [variante, papel] of Object.entries(PAPEL)) {
+      const html = comTema(
+        <Aviso variante={variante as VarianteAviso}>x</Aviso>
+      );
+      expect(html).toContain(`role="${papel}"`);
+    }
+  });
+
+  it('o padrao e educado, e nao assertivo', () => {
+    // `<Aviso>` sem variante cai em `info`. Era o pior caso: o uso mais
+    // descuidado produzia a interrupcao mais gratuita.
+    expect(comTema(<Aviso>x</Aviso>)).toContain('role="status"');
   });
 });

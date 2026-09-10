@@ -2,9 +2,22 @@ import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
-import { BotaoDeAcao, Button, Input } from '../ui';
+import {
+  Aviso,
+  Badge,
+  BlocoCarregando,
+  BotaoDeAcao,
+  Button,
+  Input,
+  Tabela,
+  TabelaCabecalho,
+  TabelaCelula,
+  TabelaCelulaDeCabecalho,
+  TabelaCorpo,
+  TabelaLinha,
+} from '../ui';
 import CategoriaModal from './CategoriaModal';
-import { IconeAlerta, IconeApagar, IconeBusca, IconeEditar, IconeEtiqueta, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima } from '../ui/icones';
+import { IconeApagar, IconeBusca, IconeEditar, IconeEtiqueta, IconeMais, IconeOlho, IconeRecarregar } from '../ui/icones';
 import type {
   Categoria,
   ModalMode,
@@ -106,7 +119,7 @@ const CategoriasTab: React.FC = () => {
   };
 
   const handleExcluirCategoria = async (id: number) => {
-    if (!confirmDelete) {
+    if (confirmDelete !== id) {
       setConfirmDelete(id);
       return;
     }
@@ -135,7 +148,7 @@ const CategoriasTab: React.FC = () => {
       {/* Header com ações */}
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeEtiqueta className="h-6 w-6 text-info-forte dark:text-info-suave" />
+          <IconeEtiqueta className="h-6 w-6 text-on-tint-info" />
           <h2 className="text-sm font-semibold text-conteudo">
             Categorias
           </h2>
@@ -144,12 +157,17 @@ const CategoriasTab: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Busca */}
           <div className="w-full sm:w-64">
+            {/* `aria-label` porque nao ha rotulo visivel: o campo se explica
+                pelo placeholder, e placeholder SOME quando a pessoa digita.
+                E o item da secao 29 que diz que nenhum campo pode depender
+                dele para ser entendido. */}
             <Input
-              type="text"
+              type="search"
+              aria-label="Buscar categorias"
               placeholder="Buscar categorias..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              icone={<IconeBusca className="h-4 w-4" />}
+              icone={<IconeBusca className="h-4 w-4" aria-hidden="true" />}
             />
           </div>
 
@@ -160,14 +178,20 @@ const CategoriasTab: React.FC = () => {
             disabled={loading}
             aria-label="Atualizar dados"
           >
-            <IconeRecarregar className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <IconeRecarregar
+              className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+              aria-hidden="true"
+            />
           </Button>
 
           {/* Botão Nova Categoria */}
           {podeEditar && (
             <Button onClick={handleNovaCategoria}>
-              <IconeMais className="h-4 w-4" />
-              <span className="hidden sm:inline">Nova Categoria</span>
+              <IconeMais className="h-4 w-4" aria-hidden="true" />
+              {/* sr-only, e nao hidden: `hidden` e display:none e EXCLUI o texto do
+                  nome acessivel, e o icone e aria-hidden — abaixo de sm o botao
+                  ficava sem nome nenhum. Ver a catraca do rotulo que some. */}
+              <span className="sr-only sm:not-sr-only">Nova Categoria</span>
             </Button>
           )}
         </div>
@@ -175,23 +199,15 @@ const CategoriasTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
-          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">
-            <p>{error}</p>
-          </div>
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{error}</Aviso>
       )}
 
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto rounded-xl border border-borda bg-superficie">
         {loading && !categorias.length ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-sm text-conteudo-tenue">
-              <IconeRecarregar className="mx-auto mb-2 h-8 w-8 animate-spin" />
-              Carregando categorias...
-            </div>
-          </div>
+          <BlocoCarregando className="h-full" tamanho="lg">
+            Carregando categorias...
+          </BlocoCarregando>
         ) : categoriasOrdenadas.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8">
             <IconeEtiqueta className="mb-4 h-12 w-12 text-conteudo-tenue" />
@@ -208,68 +224,41 @@ const CategoriasTab: React.FC = () => {
             )}
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-borda">
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('id')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    ID
-                    {ordenacao.campo === 'id' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('nome')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    Nome
-                    {ordenacao.campo === 'nome' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  Descrição
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('created_at')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    Criado em
-                    {ordenacao.campo === 'created_at' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-conteudo-suave">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {categoriasOrdenadas.map((categoria) => (
-                <tr
-                  key={categoria.id}
-                  className={`border-b border-borda-suave transition-colors hover:bg-superficie-elevada ${
-                    categoria.ativo ? '' : 'opacity-60'
-                  }`}
+          <Tabela>
+            <TabelaCabecalho>
+              <tr>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('id')}
+                  ordenadaPor={ordenacao.campo === 'id' ? ordenacao.direcao : null}
                 >
-                  <td className="px-4 py-3 text-sm text-conteudo">
-                    #{categoria.id}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  ID
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('nome')}
+                  ordenadaPor={ordenacao.campo === 'nome' ? ordenacao.direcao : null}
+                >
+                  Nome
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho>Descrição</TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('created_at')}
+                  ordenadaPor={
+                    ordenacao.campo === 'created_at' ? ordenacao.direcao : null
+                  }
+                >
+                  Criado em
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho aDireita>Ações</TabelaCelulaDeCabecalho>
+              </tr>
+            </TabelaCabecalho>
+            <TabelaCorpo>
+              {categoriasOrdenadas.map((categoria) => (
+                <TabelaLinha
+                  key={categoria.id}
+                  className={categoria.ativo ? undefined : 'opacity-60'}
+                >
+                  <TabelaCelula>#{categoria.id}</TabelaCelula>
+                  <TabelaCelula>
                     <div className="flex items-center gap-2">
                       <IconeEtiqueta className="h-4 w-4 text-conteudo-tenue" />
                       <span className="text-sm font-medium text-conteudo">
@@ -278,20 +267,15 @@ const CategoriasTab: React.FC = () => {
                       {/* Diferente de usuário e setor, categoria é apagada de
                           verdade — mas só quando não há chamado vinculado. A
                           inativa existe e precisa ser distinguível da ativa. */}
-                      {!categoria.ativo && (
-                        <span className="inline-flex rounded-full bg-superficie-elevada px-2 py-0.5 text-[11px] font-medium text-conteudo-tenue">
-                          Inativa
-                        </span>
-                      )}
+                      {/* Era um `<span>` com `rounded-full` escrito a mao: a
+                          forma de pilula que a D2-a nao usa aqui, e uma copia
+                          da aparencia do Badge sem ser um. */}
+                      {!categoria.ativo && <Badge variante="discreto">Inativa</Badge>}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-conteudo-suave">
-                    {categoria.descricao || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-conteudo-suave">
-                    {formatDate(categoria.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
+                  </TabelaCelula>
+                  <TabelaCelula tenue>{categoria.descricao || '-'}</TabelaCelula>
+                  <TabelaCelula tenue>{formatDate(categoria.created_at)}</TabelaCelula>
+                  <TabelaCelula className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {/* Visualizar sempre disponível. Tom neutro: ler não
                           altera nada, e não precisa da cor de quem altera. */}
@@ -319,18 +303,26 @@ const CategoriasTab: React.FC = () => {
                       {podeExcluir && (
                         confirmDelete === categoria.id ? (
                           <div className="flex items-center gap-2">
-                            <button
+                            {/* Eram dois `<button>` a mao. O de confirmar era
+                                `bg-perigo` com `text-white`: 3,76:1, abaixo do
+                                piso de texto — e e um dos seis que o comentario
+                                do `Button` listava como fora do alcance da
+                                Fase 7. A variante `perigo` usa os degraus de
+                                acao da E2 e da 4,83:1. */}
+                            <Button
+                              variante="perigo"
+                              tamanho="sm"
                               onClick={() => handleExcluirCategoria(categoria.id)}
-                              className="rounded-lg bg-perigo px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-perigo-forte"
                             >
                               Confirmar
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variante="secundario"
+                              tamanho="sm"
                               onClick={() => setConfirmDelete(null)}
-                              className="rounded-lg border border-borda bg-superficie-elevada px-3 py-1.5 text-xs font-semibold text-conteudo transition-colors hover:bg-borda"
                             >
                               Cancelar
-                            </button>
+                            </Button>
                           </div>
                         ) : (
                           <BotaoDeAcao
@@ -344,11 +336,11 @@ const CategoriasTab: React.FC = () => {
                         )
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TabelaCelula>
+                </TabelaLinha>
               ))}
-            </tbody>
-          </table>
+            </TabelaCorpo>
+          </Tabela>
         )}
       </div>
 

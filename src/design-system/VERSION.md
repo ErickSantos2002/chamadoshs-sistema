@@ -1,0 +1,760 @@
+# Design System — versão adotada no ChamadosHS
+
+| | |
+|---|---|
+| **Pacote** | Health & Safety Design System |
+| **Export** | 02/09/2026 (`Health__amp__Safety_Design_System.zip`, 158 arquivos) |
+| **Namespace do manifesto** | `HealthAmpSafetyDesignSystem_ef9f35` |
+| **Sincronização do pacote com os repositórios** | 23/08/2026 (`DS/github.md`) |
+| **Copiado para cá em** | 02/09/2026, Fase 1 |
+| **Adoção, status** | **Checkpoint 4** — as vinte fases fechadas. **A regressão visual da §28 NÃO foi feita** — ver o aviso abaixo |
+| **Estratégia** | Opção A — tokens e componentes locais sincronizados (§6 do prompt mestre). Sem pacote npm, sem monorepo |
+
+> ## ⚠️ A REGRESSÃO VISUAL DA §28 NÃO FOI FEITA
+>
+> **A última verificação de tela deste sistema é de 08/09/2026** — as dezesseis
+> capturas do Checkpoint 3.
+>
+> Depois delas vieram três fases que **mudaram pixels**: a **16-H**, a
+> **16-mestre** (quatro cartões passando ao primitivo, com o respiro mudando de
+> `p-5` e `px-8 py-10` para `md` e `lg`) e a **18**.
+>
+> **Nenhuma tela foi olhada depois dessas três fases.** `tsc`, o validador com
+> nove catracas, 647 casos e a sonda da §20 não veem aparência — veem token,
+> classe, geometria e contraste calculado.
+>
+> Pendência nomeada: **32 capturas por Playwright**. A receita da linha de base
+> está em `docs/design-system-migration/fase-19/LINHA-DE-BASE.md`, e enquanto
+> `main` estiver em `165d9198…` a comparação é possível — depois de um push
+> nela, deixa de ser.
+>
+> **Quem ler só este arquivo precisa saber disto**, e por isso ele está aqui e
+> também em `adocao-chamadoshs.md`: os dois têm leitores diferentes, e cada um
+> lê um.
+
+## Como atualizar
+
+Alterar no design system → recopiar `styles.css` e `tokens/` para cá → reaplicar
+os desvios listados abaixo → conferir os hashes → rodar `npm run build`.
+
+**Não editar os arquivos desta pasta.** Eles são cópia; a fonte é o pacote.
+
+## Piso de navegador
+
+**Chrome/Edge 111 · Firefox 113 · Safari 16.2**
+
+É a regra **(c)** do D8-a em `COMPARTILHADO/DECISOES.md`, e vale para os dois
+repositórios que consomem o pacote.
+
+O piso é do `color-mix()`, e ele entrou porque é como `tailwind.config.js`
+declara as cores do pacote — a única forma que preserva o modificador de
+opacidade sem duplicar o valor da cor num arquivo local (decisão D1). Com
+`var(--token)` puro, **31** utilitários com modificador simplesmente não eram
+gerados, sem erro de lint, de tipo, de teste ou de build.
+
+Declarado em `vite.config.ts`, em `build.target`. Antes disso o padrão que o
+Vite 7 resolvia aqui era `chrome107 / edge107 / firefox104 / safari16` —
+**abaixo** do piso em toda linha, e nada na cadeia avisava.
+
+A declaração **não conserta** quem estiver abaixo: o esbuild não sabe rebaixar
+`color-mix`, não tenta e não avisa. Ela existe para o alvo parar de mentir e
+para haver um lugar só a mexer se o piso mudar.
+
+Abaixo do piso a falha é **calada e parcial**: a declaração é inválida em tempo
+de valor computado e a propriedade cai para `unset`, não para a declaração
+anterior — fallback antes não cobre, só `@supports` cobriria, e o operador
+decidiu não usar. Os três elementos que perderiam FUNÇÃO, e não só beleza —
+véu da gaveta, item ativo da barra e trilho do interruptor de tema — usam o
+token direto e não dependem do `color-mix`. É a regra **(d)** do D8-a, e o que
+ela não cobre está listado lá.
+
+## Emendas do pacote aplicadas nesta cópia
+
+O pacote foi **emendado** em 02/09/2026, em três pontos, todos registrados em
+`design-system/EMENDAS.md` com hash antes e depois. Esta cópia é a do pacote
+**já emendado** — por isso os hashes abaixo não são mais os do export original.
+
+| | O que | Arquivo | Escrita por |
+|---|---|---|---|
+| **E1** | `.dark` ganha `--text-on-primary`: branco sobre `--action` no escuro dava 2,69:1 | `tokens/colors.css` | HelpHS |
+| **E2** | botões `danger`/`success` ganham degrau de ação; `--on-tint-warning` e `--on-tint-neutral` passam a AA | `tokens/colors.css` | HelpHS |
+| **E3** | a fonte passa a ser servida pelo pacote — 12 `@font-face` e `fonts/` | `tokens/typography.css` + `fonts/` | ChamadosHS |
+| **E5** | `--text-muted` vai ao slate-600: sobre `--surface-elevated` o 500 dava 4,34:1 | `tokens/colors.css` | ChamadosHS |
+| **E7** | `--border-control`: nenhum token de borda alcançava os 3:1 que a WCAG 1.4.11 pede para contorno de controle | `tokens/colors.css` + 7 componentes de formulário | HelpHS |
+| **E7-b** | visto e traço do `Checkbox` saem de `--color-white` para `--text-on-primary` | `components/forms/Checkbox.jsx` | HelpHS |
+| **E8** | os três pares `on-tint` que a E2 não mediu passam a AA sobre `--surface-elevated` | `tokens/colors.css` | ChamadosHS |
+| **E9** | `Checkbox` e `Switch` do pacote passam a mostrar foco | `components/forms/{Checkbox,Switch}.jsx` | HelpHS |
+| **E10** | a seta do `Select` deixa de ser um data URI cravado | `components/forms/Select.jsx` | HelpHS |
+| **E11** | o erro do formulário passa a chegar a quem não o vê | 4 componentes de formulário | HelpHS |
+| **E11-b** | o rótulo do `SearchSelect` passa a rotular alguma coisa | `components/forms/SearchSelect.jsx` | HelpHS |
+| **E12** | três componentes declaravam papel de widget sem entregar o contrato | `Alert.jsx`, `Modal.jsx`, `Tabs.jsx` | HelpHS |
+| **E13** | a casca declarava dois marcos, um com o papel errado e nenhum com nome | `components/navigation/AppShell.jsx` | ChamadosHS |
+| **E14** | a rampa de borda do escuro sobe um degrau | `tokens/colors.css` | HelpHS |
+| **E15** | o pacote passa a ter um piso de foco | `tokens/base.css` | HelpHS |
+| **E16** | a paleta de gráfico, porque gráfico não é interface | `tokens/colors.css` | HelpHS |
+| **E16-b** | a mesma paleta, agora **medida** — quatro das seis da E16 reprovavam o piso que ela própria declarava | `tokens/colors.css` | HelpHS, do texto entregue pelo ChamadosHS |
+| **E17** | o rótulo de prioridade do pacote vai ao feminino | `components/core/Badge.jsx` | HelpHS |
+| **E18** | gráfico de status sai das rampas semânticas e vai para `--chart-*`; nasce o `--chart-7` | `tokens/colors.css` | HelpHS |
+| **E19** | nascem os quatro `--fill-*`: o degrau 500 reprova como preenchimento no claro | `tokens/colors.css` | HelpHS |
+
+**Só E14, E15, E16, E16-b, E18 e E19 pedem recópia.** De E9 a E13 tudo foi
+componente, e este repositório não copia componentes — são referência, não
+dependência. As quatro primeiras de token entraram em 04/09/2026, em duas
+recópias; **E18 e E19 entraram em 08/09/2026**, na terceira.
+
+| recópia de `tokens/colors.css` | hash | bytes |
+|---|---|---|
+| antes da E18 | `DBB52E1BA0441D87CA2B080E408633B8F3A32E2D6A4210ED995C4E342A886A51` | 12.977 |
+| depois da E18 e E19 | `1F61E5CEBFBBF21798C2B2A54F7A1002B9A7EFEFCE10AD7BFFB0A7F989348216` | 16.123 |
+
+Conferida byte a byte contra o pacote — diferença zero, LF, 0 CR, 63 inserções e
+nenhuma remoção. Commits do pacote: `19ef0e1` (E18) e `39474f2` (E19).
+
+### O que as quatro de token significam aqui
+
+- **E14 — a borda do escuro deixa de ser invisível.** `--border-muted` era
+  `#132238`, o MESMO valor de `--surface`: contraste **1,00** contra ela, ou
+  seja, um divisor que não existia dentro de nenhum Card. O `--border-color`
+  cede o próprio valor ao muted e sobe para `#2a4463`; o `--border-strong` fica.
+  Medido aqui, nas três superfícies do escuro:
+
+  |  | bg-base | surface | elevada |
+  |---|---:|---:|---:|
+  | suave, antes | 1,09 | 1,00 | 1,18 |
+  | suave, depois | 1,51 | 1,39 | 1,18 |
+  | borda, antes | 1,51 | 1,39 | 1,18 |
+  | borda, depois | 1,74 | 1,60 | 1,36 |
+  | forte, igual | 2,50 | 2,29 | 1,94 |
+
+  **Nada piora**, e a hierarquia se preserva nas três superfícies —
+  1,51 < 1,74 < 2,50 na base, 1,39 < 1,60 < 2,29 na surface,
+  1,18 < 1,36 < 1,94 na elevada. Não há piso de 3:1 aqui: os três separam
+  SUPERFÍCIE e não delimitam controle. Quem delimita controle é o
+  `--border-control` da E7.
+
+  **A ponte do D3-a foi atualizada no mesmo commit**, de `30 58 95` / `19 34 56`
+  para `42 68 99` / `30 58 95`. Sem isso a recópia não chegaria à tela: o
+  Tailwind lê os canais `R G B` da ponte, não o hex do pacote. É a mesma lição
+  da E5 — e desta vez a ponte ficou desatualizada por uma tarde antes de
+  alguém olhar.
+
+- **E15 — o pacote passa a ter piso de foco.** `:focus-visible` com `outline`
+  no `base.css`, e vale para tudo que receba foco por teclado. É a diferença
+  entre um defeito que se conserta cinquenta vezes e um que se conserta uma: o
+  levantamento do HelpHS achou ~50 controles à mão sem foco visível nenhum.
+
+  Medido aqui, nas três superfícies dos dois temas, contra o piso de **3:1** da
+  1.4.11 (anel de foco é indicador não textual):
+
+  | tema | bg-base | surface | elevada |
+  |---|---:|---:|---:|
+  | claro, primary-600 | 5,05 | 5,29 | 4,83 |
+  | escuro, primary-400 | 6,47 | 5,95 | 5,04 |
+
+  Seis de seis passam, com folga. **É piso e não teto:** onde o componente já
+  desenha o próprio anel — `Button`, `Campo`, `Seletor`, `Card` — ele continua
+  ganhando, porque a especificidade dele é maior.
+
+- **E16 e E16-b — a paleta de gráfico. Declarada, e ainda NÃO consumida.**
+  Entra na cópia porque a recópia é do arquivo inteiro, mas nada aqui lê
+  `--chart-*`: `src/lib/graficos.ts` segue sendo a fonte dos gráficos. A adoção
+  é da Fase 16.
+
+  A E16 declarava um piso de 3:1 para preenchimento de série e **não media se
+  as cores o cumpriam**. Quatro das seis reprovavam — `success` 2,32 e
+  `warning` 1,96 no claro, `primary-800` 1,33 no escuro, `slate-400` 2,34 no
+  claro. Mesma família da E1 e da E8: **degrau fixo da rampa não inverte por
+  tema**, então passa de um lado e reprova do outro.
+
+  A **E16-b** substitui as seis pela paleta que este repositório já roda em
+  produção, estendida com uma sexta série e declarada nos **dois** blocos —
+  `--chart-*` não é degrau, é papel, e papel inverte com o tema. 36 células de
+  contraste, pior 3,22; 120 pares de ΔE nas quatro visões, pior **25,8**.
+
+  O texto da emenda saiu daqui e foi gravado pela sessão do HelpHS, que
+  reconferiu por outro caminho: as 36 células de contraste bateram na segunda
+  casa, medidas por estilo computado no navegador em vez de por conta sobre os
+  hexadecimais.
+
+- **E18 — o `--chart-7` nasce, e ainda NÃO é consumido.** Mesma situação da E16
+  e da E16-b: entra porque a recópia é do arquivo inteiro, mas nada aqui lê
+  `--chart-*` — `src/lib/graficos.ts` segue sendo a fonte. A adoção é da Fase 16.
+
+  `--chart-7` é `#7d7dcd` no claro e `#91cd82` no escuro. A margem é estreita de
+  um jeito que vale registrar: de 140.608 candidatos, 4.326 passam a régua no
+  claro, e só **nove** ficam dentro da faixa de luminância *e* de croma das seis
+  existentes. **Não há folga para uma oitava série**, e mudar qualquer uma das
+  seis obriga a refazer a busca.
+
+  A emenda também revoga a regra anterior — "gráfico de status usa as cores da
+  §16" — e torna a legenda obrigatória em gráfico de status.
+
+- **E19 — os quatro `--fill-*`, e este repositório TEM o problema.** O pacote
+  tinha token para a semântica como texto (`--on-tint-*`), como ação
+  (`--action-*`) e como tinta (`--tint-*`), e **nenhum para preenchimento**.
+
+  Medido aqui, contra as três superfícies do claro, piso de 3:1 da 1.4.11:
+
+  | token | `--superficie` | `--superficie-base` | `--superficie-elevada` |
+  |---|---|---|---|
+  | `--sucesso` | 2,54 | 2,42 | **2,32** |
+  | `--alerta` | 2,15 | 2,05 | **1,96** |
+  | `--perigo` | 3,76 | 3,60 | 3,44 |
+  | `--info` | 3,68 | 3,52 | 3,36 |
+
+  Duas das quatro reprovam, e só no claro — no escuro a pior é 3,60. É a mesma
+  família da E1, da E8 e da E16-b: **degrau fixo da rampa não inverte por tema.**
+
+  E a cor adjacente não é palpite: o trilho da barra do `SlaProgresso` é
+  `bg-superficie-elevada`, exatamente a pior coluna.
+
+  **Ao contrário da E18, esta vai ser consumida.** Quatro sítios usam a cor cheia
+  como preenchimento — `SlaProgresso`, `KanbanColumn`, `SlaTab` e `Login` — e
+  passam a `--fill-success` / `--fill-warning` em commit próprio de **higiene**,
+  não de acessibilidade: ao lado da barra vem a situação escrita com ícone, então
+  a cor não é o único portador. O critério está no `DECISOES.md`, e existe para
+  não usar duas réguas — a E19 dá o mesmo benefício da dúvida ao anel do
+  `SlaChip` do HelpHS.
+
+### A verificação da E18 e da E19 — feita aqui, e o que ela achou
+
+**Método combinado com o operador:** busca própria **antes** de abrir a tabela do
+peer, procurando a combinação que **refuta**. Revisão por leitura não serve para
+afirmação de inexistência.
+
+As funções de cor foram **reusadas do `validar-paleta.js`**, avaliando o próprio
+fonte — copiar as matrizes de Machado criaria uma segunda fonte de verdade, que é
+o defeito que esta semana inteira passou consertando. Conferência da conta: a
+reimplementação reproduz o **26,1** que o validador publica para o pior par das
+categóricas claras.
+
+Réguas deste repositório: **3:1** de forma, **ΔE ≥ 20** de separação, quatro
+visões.
+
+#### E19 — a afirmação é de MINIMALIDADE, e ela se sustenta
+
+"O degrau mais próximo do 500 que passa 3:1 nas três superfícies." Refuta-se
+achando um degrau mais próximo que passe:
+
+| família | claro | escuro |
+|---|---|---|
+| success | 500 **2,32** ✗ → **600 3,44** ✓ | **500 5,34** ✓ |
+| warning | 500 1,96 ✗, **600 2,91 ✗** → **700 4,58** ✓ | **500 6,31** ✓ |
+| danger | **500 3,44** ✓ | **500 3,60** ✓ |
+| info | **500 3,36** ✓ | **500 3,69** ✓ |
+
+Não há degrau mais próximo que passe. O candidato óbvio de refutação —
+`warning-600` no claro — reprova por **0,09**, e vale registrar essa margem: se a
+superfície mudar um pouco, 600 passa e a escolha do 700 vira conservadora demais.
+
+#### E18, existência — os dois valores passam
+
+| | pior par | contra | contraste nas três |
+|---|---|---|---|
+| claro `#7d7dcd` | **21,9** | `--chart-1` em protanopia | 3,69 / 3,53 / 3,37 |
+| escuro `#91cd82` | **24,6** | `--chart-2` em deuteranopia | 8,57 / 9,33 / 7,27 |
+
+Os pares mais apertados são **exatamente os que a emenda nomeia**. O escuro bate
+no número publicado; o claro dá **21,9** por esta régua contra os **21,7**
+publicados, e a diferença é o arredondamento de **8 bits** — o mesmo efeito já
+resolvido no 26,1 × 25,8 da E16-b. Nosso instrumento é de 8 bits.
+
+#### E18, inexistência — a tentativa de refutar FALHOU, e por dois caminhos
+
+A afirmação é que não existe escolha dentro das rampas semânticas no claro, e que
+a capacidade para em cinco matizes.
+
+A primeira busca **pareceu** refutar: varrendo os 48 degraus de todas as rampas
+`--color-*` do bloco claro, com contraste contra `--superficie` só, o maior
+conjunto mutuamente distinguível dá **sete**.
+
+O ataque ao próprio resultado o derruba:
+
+| restrição | maior conjunto |
+|---|---|
+| todas as rampas, uma superfície | 7 |
+| todas as rampas, três superfícies | 6 |
+| **só `success`/`warning`/`danger`/`info`** | **5** |
+| dentro da faixa de luminância das seis existentes | **4** |
+
+O conjunto de sete usa `primary-800`, `slate-500` e **`slate-900`, de L\* 7,96** —
+três não-semânticas, uma delas quase preta. É o `#0a1900` da emenda com outro
+rosto: passa a régua numérica e não lê como série.
+
+**Restrita ao que a afirmação diz — rampas semânticas —, a capacidade é
+exatamente CINCO**, que é o número da emenda. E dentro da faixa de luminância das
+seis, cai para quatro.
+
+A tentativa de refutação reproduziu, chegando por outro lado, a armadilha que a
+emenda já havia documentado. **A afirmação sobrevive.**
+
+O que continua valendo como ressalva: a margem é estreita e **não há folga para
+uma oitava série**. Mudar qualquer uma das seis obriga a refazer a busca.
+
+O que cada uma significa aqui:
+
+- **E1 fecha o D5-a.** A exceção local do botão primário no escuro deixa de ser
+  necessária: o token resolve sozinho. Ver a seção do D5-a abaixo.
+- **E2 muda a conclusão do D4-a** no caso de fronteira do `--on-tint-warning`.
+  O valor não foi "mantido": foi corrigido na raiz. Ver a seção do D4-a.
+- **E3 fecha o D1-a.** O desvio local do `@import` deixa de existir: este
+  `typography.css` é o do pacote, sem uma vírgula de diferença.
+- **E7 cria o degrau que faltava para contorno de CONTROLE.** Medido nas três
+  superfícies, claro | escuro: `--border-color` 1,23 1,18 1,13 | 1,39 1,51
+  1,18; `--border-strong` 1,48 1,42 1,36 | 2,29 2,50 1,94. **Seis de seis
+  reprovavam** no mais forte dos que existiam. Eles não estavam errados — são a
+  linha de cabelo entre um card e o fundo, e para isso 1,2:1 é o desenho certo.
+  O erro era usar o mesmo token para dizer "aqui começa um campo".
+  `--border-control` dá 4,76 4,55 4,34 | 6,23 6,78 5,29.
+
+  A regra que entra com ela: **contorno de controle usa `--border-control`;
+  `--border-color` e `--border-strong` são separadores de superfície e não
+  delimitam campo, caixa, seletor nem interruptor.** O piso aqui é 3:1 e não
+  4,5:1 — limite de componente não é texto (WCAG 1.4.11).
+
+  Mapeado como `borda.control` no `tailwind.config.js`. **Sem esse mapeamento a
+  classe simplesmente não existe em CSS, e um teste que procure a classe passa
+  com o pixel errado** — o aviso veio da sessão do HelpHS, que tropeçou nisso.
+
+- **E7-b fecha a família do `--color-white` sobre `--action`, em seis
+  aparições.** `--action` é o único fundo do pacote que troca de degrau por
+  tema: branco dá 5,29:1 no claro e 2,69:1 no escuro. A regra permanente é
+  **nunca `--color-white` sobre `--action`, sempre `--text-on-primary`** — e o
+  escopo é estreito de propósito, porque branco sobre degrau ABSOLUTO da rampa
+  segue válido, que é o que `--text-on-danger` e `--text-on-success` fazem.
+
+  As seis: o `Button` do pacote (E1), o link "Pular para o conteúdo", o
+  `fantasma` do `Button`, o "Sair" do `Topbar`, a bolinha do `Switch` (E7) e o
+  visto do `Checkbox` (E7-b). Três delas foram achadas aqui.
+
+  O padrão que elas desenham vale como método: a E1 criou `--text-on-primary`
+  em 02/09, e as cinco aparições seguintes **já existiam naquele dia**. Nenhuma
+  foi corrigida por ela, porque nenhuma usava o token. **Depois de criar um
+  token, varra quem deveria usá-lo.**
+
+- **E8 fecha a lacuna que a E2 deixou, e a previsão em prosa estava metade
+  errada.** A E2 mediu `--on-tint-warning` nas três superfícies, achou 4,47 e
+  levou-o ao degrau 800 — e **não** repetiu a medição para `success`, `info` e
+  `danger`. Os três seguiram no degrau original por mais oito emendas, e os
+  números eram claro `success` 4,39, escuro `info` 4,40, escuro `danger` 4,38.
+
+  A nota de numeração dentro da E9 previa que "a correção é levá-los ao degrau
+  800". **Vale para o claro e é o oposto do que o escuro precisa.** No claro os
+  `on-tint` são degraus 700, texto escuro sobre tinta clara: subir para o 800
+  afasta os dois. No escuro são degraus 400, texto claro sobre tinta escura, e
+  ali o 800 seria quase preto sobre quase preto — a direção certa é DESCER para
+  o 300.
+
+  É o mesmo que a E1 fixou para `--action`: o degrau que carrega um papel
+  inverte com o tema. Aqui aplicado ao texto sobre tinta.
+
+  `--color-danger-300` e `--color-info-300` são degraus NOVOS na rampa, e ficam
+  no `:root` porque rampa não tem tema — o `.dark` troca qual degrau um alias
+  aponta, nunca o valor do degrau.
+
+- **E9 vem de um achado deste repositório.** O `Checkbox.jsx` e o `Switch.jsx`
+  do pacote escondiam o `<input>` em 1×1 com `opacity: 0` e nada reagia ao foco
+  dele. Os DOIS repositórios já tinham o anel nas implementações locais, cada um
+  por conta própria, e nenhum tinha notado que a referência não tinha — o fato
+  de os dois consumidores estarem certos escondia o defeito da origem.
+
+  Não pede recópia aqui: este repositório copia `styles.css`, `tokens/` e
+  `fonts/`, e não componentes.
+
+- **E5 corrige a tabela do D4-a e resolve sete pares de tela.** O token de
+  texto tênue passa de slate-500 a slate-600 no tema claro: 4,76 · 4,55 · 4,34
+  viram 7,58 · 7,24 · 6,92, contra `--surface` · `--bg-base` ·
+  `--surface-elevated`. O tema escuro não muda — lá é slate-400 e já passava.
+
+  **A ponte do D3-a foi atualizada no mesmo commit**, de `100 116 139` para
+  `71 85 105`. Ela existe para carregar os valores do pacote em canais
+  `R G B`; se ficasse no slate-500, o pacote diria uma coisa e as telas
+  pintariam outra — a segunda fonte de verdade que a §5.4 proíbe.
+
+  E veio com uma regra permanente, escrita no `EMENDAS.md` do pacote:
+  **contraste de token de texto se mede contra as três superfícies**, não
+  contra a mais clara. A ausência dela produziu quatro descobertas
+  independentes do mesmo defeito.
+
+## Hashes (SHA-256)
+
+Conferidos com `Get-FileHash` em 03/09/2026, na recópia do pacote emendado
+(E1+E2+E3+E5+E7+E8), e comparados com `Compare-Object` contra o pacote: **19
+arquivos, sem diferença**.
+
+A E7-b e a E9 não aparecem aqui: as duas mudaram componentes em
+`components/forms/`, e este repositório não copia componentes do pacote — eles
+são referência, não dependência. Só `styles.css`, `tokens/` e `fonts/` vêm
+para cá.
+
+Reconferidos em **04/09/2026**, na recópia de E14+E15+E16 e depois na da
+E16-b. Os dois arquivos que mudaram estão marcados; os outros cinco continuam
+nos hashes de 03/09. `colors.css` passou por duas recópias no mesmo dia:
+`73550E08…` → `E17CFDE6…` (E14+E16) → `DBB52E1B…` (E16-b), 12.977 bytes.
+
+```
+1EF6324844AA066488F0D8A015B39E3CA0756C629512FCE4E1BD95CA8B93B9B2  styles.css
+DE714476FA019334CC3DD096E84BD7EF29BFA7B3E2DACF071F3DA5FB68D98410  tokens/base.css        <- E15   (era BDD047CE…)
+DBB52E1BA0441D87CA2B080E408633B8F3A32E2D6A4210ED995C4E342A886A51  tokens/colors.css      <- E1+E2+E5+E7+E8+E14+E16+E16-b   (era E17CFDE6…)
+C70D51A982AE0B91BD53ECE150D8D16E0E70BEF9CA59586541A9A7177228478E  tokens/motion.css
+7BCFBBC585D3EA8C7F689A27EEB3AE13DE0C2A9DCC3C6CC0C8F41D440D193F7D  tokens/shape.css
+C093B261C6893A893A418CDF64798555326D4586A8ADB37CC7ECA457FABAE420  tokens/spacing.css
+1DD9B29E47D31005DA89BBE96F1C7883A89371173E0FA8862D868480EEE839C9  tokens/typography.css  <- E3
+```
+
+`Compare-Object` por hash contra `design-system/tokens/`, os seis arquivos:
+**sem diferença**. LF, 0 CR, 0 bytes de controle nos dois recopiados.
+
+E os doze arquivos de fonte, que a **E3** trouxe (diretório novo):
+
+```
+740D9B0F5A33987E21ACFF7E20BBD4C02BF40E470CDA58B761127D159C7941A7  fonts/plus-jakarta-sans-latin-300-normal.woff2
+221A4135D06A4B33ABBD535E9A0DA4E565D19545DDD9267C4E678A916D54D9B6  fonts/plus-jakarta-sans-latin-400-normal.woff2
+BAD081C8DBC15AED6C5E4CDE5461914F7B3BDC295B7A7AED177E4BEDDB79BFFA  fonts/plus-jakarta-sans-latin-500-normal.woff2
+8872BB5C9111DF9BD3162C2394AEE6354D782B13408A4DD5BBF65C48207206E6  fonts/plus-jakarta-sans-latin-600-normal.woff2
+2050755BF475817C96AC7D914C7F07CC3C2D11FF4B3FB4747B8D41DE584AAD17  fonts/plus-jakarta-sans-latin-700-normal.woff2
+5F301A8EF9C266C8B596E6793D3CC826DAEFF9849C5AF035F5386439137955AD  fonts/plus-jakarta-sans-latin-800-normal.woff2
+3BFBC7278A6723BC895A1C088F8C216A79C21A9C5C227C7B6ED194C58E12FB53  fonts/plus-jakarta-sans-latin-ext-300-normal.woff2
+65B5680BF2BA9C6C42AF74DDD2E8AADDE93AF7C523454EBB3D4E32FDBA3F94DB  fonts/plus-jakarta-sans-latin-ext-400-normal.woff2
+D1584F50C388CAE7E570BED35BE331FA4A9AFD6832EF45A32FA8BF81930E6DB9  fonts/plus-jakarta-sans-latin-ext-500-normal.woff2
+080A1FEA8589C2BD4FA08750D0D99B3388BE63DF8C41A649DE05CB2DDA1EC007  fonts/plus-jakarta-sans-latin-ext-600-normal.woff2
+B202EC87899E78825DB955E6AB43858B88C0CD444ABE2DFAC2E763F837B8F234  fonts/plus-jakarta-sans-latin-ext-700-normal.woff2
+7C27E3FD36E9C1D6A2F354943B32993B01DC0B1E64E8275BDD5122B260CA6A24  fonts/plus-jakarta-sans-latin-ext-800-normal.woff2
+```
+
+**`.gitattributes`:** `*.woff2 binary`, e a linha vem **depois** de
+`src/design-system/** text eol=lf` de propósito — em `.gitattributes` vence a
+última regra que casa. Sem isso o Git trataria a fonte como texto, converteria
+fim de linha dentro do binário e a corromperia no checkout, sem quebrar build
+nenhum: o browser é que se recusaria a desenhar e cairia na fonte do sistema.
+
+**Sem cabeçalho de origem.** A §5.2 manda acrescentar um comentário de origem no
+topo de cada arquivo copiado; a §33 e o D3 de `COMPARTILHADO/DECISOES.md` mandam
+conferir o SHA-256 da cópia contra o pacote. As duas coisas não cabem juntas — o
+comentário muda o hash de todos os sete. **O hash vence**, como o D3 decidiu para
+os dois repositórios: aqui ficam cópias cruas, e o aviso "não editar aqui" mora
+neste `VERSION.md`. O cabeçalho existiu entre a Fase 1 e a Fase 3, e saiu.
+
+Conferência de 02/09/2026, com `Compare-Object` por arquivo + hash:
+
+```
+contra design-system/ (o pacote emendado)
+  19 arquivos: styles.css, os seis tokens/*.css e os doze fonts/*.woff2
+  Compare-Object por Arquivo+Hash  ->  SEM DIFERENCA
+```
+
+**Não há mais desvio local nos sete arquivos.** O D1-a, que era o último, foi
+resolvido na raiz pela E3. Esta cópia é o pacote, byte a byte.
+
+> **Para o HelpHS:** os sete arquivos e o `fonts/` aqui são os do pacote
+> emendado. Em 04/09/2026, `colors.css` fecha em `E17CFDE6…` e `base.css` em
+> `DE714476…` — o estado `f25f128` do pacote, com E14, E15 e E16. Quem estiver
+> com `73550E08…` / `BDD047CE…` está desatualizado, não divergente. O
+> `VERSION.md` continua diferindo por natureza — é o registro local de cada
+> repositório.
+>
+> *(A versão anterior desta nota citava `66BE0CD3…` para `colors.css`, que não
+> bate com nenhum estado deste arquivo — o bloco de hashes logo acima dizia
+> `73550E08…` na mesma data. Era erro de transcrição, e fica dito para o número
+> errado não ser perseguido.)*
+
+## A E16, e como ela virou E16-b
+
+> **Resolvido em 04/09/2026 pela emenda E16-b.** A seção fica como registro do
+> que motivou a correção, e porque o modo de falha se repete.
+
+A E16 declarava um piso de 3:1 para preenchimento de série e **não media se as
+cores o cumpriam**. Medido depois, por duas sessões separadamente e com
+ferramentas diferentes, **quatro das seis reprovavam**:
+
+| série | pior no claro | pior no escuro |
+|---|---:|---:|
+| `--chart-1` primary-500 | 3,49 | 3,54 |
+| `--chart-2` success-500 | **2,32** | 5,34 |
+| `--chart-3` warning-500 | **1,96** | 6,31 |
+| `--chart-4` danger-500 | 3,44 | 3,60 |
+| `--chart-5` primary-800 | 9,30 | **1,33** |
+| `--chart-6` slate-400 | **2,34** | 5,29 |
+
+A causa tem nome nesta série de emendas: **degrau fixo da rampa não inverte por
+tema.** É a mesma da E1 (`--text-on-primary`), da E8 (os três `on-tint`) e do
+`perigo-forte` que este repositório descartou como substituto de cor de texto.
+A E16 escolheu seis degraus absolutos para os dois temas.
+
+E havia um segundo critério que ela não considerava: **distinção entre séries.**
+Contraste contra o fundo diz se a barra é visível; não diz se duas barras são
+distinguíveis uma da outra. Num gráfico de seis, as seis estão na tela juntas.
+
+**A E16-b substitui as seis** pela paleta que este repositório já roda em
+produção, estendida com uma sexta série, declarada nos dois blocos:
+36 células de contraste com pior caso 3,22, e 120 pares de ΔE\*ab nas quatro
+visões com pior caso 25,8.
+
+Um achado que ficou registrado na emenda e vale além dela: o papel de "outros"
+que a E16 dava ao sexto **não é realizável no tema claro** sob os dois
+critérios — das 5.615 cores que passam, nenhuma é quase-neutra e cabe na faixa
+de luminância das outras cinco. O motivo é geométrico: um neutro tem `a` e `b`
+próximos de zero em Lab, então a distância dele vem quase toda da luminosidade,
+e essa faixa já está ocupada. "Outros" pede hachura sobre neutro mais rótulo —
+não opacidade, que mudaria o contraste medido, e não uma sétima cor.
+
+## Desvios locais aprovados
+
+Cada um foi decidido em 02/09/2026 e nada além destes é desvio. Se algo mais
+divergir do pacote, é defeito, não exceção.
+
+### D1-a — `tokens/typography.css`: `@import` do Google Fonts comentado
+
+> **ENCERRADO em 02/09/2026 pela emenda E3 do pacote.** Não é mais desvio: a
+> auto-hospedagem passou a ser do pacote, e este arquivo voltou a ser cópia
+> crua (`1DD9B29E…`). O texto abaixo fica como registro do que motivou a
+> emenda — é o argumento que a E3 usa.
+>
+> O que ainda falta daqui, e sai em commit próprio: os seis `@import` de
+> `@fontsource/plus-jakarta-sans` em `src/styles/index.css` e a dependência no
+> `package.json`. Enquanto os dois coexistem, a fonte é carregada duas vezes —
+> do mesmo bundle, sem sair para a rede. A ordem é essa de propósito: o
+> contrário abriria uma janela sem fonte nenhuma.
+
+**O que muda:** uma linha, comentada. O original é
+
+```css
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
+```
+
+**Por quê:** o ChamadosHS roda na rede interna da HS e não pode depender de
+servidor de terceiro para a tipografia. Se o Google cair ou o IP da empresa for
+bloqueado, a fonte some em silêncio — o `display=swap` garante que some sem
+erro. A política está escrita em `tailwind.config.js` e guardada por
+`src/recursos-externos.test.ts`, que existe porque já houve 12 ícones vindos de
+`img.icons8.com`.
+
+**O que substitui:** a **mesma** fonte, nos **mesmos** seis pesos (300–800),
+servida do próprio bundle por `@fontsource/plus-jakarta-sans` (~76 KB, subconjunto
+latino), importada em `src/styles/index.css`. O valor de `--font-sans` não muda.
+
+**Amparo:** §11 do prompt mestre — *"Se houver política de não usar CDN externo,
+pare e pergunte antes de baixar arquivos de fonte."* Perguntado e decidido.
+
+**Escopo — vale para os dois repositórios.** Confirmado pelo operador em
+02/09/2026: o desvio fica, e deixa de ser exceção só daqui. O HelpHS aplica o
+mesmo conteúdo de `tokens/typography.css`, e então os sete arquivos voltam a ser
+idênticos byte a byte dos dois lados, como a §5.2 pede. A alternativa — reverter
+para o `@import` do Google — traria a fonte de servidor de terceiro **além** do
+bundle, porque o Vite mantém URL externa como está: dois carregamentos da mesma
+fonte, contra o objetivo declarado da Fase 2.
+
+### D3-a — Camada de ponte em `src/styles/index.css` (**permanente desde 09/09/2026**)
+
+**O que é:** os tokens em português (`--superficie`, `--borda`, `--conteudo`,
+`--sinal` e as cores de significado) continuam declarados, no formato de três
+canais `R G B`, com os **valores do pacote** e o token de origem no comentário
+de cada linha.
+
+**Por quê:** o Tailwind exige `rgb(var(--x) / <alpha-value>)` para aplicar
+opacidade, e há 78 classes com opacidade escritas hoje (`bg-perigo/10`,
+`bg-sinal/10`, `border-sucesso/30`). Um alias direto para o hex do pacote
+quebraria todas: `rgb(#ffffff / 0.5)` não é CSS válido.
+
+~~**Quando sai:** tela a tela, nas Fases 11–16. Quando não sobrar uso dos nomes
+em português, o bloco inteiro sai e ficam só os tokens do pacote. **Este desvio
+tem data de validade.**~~
+
+> **REVOGADO em 09/09/2026, por decisão do operador. A PONTE FICA.**
+>
+> Deixa de ser desvio temporário e passa a **exceção documentada**, ao lado do
+> canto reto, dos `Colchetes` e do `Rotulo`.
+>
+> **1. Os nomes em português são vocabulário do produto, e não atalho** — mesmo
+> argumento que fez `navLabel` ser prop na E13: rótulo é conteúdo, e conteúdo
+> viaja na língua do produto. Tratar `--superficie` como dívida a pagar confunde
+> tradução com atraso.
+>
+> **2. Custo alto, ganho nulo para quem usa** — **1017 usos em 62 arquivos**,
+> medido em 09/09/2026. Refatoração maior que toda a migração feita até aqui,
+> com risco alto e nenhuma diferença na tela.
+>
+> **3. A ponte deixou de ser ponto fraco** — catraca de 32 pares, que resolve
+> contra o token **nomeado** e ignora o hexadecimal do comentário. Hoje é uma
+> das partes mais guardadas do repositório.
+>
+> E a regra que a decisão deixa, válida para os dois repositórios:
+>
+> > **Temporário sem data é permanente sem registro.**
+>
+> Um desvio "temporário" que atravessa quinze fases já é permanente; o que falta
+> é o registro. Ou se põe data e ela se cumpre, ou se assume a exceção com o
+> motivo escrito — o rótulo sobrevivendo por inércia é que não serve, porque faz
+> o desvio parecer menor do que é para quem chega depois.
+
+### D4-a — `--text-faint` reservado a elemento não textual
+
+**O que muda:** o terceiro nível de texto (`--conteudo-tenue`) aponta para
+`--text-muted`, não para `--text-faint`.
+
+**Por quê:** `--text-faint` reprova em 4,5:1 nos dois temas — **2,56:1** no claro
+(slate-400 sobre branco) e **3,36:1** no escuro (slate-500 sobre `#132238`). A
+§21 exige WCAG AA, e `npm run validar:paleta` — que roda dentro do
+`npm run build` — falha se um token de conteúdo cair abaixo de 4,5:1.
+
+**Encaixe dos três níveis do projeto nos quatro do pacote:**
+
+| Projeto | Pacote | Claro | Escuro |
+|---|---|---|---|
+| `--conteudo` | `--text-heading` | slate-900 · 17,85:1 | slate-100 · 14,59:1 |
+| `--conteudo-suave` | `--text-body` | slate-800 · 14,63:1 | slate-200 · 12,97:1 |
+| `--conteudo-tenue` | `--text-muted` | slate-500 · 4,76:1 | slate-400 · 6,23:1 |
+| — | `--text-faint` | *só elemento não textual* | |
+
+**Caso de fronteira anotado:** `--on-tint-warning` no tema claro dá **4,48:1**
+sobre a tinta de 15% composta em `--surface` — 0,02 abaixo do piso. É valor do
+pacote, mantido; registrado aqui para não passar por descuido.
+
+### D5-a — Texto do botão primário no tema escuro
+
+> **ENCERRADO em 02/09/2026 pela emenda E1 do pacote.** O token passou a ser
+> redefinido no `.dark` (`--color-primary-900`), então o desvio local saiu e os
+> três lugares que o aplicavam passaram a usar `--text-on-primary` direto:
+> `ui/Button.tsx`, `pages/Dashboard.tsx` e `pages/NotFound.tsx`. Com isso o
+> projeto ficou com **zero classes `dark:` de utilitário**.
+>
+> Medido depois da emenda, nos quatro estados:
+>
+> | | repouso | hover |
+> |---|---:|---:|
+> | claro | 5,29:1 ✅ | 4,53:1 ✅ |
+> | escuro | 5,11:1 ✅ | 6,19:1 ✅ |
+>
+> O desvio local dava mais no escuro (6,47 e 7,83), mas a §2.1 é clara: token
+> vence componente, e o do pacote mantém a família azul do botão em vez de
+> pintar o texto com a cor de fundo da página.
+>
+> **Anotado:** o 4,53:1 do hover no claro é 0,03 acima do piso. Não é novo — já
+> era assim antes —, mas é o número que quebra primeiro se alguém mexer no
+> `brightness-110` ou no degrau de `--sinal`.
+>
+> O texto abaixo fica como registro do que motivou a emenda.
+
+**O que muda:** o botão primário usa `--bg-base` (navy) como cor de texto no
+escuro, e não `--text-on-primary` (branco).
+
+**Por quê:** `DS/components/core/Button.jsx` usa branco nos dois temas. No escuro
+`--action` é `#47A6E1`, e **branco sobre ele dá 2,69:1** — reprova. Navy sobre
+azul claro dá **6,47:1**.
+
+`--text-on-primary` é declarado em `:root` como branco e **não é redefinido no
+`.dark`** — é lacuna do pacote, não escolha local. Pela §2.1 (`tokens` vencem
+`components`), o token está incompleto para o tema escuro. **A sugerir ao design
+system** no relatório final.
+
+### D6-a — Modal não fecha no clique de fora
+
+**O que muda:** `Modal.prompt.md` diz que o modal fecha com Esc **e** com clique
+no fundo. Aqui o clique no fundo continua desligado.
+
+**Por quê:** foi desligado em 01/09/2026 pelos commits `bef6d38` e `be572ef` —
+dois consertos, ou seja, resposta a perda real de formulário preenchido. A §30
+proíbe reverter comportamento por motivo visual. Esc continua fechando.
+
+### D2-a — Pele de console restaurada
+
+Não é desvio do pacote: é a **exceção oficial** da §8.1, que este repositório
+havia desfeito na 1.7.0 (27/08/2026, merge `241db32`) — quatro dias **depois** de
+o pacote fotografar o código em 23/08. Restaurada por decisão de 02/09/2026.
+
+| Marca | Estado | Onde |
+|---|---|---|
+| Canto reto (`--radius-none` em tudo) | ✅ Fase 1 | escala `borderRadius` zerada em `tailwind.config.js`; `rounded-full` preservado para círculo de verdade (avatar, ponto de status, anel do spinner) |
+| Cor de sinal só no que está ativo | ✅ já valia | `--sinal` = `--action`; item ativo, botão primário, link, foco |
+| `Rotulo` mono, caixa alta, 12px, `0.1em` | ⏳ Fase 7 | hoje em sans/10px desde `993ebc5` |
+| `Colchetes` só em painel | ⏳ Fase 7 | removido em `0f94122`; recriar e aplicar em modal, coluna do quadro, seção e login |
+| ~~Login com malha de 46px e vinheta~~ | ❌ **REVOGADA em 09/09/2026** | ver abaixo |
+
+**Nada além destas quatro.** Toda outra diferença em relação ao pacote é defeito
+a corrigir, não identidade a preservar (§8.2).
+
+#### A malha e a vinheta do login: REVOGADAS
+
+**Decisão do operador, 09/09/2026.** O formato de duas colunas é a decisão
+vigente; a malha e a vinheta **não voltam**.
+
+Esta linha prometia *"voltam junto com a reescrita de `pages/Login.tsx`"*. **A
+reescrita aconteceu, e elas não voltaram** — e o próprio `Login.tsx` diz por quê,
+em comentário, com o motivo:
+
+> *As quatro camadas saíram do CSS junto com esta reescrita — era de outra
+> família; o HelpHS abre com um painel de apresentação à esquerda e o formulário
+> à direita, e é isso que faz as duas telas parecerem do mesmo produto.*
+
+**Aquilo não é vestígio: é decisão registrada com o porquê.** Esta linha é que
+era promessa — promessa que a reescrita superou e que ninguém voltou para fechar.
+
+> **Registro que não acompanha a decisão vira dívida que se cobra sozinha
+> depois**, e foi o que quase aconteceu: a linha por pouco não virou trabalho de
+> Fase 16 para restaurar algo que se decidiu remover.
+
+---
+
+## Lacunas do pacote registradas (§2.2)
+
+O que o design system **não** define, e a conduta adotada aqui:
+
+| Lacuna | Conduta |
+|---|---|
+| **Breakpoints** | Mantidos os do Tailwind padrão. Sidebar ↔ gaveta alterna em **`md` (768px)**, em `components/layout/Sidebar.tsx` |
+| **z-index** | Escala existente preservada: gaveta `z-40`, fundo da gaveta `z-[35]`, menu do usuário `z-50`, toast `z-[9999]`, atalho de teclado `z-[100]`. Modal fica acima da topbar e da barra lateral |
+| **Skeleton** | Não existe no projeto e não foi criado. O carregamento é `Spinner` centralizado, como manda o pacote |
+| **DatePicker** | `<input type="date">` nativo, como já era. Nenhuma biblioteca instalada |
+| **Paleta categórica de gráfico** | **NÃO adotada** — e, desde 09/09/2026, sabe-se que a de `src/lib/graficos.ts` é **cópia literal de `--chart-1` a `--chart-5` nos dois temas**, dez valores idênticos. Congelada como linha de base da catraca da cópia de token: dívida declarada que não pode crescer. É o **lado 4** do nó de cinco, e os cinco fecham juntos |
+| **Tokens de tamanho de ícone** | Não existem como CSS var. Regra do `Icon.d.ts`: 16 em botão, 20 em nav, 24 em cabeçalho; stroke 1.75 na navegação, 2 em botão e aviso |
+| **Breadcrumb, Banner** | Não existem no pacote nem no projeto. Não foram criados |
+
+
+---
+
+## Exceções do ChamadosHS — a lista da §33, e **nada além delas**
+
+A §33 pede que as exceções estejam listadas aqui, e que nada além delas exista.
+Esta é a lista fechada, em 09/09/2026:
+
+| exceção | onde | desde |
+|---|---|---|
+| **Canto reto** | escala `borderRadius` inteira em `--radius-none`; só `full` sobrevive, para pastilha e avatar | D2-a |
+| **`Colchetes`** | primitivo próprio, pele de console | D2-a |
+| **`Rotulo`** | primitivo próprio | Fase 7 |
+| **Ponte em português (D3-a)** | 22 tokens em `R G B` no `src/styles/index.css`, guardados por catraca de 32 pares | **09/09/2026** |
+| **Paginação sem "Mostrando X a Y de N"** | `Auditoria` mostra "Página N" — a API não dá contagem total, e pedê-la custaria uma segunda varredura das duas tabelas **por página** | **10/09/2026** |
+
+> **Nada além destas é exceção.** Se algo mais divergir do pacote, é defeito —
+> e a conduta é corrigir, não acrescentar linha a esta tabela.
+
+Duas entradas são novas em relação à lista da §33, e as duas entraram por
+**decisão registrada com motivo**, e não por acomodação: a **ponte** e a
+**paginação**.
+
+A da paginação tem **data de queda**: ela existe pelo custo, e não pelo desenho.
+No dia em que houver contagem barata — um `COUNT` indexado, ou um cabeçalho
+`X-Total-Count` —, a frase entra e a exceção sai.
+
+E há uma exceção de acessibilidade fora desta tabela, declarada em
+`adocao-chamadoshs.md`, item 9: **o link de pular conteúdo usa `focus:` e não
+`focus-visible:`**, porque ele existe para APARECER ao foco, e atalho invisível
+que recebe Tab é pior que atalho nenhum.
+
+### O login SAIU desta lista, e por decisão — não por engano
+
+**A distinção importa, e o operador exigiu que a lista a diga.**
+
+Eu havia escrito *"Login com malha de 46px e vinheta"* como exceção **vigente**,
+copiando a linha do prompt mestre **sem conferir se o código a cumpria**. Era
+erro meu, e o pior dos três que cometi nas fichas: numa lista cujo propósito é
+dizer *"nada além destas"*, afirmar exceção inexistente **inverte a função da
+lista** — ela passa a atestar conformidade onde não há.
+
+**Mas não é por isso que ela saiu.** Ao conferir apareceu a contradição entre a
+tabela do D2-a e o comentário do `Login.tsx`, e o operador **decidiu**: o formato
+de duas colunas fica, a malha não volta, a linha do D2-a é revogada.
+
+> A linha não está fora porque uma ficha errou. Está fora porque **foi
+> revogada**. Uma lista de exceções que não distingue *"caída por engano"* de
+> *"revogada por decisão"* deixa o próximo leitor sem saber se pode reabrir.

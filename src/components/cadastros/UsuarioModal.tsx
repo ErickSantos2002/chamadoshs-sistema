@@ -4,7 +4,16 @@ import { useCadastros } from '../../context/CadastrosContext';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import HistoricoDaConta from './HistoricoDaConta';
-import { Button, Input, MensagemDeErro, Modal, Rotulo, RotuloDeCampo, Seletor } from '../ui';
+import {
+  Button,
+  Checkbox,
+  Input,
+  MensagemDeErro,
+  Modal,
+  Rotulo,
+  RotuloDeCampo,
+  Seletor,
+} from '../ui';
 import { getRoleName } from '../../utils/roleMapper';
 import { IconeEscudo, IconeOlho, IconeOlhoFechado, IconeSalvar, IconeSetor } from '../ui/icones';
 import type {
@@ -293,6 +302,24 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                     type={showPassword ? 'text' : 'password'}
                     id="password"
                     name="password"
+                    // `new-password` nos DOIS campos deste par.
+                    //
+                    // Sem ele, o gerenciador de senhas do navegador trata o
+                    // campo como login e oferece a senha salva de quem está
+                    // logado — que aqui é o ADMINISTRADOR criando a conta de
+                    // outra pessoa. Aceita por reflexo, a senha do
+                    // administrador vira a senha do usuário novo, e ninguém
+                    // percebe: o formulário salva, o toast diz que deu certo,
+                    // e a pessoa recebe uma credencial que não é a dela.
+                    //
+                    // Vale também no modo de edição: ali o campo é "nova senha
+                    // (opcional)", que continua sendo uma senha nova.
+                    //
+                    // Era o ÚNICO formulário de senha do projeto sem o
+                    // atributo. `UsuariosTab` (538, 553) e `ModalTrocarSenha`
+                    // (97, 109, 121) já acertavam — o que torna este um desvio
+                    // isolado, não um padrão do sistema.
+                    autoComplete="new-password"
                     value={formData.password}
                     onChange={handleInputChange}
                     className={cn('pr-10', errors.password && 'border-perigo')}
@@ -324,6 +351,12 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
                   <Input
                     type={showConfirmPassword ? 'text' : 'password'}
                     id="confirmarSenha"
+                    // O par do campo acima. Corrigir só um deixaria o
+                    // gerenciador preenchendo metade do par, que é pior que
+                    // preencher os dois: a confirmação passaria a divergir e o
+                    // formulário recusaria sem dizer por quê.
+                    name="confirmarSenha"
+                    autoComplete="new-password"
                     value={confirmarSenha}
                     onChange={(e) => {
                       setConfirmarSenha(e.target.value);
@@ -409,33 +442,24 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
 
           {/* Conta de serviço */}
           <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                name="conta_de_servico"
-                checked={formData.conta_de_servico ?? false}
-                onChange={(e) =>
-                  setFormData((anterior) => ({
-                    ...anterior,
-                    conta_de_servico: e.target.checked,
-                  }))
-                }
-                disabled={isReadOnly}
-                className={`mt-0.5 h-4 w-4 shrink-0 accent-sinal ${
-                  isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-                }`}
-              />
-              <span>
-                <span className="block text-sm font-medium text-conteudo">
-                  Conta de serviço
-                </span>
-                <span className="mt-0.5 block text-xs text-conteudo-tenue">
-                  Marque para contas que não são pessoas — painel de TV, login de
-                  integração. Elas continuam acessando o sistema, mas deixam de
-                  aparecer na lista de técnico responsável.
-                </span>
-              </span>
-            </label>
+            {/* Era `accent-sinal` num <input> nativo: o `accent-color` pinta
+                o preenchimento e o navegador desenha o resto, então a caixa
+                não tinha contorno próprio nem seguia o tema. O `Checkbox` do
+                kit desenha a caixa, com o contorno de `--border-control` que a
+                emenda E7 criou e o anel de foco que o pacote não mostra. */}
+            <Checkbox
+              marcado={formData.conta_de_servico ?? false}
+              aoMudar={(v) =>
+                setFormData((anterior) => ({
+                  ...anterior,
+                  conta_de_servico: v,
+                }))
+              }
+              desabilitado={isReadOnly}
+              dica="Marque para contas que não são pessoas — painel de TV, login de integração. Elas continuam acessando o sistema, mas deixam de aparecer na lista de técnico responsável."
+            >
+              <span className="font-medium text-conteudo">Conta de serviço</span>
+            </Checkbox>
           </div>
 
           {/* Informações de auditoria (apenas visualização) */}
@@ -464,9 +488,22 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({
 
         {/* A trilha fica ao lado, não abaixo: quem abre a conta para conferir
             quem mexeu nela precisa ver o cadastro e o histórico juntos. */}
+        {/* Este continua `aside`, e é o único dos quatro que continua.
+
+            Aqui o conteúdo É complementar de verdade: o assunto da janela é o
+            cadastro, e o histórico é apoio para quem está decidindo sobre ele
+            — exatamente o caso que o marco `complementary` descreve.
+
+            O que faltava era o NOME. Marco sem nome numa lista de marcos é uma
+            linha escrita "complementar", que não ajuda a escolher. O nome sai
+            do próprio `<h3>` que já está na tela, por `aria-labelledby`, para
+            não existirem duas fontes do mesmo texto. */}
         {mostrarHistorico && usuario && (
-          <aside className="lg:border-l lg:border-borda lg:pl-5">
-            <Rotulo como="h3" className="mb-1 block">
+          <aside
+            aria-labelledby="historico-da-conta"
+            className="lg:border-l lg:border-borda lg:pl-5"
+          >
+            <Rotulo id="historico-da-conta" como="h3" className="mb-1 block">
               Histórico da conta
             </Rotulo>
             <HistoricoDaConta usuarioId={usuario.id} />

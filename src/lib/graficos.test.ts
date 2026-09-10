@@ -5,7 +5,6 @@ import {
   corDaPrioridade,
   corDaSerie,
   corDoStatus,
-  estiloDoGrafico,
   paletaCategorica,
 } from './graficos';
 
@@ -109,29 +108,5 @@ describe('paleta categórica', () => {
     // a categoria.
     expect(corDaSerie(1, false)).toBe(CATEGORICA_CLARA[1]);
     expect(corDaSerie(1, true)).toBe(CATEGORICA_ESCURA[1]);
-  });
-});
-
-describe('estiloDoGrafico', () => {
-  it('muda de valores entre os temas', () => {
-    const claro = estiloDoGrafico(false);
-    const escuro = estiloDoGrafico(true);
-
-    expect(claro.grade).not.toBe(escuro.grade);
-    expect(claro.texto).not.toBe(escuro.texto);
-    expect(claro.dica.backgroundColor).not.toBe(escuro.dica.backgroundColor);
-  });
-
-  it('a dica acompanha o canto do resto da interface', () => {
-    // A dica é desenhada pelo Recharts em estilo inline, fora do alcance do
-    // Tailwind — o canto do resto da interface precisa ser dito aqui, à mão.
-    //
-    // Já exigiu `0px`, enquanto a escala de `borderRadius` do sistema era
-    // zerada. A escala voltou ao padrão para acompanhar o HelpHS, e `8px` é o
-    // `rounded-lg` que card, campo e botão usam. O motivo do teste não mudou:
-    // este é o único lugar do sistema onde o canto não vem do Tailwind, e
-    // portanto o único que fica para trás sem ninguém perceber.
-    expect(estiloDoGrafico(false).dica.borderRadius).toBe('8px');
-    expect(estiloDoGrafico(true).dica.borderRadius).toBe('8px');
   });
 });

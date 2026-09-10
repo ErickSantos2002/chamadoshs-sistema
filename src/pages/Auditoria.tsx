@@ -229,7 +229,7 @@ const Auditoria: React.FC = () => {
               value={de}
               onChange={(e) => aoFiltrar(() => setDe(e.target.value))}
               className="w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm text-conteudo
-                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
+                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
             />
           </div>
 
@@ -241,7 +241,7 @@ const Auditoria: React.FC = () => {
               value={ate}
               onChange={(e) => aoFiltrar(() => setAte(e.target.value))}
               className="w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm text-conteudo
-                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
+                         transition-colors hover:border-conteudo-tenue focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
             />
           </div>
         </div>
@@ -311,6 +311,7 @@ const Auditoria: React.FC = () => {
               <tr>
                 {['Quando', 'Quem', 'O quê', 'Cadastro', 'Origem'].map((coluna) => (
                   <th
+                    scope="col"
                     key={coluna}
                     className="border-b border-borda px-4 py-3 text-left text-xs font-medium text-conteudo-suave"
                   >
@@ -342,7 +343,7 @@ const Auditoria: React.FC = () => {
                     <td className="px-4 py-3 align-top">
                       {/* Pastilha de metadado: o tipo do cadastro é dado sobre a
                           linha, não título de seção — `Rotulo` é rótulo de seção. */}
-                      <span className="inline-block rounded bg-superficie-elevada px-2 py-0.5 text-[11px] text-conteudo-tenue">
+                      <span className="inline-block rounded bg-superficie-elevada px-2 py-0.5 text-xs text-conteudo-tenue">
                         {NOME_DO_ALVO[evento.alvo_tipo] ?? evento.alvo_tipo}
                       </span>
                       <span className="mt-1 block text-conteudo">

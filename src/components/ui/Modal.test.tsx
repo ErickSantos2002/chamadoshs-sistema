@@ -121,3 +121,94 @@ describe('Modal — fechar pelo teclado', () => {
     expect(aoFechar).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * A armadilha de foco.
+ *
+ * O docblock do `Modal` afirmava que ela existia — "o foco vai para dentro ao
+ * abrir e volta para quem abriu ao fechar; sem isso o Tab continua andando
+ * pela página atrás do modal" — e o código só fazia as duas pontas. Não havia
+ * ciclo: bastavam alguns Tabs para o foco sair do painel e passear pela página
+ * atrás do véu, invisível, enquanto `aria-modal="true"` dizia ao leitor de
+ * tela que nada mais existia.
+ *
+ * É o pior tipo de defeito de acessibilidade, porque o comentário afirma que
+ * está resolvido e ninguém volta para conferir. Este arquivo passa a conferir.
+ */
+describe('Modal — armadilha de foco', () => {
+  /** Um Tab de verdade, no elemento que está com o foco. */
+  const tab = (shift = false) => {
+    act(() => {
+      document.activeElement!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', shiftKey: shift, bubbles: true })
+      );
+    });
+  };
+
+  const focaveis = () =>
+    Array.from(
+      painel().querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled])')
+    );
+
+  it('Tab no último volta para o primeiro, em vez de sair do modal', () => {
+    montar();
+
+    const lista = focaveis();
+    expect(lista.length).toBeGreaterThan(1);
+
+    const ultimo = lista[lista.length - 1];
+    act(() => ultimo.focus());
+    expect(document.activeElement).toBe(ultimo);
+
+    tab();
+    expect(document.activeElement).toBe(lista[0]);
+  });
+
+  it('Shift+Tab no primeiro vai para o último', () => {
+    montar();
+
+    const lista = focaveis();
+    const primeiro = lista[0];
+    act(() => primeiro.focus());
+
+    tab(true);
+    expect(document.activeElement).toBe(lista[lista.length - 1]);
+  });
+
+  it('Tab no meio não é interceptado — o navegador continua mandando', () => {
+    montar({
+      children: (
+        <>
+          <input aria-label="Um" />
+          <input aria-label="Dois" />
+        </>
+      ),
+    });
+
+    const lista = focaveis();
+    const meio = lista[0];
+    act(() => meio.focus());
+
+    tab();
+    // Sem `preventDefault`, o jsdom não move o foco sozinho: o que se verifica
+    // é justamente que a armadilha NÃO mexeu. Prender o Tab no meio quebraria
+    // a navegação normal dentro do formulário.
+    expect(document.activeElement).toBe(meio);
+  });
+
+  it('não prende quando o foco está fora do painel', () => {
+    montar();
+
+    // É o caso real da lista do `Seletor`, que vive num portal em
+    // `document.body`, fora do painel. Puxar o foco de volta ali fecharia a
+    // lista no primeiro Tab de quem está escolhendo uma opção.
+    const fora = document.createElement('button');
+    document.body.appendChild(fora);
+    act(() => fora.focus());
+
+    tab();
+    expect(document.activeElement).toBe(fora);
+
+    fora.remove();
+  });
+});

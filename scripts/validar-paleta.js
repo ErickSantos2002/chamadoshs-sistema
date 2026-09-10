@@ -31,6 +31,33 @@
  *    três formas de daltonismo. Duas categorias vizinhas com a mesma
  *    aparência não são uma paleta, são uma cor só.
  *
+ * 4. Que ninguém escreva modificador de opacidade sobre um token que JÁ tem
+ *    alfa próprio — a regra (a′) do D8-a. É o mesmo modo de falha das outras
+ *    três: não quebra nada, só fica errado na tela.
+ *
+ * 5. Que nenhum nome acessível APAGUE o conteúdo visível do elemento —
+ *    `aria-label` num gatilho de combobox, num botão com rótulo escrito. Ver a
+ *    nota da seção própria, mais abaixo.
+ *
+ * 6. Que a ponte do D3-a não divirja do pacote. Ela declara os tokens em
+ *    canais `R G B` porque o Tailwind exige isso para o modificador de
+ *    opacidade, e por isso o valor existe DUAS vezes. Quando as duas cópias
+ *    divergem, os seis hashes de token continuam batendo e a tela pinta o
+ *    valor antigo — aconteceu na E14, e a ponte ficou uma tarde atrás.
+ *
+ * ── Uma observação sobre o nome deste arquivo ─────────────────────────
+ *
+ * Ele já não valida só paleta: o item 4 é sobre classe do Tailwind e o 5 é
+ * sobre nome acessível. O que os cinco têm em comum não é cor — é o **modo de
+ * falha**: nenhum deles quebra teste, tipo ou build, e todos ficam errados na
+ * tela ou no leitor de tela sem avisar ninguém.
+ *
+ * O nome ficou porque renomear mexe no `package.json`, no `paleta.test.ts` e
+ * em toda referência escrita nos relatórios das quinze fases. Fica anotado
+ * como dívida pequena, e não desfeita de passagem: renomear um arquivo que
+ * quinze documentos citam é o tipo de arrumação que se faz de propósito ou não
+ * se faz.
+ *
  * A simulação usa as matrizes de Machado, Oliveira e Fernandes (2009),
  * aplicadas em RGB linear. A distância é ΔE*ab (CIE76) em Lab D65 — mais
  * grosseira que a CIEDE2000, e escolhida por isso: o limiar fica folgado o
@@ -45,6 +72,26 @@ const path = require('node:path');
 const RAIZ = path.join(__dirname, '..');
 const CSS = path.join(RAIZ, 'src', 'styles', 'index.css');
 const GRAFICOS = path.join(RAIZ, 'src', 'lib', 'graficos.ts');
+const FONTE = path.join(RAIZ, 'src');
+
+/**
+ * Os sete tokens do pacote que JÁ carregam alfa próprio.
+ *
+ * Neles o `color-mix` do `tailwind.config.js` compõe em cima do que existe, e
+ * o modificador MULTIPLICA em vez de definir: `bg-tint-danger/10` sai em alfa
+ * 0,015, não 0,10 — praticamente invisível. Medido no Chrome.
+ *
+ * `tint-neutral` NÃO entra: é `var(--surface-elevated)`, opaco nos dois temas.
+ */
+const COM_ALFA = [
+  'overlay',
+  'action-tint',
+  'tint-primary',
+  'tint-success',
+  'tint-danger',
+  'tint-warning',
+  'tint-info',
+];
 
 /** Piso de contraste para texto (WCAG 2.1 AA). */
 const PISO_TEXTO = 4.5;
@@ -250,6 +297,1496 @@ function exigirSeparacao(rotulo, cores) {
   ruins.forEach((r) => linhas.push(`         ${r}`));
 }
 
+/**
+ * Regra (a′) do D8-a: modificador de opacidade nunca vai nos sete acima.
+ *
+ * ── Por que isto é um teste e não uma convenção ───────────────────────
+ *
+ * A armadilha é que a sintaxe é IDÊNTICA à que funciona. `bg-perigo/10` vem
+ * da ponte em canais `R G B` e DEFINE o alfa em 0,10; `bg-tint-danger/10` vem
+ * do `color-mix` e MULTIPLICA, dando 0,015. Escritas lado a lado, ninguém vê
+ * diferença — e as duas convivem dentro da mesma chave do `tailwind.config`.
+ *
+ * Quem escrever isso não recebe erro de lint, de tipo, de teste nem de build.
+ * Recebe um selo com fundo invisível, e o conserto intuitivo — subir para /20,
+ * /30, /50 — continua multiplicando e nunca chega nos 15% do pacote.
+ *
+ * Esses sete já SÃO "a cor a 15%". Para outra opacidade, use a cor cheia.
+ */
+function exigirSemModificadorDeOpacidade() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        // A cópia do pacote não é código nosso, e não escreve classe do
+        // Tailwind — varrê-la só traria ruído.
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.(tsx?|css|html)$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  // `bg-tint-danger/10`, `hover:bg-overlay/50`, `bg-action-tint/[.15]` — o que
+  // importa é o nome do token seguido de barra. O prefixo de variante não
+  // muda nada, então nem entra no padrão.
+  const alvo = new RegExp(
+    '[a-z-]+-(' + COM_ALFA.join('|') + ')/(\\[[^\\]]+\\]|[0-9]+)',
+    'g'
+  );
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const conteudo = fs.readFileSync(arquivo, 'utf8');
+    conteudo.split('\n').forEach((linha, i) => {
+      for (const m of linha.match(alvo) ?? []) {
+        const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+        achados.push(`${rel}:${i + 1}  ${m}`);
+      }
+    });
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `modificador de opacidade em token que já tem alfa (regra a′ do D8-a): ` +
+        `${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== regra (a′) — modificador de opacidade nos ${COM_ALFA.length} tokens com alfa ===` +
+      `\n  ${arquivos.length} arquivos varridos, ${achados.length} ocorrência(s)`
+  );
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// A ponte do D3-a contra o pacote — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * A ponte é uma segunda fonte de verdade, e por isso precisa de guarda.
+ *
+ * `src/styles/index.css` declara os tokens em português no formato de três
+ * canais `R G B`, porque o Tailwind exige isso para aplicar o modificador de
+ * opacidade — `rgb(#2a4463 / 0.3)` não é CSS válido. É o desvio D3-a — aprovado e,
+ * desde 09/09/2026, **PERMANENTE**.
+ *
+ * ── A ponte deixou de ser temporária, e isso muda o papel desta catraca ─
+ *
+ * Enquanto a ponte era desvio com data, esta catraca guardava um arranjo que
+ * ia sair. **Ela agora guarda um arranjo que fica**, e por isso passa a ser
+ * permanente também — não é andáime.
+ *
+ * Os três motivos estão no `DECISOES.md`; o que importa aqui é o terceiro,
+ * porque é sobre este arquivo: **a ponte deixou de ser ponto fraco exatamente
+ * porque esta catraca existe.** Tirá-la devolveria a ponte à condição em que
+ * ela esteve dois valores atrás por uma tarde, com os seis hashes batendo.
+ *
+ * E a regra que a decisão registrou vale para qualquer coisa que se descreva
+ * como temporária em comentário: **temporário sem data é permanente sem
+ * registro.** Esta linha dizia "temporário" havia quinze fases.
+ *
+ * O preço é que **o valor existe duas vezes**: em hexadecimal no pacote e em
+ * canais aqui. E o modo de falha é o pior possível — os dois arquivos ficam
+ * sintaticamente perfeitos, o `Compare-Object` dos seis arquivos de token dá
+ * "sem diferença", e a tela pinta o valor antigo.
+ *
+ * Aconteceu em 04/09/2026, na recópia da E14: os seis hashes bateram com o
+ * pacote e **nada mudaria de cor**, porque `--borda` e `--borda-suave` ficaram
+ * nos valores pré-emenda. A ponte esteve dois valores atrás por uma tarde. E o
+ * comentário da própria linha documentava o defeito que a emenda conserta —
+ * `#132238 — = superfície` —, escrito e não lido.
+ *
+ * Já tinha acontecido uma vez, na E5, e a lição foi anotada e não instrumentada.
+ * Esta é a instrumentação.
+ *
+ * ── O mapa sai do COMENTÁRIO, e isso é deliberado ───────────────────
+ *
+ * Cada linha da ponte já nomeia o token de origem:
+ *
+ *     --borda: 42 68 99;    // --border-color   #2A4463
+ *
+ * A checagem lê o NOME do token no comentário, resolve esse token no pacote e
+ * compara o valor. O hexadecimal escrito no comentário é ignorado de propósito:
+ * ele é anotação, e se a checagem confiasse nele bastaria alguém atualizar os
+ * dois lados errado para tudo passar. Assim o pacote continua sendo a única
+ * fonte, e o comentário só diz ONDE olhar.
+ */
+/** Os `--nome: valor;` de um bloco, sem entrar nos blocos vizinhos. */
+function blocoDe(css, seletor) {
+  const i = css.indexOf(seletor + ' {');
+  if (i === -1) throw new Error(`bloco "${seletor}" não encontrado`);
+  // Conta chaves para não parar no primeiro `}` de uma regra aninhada.
+  let nivel = 0;
+  let j = css.indexOf('{', i);
+  const abre = j;
+  for (; j < css.length; j++) {
+    if (css[j] === '{') nivel++;
+    else if (css[j] === '}' && --nivel === 0) break;
+  }
+  return css.slice(abre, j);
+}
+
+function declaracoes(bloco) {
+  const m = {};
+  for (const [, nome, valor] of bloco.matchAll(/--([\w-]+):\s*([^;]+);/g)) {
+    m['--' + nome] = valor.trim();
+  }
+  return m;
+}
+
+/**
+ * Resolve um token do pacote a RGB, seguindo `var()` e caindo no `:root`.
+ *
+ * A queda para o `:root` NÃO é conveniência: é o que a cascata do CSS faz. Os
+ * degraus da rampa (`--color-danger-500`) e as cores de significado vivem só no
+ * `:root` de propósito — rampa não tem tema, e o `.dark` troca qual degrau um
+ * alias aponta, nunca o valor do degrau. Sem a queda, metade dos pares do tema
+ * escuro seria acusada de "não resolve".
+ */
+function resolverDoPacote(PACOTE, nome, tema, saltos = 0) {
+  if (saltos > 8) return null;
+  const valor = PACOTE[tema][nome] ?? PACOTE[':root'][nome];
+  if (!valor) return null;
+  const v = valor.trim();
+  if (v.startsWith('#')) return doHex(v);
+  const ref = /^var\(\s*(--[\w-]+)\s*\)$/.exec(v);
+  if (ref) return resolverDoPacote(PACOTE, ref[1], tema, saltos + 1);
+  return null;
+}
+
+/** O pacote lido em dois blocos, pronto para `resolverDoPacote`. */
+function pacoteDeTokens(css) {
+  return {
+    ':root': declaracoes(blocoDe(css, ':root')),
+    '.dark': declaracoes(blocoDe(css, '.dark')),
+  };
+}
+
+function exigirPonteFiel() {
+  const ponte = fs.readFileSync(CSS, 'utf8');
+  const PACOTE = pacoteDeTokens(
+    fs.readFileSync(
+      path.join(RAIZ, 'src', 'design-system', 'tokens', 'colors.css'),
+      'utf8'
+    )
+  );
+  const resolver = (nome, tema) => resolverDoPacote(PACOTE, nome, tema);
+
+  const achados = [];
+  let conferidos = 0;
+
+  for (const [seletor, tema] of [[':root', ':root'], ['.dark', '.dark']]) {
+    const bloco = blocoDe(ponte, seletor);
+    // `--nome: R G B;` seguido do comentário que nomeia a origem.
+    for (const [, pt, r, g, b, pkg] of bloco.matchAll(
+      /--([\w-]+):\s*(\d+)\s+(\d+)\s+(\d+);[^\n]*?\/\*\s*(--[\w-]+)/g
+    )) {
+      conferidos++;
+      const esperado = resolver(pkg, tema);
+      const daPonte = [+r, +g, +b];
+
+      if (!esperado) {
+        achados.push(
+          `${seletor}  --${pt}  aponta para ${pkg}, que não resolve a cor no pacote`
+        );
+        continue;
+      }
+      if (esperado.join(' ') !== daPonte.join(' ')) {
+        achados.push(
+          `${seletor}  --${pt}: ponte ${daPonte.join(' ')} (${paraHex(daPonte)})` +
+            `  !=  ${pkg} ${esperado.join(' ')} (${paraHex(esperado)})`
+        );
+      }
+    }
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `a ponte do D3-a divergiu do pacote: ${achados.length} par(es)\n      ` +
+        achados.join('\n      ') +
+        `\n\n      A ponte NÃO acompanha a recópia sozinha. Corrija os canais` +
+        `\n      em src/styles/index.css com o valor do token do pacote.`
+    );
+  }
+  linhas.push(
+    `\n=== catraca — a ponte do D3-a contra o pacote ===` +
+      `\n  ${conferidos} par(es) conferidos, ${achados.length} divergência(s)`
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Nome acessível que APAGA o conteúdo visível — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * `aria-label` e `aria-labelledby` não somam ao conteúdo do elemento:
+ * **substituem**. Quando o conteúdo visível É a informação, isso a apaga.
+ *
+ * O caso que originou a regra: o gatilho do `Seletor` tinha
+ * `aria-label={rotulo}` e mostrava "Em Andamento" na tela enquanto anunciava
+ * só "Status, caixa de combinação". A escolha atual — a única informação que
+ * o controle carrega — não existia no canal não visual, em onze telas.
+ *
+ * A WCAG 2.5.3 (Label in Name) diz o mesmo pelo outro lado: o nome acessível
+ * precisa CONTER o rótulo visível.
+ *
+ * ── Duas regras, e a primeira é absoluta ────────────────────────────
+ *
+ * **(c1) `role="combobox"` nunca leva `aria-label`.** Sem exceção. O conteúdo
+ * de um gatilho de combobox é, por definição, o valor escolhido. Se ele tem
+ * rótulo, o rótulo se referencia por `aria-labelledby` — e junto com o id do
+ * próprio gatilho, como faz o padrão do APG, para o nome ficar "Status, Em
+ * Andamento".
+ *
+ * **(c2) Elemento interativo com `aria-label` literal não pode ter texto
+ * estático que não caiba nesse rótulo.** Aqui há exceções legítimas, e elas
+ * ficam na lista abaixo, com motivo escrito.
+ *
+ * ── O que esta varredura NÃO enxerga, e é deliberado ────────────────
+ *
+ * `aria-label={expressao}` com valor calculado fica de fora da (c2): não dá
+ * para saber, sem rodar, se `{`Ver detalhes do chamado ${p}`}` contém o texto
+ * visível "Ver detalhes" — e contém. Numa catraca, **deixar passar é erro e
+ * inventar par é sabotagem da confiança na ferramenta**: entre os dois, a
+ * escolha é não acusar o que não dá para provar.
+ *
+ * Texto vindo de expressão fica de fora pelo mesmo motivo: `{titulo}` pode ser
+ * qualquer coisa. Só o texto ESTÁTICO é lido — mas o da subárvore inteira, e
+ * não só o dos filhos diretos, porque é isso que `aria-label` apaga.
+ *
+ * O limite fica escrito porque uma catraca que não diz o que não vê é lida
+ * como se visse tudo.
+ */
+
+/** Papéis cujo conteúdo visível é lido e acionado por quem vê. */
+const PAPEIS_DE_WIDGET = new Set([
+  'combobox',
+  'button',
+  'link',
+  'tab',
+  'menuitem',
+  'menuitemcheckbox',
+  'menuitemradio',
+  'switch',
+  'checkbox',
+  'radio',
+  'option',
+]);
+
+/**
+ * As exceções da (c2), com motivo escrito.
+ *
+ * Vazia de propósito, e é isto que a torna uma catraca: se um dia entrar uma
+ * linha aqui, ela carrega o porquê, e quem vier depois discute o motivo em vez
+ * de descobrir uma lista de silêncios.
+ */
+const NOMES_CONHECIDOS = new Map([]);
+
+/**
+ * Todo o texto estático DENTRO da tag aberta em `fim`, inclusive o que está em
+ * elementos-filhos.
+ *
+ * Descendente, e não só filho direto, porque é o que `aria-label` apaga: a
+ * substituição vale para a subárvore inteira. Um `<button aria-label="Salvar">`
+ * com `<span>Publicar</span>` dentro anuncia "Salvar", e "Publicar" some.
+ */
+function textoVisivelDe(conteudo, fim, tag) {
+  const abre = new RegExp(`<${tag}(?=[\\s/>])`, 'g');
+  const fecha = new RegExp(`</${tag}\\s*>`, 'g');
+
+  // Onde este elemento termina, contando aninhamento da MESMA tag — o mesmo
+  // cuidado que `ramosDoTemplate` tem com chaves (armadilha 8).
+  let profundidade = 1;
+  let i = fim;
+  while (i < conteudo.length && profundidade > 0) {
+    abre.lastIndex = i;
+    fecha.lastIndex = i;
+    const a = abre.exec(conteudo);
+    const f = fecha.exec(conteudo);
+    if (!f) return '';
+    if (a && a.index < f.index) {
+      profundidade += 1;
+      i = a.index + 1;
+    } else {
+      profundidade -= 1;
+      i = f.index + (profundidade === 0 ? 0 : 1);
+    }
+  }
+  const dentro = conteudo.slice(fim, i);
+
+  // Fora as tags aninhadas e as interpolações. As chaves são contadas, e não
+  // casadas por regex: `{cn({ a }, 'b')}` tem chave dentro de chave.
+  let limpo = '';
+  let chaves = 0;
+  let emTag = false;
+  for (const c of dentro) {
+    if (chaves === 0 && !emTag && c === '<') emTag = true;
+    else if (emTag && c === '>') emTag = false;
+    else if (!emTag && c === '{') chaves += 1;
+    else if (!emTag && c === '}') chaves = Math.max(0, chaves - 1);
+    else if (!emTag && chaves === 0) limpo += c;
+  }
+  return limpo.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Os achados de UM arquivo, a partir do texto dele.
+ *
+ * Separada da varredura de propósito: assim os casos de prova a dirigem por
+ * string, sem plantar arquivo em `src/` — o que, aqui, seria fatal. A
+ * varredura lê todo `.tsx` que não é teste, então uma amostra com um defeito
+ * plantado faria a catraca reprovar para sempre. É a mesma razão pela qual os
+ * casos de `ramosDoTemplate` não viraram fixture.
+ */
+function achadosDeNome(conteudo, rel) {
+  const achados = [];
+
+  // Cada tag de abertura, com os atributos dela.
+  for (const m of conteudo.matchAll(/<([a-zA-Z][\w.]*)((?:[^<>{}]|\{[^{}]*\})*?)>/g)) {
+    const [inteiro, tag, atributos] = m;
+    const linha = conteudo.slice(0, m.index).split('\n').length;
+    const papel = /\brole="([a-z]+)"/.exec(atributos)?.[1];
+    const temLabel = /\baria-label[=\s]/.test(atributos);
+
+    // (c1) — absoluta.
+    if (papel === 'combobox' && temLabel) {
+      achados.push(
+        `${rel}:${linha}  role="combobox" com aria-label — o valor escolhido some do nome`
+      );
+      continue;
+    }
+
+    // (c2) — só com rótulo LITERAL, e só em elemento interativo.
+    const literal = /\baria-label="([^"]*)"/.exec(atributos)?.[1];
+    const interativo =
+      tag === 'button' || tag === 'a' || (papel && PAPEIS_DE_WIDGET.has(papel));
+    if (!literal || !interativo || inteiro.endsWith('/>')) continue;
+
+    const texto = textoVisivelDe(conteudo, m.index + inteiro.length, tag);
+    if (!/[A-Za-zÀ-ÿ]/.test(texto)) continue;
+    if (literal.toLowerCase().includes(texto.toLowerCase())) continue;
+
+    const chave = `${rel}:${linha}`;
+    if (NOMES_CONHECIDOS.has(chave)) continue;
+    achados.push(
+      `${chave}  <${tag} aria-label="${literal}"> apaga o texto visível "${texto}"`
+    );
+  }
+
+  return achados;
+}
+
+function exigirNomeQueNaoApagaConteudo() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx$/.test(nome) && !/\.test\.tsx$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(...achadosDeNome(fs.readFileSync(arquivo, 'utf8'), rel));
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `nome acessível apagando conteúdo visível: ${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — nome acessível que apaga o conteúdo visível ===` +
+      `\n  ${arquivos.length} arquivos varridos, ${achados.length} ocorrência(s), ` +
+      `${NOMES_CONHECIDOS.size} exceção(ões) escrita(s)`
+  );
+}
+
+
+
+
+// ──────────────────────────────────────────────────────────────────────
+// A cor da série vira TEXTO dentro da dica — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Todo `<Tooltip>` desenha com a dica PRÓPRIA, e nunca com a do Recharts.
+ *
+ * ── O defeito que isto impede de voltar ──────────────────────────────
+ *
+ * A dica padrão do Recharts pinta cada item **na cor da série**. Conferido na
+ * fonte instalada, `recharts/lib/component/DefaultTooltipContent.js` linha 70:
+ *
+ *     color: entry.color || '#000'
+ *
+ * A paleta é certificada como FORMA, piso 3:1 contra o card. Dentro da dica ela
+ * vira TEXTO, piso 4,5:1 — e **doze das treze reprovavam**: cinco no claro,
+ * sete no escuro, a pior a 2,93. Papel novo não herda piso antigo.
+ *
+ * ── Por que a catraca é sobre a PRESENÇA, e não sobre a cor ──────────
+ *
+ * O conserto é o `content={<DicaDoGrafico />}`. Medir cor aqui não guardaria
+ * nada: a dica própria usa classe, e o valor certo já está garantido pelos
+ * tokens. O que pode dar errado é alguém **remover** o `content` — e aí o
+ * Recharts volta a desenhar a dica dele, com o defeito inteiro de volta, sem
+ * que nenhuma medição de cor perceba.
+ *
+ * Foi exigência do operador, e a razão dele é a que vale: uma linha de base de
+ * doze seria MEDIÇÃO, não guarda. Guarda é isto.
+ */
+function achadosDeDicaSemDono(bruto, rel) {
+  const achados = [];
+  // SEM COMENTÁRIO, e isso foi correção de 09/09/2026.
+  //
+  // A versão anterior varria o arquivo cru, e casava a marca do componente
+  // **dentro de comentário**. Um bloco que explicava, em prosa, por que
+  // `inert` estava errado — citando o componente pelo nome — foi acusado de
+  // ser um uso sem dica própria.
+  //
+  // É a família do delimitador dentro do conteúdo, aqui no próprio validador:
+  // o padrão casa mais coisa do que quem o escreveu tinha em mente. E o dano
+  // é o pior tipo de falso positivo — **catraca que reprova quem documentou**.
+  //
+  // `semComentario` preserva a contagem de linhas, então o número reportado
+  // continua apontando para a linha certa.
+  const conteudo = semComentario(bruto);
+  for (const m of conteudo.matchAll(/<Tooltip\b/g)) {
+    const fim = fimDaTag(conteudo, m.index + m[0].length);
+    if (fim === -1) continue;
+    const atributos = conteudo.slice(m.index + m[0].length, fim);
+    if (atributos.includes('content=\{<DicaDoGrafico')) continue;
+    const linha = conteudo.slice(0, m.index).split('\n').length;
+    achados.push(
+      `${rel}:${linha}  <Tooltip> sem content={<DicaDoGrafico />}: o Recharts ` +
+        `desenha a dica dele, e lá a cor da série vira TEXTO`
+    );
+  }
+  return achados;
+}
+
+function exigirDicaPropria() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx$/.test(nome) && !/\.test\.tsx$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  let tooltips = 0;
+  for (const arquivo of arquivos) {
+    // A CONTAGEM sai do mesmo texto que a verificação, e não do cru.
+    //
+    // Por um instante ela saiu do cru enquanto o detector já lia o limpo, e a
+    // catraca imprimiu "4 encontrados, 0 sem dica" com três usos reais — o
+    // quarto era a marca citada em comentário. **Número impresso que discorda
+    // do número verificado é a mesma família de sempre**, e num instrumento cujo
+    // trabalho é justamente não mentir sobre o que viu.
+    const conteudo = semComentario(fs.readFileSync(arquivo, 'utf8'));
+    tooltips += [...conteudo.matchAll(/<Tooltip\b/g)].length;
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(...achadosDeDicaSemDono(conteudo, rel));
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `<Tooltip> desenhando com a dica do Recharts: ${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — a dica do gráfico é a nossa ===` +
+      `\n  ${tooltips} <Tooltip> encontrado(s), ${achados.length} sem dica própria`
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// A moldura do gráfico, fiel ao token que ela nomeia — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * A cópia de tokens do `graficos.ts` foi a ZERO, e esta catraca guarda contra
+ * ela VOLTAR.
+ *
+ * ── O texto mudou junto com o que ela faz ────────────────────────────
+ *
+ * Ela nasceu como MURO: existia porque a cópia existia, e conferia se cada
+ * hexadecimal ainda batia com o token que o comentário ao lado nomeava. Achou
+ * duas divergências no dia em que foi escrita — `grade` e a borda da dica,
+ * paradas no valor pré-E14.
+ *
+ * Agora não há cópia. A dica virou `DicaDoGrafico`, que é HTML e lê token por
+ * classe; a grade e o rótulo das marcas viraram três regras em `index.css`,
+ * porque atributo de apresentação perde para regra CSS — medido no Chrome 153 e
+ * em jsdom, e preso em `graficos-css.test.tsx`.
+ *
+ * Então ela é REDE: não há mais o que divergir, e o que ela impede é alguém
+ * reintroduzir a cópia sem perceber que existe outro caminho.
+ *
+ * **Catraca cujo texto descreve o que ela guardava antes é a família da semana
+ * inteira** — a afirmação e a coisa se descolando. Por isso o texto mudou no
+ * mesmo commit que a função.
+ *
+ * ── O que conta como cópia, e a correção de 09/09/2026 ───────────
+ *
+ * **O que estava escrito aqui era falso, e falso do jeito mais caro.** O texto
+ * dizia que `CATEGORICA_*`, `STATUS_*` e `PRIORIDADE_*` são cor própria "e não
+ * cópia de token nenhum", e que "o que as distingue é justamente não nomearem
+ * token de origem".
+ *
+ * `CATEGORICA_CLARA` e `CATEGORICA_ESCURA` são **cópia literal de `--chart-1` a
+ * `--chart-5`, nos dois temas** — dez valores idênticos, no arquivo que esta
+ * catraca lia. Ela imprimia `0 linha(s)`.
+ *
+ * O defeito não é trava fraca: é trava que **afirma o contrário do que mede**.
+ * O nome dela — "a cópia de token não voltou" — é asserção forte sobre algo que
+ * ela nunca verificou, porque só sabia ler COMENTÁRIO. **Não nomear o token de
+ * origem nunca foi prova de não ser cópia; é só a cópia sem etiqueta.**
+ *
+ * ── Por que são DOIS detectores, e nenhum basta sozinho ──────────
+ *
+ * **Por VALOR:** hexadecimal igual ao de um token do pacote, resolvido. Pega a
+ * cópia fiel — que é justamente a que o comentário não denuncia.
+ *
+ * **Por COMENTÁRIO:** hexadecimal com `--token` anotado ao lado. Continua, e não
+ * é redundância: **a cópia que DERIVOU não bate mais por valor.** Era esse o
+ * defeito da E14 — o token subiu, a cópia não, e a partir daquele instante o
+ * detector por valor teria ficado mudo. O comentário é o que sobra da intenção
+ * depois que o valor mente.
+ *
+ * Um pega a cópia fiel, o outro a infiel. A correção ACRESCENTA em vez de
+ * trocar, e é por isso.
+ *
+ * ── Onde ela PARA ──────────────────────────────────
+ *
+ * Varre `src` em `.ts` e `.tsx`, fora de `design-system/` — que é a cópia do
+ * pacote, não código nosso — e fora de `*.test.*`, onde afirmar o valor de um
+ * token é o trabalho do caso. CSS não entra: a ponte do D3-a tem catraca
+ * própria, que já compara os 32 pares contra o pacote.
+ *
+ * O detector por valor lê o texto SEM comentário. Hexadecimal citado em prosa
+ * — `--fill-success` (#059669) sobe para 3,77 — é medição registrada, não uso,
+ * e acusá-la seria a catraca cobrando de quem documentou.
+ */
+/**
+ * O pacote indexado por VALOR, que é a forma que a cópia tem na tela.
+ *
+ * Por valor e não por nome porque a cópia não carrega o nome — se carregasse,
+ * não seria difícil de achar. Resolve `var()` antes de indexar, de modo que
+ * cópia de alias (`--fill-success`) conta igual a cópia de degrau.
+ */
+function indiceDoPacote() {
+  const PACOTE = pacoteDeTokens(
+    fs.readFileSync(
+      path.join(RAIZ, 'src', 'design-system', 'tokens', 'colors.css'),
+      'utf8'
+    )
+  );
+  const indice = new Map();
+  for (const [seletor, tema] of [[':root', 'claro'], ['.dark', 'escuro']]) {
+    for (const nome of Object.keys(PACOTE[seletor])) {
+      const rgb = resolverDoPacote(PACOTE, nome, seletor);
+      if (!rgb) continue;
+      const chave = paraHex(rgb).toLowerCase();
+      if (!indice.has(chave)) indice.set(chave, []);
+      const donos = indice.get(chave);
+      const rotulo = `${tema}:${nome}`;
+      if (!donos.includes(rotulo)) donos.push(rotulo);
+    }
+  }
+  return indice;
+}
+
+function achadosDeCopiaDeToken(conteudo, rel, indice) {
+  // Agrupa por linha para que uma linha que caia nos DOIS detectores apareça
+  // uma vez, com as duas razões — e não como dois achados, que se leriam como
+  // dois defeitos.
+  const porLinha = new Map();
+  const anotar = (i, razao) => {
+    const n = i + 1;
+    if (!porLinha.has(n)) porLinha.set(n, []);
+    const lista = porLinha.get(n);
+    if (!lista.includes(razao)) lista.push(razao);
+  };
+
+  semComentario(conteudo)
+    .split('\n')
+    .forEach((linha, i) => {
+      for (const m of linha.matchAll(/#[0-9a-fA-F]{6}\b/g)) {
+        const donos = indice.get(m[0].toLowerCase());
+        if (donos) anotar(i, `${m[0]} é o valor de ${donos.join(', ')}`);
+      }
+    });
+
+  conteudo.split('\n').forEach((linha, i) => {
+    if (linha.trim().startsWith('*')) return;
+    if (!/'#[0-9a-fA-F]{6}'/.test(linha)) return;
+    const corte = linha.indexOf('//');
+    if (corte === -1) return;
+    const token = /(--[a-z0-9-]+)/.exec(linha.slice(corte));
+    if (token) anotar(i, `${token[1]} anotado no comentário`);
+  });
+
+  return [...porLinha.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([n, razoes]) => ({
+      // A IDENTIDADE não leva número de linha, de propósito: linha se move a
+      // cada edição, e linha de base presa a número vira falso alarme na
+      // primeira reformatação.
+      identidade: `${rel}|${razoes.join(' + ')}`,
+      texto: `${rel}:${n}  ${razoes.join(' + ')} — cópia de token.`,
+    }));
+}
+
+/**
+ * As dez que a catraca encontrou ao nascer, congeladas.
+ *
+ * A `paletaCategorica` é cópia literal de `--chart-1` a `--chart-5` nos dois
+ * temas. **Não entram como exceção: entram como DÍVIDA declarada**, por decisão
+ * do operador — elas são o quarto lado do nó de cinco (gráfico, cartão, selo,
+ * paleta categórica, prioridade), e os cinco fecham juntos.
+ *
+ * A identidade NÃO leva número de linha: linha se move, e linha de base presa a
+ * número vira falso alarme na primeira reformatação. Uma cópia NOVA, mesmo no
+ * mesmo arquivo, tem identidade diferente e reprova — conferido por mutação.
+ */
+const BASE_DE_COPIA = new Set([
+  'src/lib/graficos.ts|#174E8C é o valor de claro:--chart-1',
+  'src/lib/graficos.ts|#91633B é o valor de claro:--chart-2',
+  'src/lib/graficos.ts|#1493A3 é o valor de claro:--chart-3',
+  'src/lib/graficos.ts|#981652 é o valor de claro:--chart-4',
+  'src/lib/graficos.ts|#8F4ADE é o valor de claro:--chart-5',
+  'src/lib/graficos.ts|#4E86C6 é o valor de escuro:--chart-1',
+  'src/lib/graficos.ts|#BC7638 é o valor de escuro:--chart-2',
+  'src/lib/graficos.ts|#2ED0E5 é o valor de escuro:--chart-3',
+  'src/lib/graficos.ts|#EE1178 é o valor de escuro:--chart-4',
+  'src/lib/graficos.ts|#9E53F3 é o valor de escuro:--chart-5',
+]);
+
+function exigirSemCopiaDeToken() {
+  const indice = indiceDoPacote();
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx?$/.test(nome) && !/\.test\.tsx?$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(
+      ...achadosDeCopiaDeToken(fs.readFileSync(arquivo, 'utf8'), rel, indice)
+    );
+  }
+
+  const novos = achados.filter((a) => !BASE_DE_COPIA.has(a.identidade));
+
+  if (novos.length) {
+    falhas.push(
+      `cópia de token: ${novos.length} linha(s) fora da linha de base\n      ` +
+        novos.map((a) => a.texto).join('\n      ')
+    );
+  }
+
+  linhas.push(
+    `\n=== catraca — hexadecimal igual a token do pacote, ou com token anotado ===` +
+      `\n  ${arquivos.length} arquivo(s) varrido(s), ${achados.length} linha(s), ` +
+      `linha de base ${BASE_DE_COPIA.size}` +
+      (achados.length ? `\n      ` + achados.map((a) => a.texto).join('\n      ') : '')
+  );
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// A semântica em força cheia: como TEXTO e como PREENCHIMENTO NU — catracas
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Duas chaves, escritas JUNTAS de propósito.
+ *
+ * ── Por que juntas ──────────────────────────────────────────────────
+ *
+ * Exigência do operador, e a razão é a tabela das catracas: o buraco do
+ * preenchimento nu não estava DENTRO de nenhuma catraca — estava **entre** a do
+ * fundo cheio com texto branco e a da cor cheia como texto. As duas corretas no
+ * escopo delas, e o defeito passando no meio.
+ *
+ * Escrever só a da dívida fecharia o item 1 **no papel** e deixaria o vão
+ * aberto no código. Então as duas saem no mesmo commit, e a fronteira entre
+ * elas fica declarada aqui em cima em vez de existir por omissão.
+ *
+ * ── A repartição, dita inteira ──────────────────────────────────────
+ *
+ *   bg-X com text-white por cima ....... exigirCatracaDeFundoCheio (já existia)
+ *   text-X como cor de texto ........... (1) exigirSemCorCheiaComoTexto
+ *   bg-X sem texto nenhum por cima ..... (2) exigirSemPreenchimentoNu
+ *
+ * ── (1) A cor cheia como TEXTO ──────────────────────────────────────
+ *
+ * As quatro cores de significado são fixas nos dois temas — declaradas só em
+ * `:root`, sem bloco `.dark` — porque "erro é vermelho nos dois". A
+ * consequência é que o contraste delas muda muito entre os temas, e um valor
+ * bom no escuro é péssimo no claro:
+ *
+ *     claro, pior das tres superficies:  perigo 3,44  info 3,36
+ *                                        sucesso 2,32  alerta 1,96
+ *
+ * Nenhuma alcança o piso de texto de 4,5:1 no claro. O substituto é o par
+ * `--on-tint-*`, medido sobre as TRÊS superfícies nos dois temas: pior **5,91**.
+ *
+ * ── (2) O preenchimento NU ──────────────────────────────────────────
+ *
+ * `bg-X` sem texto nenhum por cima — barra, ponto, marcador. A catraca do fundo
+ * cheio não o vê, porque ela exige `text-white` no mesmo conjunto de classes; a
+ * chave (1) também não, porque não há texto. O substituto é `--fill-*`, da E19.
+ *
+ * Está em ZERO hoje: os quatro sítios saíram no commit de higiene. A chave
+ * existe para que não voltem — e o vão que ela fecha foi previsto pela tabela,
+ * não descoberto por defeito.
+ */
+const SEMANTICAS_CHEIAS = ['sucesso', 'alerta', 'perigo', 'info'];
+
+/** Tira comentário antes de procurar classe. Prosa que cita classe não é uso. */
+function semComentario(conteudo) {
+  return conteudo
+    // Troca o comentário de bloco por QUEBRAS DE LINHA equivalentes, e não por
+    // um espaço. Com o espaço a contagem encolhe e o número de linha reportado
+    // vira ficção — a primeira versão desta chave mandava para `Campo.tsx:42`,
+    // que é comentário, quando o uso está na 99.
+    //
+    // Catraca que nomeia a linha errada é pior que catraca nenhuma: ela gasta
+    // a confiança de quem foi conferir e não achou nada.
+    .replace(/\/\*[\s\S]*?\*\//g, (bloco) => bloco.replace(/[^\n]/g, ''))
+    .split('\n')
+    .map((l) => {
+      const corte = l.indexOf('//');
+      return corte === -1 ? l : l.slice(0, corte);
+    })
+    .join('\n');
+}
+
+function achadosDeSemanticaCheia(conteudo, rel) {
+  const limpo = semComentario(conteudo);
+  const achados = [];
+  const grupo = SEMANTICAS_CHEIAS.join('|');
+
+  // (1) como TEXTO. Fronteira explícita dos dois lados: `text-perigo` e não
+  //     `text-perigo/10` nem `text-perigo-forte`. Foi assim que a contagem
+  //     errada de 39 virou a contagem certa.
+  // A fronteira ANTES e lookbehind, e nao `(?:^|\s)`.
+  //
+  // Classe quase nunca vem depois de espaco: vem depois de aspas, de crase,
+  // de `{`. E o regex morava dentro de uma STRING, onde `\s` e so `s` --
+  // a barra precisa ser dobrada. As duas coisas juntas fizeram esta chave
+  // devolver ZERO com treze usos no codigo, que e a mesma forma da primeira
+  // versao da catraca do rotulo.
+  const comoTexto = new RegExp('(?<![-\\w/:])((?:[\\w-]+:)*)text-(' + grupo + ')(?![-/\\w])', 'g');
+  for (const m of limpo.matchAll(comoTexto)) {
+    const linha = limpo.slice(0, m.index).split('\n').length;
+    achados.push(
+      `${rel}:${linha}  ${m[1]}text-${m[2]} — cor de significado como TEXTO. ` +
+        `Use text-on-tint-${{ sucesso: 'success', alerta: 'warning', perigo: 'danger', info: 'info' }[m[2]]}.`
+    );
+  }
+
+  // (2) preenchimento NU: `bg-X` ou `fill-X` de força cheia numa lista SEM
+  //     nenhum `text-*`.
+  //
+  //     `fill-` entra junto porque preenchimento de SVG é preenchimento. Ficou
+  //     de fora na primeira versão, e o defeito apareceu no mesmo dia: ao trocar
+  //     `text-alerta` por `text-on-tint-warning` na estrela da avaliação, o
+  //     `fill-alerta` ao lado ficou vivo, sem catraca nenhuma olhando. Vão
+  //     previsto pela tabela e encontrado antes de sair do commit.
+  //
+  //     A antiga:  `bg-X` de força cheia numa lista de classes SEM
+  //     nenhum `text-*`. Com `text-white` é a catraca do fundo cheio; com outro
+  //     texto, o par decide o contraste. Sem texto, ninguém olhava.
+  const comoFundo = new RegExp('(?<![-\\w/:])((?:[\\w-]+:)*)(bg|fill)-(' + grupo + ')(?![-/\\w])', 'g');
+  for (const m of limpo.matchAll(comoFundo)) {
+    // A lista de classes pode estar em aspa dupla, simples ou crase. Procurar
+    // so a dupla deixaria de fora `cn('bg-perigo', ...)`, que e a forma mais
+    // comum neste projeto.
+    const aspas = ['"', "'", '`'];
+    const ini = Math.max(...aspas.map((a) => limpo.lastIndexOf(a, m.index)));
+    const fins = aspas.map((a) => limpo.indexOf(a, m.index)).filter((x) => x !== -1);
+    const fim = fins.length ? Math.min(...fins) : -1;
+    const lista = ini === -1 || fim === -1 ? '' : limpo.slice(ini, fim);
+    // A dispensa por haver `text-*` na lista vale SÓ para `bg-`, onde o texto
+    // fica POR CIMA do fundo e o par decide o contraste.
+    //
+    // Para `fill-` ela não vale: ali o `text-*` ao lado é o contorno do mesmo
+    // ícone, e não texto sobreposto. Tratar os dois igual deixou o `fill-alerta`
+    // da estrela passar por ter um `text-on-tint-warning` ao lado — que é
+    // exatamente o vizinho, e não o alvo.
+    if (m[2] === 'bg' && /(?<![-\w/:])(?:[\w-]+:)*text-/.test(lista)) continue;
+    const linha = limpo.slice(0, m.index).split('\n').length;
+    const en = { sucesso: 'success', alerta: 'warning', perigo: 'danger', info: 'info' }[m[3]];
+    achados.push(
+      `${rel}:${linha}  ${m[1]}${m[2]}-${m[3]} sem texto por cima — preenchimento NU. ` +
+        `Use ${m[2]}-fill-${en}.`
+    );
+  }
+
+  return achados;
+}
+
+function exigirSemanticaNoPapelCerto() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx?$/.test(nome) && !/\.test\.tsx?$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(...achadosDeSemanticaCheia(fs.readFileSync(arquivo, 'utf8'), rel));
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `cor de significado em força cheia no papel errado: ${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — semântica em força cheia, como texto e como preenchimento nu ===` +
+      `\n  ${arquivos.length} arquivos varridos, ${achados.length} ocorrência(s)`
+  );
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// Função declarada duas vezes no próprio validador — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Nenhuma função deste arquivo pode estar declarada duas vezes.
+ *
+ * ── O que aconteceu, e por que nada acusou ───────────────────────────
+ *
+ * Uma edição que pretendia SUBSTITUIR um bloco acabou INSERINDO outro ao lado.
+ * O arquivo ficou com `achadosDeDicaSemDono` e `exigirDicaPropria` declaradas
+ * duas vezes, e com `exigirMolduraFiel` viva mas já sem quem a chamasse.
+ *
+ * **O comportamento estava certo o tempo todo.** Em JavaScript a última
+ * declaração de função vence, e a última era a nova — a suíte passou, a catraca
+ * passou, o commit saiu. 182 linhas de sombra.
+ *
+ * ── Por que isso é pior que um erro ──────────────────────────────────
+ *
+ * Erro para o programa e alguém conserta. Sombra fica: quem abrisse a PRIMEIRA
+ * cópia para corrigir alguma coisa editaria código que não roda, e ficaria sem
+ * entender por que a mudança não teve efeito.
+ *
+ * > **Edição por inserção onde se pretendia substituição não produz erro,
+ * > produz sombra.**
+ *
+ * E é a família da semana dentro do arquivo que guarda as outras: o
+ * `validar-paleta.js` vigia cinco coisas do resto do sistema e não vigiava a si
+ * mesmo. `tsc` não olha para `.js` de script, e o ESLint não roda aqui.
+ */
+function achadosDeFuncaoDuplicada(conteudo, rel) {
+  const vistas = new Map();
+  const achados = [];
+  conteudo.split('\n').forEach((linha, i) => {
+    const m = /^function ([\w]+)\s*\(/.exec(linha);
+    if (!m) return;
+    const nome = m[1];
+    if (vistas.has(nome)) {
+      achados.push(
+        `${rel}:${i + 1}  function ${nome} já declarada na linha ${vistas.get(nome)} — ` +
+          `a última vence, e a primeira vira sombra que ninguém vê rodar`
+      );
+    } else {
+      vistas.set(nome, i + 1);
+    }
+  });
+  return achados;
+}
+
+function exigirSemFuncaoDuplicada() {
+  const eu = path.join(RAIZ, 'scripts', 'validar-paleta.js');
+  const achados = achadosDeFuncaoDuplicada(fs.readFileSync(eu, 'utf8'), 'scripts/validar-paleta.js');
+
+  if (achados.length) {
+    falhas.push(
+      `função declarada duas vezes no validador: ${achados.length}\n      ` + achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — o validador não se duplica ===` +
+      `\n  ${achados.length} função(ões) declarada(s) duas vezes`
+  );
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// Rótulo escondido por breakpoint que deixa o botão sem nome — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * `hidden sm:inline` faz o botão VIRAR só-ícone numa largura, e o nome
+ * acessível some junto.
+ *
+ * ── O defeito, achado por uma captura ────────────────────────────────
+ *
+ * A captura 3 do Checkpoint 3, em 390 de largura, mostrou o botão de cancelados
+ * do painel reduzido ao ícone. Fui conferir o padrão e encontrei cinco sítios;
+ * em três deles o botão fica **sem nome acessível nenhum** abaixo de 640px:
+ *
+ *   - o rótulo tem `hidden sm:inline`, e `hidden` é `display: none`, que EXCLUI
+ *     o texto do cálculo do nome acessível;
+ *   - o ícone é `aria-hidden` por padrão, declarado assim no `icones.tsx`;
+ *   - não sobra nada. O leitor de tela anuncia "botão", e mais nada.
+ *
+ * ── A regra já estava escrita, para o caso estático ──────────────────
+ *
+ * Do `src/components/ui/icones.tsx`:
+ *
+ *   "Todos são aria-hidden. Ícone aqui acompanha palavra — quando ele for o
+ *    único conteúdo de um botão, o rótulo vai no aria-label do botão."
+ *
+ * Ela foi escrita para o botão que NASCE só-ícone. `hidden sm:inline` faz o
+ * botão **virar** só-ícone num breakpoint, e ninguém ligou as duas coisas.
+ *
+ * ── E a solução existia, em um lugar só ──────────────────────────────
+ *
+ * O `Dashboard.tsx` resolveu exatamente este problema, com `title` e
+ * `aria-pressed`, e com um comentário explicando o raciocínio. A solução não se
+ * propagou para os outros três. Esta catraca é o que faz o conhecimento parar
+ * de ficar local.
+ *
+ * ── O que conta como nome que sobrevive ──────────────────────────────
+ *
+ * `aria-label` ou `title` na tag de abertura, ou um `sr-only` no corpo.
+ * `sr-only` é o preferido: ele mantém o texto no nome acessível em TODA
+ * largura, sem duplicar a string num atributo que pode divergir do rótulo
+ * visível depois — que é o defeito da catraca vizinha, o nome que apaga o
+ * conteúdo.
+ */
+/**
+ * Acha o `>` que fecha a tag aberta em `i`, ignorando os que estao dentro de
+ * chaves ou de aspas.
+ *
+ * NAO da para delimitar tag JSX com `[^>]*?`: atributo de JSX carrega `=>` o
+ * tempo todo. `onClick={() => setX(!x)}` faz a regra parar no primeiro `>` e
+ * devolver meia tag -- e foi exatamente isso que fez esta catraca acusar o
+ * `Dashboard.tsx`, que TEM `title`, por nao enxergar o atributo.
+ *
+ * E a terceira vez que o mesmo mecanismo aparece: `\b` casando `bg-alerta/10`,
+ * `[^;]+` engolindo a declaracao CSS seguinte, e agora `[^>]*?` cortando a tag.
+ * Nos tres, **o delimitador aparece dentro do conteudo**, e regex nao conta
+ * aninhamento. A saida e a mesma: varrer contando.
+ */
+function fimDaTag(texto, i) {
+  let chaves = 0;
+  let aspas = null;
+  for (let j = i; j < texto.length; j++) {
+    const c = texto[j];
+    if (aspas) {
+      if (c === aspas) aspas = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') aspas = c;
+    else if (c === '{') chaves++;
+    else if (c === '}') chaves--;
+    else if (c === '>' && chaves === 0) return j;
+  }
+  return -1;
+}
+
+function achadosDeRotuloSumido(conteudo, rel) {
+  const achados = [];
+
+  for (const m of conteudo.matchAll(/<(Button|button)\b/g)) {
+    const tag = m[1];
+    const abre = fimDaTag(conteudo, m.index + m[0].length);
+    if (abre === -1) continue;
+    const atributos = conteudo.slice(m.index + m[0].length, abre);
+    if (atributos.trimEnd().endsWith('/')) continue; // tag sem corpo
+
+    const fecha = conteudo.indexOf('</' + tag + '>', abre);
+    if (fecha === -1) continue;
+    const corpo = conteudo.slice(abre + 1, fecha);
+
+    const escondido = /hidden\s+(sm|md|lg|xl):(inline|block|flex)/.exec(corpo);
+    if (!escondido) continue;
+
+    const temNome =
+      /\baria-label[=\s]/.test(atributos) ||
+      /\btitle[=\s]/.test(atributos) ||
+      /\bsr-only\b/.test(corpo);
+    if (temNome) continue;
+
+    const linha = conteudo.slice(0, m.index).split('\n').length;
+    const rotulo = /:(?:inline|block|flex)">([^<]{0,40})/.exec(corpo)?.[1]?.trim();
+    achados.push(
+      `${rel}:${linha}  <${tag}> com rotulo "${rotulo ?? '?'}" em ` +
+        `${escondido[0]} e nenhum nome acessivel: abaixo de ${escondido[1]} ` +
+        `sobra so o icone, que e aria-hidden`
+    );
+  }
+
+  return achados;
+}
+
+function exigirRotuloQueSobreviveAoBreakpoint() {
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx$/.test(nome) && !/\.test\.tsx$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const achados = [];
+  for (const arquivo of arquivos) {
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+    achados.push(...achadosDeRotuloSumido(fs.readFileSync(arquivo, 'utf8'), rel));
+  }
+
+  if (achados.length) {
+    falhas.push(
+      `rótulo escondido por breakpoint sem nome acessível: ${achados.length} ocorrência(s)\n      ` +
+        achados.join('\n      ')
+    );
+  }
+  linhas.push(
+    `\n=== catraca — rótulo que some no breakpoint ===` +
+      `\n  ${arquivos.length} arquivos varridos, ${achados.length} ocorrência(s)`
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Fundo de cor cheia com texto branco cravado — catraca
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Doze pares que reprovam hoje, e um mecanismo para eles só diminuírem.
+ *
+ * ── O problema que isto guarda ────────────────────────────────────────
+ *
+ * `bg-sucesso text-white` dá 2,54:1. `bg-perigo text-white`, 3,76:1.
+ * `bg-sinal text-white`, 2,69:1 no tema escuro. São classes escritas à mão em
+ * página, e a Fase 7 consertou o `Button` sem alcançar nenhuma delas —
+ * corrigir o primitivo não alcança quem não o usa.
+ *
+ * A lista com arquivo e linha está em
+ * `docs/design-system-migration/fase-7/contraste-fundo-cheio.md`. Elas saem
+ * nas Fases 11–16, por tela, como a §25 manda.
+ *
+ * ── Por que uma catraca, e não uma lista de exceção ───────────────────
+ *
+ * Lista de exceção costuma sobreviver ao problema que a criou: nasce como
+ * "os que já existiam", e em seis meses é uma permissão. Esta não consegue,
+ * porque reprova nos DOIS sentidos:
+ *
+ *   apareceu par novo   -> falha (é o que qualquer guarda faz)
+ *   sumiu par da lista  -> TAMBÉM falha, pedindo para baixar o número
+ *
+ * O segundo é o que impede o apodrecimento. Consertar uma tela obriga a
+ * mexer aqui, e o número só anda para baixo. Quando chegar a zero, o bloco
+ * inteiro sai e sobra a varredura, que aí passa a reprovar qualquer par.
+ *
+ * ── A chave é arquivo + fundo + estado, sem linha ─────────────────────
+ *
+ * Número de linha muda a cada edição acima dele, e uma catraca que grita por
+ * causa de uma linha em branco é uma catraca que alguém desliga.
+ */
+// A catraca chegou a ZERO em 04/09/2026, e por isso esta lista esta vazia.
+//
+// Ela nasceu com DOZE pares — fundo de cor cheia carregando texto branco
+// abaixo de 4,5:1 — e desceu assim:
+//
+//   12 -> 11   o "Confirmar" da exclusao de categoria, no template de
+//              listagem da Fase 11
+//   11 ->  3   oito botoes de acao do ChamadoDetalhes que tinham variante
+//              correspondente no Button (tres sinal, tres perigo, dois sucesso)
+//    3 ->  0   os oito ultimos, depois de o operador decidir que as cinco
+//              variantes do pacote bastam: "Marcar como Resolvido" vai a
+//              sucesso, e "Reabrir", "Desativar" e "Aguardando Retorno" vao a
+//              secundario, porque reversivel e neutro e o rotulo carrega o
+//              sentido
+//
+// De agora em diante QUALQUER par novo reprova. Nao ha mais linha de base para
+// tolerar: a catraca deixou de conter e passou a impedir.
+//
+// UM DEFEITO QUE ELA NAO VIA, e vale saber que existe: o botao de arquivar
+// tinha `bg-sucesso` com branco (2,54:1) dentro de um LITERAL INTERPOLADO, e o
+// scanner exclui esses de proposito — foi o conserto do falso positivo da
+// Fase 7. Ele foi achado por leitura, nao por varredura, e corrigido junto.
+// Conferido depois: nao ha nenhum outro botao com `text-white` dentro de
+// template com interpolacao em todo o src.
+const PARES_CONHECIDOS = new Map([]);
+
+/** Os fundos de cor cheia que podem carregar texto, e de onde sai o valor. */
+const FUNDOS_CHEIOS = {
+  'bg-sinal': 'sinal',
+  'bg-sucesso': 'sucesso',
+  'bg-sucesso-forte': 'sucesso-forte',
+  'bg-perigo': 'perigo',
+  'bg-perigo-forte': 'perigo-forte',
+  'bg-alerta': 'alerta',
+  'bg-alerta-forte': 'alerta-forte',
+  'bg-info': 'info',
+  'bg-info-forte': 'info-forte',
+};
+
+const BRANCO = [255, 255, 255];
+
+/**
+ * Varre `src/` atrás de fundo de cor cheia com `text-white` na mesma lista de
+ * classes, e no MESMO estado.
+ *
+ * Quatro armadilhas, todas encontradas na prática, três delas por mim:
+ *
+ * 1. Filtrar diretório. A primeira varredura pulava `components/ui/`, e o pior
+ *    caso de todos estava em `components/layout/` — o link de pular para o
+ *    conteúdo.
+ * 2. Casar linha a linha. `className` quebra em várias linhas o tempo todo.
+ * 3. Ignorar o estado. `hover:bg-perigo-forte` casado com um `text-white` de
+ *    repouso troca 3,76:1 por 6,47:1 e transforma reprovação em aprovação.
+ * 4. Parear ramos de ternário. Juntar as strings de um `cn(...)` põe lado a
+ *    lado classes mutuamente exclusivas e INVENTA reprovação — a sessão do
+ *    HelpHS produziu seis de 1,00:1 assim.
+ *
+ *    Casar "dentro de um literal" NÃO basta, e eu achei que bastasse: um
+ *    template com `${cond ? 'A' : 'B'}` É um literal só, e os dois ramos
+ *    ficam dentro dele. Foi assim que `Dashboard.tsx` apareceu com
+ *    `bg-sinal` de um ramo pareado com `text-conteudo-suave` do outro, em
+ *    2,18:1 — que não existe em pixel nenhum. Por isso o conteúdo de cada
+ *    `${...}` é recortado antes, e as strings de dentro dele são lidas
+ *    separadamente.
+ *
+ * 5. Ignorar que o estado também troca o TEXTO. `text-conteudo-tenue
+ *    hover:bg-superficie-elevada hover:text-conteudo` não põe o texto tênue
+ *    sobre o fundo elevado: no hover valem os dois `hover:`. Parear o texto
+ *    base com o fundo de hover inventa uma combinação que a CSS nunca produz.
+ *    O texto que vale num estado é o daquele estado; o base só entra quando o
+ *    estado não declara texto próprio.
+ *
+ * O preço da 4 é subcontar quando o fundo está no literal base e o texto num
+ * condicional. Subcontar é melhor que inventar: um número a menos é uma
+ * tarefa esquecida, um número inventado é uma tarefa que não existe.
+ */
+/**
+ * As classes, com o `!` opcional — armadilha 7.
+ *
+ * `!bg-perigo` e `hover:!bg-perigo` são classes válidas, e o padrão anterior
+ * não as via. Cegueira, não invenção; mas cegueira silenciosa.
+ */
+const CLASSE_FUNDO = /(?:^|\s)((?:[\w-]+:)*)!?(bg-[\w-]+)(?![-\w/])/g;
+const CLASSE_TEXTO = /(?:^|\s)((?:[\w-]+:)*)!?(text-[\w-]+)(?![-\w/])/g;
+
+/** `md:hover:` vira ['md','hover']. Sem prefixo, lista vazia. */
+const variantesDe = (prefixo) => (prefixo ? prefixo.split(':').filter(Boolean) : []);
+
+/** Todo elemento de `a` está em `b`? */
+const contido = (a, b) => a.every((v) => b.includes(v));
+
+/**
+ * Os RAMOS de um literal de template, para o pareamento.
+ *
+ * ── O que mudou, e por que a versão anterior tinha um buraco ─────────
+ *
+ * A primeira versão devolvia só os trechos ESTÁTICOS e jogava fora o conteúdo
+ * das interpolações. Isso fechava a armadilha 4 — um `${a ? 'X' : 'Y'}` junta
+ * dois ramos de ternário no mesmo literal, e parear entre eles conta um par que
+ * não existe em pixel nenhum — mas abria um FALSO NEGATIVO no caminho.
+ *
+ * O caso real, achado por leitura e não por esta varredura:
+ *
+ *     className={`... text-white ... ${arquivado
+ *        ? 'bg-sucesso hover:bg-sucesso-forte'
+ *        : 'bg-alerta-forte hover:brightness-110'}`}
+ *
+ * O `text-white` está no estático e o `bg-sucesso` está num ramo. Descartando a
+ * interpolação, os dois nunca se encontram — e `bg-sucesso` com branco dá
+ * 2,54:1. A catraca chegou a ZERO com esse defeito vivo.
+ *
+ * ── O modelo agora ──────────────────────────────────────────────────
+ *
+ * O literal vira uma sequência de partes: texto estático, ou um conjunto de
+ * ALTERNATIVAS (as strings encontradas dentro de uma interpolação). Um ramo é
+ * o estático inteiro mais UMA alternativa de cada interpolação.
+ *
+ * Isso pareia dentro do ramo e com a parte estática, e **nunca entre ramos** —
+ * que é exatamente a distinção que faltava. `${a ? 'bg-perigo' : 'text-white'}`
+ * continua não produzindo par: os dois estão em ramos opostos.
+ *
+ * Interpolações DIFERENTES não são ramos uma da outra e podem valer juntas —
+ * `cn(a && 'bg-x', b && 'text-white')` aplica as duas quando as duas condições
+ * valem. Por isso elas se combinam entre si, e só as alternativas de uma MESMA
+ * interpolação se excluem.
+ *
+ * Uma alternativa vazia entra quando a interpolação tem UMA string só, porque
+ * aí é `cond && 'classe'` e a classe pode não aparecer. Com duas ou mais é
+ * ternário, e alguma sempre aparece.
+ *
+ * ── O teto, e por que ele não esconde nada ──────────────────────────
+ *
+ * O produto cartesiano cresce rápido. Acima de `TETO_DE_RAMOS` a função troca
+ * para o modo LINEAR: o estático inteiro mais uma alternativa por vez. Isso
+ * pareia toda alternativa com o estático — que é o caso que aparece de verdade
+ * — e deixa de parear alternativas de interpolações diferentes entre si.
+ *
+ * O modo linear pode perder um par; nunca inventa um. Numa catraca, errar para
+ * o lado de não acusar é ruim, mas errar para o lado de acusar o que não
+ * existe é pior: destrói a confiança na ferramenta, e foi o que a armadilha 4
+ * fez na Fase 7.
+ */
+const TETO_DE_RAMOS = 64;
+
+function ramosDoTemplate(texto) {
+  const CIFRAO = String.fromCharCode(36);
+  const ASPAS = /(['"`])((?:(?!\1)[\s\S])*?)\1/g;
+
+  // Cada parte é uma string (estático) ou { alternativas: [...] }.
+  const partes = [];
+  let atual = '';
+
+  for (let i = 0; i < texto.length; i++) {
+    if (texto[i] === CIFRAO && texto[i + 1] === '{') {
+      partes.push(atual);
+      atual = '';
+
+      // Contagem de chaves — armadilha 8. Cortar no primeiro `}` erra em
+      // `cn({ ativo }, '...')` e mistura pedaços de ramos diferentes.
+      let nivel = 1;
+      const inicio = i + 2;
+      i += 2;
+      for (; i < texto.length && nivel > 0; i++) {
+        if (texto[i] === '{') nivel++;
+        else if (texto[i] === '}') nivel--;
+      }
+      const dentro = texto.slice(inicio, i - 1);
+      i--;
+
+      const literais = [...dentro.matchAll(ASPAS)].map((x) => x[2]);
+      partes.push({
+        alternativas:
+          literais.length === 0 ? [''] :
+          literais.length === 1 ? [literais[0], ''] :
+          literais,
+      });
+    } else {
+      atual += texto[i];
+    }
+  }
+  partes.push(atual);
+
+  const interpolacoes = partes.filter((x) => typeof x !== 'string');
+  const tamanho = interpolacoes.reduce((n, p) => n * p.alternativas.length, 1);
+
+  if (tamanho > TETO_DE_RAMOS) {
+    const estatico = partes.filter((x) => typeof x === 'string').join(' ');
+    const ramos = [estatico];
+    for (const p of interpolacoes) {
+      for (const alt of p.alternativas) {
+        if (alt) ramos.push(estatico + ' ' + alt);
+      }
+    }
+    return ramos;
+  }
+
+  let ramos = [''];
+  for (const parte of partes) {
+    if (typeof parte === 'string') {
+      ramos = ramos.map((r) => r + parte);
+    } else {
+      const novos = [];
+      for (const r of ramos) {
+        for (const alt of parte.alternativas) novos.push(r + ' ' + alt + ' ');
+      }
+      ramos = novos;
+    }
+  }
+  return ramos;
+}
+
+function varrerFundoCheio() {
+  // Lidos uma vez, e não a cada par encontrado.
+  const css = fs.readFileSync(CSS, 'utf8');
+  const NO_CLARO = tokens(css, ':root');
+  const NO_ESCURO = tokens(css, '.dark');
+
+  const arquivos = [];
+  (function varrer(dir) {
+    for (const nome of fs.readdirSync(dir)) {
+      const caminho = path.join(dir, nome);
+      if (fs.statSync(caminho).isDirectory()) {
+        if (nome !== 'design-system') varrer(caminho);
+      } else if (/\.tsx?$/.test(nome) && !/\.test\.tsx?$/.test(nome)) {
+        arquivos.push(caminho);
+      }
+    }
+  })(FONTE);
+
+  const encontrados = new Map();
+
+  for (const arquivo of arquivos) {
+    const txt = fs.readFileSync(arquivo, 'utf8');
+    const rel = path.relative(RAIZ, arquivo).split(path.sep).join('/');
+
+    for (const m of txt.matchAll(/(["'`])((?:(?!\1)[\s\S]){0,600}?)\1/g)) {
+      // Armadilha 4: um `${...}` junta ramos de ternario no MESMO literal, e
+      // parear ENTRE eles conta um par que nao existe. `ramosDoTemplate`
+      // expande o literal em um ramo por combinacao — estatico mais uma
+      // alternativa de cada interpolacao —, entao o pareamento acontece dentro
+      // do ramo e nunca entre ramos. Ver a nota longa na funcao.
+      for (const lista of ramosDoTemplate(m[2])) {
+        // `text-` não é só cor: `text-xs`, `text-left` e `text-nowrap` usam o
+        // mesmo prefixo. Sem este filtro, "o texto deste estado" devolvia o
+        // TAMANHO da fonte e o pareamento parava de achar qualquer coisa —
+        // uma catraca que zera sozinha é pior que catraca nenhuma, porque
+        // parece conserto.
+        const NAO_E_COR =
+          /^text-(?:\d?xs|sm|base|lg|\d?xl|left|center|right|justify|start|end|wrap|nowrap|balance|pretty|ellipsis|clip|opacity-\d+)$/;
+        const textos = [...lista.matchAll(CLASSE_TEXTO)]
+          .map((x) => ({ variantes: variantesDe(x[1]), nome: x[2] }))
+          .filter((x) => !NAO_E_COR.test(x.nome));
+        if (!textos.length) continue;
+
+        // Armadilhas 5 e 6: PRECEDENCIA, e nao igualdade de prefixo.
+        //
+        // A primeira versao perguntava "este estado declara texto proprio?" e,
+        // se nao, caia no texto base. Funciona com um nivel de variante e
+        // volta a inventar assim que eles se compoem: para `md:hover:bg-X`,
+        // nao ha `md:hover:text-`, entao ela usava o texto base e IGNORAVA um
+        // `hover:text-` que a CSS aplica ali. Provado com fixture — contava um
+        // par que nao existe.
+        //
+        // O modelo do Tailwind e conteudo + especificidade: vale o texto cujas
+        // variantes estao CONTIDAS nas do fundo, e entre os candidatos ganha o
+        // de mais variantes (no empate, o ultimo escrito).
+        //
+        // ── O DESEMPATE É HEURÍSTICA, E ISSO PRECISA FICAR DITO ─────────
+        //
+        // "No empate vence o último escrito" **não é a regra do Tailwind**.
+        // Entre duas utilidades de mesma especificidade, quem vence é a que
+        // sai depois **na folha gerada** — ordenação interna do Tailwind, que
+        // não tem relação nenhuma com a ordem dentro do atributo `class`.
+        //
+        // Então `bg-perigo text-white text-conteudo` e
+        // `bg-perigo text-conteudo text-white` produzem a MESMA tela, e esta
+        // varredura os lê como casos diferentes.
+        //
+        // A varredura do HelpHS usa o critério oposto — `find()`, vence o
+        // primeiro da lista — e as duas sessões descobriram juntas que
+        // nenhuma das duas está certa: são dois chutes com sinais trocados.
+        //
+        // O que isso custa, na prática: um literal que traga cor de texto no
+        // trecho ESTÁTICO **e** dentro de uma interpolação pode ter o par
+        // medido contra a classe errada. Hoje não existe nenhum assim nos dois
+        // repositórios — procurado, zero ocorrências —, então é dívida
+        // registrada e não defeito vivo.
+        //
+        // Quem for consertar: a saída honesta é ler a ordem da folha gerada,
+        // não escolher um lado do atributo. Enquanto isso não existir, o caso
+        // de um fundo com DUAS cores de texto candidatas é o ponto cego.
+        const textoDoEstado = (variantesDoFundo) => {
+          let melhor = null;
+          for (const tx of textos) {
+            if (!contido(tx.variantes, variantesDoFundo)) continue;
+            if (!melhor || tx.variantes.length >= melhor.variantes.length) melhor = tx;
+          }
+          return melhor ? melhor.nome : null;
+        };
+
+      for (const fm of lista.matchAll(CLASSE_FUNDO)) {
+        const estado = fm[1];
+        const fundo = fm[2];
+        const token = FUNDOS_CHEIOS[fundo];
+        if (!token) continue;
+        if (textoDoEstado(variantesDe(estado)) !== 'text-white') continue;
+
+        // O `.dark` NÃO redeclara as cores de significado, de propósito:
+        // erro é vermelho nos dois temas. Sem o fallback para `:root` a
+        // busca devolve `undefined` e a conta estoura — foi o que aconteceu.
+        const claro = contraste(NO_CLARO[token], BRANCO);
+        const escuro = contraste(NO_ESCURO[token] ?? NO_CLARO[token], BRANCO);
+        if (claro >= PISO_TEXTO && escuro >= PISO_TEXTO) continue;
+
+        const chave = `${rel}  ${fundo}  ${estado || 'repouso'}`;
+        encontrados.set(chave, (encontrados.get(chave) || 0) + 1);
+      }
+      }
+    }
+  }
+  return encontrados;
+}
+
+function exigirCatracaDeFundoCheio() {
+  const achados = varrerFundoCheio();
+  const chaves = [...new Set([...achados.keys(), ...PARES_CONHECIDOS.keys()])].sort();
+
+  const novos = [];
+  const consertados = [];
+  for (const k of chaves) {
+    const agora = achados.get(k) || 0;
+    const base = PARES_CONHECIDOS.get(k) || 0;
+    if (agora > base) novos.push(`${k}  ->  ${base} na linha de base, ${agora} agora`);
+    else if (agora < base) consertados.push({ k, agora, base });
+  }
+
+  if (novos.length) {
+    falhas.push(
+      'fundo de cor cheia com texto branco, PAR NOVO (piso 4,5:1):\n      ' +
+        novos.join('\n      ') +
+        '\n      Use o Button, ou o degrau de acao da E2 (--action-danger / --action-success).'
+    );
+  }
+
+  if (consertados.length) {
+    const linhas = chaves
+      .map((k) => ({ k, n: achados.get(k) || 0 }))
+      .filter((x) => x.n > 0)
+      .map((x) => `  ['${x.k}', ${x.n}],`);
+    falhas.push(
+      'a catraca precisa descer — par(es) consertado(s), atualize PARES_CONHECIDOS em\n' +
+        '      scripts/validar-paleta.js. A lista inteira, ja pronta:\n' +
+        (linhas.length ? linhas.join('\n') : '  (vazia — apague o bloco inteiro e faca a varredura reprovar sempre)')
+    );
+  }
+
+  const total = [...achados.values()].reduce((a, b) => a + b, 0);
+  linhas.push(
+    `\n=== catraca — fundo de cor cheia com texto branco ===` +
+      `\n  ${total} par(es) abaixo de ${PISO_TEXTO}:1, linha de base ${[...PARES_CONHECIDOS.values()].reduce((a, b) => a + b, 0)}`
+  );
+}
+
 function main() {
   const css = fs.readFileSync(CSS, 'utf8');
   const graficos = fs.readFileSync(GRAFICOS, 'utf8');
@@ -262,14 +1799,42 @@ function main() {
   for (const [nome, { tk, sufixo }] of Object.entries(temas)) {
     linhas.push(`\n=== tema ${nome} ===`);
 
-    // 1. Texto sobre as duas superfícies onde ele de fato aparece.
-    for (const fundo of ['superficie', 'superficie-base']) {
+    // 1. Texto sobre as TRÊS superfícies.
+    //
+    // Eram duas, e o comentário dizia "onde ele de fato aparece" — uma
+    // afirmação sobre o layout, escrita uma vez e nunca reconferida. A
+    // `superficie-elevada` é cartão elevado, dica e trilho, e texto cai sobre
+    // ela em todos os três.
+    //
+    // A tabela das catracas da Fase 16 achou este vão. Nenhum defeito vivo: as
+    // oito combinações passam, e a mais apertada é `--sinal` sobre elevada no
+    // claro, com 4,83 contra o piso de 4,5 — folga de 0,33, que é a menor do
+    // conjunto e não estava sendo vigiada.
+    for (const fundo of ['superficie', 'superficie-base', 'superficie-elevada']) {
       for (const cor of ['conteudo', 'conteudo-suave', 'conteudo-tenue', 'sinal']) {
         exigirContraste(`${cor} sobre ${fundo}`, tk[cor], tk[fundo], PISO_TEXTO);
       }
     }
 
-    // 2. Gráficos contra a superfície do card, que é onde eles são desenhados.
+    // 2. Gráficos como FORMA, contra a superfície do card.
+    //
+    // Esta é a fronteira certa, e ela sobreviveu a uma tentativa minha de
+    // alargá-la. Na Fase 16 troquei para as três superfícies, achando que
+    // "medir mais" fosse estritamente melhor — e a mudança acusou dois status
+    // contra `--superficie-elevada`, por 0,03 e 0,07.
+    //
+    // Fui ver onde a `elevada` é fundo de gráfico, e **no claro não é**: os
+    // três usos dela no `Dashboard.tsx` são botão de filtro e caixa de ícone.
+    // Alargar ali produzia alarme falso — a forma de trava que ensina a ser
+    // ignorada.
+    //
+    // O que a `elevada` É, no escuro, é o fundo da DICA. E lá a cor da série
+    // não é forma: é TEXTO, com piso de 4,5:1. Isso não cabia neste laço, e
+    // virou catraca própria — `exigirDicaLegivel`.
+    //
+    // A lição, que é a da semana: alargar escopo sem perguntar ONDE a cor cai
+    // é o mesmo erro de medir perto do que interessa. O escopo certo não é o
+    // maior, é o que corresponde ao lugar onde a coisa aparece.
     const categoricas = coresDe(graficos, `CATEGORICA_${sufixo}`);
     const status = coresDe(graficos, `STATUS_${nome === 'claro' ? 'CLARO' : 'ESCURO'}`);
     const prioridades = coresDe(graficos, `PRIORIDADE_${sufixo}`);
@@ -290,6 +1855,16 @@ function main() {
     exigirSeparacao('prioridades entre si', prioridades);
   }
 
+  exigirSemModificadorDeOpacidade();
+  exigirPonteFiel();
+  exigirNomeQueNaoApagaConteudo();
+  exigirCatracaDeFundoCheio();
+  exigirRotuloQueSobreviveAoBreakpoint();
+  exigirSemCopiaDeToken();
+  exigirSemanticaNoPapelCerto();
+  exigirSemFuncaoDuplicada();
+  exigirDicaPropria();
+
   console.log(linhas.join('\n'));
 
   if (falhas.length) {
@@ -301,4 +1876,25 @@ function main() {
   console.log('\nPaleta validada.');
 }
 
-main();
+/* Rodado direto pelo `npm run validar:paleta`, e importado pelos testes.
+ *
+ * Sem esta guarda, um `require` deste arquivo executaria a varredura inteira e
+ * poderia derrubar o processo do teste com `process.exit(1)`. */
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  ramosDoTemplate,
+  variantesDe,
+  contido,
+  achadosDeNome,
+  achadosDeRotuloSumido,
+  achadosDeCopiaDeToken,
+  indiceDoPacote,
+  achadosDeSemanticaCheia,
+  achadosDeFuncaoDuplicada,
+  achadosDeDicaSemDono,
+  pacoteDeTokens,
+  resolverDoPacote,
+};

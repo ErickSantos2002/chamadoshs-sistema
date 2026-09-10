@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { Button, Input, MensagemDeErro, Modal, RotuloDeCampo, Textarea } from '../ui';
+import { Button, Campo, Input, Modal, Textarea } from '../ui';
 import { IconeSalvar } from '../ui/icones';
 import type {
   Categoria,
@@ -49,6 +49,10 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [loading, setLoading] = useState(false);
 
+  // Para levar o foco ao primeiro campo recusado. Ver `handleSubmit`.
+  const campoNome = useRef<HTMLInputElement>(null);
+  const campoDescricao = useRef<HTMLTextAreaElement>(null);
+
   // ========================================
   // EFEITOS
   // ========================================
@@ -73,7 +77,17 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
   // VALIDAÇÃO
   // ========================================
 
-  const validar = (): boolean => {
+  /**
+   * Valida e DEVOLVE os erros, em vez de devolver um booleano.
+   *
+   * O `setErrors` não deixa o resultado legível na mesma passagem — quem
+   * chama precisaria esperar o próximo render para saber QUAL campo falhou, e
+   * é justamente nessa hora que o foco tem de ir para ele.
+   *
+   * É a mesma armadilha da trava por `useState` no reset de senha: pedir ao
+   * estado uma resposta que ele só terá depois.
+   */
+  const validar = (): ValidationErrors => {
     const novosErros: ValidationErrors = {};
 
     if (!formData.nome || formData.nome.trim().length < 3) {
@@ -89,7 +103,7 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
     }
 
     setErrors(novosErros);
-    return Object.keys(novosErros).length === 0;
+    return novosErros;
   };
 
   // ========================================
@@ -115,7 +129,23 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validar()) return;
+    const errosDaVez = validar();
+    if (Object.keys(errosDaVez).length > 0) {
+      // O foco vai para o PRIMEIRO campo recusado, na ordem do formulário.
+      //
+      // Sem isto, o formulário recusa e o foco fica onde estava — no botão
+      // Salvar, que continua na tela sem explicação. Quem usa leitor de tela
+      // ouve o `role="alert"` da mensagem e depois não tem como chegar até o
+      // campo senão navegando o formulário inteiro de novo; quem usa teclado
+      // sem leitor não recebe nem isso.
+      //
+      // Era impossível até agora: `Input` e `Textarea` não repassavam `ref`, e
+      // a varredura da Fase 8 registrou que, coerentemente, não havia um único
+      // `.focus()` de erro em todo o `src`.
+      if (errosDaVez.nome) campoNome.current?.focus();
+      else campoDescricao.current?.focus();
+      return;
+    }
 
     setLoading(true);
     try {
@@ -180,12 +210,9 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
       }
     >
       <form id={ID_DO_FORM} onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <RotuloDeCampo htmlFor="nome" obrigatorio>
-            Nome
-          </RotuloDeCampo>
+        <Campo id="nome" rotulo="Nome" obrigatorio erro={errors.nome}>
           <Input
-            id="nome"
+            ref={campoNome}
             name="nome"
             value={formData.nome}
             onChange={handleInputChange}
@@ -194,13 +221,23 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
             maxLength={100}
             className={errors.nome ? 'border-perigo' : undefined}
           />
-          <MensagemDeErro texto={errors.nome} />
-        </div>
+        </Campo>
 
-        <div>
-          <RotuloDeCampo htmlFor="descricao">Descrição</RotuloDeCampo>
+        <Campo
+          id="descricao"
+          rotulo="Descrição"
+          erro={errors.descricao}
+          // O contador entra como DICA, e não como um `<p>` solto: assim ele
+          // vira `aria-describedby` do campo. Ele é a unica explicacao para
+          // "500 caracteres" ser recusado, e solto ele so existia para quem ve.
+          dica={
+            isReadOnly
+              ? undefined
+              : `${formData.descricao?.length || 0}/500 caracteres`
+          }
+        >
           <Textarea
-            id="descricao"
+            ref={campoDescricao}
             name="descricao"
             value={formData.descricao}
             onChange={handleInputChange}
@@ -210,13 +247,7 @@ const CategoriaModal: React.FC<CategoriaModalProps> = ({
             maxLength={500}
             className={errors.descricao ? 'border-perigo' : undefined}
           />
-          <MensagemDeErro texto={errors.descricao} />
-          {!isReadOnly && (
-            <p className="mt-1 text-xs text-conteudo-tenue">
-              {formData.descricao?.length || 0}/500 caracteres
-            </p>
-          )}
-        </div>
+        </Campo>
 
         {mode === 'view' && categoria && (
           <div className="rounded-xl border border-borda bg-superficie-elevada p-4">

@@ -1,13 +1,37 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<!--
+  `data-app` é a identidade do produto, e existe para medição e captura não
+  fotografarem o sistema errado.
+
+  Duas aplicações Vite convivem nesta máquina — ChamadosHS e HelpHS — e as duas
+  nasceram na porta 5173. Sem `strictPort`, o Vite escorrega calado para a
+  5174/5175 quando a porta está ocupada, e quem cravou o endereço abraça o
+  servidor do OUTRO produto. Já aconteceu: a suíte e2e do HelpHS rodou contra
+  este sistema, que respondia `<title>ChamadosHS</title>` e 404 nas rotas dela.
+
+  A porta exclusiva com `strictPort` resolve por ACORDO — cada produto na sua.
+  Este atributo resolve quando o acordo falha: um checkout antigo, uma porta
+  reaproveitada, um túnel. Antes de medir ou fotografar, a sonda lê daqui.
+
+  É atributo no `<html>`, e não o `<title>`, de propósito: título muda por
+  rota, marcador é ESTRUTURA e sobrevive à navegação.
+-->
+<html lang="pt-BR" data-app="chamadoshs">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ChamadosHS</title>
-    <link rel="icon" type="image/svg+xml" href="/src/assets/HS2.ico" />
+    <!-- O favicon oficial da marca. `src/assets/HS2.ico` e byte a byte o
+         `DS/assets/favicon-hs.ico` do pacote (SHA-256 0580A34C5F4910E0…) — o
+         pacote o recebeu deste repositorio. O `type` dizia `image/svg+xml`
+         num arquivo `.ico`. -->
+    <link rel="icon" type="image/x-icon" href="/src/assets/HS2.ico" />
     <link rel="stylesheet" href="/src/styles/index.css" />
   </head>
-  <body class="bg-gray-100">
+  <!-- Sem classe de fundo aqui: `bg-gray-100` era cinza cravado da paleta
+       padrao do Tailwind, sobrepondo o `--bg-base` que `tokens/base.css`
+       define no `body`. Como utilitario, ele vencia o token. -->
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

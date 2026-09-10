@@ -20,9 +20,9 @@ import {
  */
 const COR_DO_ESTADO: Record<EstadoDoSistema, string> = {
   verificando: 'bg-conteudo-tenue',
-  ok: 'bg-sucesso',
-  degradado: 'bg-alerta',
-  'sem-resposta': 'bg-perigo',
+  ok: 'bg-fill-success',
+  degradado: 'bg-fill-warning',
+  'sem-resposta': 'bg-fill-danger',
 };
 
 const versao = typeof __VERSAO_APP__ === 'string' ? __VERSAO_APP__ : '';
@@ -114,7 +114,11 @@ const Login: React.FC = () => {
         {/* ── Painel de apresentação ───────────────────────────────────
             Some abaixo de `lg`: num celular ele empurraria o formulário
             para baixo da dobra, e quem abre o login quer o formulário. */}
-        <aside className="relative hidden flex-col justify-between overflow-hidden bg-superficie px-14 py-12 lg:flex lg:w-3/5">
+        {/* `div`, e nao `aside`: isto e o painel de marca, decoracao e
+            frase de efeito. Como marco `complementary` ele entrava na lista de
+            marcos da tela de login prometendo conteudo, e nao ha conteudo --
+            e abaixo de `lg` ele nem existe. */}
+        <div className="relative hidden flex-col justify-between overflow-hidden bg-superficie px-14 py-12 lg:flex lg:w-3/5">
           {/* Dois halos desfocados, como os do HelpHS. São decoração e nada
               mais — daí `aria-hidden` e `pointer-events-none`. */}
           <span
@@ -178,7 +182,7 @@ const Login: React.FC = () => {
           <p className="relative z-10 text-xs text-conteudo-tenue">
             © 2026 Health &amp; Safety Tech
           </p>
-        </aside>
+        </div>
 
         {/* ── Coluna do formulário ─────────────────────────────────── */}
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:w-2/5">
@@ -238,7 +242,7 @@ const Login: React.FC = () => {
               {error && (
                 <div
                   role="alert"
-                  className="flex items-start gap-2 rounded-lg border border-perigo/40 bg-perigo/10 px-3 py-2 text-sm text-perigo-forte dark:text-perigo-suave"
+                  className="flex items-start gap-2 rounded-lg border border-perigo/40 bg-perigo/10 px-3 py-2 text-sm text-on-tint-danger"
                 >
                   <IconeAlerta
                     className="mt-0.5 h-4 w-4 shrink-0"

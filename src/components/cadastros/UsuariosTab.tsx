@@ -1,11 +1,27 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { BotaoDeAcao, Button, Input, Modal, RotuloDeCampo } from '../ui';
+import {
+  Aviso,
+  Badge,
+  BlocoCarregando,
+  BotaoDeAcao,
+  Button,
+  Input,
+  Modal,
+  RotuloDeCampo,
+  Tabela,
+  TabelaCabecalho,
+  TabelaCelula,
+  TabelaCelulaDeCabecalho,
+  TabelaCorpo,
+  TabelaLinha,
+  type VarianteBadge,
+} from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
 import UsuarioModal from './UsuarioModal';
-import { IconeAlerta, IconeBusca, IconeChave, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor, IconeUsuarios } from '../ui/icones';
+import { IconeBusca, IconeChave, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSetor, IconeUsuarios } from '../ui/icones';
 import type {
   Usuario,
   ModalMode,
@@ -44,6 +60,22 @@ const UsuariosTab: React.FC = () => {
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [senhaError, setSenhaError] = useState('');
+  // O reset de senha em voo, em DOIS lugares, e cada um faz uma coisa.
+  //
+  // O estado desenha: e ele que desabilita o botao e poe o anel.
+  // A REF trava: e ela que impede a segunda chamada.
+  //
+  // Precisa dos dois porque `setResetandoSenha(true)` NAO atualiza
+  // `resetandoSenha` no mesmo tique — a leitura seguinte, dentro do mesmo
+  // manipulador ou num segundo clique antes do render, ainda ve `false`. Um
+  // duplo clique de mouse sao dois eventos em milissegundos, antes de qualquer
+  // pintura: os dois liam falso e os dois passavam.
+  //
+  // Isto nao e teoria. A primeira versao deste conserto guardava so pelo
+  // estado, e o teste reprovou na hora com "expected 1 time, got 2 times".
+  // `useRef` muda no ato, e por isso e a trava.
+  const [resetandoSenha, setResetandoSenha] = useState(false);
+  const resetEmVoo = useRef(false);
   const [ordenacao, setOrdenacao] = useState<{
     campo: OrdenacaoCampo;
     direcao: OrdenacaoDirecao;
@@ -137,7 +169,7 @@ const UsuariosTab: React.FC = () => {
   };
 
   const handleDesativarUsuario = async (id: number) => {
-    if (!confirmDelete) {
+    if (confirmDelete !== id) {
       setConfirmDelete(id);
       return;
     }
@@ -171,23 +203,55 @@ const UsuariosTab: React.FC = () => {
   const handleResetPassword = async () => {
     if (!resetPasswordFor) return;
 
+    // A guarda contra o segundo clique.
+    //
+    // Sem ela, dois cliques disparavam duas chamadas de troca de senha para o
+    // mesmo usuario. A segunda costuma vencer e gravar o mesmo valor, entao na
+    // maior parte das vezes nao da em nada visivel — mas as duas partem em
+    // paralelo, e nao ha nada garantindo a ordem: e uma corrida com credencial
+    // de outra pessoa em jogo, e o resultado depende de qual resposta chega
+    // primeiro.
+    //
+    // Duplo clique num botao nao e descuido raro: e o gesto padrao de quem
+    // acha que o primeiro clique nao pegou — e aqui o primeiro NAO dava
+    // nenhum sinal de ter pego, porque o botao nao mudava de estado.
+    //
+    // A trava vem ANTES de tudo, e le a REF e nao o estado — ver a nota na
+    // declaracao. O botao desabilitado e o aviso visual; esta linha e o que
+    // de fato impede a segunda chamada.
+    if (resetEmVoo.current) return;
+    resetEmVoo.current = true;
+
     // Validações
+    // As duas recusas soltam a trava antes de sair. Sem isso, uma senha curta
+    // travaria o botao para sempre: a ref ficaria `true` e nenhuma tentativa
+    // seguinte passaria — o defeito oposto, e pior, porque silencioso.
     if (!novaSenha || novaSenha.length < 6) {
       setSenhaError('A senha deve ter pelo menos 6 caracteres');
+      resetEmVoo.current = false;
       return;
     }
 
     if (novaSenha !== confirmarSenha) {
       setSenhaError('As senhas não coincidem');
+      resetEmVoo.current = false;
       return;
     }
 
     try {
+      setResetandoSenha(true);
       await updateUsuarioPassword(resetPasswordFor.id, novaSenha);
       toast.success(`Senha do usuário ${resetPasswordFor.nome} atualizada com sucesso!`);
       fecharResetSenha();
     } catch (err: any) {
       setSenhaError(err.response?.data?.detail || 'Erro ao resetar senha');
+    } finally {
+      // `finally` e nao no fim do `try`: sem ele, um erro deixaria o botao
+      // travado para sempre e a pessoa teria de fechar o modal para tentar de
+      // novo — trocando um defeito por outro. Os dois sao soltos aqui, senao
+      // a ref ficaria travada com o botao ja liberado.
+      resetEmVoo.current = false;
+      setResetandoSenha(false);
     }
   };
 
@@ -206,13 +270,27 @@ const UsuariosTab: React.FC = () => {
     return setor?.nome || '-';
   };
 
-  const getRoleColor = (role: string): string => {
-    const roleColors: Record<string, string> = {
-      'Administrador': 'bg-alerta/15 text-alerta-forte dark:text-alerta-suave',
-      'Tecnico': 'bg-info/15 text-info-forte dark:text-info-suave',
-      'Usuario': 'bg-superficie-elevada text-conteudo-tenue',
+  /**
+   * O perfil de quem usa, em variante de `Badge`.
+   *
+   * Era um mapa de CLASSES — `bg-alerta/15 text-on-tint-warning` e companhia —
+   * renderizado num `<span rounded-full>`, que e a aparencia do `Badge` copiada
+   * sem ser um. As tres cores casam exatamente com variantes que ja existem:
+   *
+   *   Administrador  alerta     ambar, o mesmo do aviso
+   *   Tecnico        info       azul
+   *   Usuario        discreto   a tinta neutra, que E `--surface-elevated`
+   *
+   * O canto tambem muda: era `rounded-full`, e a D2-a lista o selo entre o que
+   * e reto neste repositorio.
+   */
+  const varianteDoPerfil = (role: string): VarianteBadge => {
+    const mapa: Record<string, VarianteBadge> = {
+      Administrador: 'alerta',
+      Tecnico: 'info',
+      Usuario: 'discreto',
     };
-    return roleColors[role] || roleColors['Usuario'];
+    return mapa[role] ?? 'discreto';
   };
 
   // ========================================
@@ -224,24 +302,25 @@ const UsuariosTab: React.FC = () => {
       {/* Header com ações */}
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeUsuarios className="h-6 w-6 text-alerta-forte dark:text-alerta-suave" />
+          <IconeUsuarios className="h-6 w-6 text-on-tint-warning" />
           <h2 className="text-sm font-semibold text-conteudo">
             Usuários
           </h2>
-          <span className="rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-alerta-forte dark:text-alerta-suave">
-            Admin
-          </span>
+          <Badge variante="alerta">Admin</Badge>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Busca */}
           <div className="w-full sm:w-64">
+            {/* Ver a nota igual na SetoresTab: rotulo acessivel, tipo de
+                busca, e o icone marcado como decoracao. */}
             <Input
-              type="text"
+              type="search"
+              aria-label="Buscar usuários"
               placeholder="Buscar usuários..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              icone={<IconeBusca className="h-4 w-4" />}
+              icone={<IconeBusca className="h-4 w-4" aria-hidden="true" />}
             />
           </div>
 
@@ -259,7 +338,10 @@ const UsuariosTab: React.FC = () => {
           {isAdmin && (
             <Button onClick={handleNovoUsuario}>
               <IconeMais className="h-4 w-4" />
-              <span className="hidden sm:inline">Novo Usuário</span>
+              {/* sr-only, e nao hidden: `hidden` e display:none e EXCLUI o texto do
+                  nome acessivel, e o icone e aria-hidden — abaixo de sm o botao
+                  ficava sem nome nenhum. Ver a catraca do rotulo que some. */}
+              <span className="sr-only sm:not-sr-only">Novo Usuário</span>
             </Button>
           )}
         </div>
@@ -267,23 +349,15 @@ const UsuariosTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
-          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">
-            <p>{error}</p>
-          </div>
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{error}</Aviso>
       )}
 
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto rounded-xl border border-borda bg-superficie">
         {loading && !usuarios.length ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-sm text-conteudo-tenue">
-              <IconeRecarregar className="mx-auto mb-2 h-8 w-8 animate-spin" />
-              Carregando usuários...
-            </div>
-          </div>
+          <BlocoCarregando className="h-full" tamanho="lg">
+            Carregando usuários...
+          </BlocoCarregando>
         ) : usuariosOrdenados.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8">
             <IconeUsuarios className="mb-4 h-12 w-12 text-conteudo-tenue" />
@@ -300,71 +374,46 @@ const UsuariosTab: React.FC = () => {
             )}
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-borda">
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('id')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    ID
-                    {ordenacao.campo === 'id' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('nome')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    Usuário
-                    {ordenacao.campo === 'nome' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  Perfil
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  Setor
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('created_at')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    Criado em
-                    {ordenacao.campo === 'created_at' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-conteudo-suave">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuariosOrdenados.map((usuario) => (
-                <tr
-                  key={usuario.id}
-                  className={`border-b border-borda-suave transition-colors hover:bg-superficie-elevada ${
-                    usuario.ativo ? '' : 'opacity-60'
-                  }`}
+          <Tabela>
+            <TabelaCabecalho>
+              <tr>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('id')}
+                  ordenadaPor={
+                    ordenacao.campo === 'id' ? ordenacao.direcao : null
+                  }
                 >
-                  <td className="px-4 py-3 text-sm text-conteudo">
-                    #{usuario.id}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  ID
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('nome')}
+                  ordenadaPor={
+                    ordenacao.campo === 'nome' ? ordenacao.direcao : null
+                  }
+                >
+                  Usuário
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho>Perfil</TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho>Setor</TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('created_at')}
+                  ordenadaPor={
+                    ordenacao.campo === 'created_at' ? ordenacao.direcao : null
+                  }
+                >
+                  Criado em
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho aDireita>Ações</TabelaCelulaDeCabecalho>
+              </tr>
+            </TabelaCabecalho>
+            <TabelaCorpo>
+              {usuariosOrdenados.map((usuario) => (
+                <TabelaLinha
+                  key={usuario.id}
+                  className={usuario.ativo ? undefined : 'opacity-60'}
+                >
+                  <TabelaCelula>#{usuario.id}</TabelaCelula>
+                  <TabelaCelula>
                     <div className="flex items-center gap-2">
                       <IconeUsuarios className="h-4 w-4 text-conteudo-tenue" />
                       <span className="text-sm font-medium text-conteudo">
@@ -374,29 +423,25 @@ const UsuariosTab: React.FC = () => {
                           dos chamados que a pessoa abriu. Sem este selo, a linha
                           volta idêntica à ativa e parece que a ação falhou. */}
                       {!usuario.ativo && (
-                        <span className="inline-flex rounded-full bg-superficie-elevada px-2 py-0.5 text-[11px] font-medium text-conteudo-tenue">
-                          Inativo
-                        </span>
+                        <Badge variante="discreto">Inativo</Badge>
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${getRoleColor(getUserRole(usuario))}`}>
+                  </TabelaCelula>
+                  <TabelaCelula>
+                    <Badge variante={varianteDoPerfil(getUserRole(usuario))}>
                       {getUserRole(usuario)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                    </Badge>
+                  </TabelaCelula>
+                  <TabelaCelula>
                     <div className="flex items-center gap-2">
-                      <IconeSetor className="h-4 w-4 text-conteudo-tenue" />
-                      <span className="text-sm text-conteudo-suave">
+                      <IconeSetor className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+                      <span className="text-conteudo-suave">
                         {getSetorNome(usuario.setor_id)}
                       </span>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-conteudo-suave">
-                    {formatDate(usuario.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
+                  </TabelaCelula>
+                  <TabelaCelula tenue>{formatDate(usuario.created_at)}</TabelaCelula>
+                  <TabelaCelula className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {/* Visualizar sempre disponível. Tom neutro: ler não
                           altera nada, e não precisa da cor de quem altera. */}
@@ -449,18 +494,17 @@ const UsuariosTab: React.FC = () => {
                           </BotaoDeAcao>
                         ) : confirmDelete === usuario.id ? (
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleDesativarUsuario(usuario.id)}
-                              className="rounded-lg bg-alerta-forte px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-110"
-                            >
+                            <Button variante="secundario"
+                              onClick={() => handleDesativarUsuario(usuario.id)}>
                               Desativar
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variante="secundario"
+                              tamanho="sm"
                               onClick={() => setConfirmDelete(null)}
-                              className="rounded-lg border border-borda bg-superficie-elevada px-3 py-1.5 text-xs font-semibold text-conteudo transition-colors hover:bg-borda"
                             >
                               Cancelar
-                            </button>
+                            </Button>
                           </div>
                         ) : (
                           // Ícone de ligar/desligar, não lixeira: aqui a ação
@@ -480,11 +524,11 @@ const UsuariosTab: React.FC = () => {
                         )
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TabelaCelula>
+                </TabelaLinha>
               ))}
-            </tbody>
-          </table>
+            </TabelaCorpo>
+          </Tabela>
         )}
       </div>
 
@@ -521,9 +565,7 @@ const UsuariosTab: React.FC = () => {
       >
         <div className="space-y-4">
           {senhaError && (
-            <div className="rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
-              {senhaError}
-            </div>
+            <Aviso variante="perigo">{senhaError}</Aviso>
           )}
 
           <div>
@@ -560,8 +602,10 @@ const UsuariosTab: React.FC = () => {
             <Button variante="secundario" onClick={fecharResetSenha}>
               Cancelar
             </Button>
-            <Button onClick={handleResetPassword}>
-              <IconeChave className="h-4 w-4" aria-hidden="true" />
+            <Button onClick={handleResetPassword} carregando={resetandoSenha}>
+              {!resetandoSenha && (
+                <IconeChave className="h-4 w-4" aria-hidden="true" />
+              )}
               Resetar senha
             </Button>
           </div>

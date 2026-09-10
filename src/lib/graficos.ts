@@ -97,6 +97,55 @@ export function corDaPrioridade(prioridade: string, escuro: boolean): string {
 }
 
 /**
+ * A tabela status -> slot da E18, adotada em PARTE.
+ *
+ * ── A tabela e fixada para os dois repositorios ──────────────────────
+ *
+ * A E18 fixa sete status com os nomes do HelpHS. O `StatusEnum` daqui tem
+ * cinco, e `cancelado`/`arquivado` sao campos booleanos, nao status. Os slots
+ * sem dono ficam DECLARADOS e vagos: nao se remove nem se renumera, porque
+ * renumerar de um lado quebra o alinhamento entre os dois repositorios.
+ *
+ *     E18                     slot           aqui
+ *     open                    --chart-1      Abertos
+ *     in_progress             --chart-2      Em Andamento
+ *     awaiting_client         --chart-3      Aguardando
+ *     awaiting_technical      --chart-4      VAGO — este modelo nao separa
+ *     resolved                --chart-5      NAO ADOTADO — ver abaixo
+ *     closed                  --chart-6      NAO ADOTADO — ver abaixo
+ *     cancelled               --chart-7      VAGO — cancelado aqui e flag
+ *
+ * ── Por que `resolved` e `closed` ficam de fora ──────────────────────
+ *
+ * Hoje "Resolvido" e "Fechado" pintam a MESMA cor. A E18 lhes daria slots
+ * diferentes — e aplicar isso responderia por acidente a pergunta de produto
+ * registrada como aberta desde o Checkpoint 3: se "Fechado" e "Resolvido" sao
+ * estados distintos. O sistema passaria a afirmar que sim, sem ninguem ter
+ * decidido.
+ *
+ * Quando a pergunta for respondida, a adocao completa e um commit.
+ *
+ * ── A cor sai por CLASSE, e nao por hexadecimal ──────────────────────
+ *
+ * `classeDeStatus` devolve o nome da classe; as regras estao em
+ * `src/styles/index.css` e leem `var(--chart-N)`. Nao ha copia de token, pelo
+ * mesmo motivo da moldura: atributo de apresentacao perde para regra CSS, e o
+ * `Cell` do Recharts repassa `className` ao elemento.
+ *
+ * Devolve `null` para quem nao foi adotado, e quem chama continua usando
+ * `corDoStatus` nesses casos.
+ */
+export function classeDeStatus(status: string): string | null {
+  const SLOT: Record<string, string> = {
+    'Aberto': 'serie-status-1',
+    'Abertos': 'serie-status-1',
+    'Em Andamento': 'serie-status-2',
+    'Aguardando': 'serie-status-3',
+  };
+  return SLOT[status] ?? null;
+}
+
+/**
  * Cor de status do chamado.
  *
  * Precisa ser a MESMA no ponto da coluna do quadro, no selo do detalhe e na
@@ -139,34 +188,22 @@ export function corDoStatus(status: string, escuro: boolean): string {
 }
 
 /**
- * Estilo dos eixos, grade e dica.
+ * A moldura do gráfico NÃO mora mais aqui — ela virou CSS.
  *
- * Os valores acompanham os tokens de tema: grade e eixo saem das bordas, o
- * texto sai de `--conteudo-suave`. Antes eram hexadecimais soltos, que é como
- * a grade de um gráfico acabava mais escura que a borda do card ao lado.
+ * O `estiloDoGrafico` existia para copiar tokens em hexadecimal, porque o
+ * Recharts escreve cor em ATRIBUTO de apresentação e `var()` não resolve ali.
+ * A cópia divergiu duas vezes; a última na E14, e atravessou três emendas sem
+ * nada acusar.
  *
- * A dica não tem canto arredondado, como o resto da interface.
+ * Atributo de apresentação tem especificidade zero e perde para qualquer regra
+ * CSS — medido no Chrome 153 e em jsdom, sem `!important`, e preso em
+ * `graficos-css.test.ts`. As três regras estão em `src/styles/index.css`, sobre
+ * as classes que o Recharts já emite, e leem o token direto.
+ *
+ * A dica saiu antes, para `components/ui/DicaDoGrafico.tsx`, porque nunca foi
+ * SVG: o Recharts a desenha num `div` sobreposto, que lê token por classe.
+ *
+ * A cópia foi de cinco campos para dois, e de dois para ZERO. Não há mais o que
+ * manter em sincronia, e a catraca `exigirMolduraFiel` deixou de ser muro para
+ * ser rede: ela guarda contra a cópia VOLTAR.
  */
-export function estiloDoGrafico(escuro: boolean) {
-  return {
-    // Os mesmos tokens de `styles/index.css`, em hexadecimal porque o Recharts
-    // recebe cor como string em JS e não enxerga classe do Tailwind.
-    //
-    // É uma CÓPIA, e cópia diverge: quando a paleta mudou para a do HelpHS,
-    // estes valores ficaram para trás — a grade continuou no cinza-azulado
-    // antigo dentro de cards que já eram slate. Se mexer nos tokens, mexa aqui.
-    grade: escuro ? '#1E3A5F' : '#E2E8F0', // --borda
-    eixo: escuro ? '#818FA3' : '#5E6E84', // --conteudo-tenue
-    texto: escuro ? '#94A3B8' : '#475569', // --conteudo-suave
-    dica: {
-      // No escuro a dica sobe para a superfície elevada, senão ela se confunde
-      // com o card por onde passa; no claro o branco já contrasta com a página.
-      backgroundColor: escuro ? '#1A2F4A' : '#FFFFFF',
-      border: `1px solid ${escuro ? '#1E3A5F' : '#E2E8F0'}`,
-      borderRadius: '8px',
-      color: escuro ? '#F1F5F9' : '#0F172A',
-      padding: '8px 12px',
-      boxShadow: '0 4px 14px rgb(0 0 0 / 0.25)',
-    },
-  };
-}

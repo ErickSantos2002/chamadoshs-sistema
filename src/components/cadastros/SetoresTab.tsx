@@ -2,9 +2,22 @@ import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
 import { useAuth } from '../../hooks/useAuth';
-import { BotaoDeAcao, Button, Input } from '../ui';
+import {
+  Aviso,
+  Badge,
+  BlocoCarregando,
+  BotaoDeAcao,
+  Button,
+  Input,
+  Tabela,
+  TabelaCabecalho,
+  TabelaCelula,
+  TabelaCelulaDeCabecalho,
+  TabelaCorpo,
+  TabelaLinha,
+} from '../ui';
 import SetorModal from './SetorModal';
-import { IconeAlerta, IconeBusca, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSeta, IconeSetaCima, IconeSetor } from '../ui/icones';
+import { IconeBusca, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSetor } from '../ui/icones';
 import type {
   Setor,
   ModalMode,
@@ -116,7 +129,7 @@ const SetoresTab: React.FC = () => {
   };
 
   const handleDesativarSetor = async (id: number) => {
-    if (!confirmDelete) {
+    if (confirmDelete !== id) {
       setConfirmDelete(id);
       return;
     }
@@ -147,7 +160,7 @@ const SetoresTab: React.FC = () => {
       {/* Header com ações */}
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeSetor className="h-6 w-6 text-sucesso-forte dark:text-sucesso-suave" />
+          <IconeSetor className="h-6 w-6 text-on-tint-success" />
           <h2 className="text-sm font-semibold text-conteudo">
             Setores
           </h2>
@@ -156,12 +169,17 @@ const SetoresTab: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Busca */}
           <div className="w-full sm:w-64">
+            {/* `aria-label` porque o campo nao tem rotulo visivel e o
+                placeholder some no primeiro caractere. `type="search"` porque
+                e busca. O icone e decoracao e nao pode ser lido junto do
+                nome — o mesmo tratamento que o template ja tinha. */}
             <Input
-              type="text"
+              type="search"
+              aria-label="Buscar setores"
               placeholder="Buscar setores..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              icone={<IconeBusca className="h-4 w-4" />}
+              icone={<IconeBusca className="h-4 w-4" aria-hidden="true" />}
             />
           </div>
 
@@ -179,7 +197,10 @@ const SetoresTab: React.FC = () => {
           {podeEditar && (
             <Button onClick={handleNovoSetor}>
               <IconeMais className="h-4 w-4" />
-              <span className="hidden sm:inline">Novo Setor</span>
+              {/* sr-only, e nao hidden: `hidden` e display:none e EXCLUI o texto do
+                  nome acessivel, e o icone e aria-hidden — abaixo de sm o botao
+                  ficava sem nome nenhum. Ver a catraca do rotulo que some. */}
+              <span className="sr-only sm:not-sr-only">Novo Setor</span>
             </Button>
           )}
         </div>
@@ -187,23 +208,15 @@ const SetoresTab: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
-          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">
-            <p>{error}</p>
-          </div>
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{error}</Aviso>
       )}
 
       {/* Tabela */}
       <div className="relative min-h-0 flex-1 overflow-auto rounded-xl border border-borda bg-superficie">
         {loading && !setores.length ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-sm text-conteudo-tenue">
-              <IconeRecarregar className="mx-auto mb-2 h-8 w-8 animate-spin" />
-              Carregando setores...
-            </div>
-          </div>
+          <BlocoCarregando className="h-full" tamanho="lg">
+            Carregando setores...
+          </BlocoCarregando>
         ) : setoresOrdenados.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8">
             <IconeSetor className="mb-4 h-12 w-12 text-conteudo-tenue" />
@@ -220,68 +233,41 @@ const SetoresTab: React.FC = () => {
             )}
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-borda">
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('id')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    ID
-                    {ordenacao.campo === 'id' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('nome')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    Nome
-                    {ordenacao.campo === 'nome' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  Descrição
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                  <button
-                    onClick={() => handleOrdenar('created_at')}
-                    className="flex items-center gap-1 hover:text-conteudo"
-                  >
-                    Criado em
-                    {ordenacao.campo === 'created_at' && (
-                      ordenacao.direcao === 'asc' ?
-                        <IconeSetaCima className="h-4 w-4" /> :
-                        <IconeSeta className="h-4 w-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-conteudo-suave">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {setoresOrdenados.map((setor) => (
-                <tr
-                  key={setor.id}
-                  className={`border-b border-borda-suave transition-colors hover:bg-superficie-elevada ${
-                    setor.ativo ? '' : 'opacity-60'
-                  }`}
+          <Tabela>
+            <TabelaCabecalho>
+              <tr>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('id')}
+                  ordenadaPor={ordenacao.campo === 'id' ? ordenacao.direcao : null}
                 >
-                  <td className="px-4 py-3 text-sm text-conteudo">
-                    #{setor.id}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  ID
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('nome')}
+                  ordenadaPor={ordenacao.campo === 'nome' ? ordenacao.direcao : null}
+                >
+                  Nome
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho>Descrição</TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho
+                  aoOrdenar={() => handleOrdenar('created_at')}
+                  ordenadaPor={
+                    ordenacao.campo === 'created_at' ? ordenacao.direcao : null
+                  }
+                >
+                  Criado em
+                </TabelaCelulaDeCabecalho>
+                <TabelaCelulaDeCabecalho aDireita>Ações</TabelaCelulaDeCabecalho>
+              </tr>
+            </TabelaCabecalho>
+            <TabelaCorpo>
+              {setoresOrdenados.map((setor) => (
+                <TabelaLinha
+                  key={setor.id}
+                  className={setor.ativo ? undefined : 'opacity-60'}
+                >
+                  <TabelaCelula>#{setor.id}</TabelaCelula>
+                  <TabelaCelula>
                     <div className="flex items-center gap-2">
                       <IconeSetor className="h-4 w-4 text-conteudo-tenue" />
                       <span className="text-sm font-medium text-conteudo">
@@ -289,20 +275,12 @@ const SetoresTab: React.FC = () => {
                       </span>
                       {/* Setor também é desativado, não apagado: usuários
                           apontam para ele e apagar quebraria a referência. */}
-                      {!setor.ativo && (
-                        <span className="inline-flex rounded-full bg-superficie-elevada px-2 py-0.5 text-[11px] font-medium text-conteudo-tenue">
-                          Inativo
-                        </span>
-                      )}
+                      {!setor.ativo && <Badge variante="discreto">Inativo</Badge>}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-conteudo-suave">
-                    {setor.descricao || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-conteudo-suave">
-                    {formatDate(setor.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
+                  </TabelaCelula>
+                  <TabelaCelula tenue>{setor.descricao || '-'}</TabelaCelula>
+                  <TabelaCelula tenue>{formatDate(setor.created_at)}</TabelaCelula>
+                  <TabelaCelula className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {/* Visualizar sempre disponível. Tom neutro: ler não
                           altera nada, e não precisa da cor de quem altera. */}
@@ -340,19 +318,41 @@ const SetoresTab: React.FC = () => {
                             <IconeDesfazer className="h-4 w-4" />
                           </BotaoDeAcao>
                         ) : confirmDelete === setor.id ? (
+                          // ESTE PAR CONTINUA ESCRITO A MAO, e nao e
+                          // esquecimento — e a falta de uma variante.
+                          //
+                          // O `Button` tem primario, secundario, sucesso,
+                          // perigo e fantasma; o `Button.jsx` do pacote tem o
+                          // mesmo conjunto. Nao ha variante de ALERTA, e aqui
+                          // a acao pede ambar de proposito: ela desativa, o
+                          // botao ao lado reverte, e vermelho prometeria
+                          // irreversivel — que e o que a lixeira de Categorias
+                          // significa e esta nao.
+                          //
+                          // Inventar `variante="alerta"` seria criar API que o
+                          // pacote nao tem, o que a secao 30 proibe. Migrar so
+                          // o "Cancelar" deixaria dois botoes irmaos com pesos
+                          // de fonte diferentes, um ao lado do outro.
+                          //
+                          // O contraste esta certo: `--alerta-forte` e
+                          // warning-700, e branco sobre ele da 5,02:1. A
+                          // catraca nao o acusa.
+                          //
+                          // Levantado ao operador como candidato a emenda do
+                          // pacote — e o mesmo formato da E7: um degrau que
+                          // falta, com uso real.
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleDesativarSetor(setor.id)}
-                              className="rounded-lg bg-alerta-forte px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-110"
-                            >
+                            <Button variante="secundario"
+                              onClick={() => handleDesativarSetor(setor.id)}>
                               Desativar
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variante="secundario"
+                              tamanho="sm"
                               onClick={() => setConfirmDelete(null)}
-                              className="rounded-lg border border-borda bg-superficie-elevada px-3 py-1.5 text-xs font-semibold text-conteudo transition-colors hover:bg-borda"
                             >
                               Cancelar
-                            </button>
+                            </Button>
                           </div>
                         ) : (
                           // Ícone de ligar/desligar, não lixeira: aqui a ação
@@ -372,11 +372,11 @@ const SetoresTab: React.FC = () => {
                         )
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TabelaCelula>
+                </TabelaLinha>
               ))}
-            </tbody>
-          </table>
+            </TabelaCorpo>
+          </Tabela>
         )}
       </div>
 

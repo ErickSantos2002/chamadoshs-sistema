@@ -1,12 +1,20 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { PrioridadeEnum, TarefaRecorrente } from '../types/api';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
-import { Badge, Button, Input, Modal, Seletor } from '../components/ui';
+import {
+  Aviso,
+  Badge,
+  BlocoCarregando,
+  Button,
+  Input,
+  Modal,
+  Seletor,
+} from '../components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import { ehDaPessoa, responsaveisDosChamados } from '../lib/pessoas';
@@ -14,7 +22,7 @@ import { agruparPorColuna, estaNoFluxo } from '../lib/quadro';
 import { cn } from '../lib/utils';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
-import { IconeAgenda, IconeArquivar, IconeBusca, IconeCarregando, IconeConfereCirculo, IconeMais } from '../components/ui/icones';
+import { IconeAgenda, IconeArquivar, IconeBusca, IconeConfereCirculo, IconeMais } from '../components/ui/icones';
 
 // Data de hoje (local) em YYYY-MM-DD, para comparar com proxima_data das tarefas
 const hojeYMD = (): string => {
@@ -253,10 +261,9 @@ const Chamados: React.FC = () => {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <IconeCarregando className="mx-auto mb-4 h-12 w-12 animate-spin text-info" />
+        <BlocoCarregando tamanho="lg">
           <p className="text-conteudo-suave">Carregando chamados...</p>
-        </div>
+        </BlocoCarregando>
       </div>
     );
   }
@@ -393,7 +400,7 @@ const Chamados: React.FC = () => {
       {(isAdmin || isTecnico) && (
         <div className="shrink-0 rounded-xl border border-borda bg-superficie p-5">
           <div className="mb-3 flex items-center gap-2">
-            <IconeAgenda className="h-4 w-4 text-info" />
+            <IconeAgenda className="h-4 w-4 text-on-tint-info" />
             <h2 className="text-sm font-semibold text-conteudo">
               Tarefas recorrentes do dia
             </h2>
@@ -403,7 +410,7 @@ const Chamados: React.FC = () => {
             // O ✅ era um emoji: desenhado pelo sistema, colorido por conta
             // própria e alheio ao tema. O ícone acompanha a cor do texto.
             <p className="flex items-center gap-2 text-sm text-conteudo-tenue">
-              <IconeConfereCirculo className="h-4 w-4 shrink-0 text-sucesso" />
+              <IconeConfereCirculo className="h-4 w-4 shrink-0 text-on-tint-success" />
               Nenhuma tarefa recorrente para hoje.
             </p>
           ) : (
@@ -418,10 +425,28 @@ const Chamados: React.FC = () => {
                 const atrasada = t.proxima_data < hoje;
                 return (
                   <li key={t.id} className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={() => navigate('/tarefas-recorrentes')}
+                    {/*
+                      Era um `<button>` com `navigate()` dentro, e a tela
+                      inteira dizia "link": sublinha no hover, sem moldura, sem
+                      preenchimento, e o clique leva para outra rota.
+
+                      Botao que navega e o mesmo defeito de familia da linha
+                      clicavel e do `disabled` que significava "atual" -- o
+                      sinal certo pelo mecanismo errado. Quem usa leitor de tela
+                      ouve "botao" e nao sabe que vai sair da pagina; e o
+                      navegador tira junto o que so link tem: abrir em nova aba
+                      pelo meio ou pelo Ctrl, o menu do botao direito, e o
+                      endereco na barra de status antes de clicar.
+
+                      `Link` devolve as tres coisas sem mudar um pixel: o
+                      preflight do Tailwind ja tira o sublinhado e a cor padrao
+                      do `<a>`, entao as classes seguem valendo iguais.
+                    */}
+                    <Link
+                      to="/tarefas-recorrentes"
                       className={cn(
-                        'text-left text-sm font-medium transition-colors hover:text-info hover:underline',
+                        'text-left text-sm font-medium transition-colors hover:text-on-tint-info hover:underline',
+                        'rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
                         !pendente && realizadaHoje
                           ? 'text-conteudo-tenue'
                           : 'text-conteudo'
@@ -429,7 +454,7 @@ const Chamados: React.FC = () => {
                       title="Ir para Tarefas Recorrentes"
                     >
                       {t.titulo}
-                    </button>
+                    </Link>
 
                     {/* Os selos são os mesmos do resto do sistema: fundo de
                         significado a 20% e texto na cor cheia, desenhados
@@ -465,9 +490,7 @@ const Chamados: React.FC = () => {
 
       {/* Mensagem de erro */}
       {error && (
-        <div className="shrink-0 rounded-xl border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
-          {error}
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{error}</Aviso>
       )}
 
       {/* Kanban. Quatro colunas de fluxo; as duas de fora — arquivo e

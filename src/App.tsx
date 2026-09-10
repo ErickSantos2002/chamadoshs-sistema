@@ -9,7 +9,22 @@ import NovidadesModal from './components/NovidadesModal';
 import { useNovidades } from './hooks/useNovidades';
 
 // Rotas onde a casca (barra lateral e topo) não deve aparecer.
-const noLayoutRoutes = ['/login'];
+//
+// `/dev/galeria` entra porque ela MONTA A PRÓPRIA casca, para poder
+// fotografá-la em estados que a casca daqui não expõe. Sem isto seriam duas,
+// uma dentro da outra.
+//
+// `/dev/componentes` entra por motivo oposto: ela não quer casca NENHUMA. O
+// que está sendo fotografado são os primitivos, e a barra lateral em volta
+// roubaria metade da largura de uma página que já é uma grade larga.
+//
+// Sob o mesmo `import.meta.env.DEV` que registra a rota em `router.tsx`: o
+// Vite troca por `false` literal, e nem o endereço sobra no bundle. Ele não
+// faria mal nenhum ali — nada casaria com ele —, mas "não existe em produção"
+// é mais fácil de conferir do que "existe e é inofensivo".
+const noLayoutRoutes = import.meta.env.DEV
+  ? ['/login', '/dev/galeria', '/dev/componentes']
+  : ['/login'];
 
 /**
  * O toast é o mesmo nas duas situações — com casca e sem — então a
@@ -30,8 +45,33 @@ const AvisosFlutuantes: React.FC = () => (
         color: 'var(--toast-color)',
         border: '1px solid var(--toast-border)',
       },
-      success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-      error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+      // O ícone sai do token de significado do design system, como o resto do
+      // toast. Eram quatro hexadecimais cravados — os últimos do arquivo.
+      success: {
+        iconTheme: {
+          // O par da emenda E2, e nao o degrau 500 com branco cravado.
+          //
+          // O visto do toast e branco DENTRO de um circulo: e forma, nao
+          // texto, entao o piso e 3:1 (WCAG 1.4.11). Branco sobre
+          // --color-success-500 da 2,54:1 — o mesmo numero que a E2 corrigiu
+          // no botao `sucesso`, pelo mesmo motivo, no mesmo dia.
+          //
+          // --action-success e o degrau que a E2 criou justamente para
+          // carregar branco por cima: 5,48:1.
+          primary: 'var(--action-success)',
+          secondary: 'var(--text-on-success)',
+        },
+      },
+      error: {
+        iconTheme: {
+          // O de erro passava (3,76:1), mas vai para o mesmo par pela mesma
+          // razao de procedencia: --action-danger existe para isto, da 4,83:1,
+          // e deixar os dois toasts em degraus diferentes seria manter uma
+          // divergencia sem motivo.
+          primary: 'var(--action-danger)',
+          secondary: 'var(--text-on-danger)',
+        },
+      },
     }}
   />
 );

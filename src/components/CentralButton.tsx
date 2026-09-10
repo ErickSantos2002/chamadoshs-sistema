@@ -23,11 +23,23 @@ const CentralButton: React.FC = () => {
         }}
         aria-label="Ir para Central HS"
       >
-        {/* Efeito de pulso (opcional) */}
-        <span
-          className="absolute inline-flex h-full w-full rounded-full bg-sinal/20 animate-ping"
-          style={{ animationDuration: '2s' }}
-        />
+        {/* O pulso saiu, e não por gosto.
+         *
+         * Era `animate-ping` com 2s, em laço, e o `App.tsx` renderiza este
+         * botão em TODAS as telas. A §22 do prompt mestre é literal:
+         *
+         *   "nada pisca em laço numa tela aberta o dia inteiro — exceções:
+         *    `Spinner` e `hs-logo-pulse` no login"
+         *
+         * Este não é nenhum dos dois. Era animação decorativa perpétua no canto
+         * da tela de quem passa o dia no sistema — e o próprio comentário a
+         * chamava de "opcional", o que é a confissão de que não carregava
+         * função nenhuma.
+         *
+         * O botão continua se anunciando: tem `hover:bg-superficie-elevada`,
+         * `hover:shadow-xl` e a escala no `isHovered`. O que sumiu foi o que
+         * chamava atenção sem ninguém pedir.
+         */}
 
         {/* Logo */}
         <img

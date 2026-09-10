@@ -1,93 +1,164 @@
-/* ── Fonte ───────────────────────────────────────────────────────
+/* ── Tokens do Design System ─────────────────────────────────────
  *
- * Plus Jakarta Sans, que é a fonte do HelpHS — e o que mais faz duas telas
- * parecerem do mesmo sistema, antes mesmo da cor.
+ * A fonte da verdade visual, copiada do pacote oficial da Health & Safety
+ * (export de 02/09/2026) para `src/design-system/`. Não editar lá: alterar no
+ * design system e recopiar.
  *
- * Vem do pacote `@fontsource/plus-jakarta-sans`, ou seja: os `.woff2` entram
- * no bundle e são servidos pelo nginx do próprio ChamadosHS.
+ * Vem ANTES das diretivas do Tailwind, como manda o passo 1 de
+ * `DS/guidelines/adocao.md` — as CSS variables precisam existir quando o
+ * `theme.extend` de `tailwind.config.js` as referencia.
  *
- * O HelpHS carrega a mesma fonte do CDN do Google. Aqui isso não serve: o
- * sistema roda na rede interna da HS, e `src/recursos-externos.test.ts` existe
- * justamente porque já houve 12 ícones vindos de `img.icons8.com`. Se o
- * provedor cair ou o IP da empresa for bloqueado, a tipografia inteira some
- * sem ninguém ter tocado em código — e o `font-display: swap` do Google
- * garante que ela some em silêncio, caindo na fonte do sistema.
+ * **Sem desvio local.** Até 02/09/2026 havia um: o `@import` do Google Fonts
+ * em `tokens/typography.css` ficava comentado e a fonte vinha de um pacote npm
+ * importado logo abaixo. A emenda E3 levou a auto-hospedagem para dentro do
+ * próprio pacote, então os sete arquivos voltaram a ser cópia crua e o desvio
+ * deixou de existir. Ver `design-system/VERSION.md` e
+ * `design-system/EMENDAS.md`.
  *
- * São os mesmos seis pesos que o HelpHS pede (300 a 800), só no subconjunto
- * latino: ~76 KB no total, e o latino básico já cobre todo acento do
- * português. */
-@import '@fontsource/plus-jakarta-sans/latin-300.css';
-@import '@fontsource/plus-jakarta-sans/latin-400.css';
-@import '@fontsource/plus-jakarta-sans/latin-500.css';
-@import '@fontsource/plus-jakarta-sans/latin-600.css';
-@import '@fontsource/plus-jakarta-sans/latin-700.css';
-@import '@fontsource/plus-jakarta-sans/latin-800.css';
+ * A fonte entra por aqui: `styles.css` importa `tokens/typography.css`, que
+ * traz as doze regras `@font-face` apontando para `../design-system/fonts/`.
+ * Não há mais nada a importar neste arquivo. */
+@import '../design-system/styles.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Tokens de tema ───────────────────────────────────────────────────
+/* ── Ponte para os tokens do Design System ───────────────────────────
  *
- * Um nome por PAPEL na interface, não por cor. `--superficie` continua
- * fazendo sentido quando o fundo mudar de tom; `mediumGray` não.
+ * TEMPORÁRIA. Decisão D3-a de 02/09/2026, registrada em
+ * `src/design-system/VERSION.md`. Sai quando a Fase 16 terminar.
  *
- * O par claro/escuro fica aqui, num lugar só. A consequência prática é que
- * o componente escreve `bg-superficie` e para — sem `dark:` em toda classe,
- * que é como as telas antigas fazem e o motivo de cada uma ter divergido um
- * pouco das outras.
+ * ── Por que ela existe ───────────────────────────────────────────────
  *
- * Valores em "R G B" separados por espaço: é o formato que o Tailwind exige
- * para conseguir aplicar opacidade por cima (`bg-superficie/50`).
+ * Os tokens do pacote são hexadecimais (`--surface: #ffffff`). Os deste
+ * projeto são os TRÊS CANAIS separados por espaço, e não por gosto: é o
+ * formato que o Tailwind exige para conseguir aplicar opacidade por cima, em
+ * `rgb(var(--x) / <alpha-value>)`. Há 78 classes com opacidade escritas hoje
+ * — `bg-perigo/10`, `bg-sinal/10`, `border-sucesso/30` — e um alias direto
+ * (`--superficie: var(--surface)`) quebraria todas, porque
+ * `rgb(#ffffff / 0.5)` não é CSS válido.
+ *
+ * Então esta camada não é uma segunda paleta: é a MESMA paleta do pacote,
+ * escrita no formato que o Tailwind consegue consumir com opacidade. Cada
+ * linha nomeia o token do design system de onde o valor veio, e os dois têm
+ * de bater. Se divergirem, o design system vence e esta camada está errada.
+ *
+ * ── Como ela morre ───────────────────────────────────────────────────
+ *
+ * Tela a tela, nas Fases 11–16: cada `bg-superficie` vira `bg-surface`, cada
+ * `bg-perigo/10` vira `bg-[var(--tint-danger)]`. Quando não sobrar nenhum uso
+ * dos nomes em português, este bloco inteiro sai e ficam só os tokens do
+ * pacote.
+ *
+ * ── Os três níveis de texto ──────────────────────────────────────────
+ *
+ * O projeto tem três (`conteudo`, `-suave`, `-tenue`) e o pacote tem quatro
+ * (`heading`, `body`, `muted`, `faint`). O encaixe está abaixo, e o degrau que
+ * sobra é `--text-faint`: ele reprova em 4,5:1 nos DOIS temas (2,56 no claro,
+ * 3,36 no escuro), então fica reservado a placeholder, ícone decorativo e
+ * texto não informativo — onde reprovar é aceitável porque nada se perde ao
+ * não ler. É a decisão D4-a, na redação do D9, e é o que mantém
+ * `npm run validar:paleta` verde — ele roda dentro do `npm run build` e falha
+ * se alguém baixar um valor.
+ *
+ * Os números de contraste no comentário de cada nível de texto são contra as
+ * TRÊS superfícies, nesta ordem: `--surface` · `--bg-base` ·
+ * `--surface-elevated`. Um número só, contra a mais clara, foi o que deixou o
+ * `--text-muted` passar por aprovado em 4,76:1 enquanto dava 4,34:1 sobre a
+ * superfície elevada — o defeito que a emenda E5 do pacote consertou.
  *
  * A classe `dark` é aplicada no <html> pelo ThemeContext.
- *
- * ── Uma linguagem, duas paletas ──────────────────────────────────────
- *
- * A pegada de console não vem do fundo escuro. Vem de canto reto, traço de
- * 1px como estrutura, colchete nos cantos do painel, rótulo monoespaçado e
- * uma cor de sinal reservada ao que está ativo. Só o primeiro dos cinco
- * depende do tema, e é por isso que o modo claro não precisa ser uma versão
- * morna do escuro: os mesmos traços sobre fundo claro dão prancheta técnica.
- *
- * Todo par texto/superfície abaixo foi medido, não estimado. `npm run
- * validar:paleta` refaz a conta e falha se alguém baixar um valor.
- *
- * O matiz vem da marca: o azul do logo H&S é #1F89CA, matiz 203°. Ele não
- * aparece como token porque dá 3,83:1 no branco — serve para o logo, não
- * para texto. Os dois `--sinal` são esse matiz escurecido e clareado.
  */
 @layer base {
   :root {
-    --superficie-base: 248 250 252;    /* #F8FAFC — slate-50            */
-    --superficie: 255 255 255;         /* #FFFFFF — cards, painéis      */
-    --superficie-elevada: 241 245 249; /* #F1F5F9 — slate-100           */
+    /* Superfícies */
+    --superficie-base: 248 250 252;    /* --bg-base          slate-50  #F8FAFC */
+    --superficie: 255 255 255;         /* --surface          white     #FFFFFF */
+    --superficie-elevada: 241 245 249; /* --surface-elevated slate-100 #F1F5F9 */
 
-    --borda: 226 232 240;              /* #E2E8F0 — slate-200           */
-    --borda-suave: 241 245 249;        /* #F1F5F9 — slate-100           */
-    --borda-forte: 148 163 184;        /* #94A3B8 — slate-400, scrollbar*/
+    /* Bordas */
+    --borda: 226 232 240;              /* --border-color     slate-200 #E2E8F0 */
+    --borda-suave: 241 245 249;        /* --border-muted     slate-100 #F1F5F9 */
+    --borda-forte: 203 213 225;        /* --border-strong    slate-300 #CBD5E1 */
 
-    --conteudo: 15 23 42;              /* #0F172A — 17,9:1              */
-    --conteudo-suave: 71 85 105;       /* #475569 —  7,6:1              */
-    --conteudo-tenue: 94 110 132;      /* #5E6E84 —  5,2:1              */
+    /* Conteúdo — ver "Os três níveis de texto" acima */
+    --conteudo: 15 23 42;              /* --text-heading     slate-900 #0F172A  17,85 · 17,06 · 16,30 */
+    --conteudo-suave: 30 41 59;        /* --text-body        slate-800 #1E293B  14,63 · 13,98 · 13,35 */
+    /* E5 do pacote (03/09/2026): o token foi de slate-500 a slate-600 porque
+     * sobre --surface-elevated o 500 dava 4,34:1. A ponte segue o token — se
+     * ela ficasse em slate-500, o pacote diria uma coisa e as telas pintariam
+     * outra, que e a segunda fonte de verdade que a §5.4 proibe. */
+    --conteudo-tenue: 71 85 105;       /* --text-muted       slate-600 #475569   7,58 · 7,24 · 6,92 */
 
-    --sinal: 3 105 161;                /* #0369A1 —  5,9:1              */
+    /* Sinal = a cor de AÇÃO do pacote, não o degrau de marca. O 500
+     * (#1F89CA) dá 3,83:1 no branco e serve para logo, borda e gráfico —
+     * nunca para texto. Quem age é o 600. */
+    --sinal: 26 113 168;               /* --action     primary-600 #1A71A8  5,29:1 */
+
+    /* Cores de significado. Já eram exatamente os degraus 500/700/400 do
+     * pacote antes desta migração — aqui só passam a apontar para ele. */
+    --sucesso: 16 185 129;             /* --color-success-500 #10B981 */
+    --sucesso-forte: 4 120 87;         /* --color-success-700 #047857 */
+    --sucesso-suave: 52 211 153;       /* --color-success-400 #34D399 */
+    --perigo: 239 68 68;               /* --color-danger-500  #EF4444 */
+    --perigo-forte: 185 28 28;         /* --color-danger-700  #B91C1C */
+    --perigo-suave: 248 113 113;       /* --color-danger-400  #F87171 */
+    --alerta: 245 158 11;              /* --color-warning-500 #F59E0B */
+    --alerta-forte: 180 83 9;          /* --color-warning-700 #B45309 */
+    --alerta-suave: 251 191 36;        /* --color-warning-400 #FBBF24 */
+    --info: 59 130 246;                /* --color-info-500    #3B82F6 */
+    --info-forte: 29 78 216;           /* --color-info-700    #1D4ED8 */
+    --info-suave: 96 165 250;          /* --color-info-400    #60A5FA */
   }
 
   .dark {
-    --superficie-base: 13 27 42;       /* #0D1B2A — navy do HelpHS */
-    --superficie: 19 34 56;            /* #132238 */
-    --superficie-elevada: 26 47 74;    /* #1A2F4A */
+    --superficie-base: 13 27 42;       /* --bg-base          #0D1B2A */
+    --superficie: 19 34 56;            /* --surface          #132238 */
+    --superficie-elevada: 26 47 74;    /* --surface-elevated #1A2F4A */
 
-    --borda: 30 58 95;                 /* #1E3A5F */
-    --borda-suave: 19 34 56;           /* #132238 — = superfície */
-    --borda-forte: 100 116 139;        /* #64748B — slate-500, scrollbar */
+    /* E14 do pacote — a rampa de borda do escuro sobe um degrau.
+     *
+     * `--border-muted` era `#132238`, o MESMO valor de `--surface`: contraste
+     * 1,00 contra ela, ou seja, um divisor invisível dentro de qualquer Card.
+     * O `--border-color` cede o próprio valor ao muted e sobe; o
+     * `--border-strong` fica onde estava, e a hierarquia se preserva.
+     *
+     * Medido aqui, contra as três superfícies do escuro:
+     *
+     *                     bg-base  surface  elevada
+     *   suave   antes       1,09     1,00     1,18
+     *   suave   depois      1,51     1,39     1,18
+     *   borda   antes       1,51     1,39     1,18
+     *   borda   depois      1,74     1,60     1,36
+     *   forte   (igual)     2,50     2,29     1,94
+     *
+     * Nada piora: o suave na elevada fica em 1,18, que é exatamente onde o
+     * `--borda` já estava. E nenhum dos três é limite de CONTROLE — esse é o
+     * `--border-control`, que a E7 criou e que dá 5,29:1 na elevada. Estes
+     * separam superfície, e por isso o piso de 3:1 da 1.4.11 não se aplica a
+     * eles.
+     *
+     * A ponte tinha os valores ANTIGOS cravados e não teria acompanhado a
+     * recópia: o `colors.css` do pacote é lido para `var(--border-*)`, mas o
+     * Tailwind precisa dos canais `R G B` para o modificador de alfa, e é essa
+     * conversão que mora aqui. É uma segunda fonte de verdade que a §5.4
+     * tolera por necessidade — e que, por isso mesmo, precisa ser conferida a
+     * cada recópia. Esta ficou dois valores atrás por uma tarde. */
+    --borda: 42 68 99;                 /* --border-color     #2A4463 */
+    --borda-suave: 30 58 95;           /* --border-muted     #1E3A5F */
+    --borda-forte: 49 93 129;          /* --border-strong    #315D81 */
 
-    --conteudo: 241 245 249;           /* #F1F5F9 — slate-100, 14,6:1 */
-    --conteudo-suave: 148 163 184;     /* #94A3B8 — slate-400,  6,2:1 */
-    --conteudo-tenue: 129 143 163;     /* #818FA3 —             4,9:1 */
+    --conteudo: 241 245 249;           /* --text-heading     slate-100 #F1F5F9  14,59 · 15,88 · 12,37 */
+    --conteudo-suave: 226 232 240;     /* --text-body        slate-200 #E2E8F0  12,97 · 14,11 · 10,99 */
+    --conteudo-tenue: 148 163 184;     /* --text-muted       slate-400 #94A3B8   6,23 · 6,78 · 5,29 */
 
-    --sinal: 14 165 233;               /* #0EA5E9 — primary,    5,8:1 */
+    /* No escuro a escada inverte: o tom claro é que passa no contraste. */
+    --sinal: 71 166 225;               /* --action     primary-400 #47A6E1  5,95:1 */
+
+    /* As cores de significado NÃO mudam por tema — erro é vermelho nos dois.
+     * Quem muda é o texto por cima, e disso cuidam os `--on-tint-*` do
+     * pacote, que já trocam sozinhos. */
   }
 }
 
@@ -113,6 +184,71 @@ body,
   @apply bg-superficie-base font-sans text-conteudo antialiased transition-colors;
 }
 
+/* ── Os gráficos leem TOKEN, e não hexadecimal copiado ────────────────
+ *
+ * O Recharts escreve cor em ATRIBUTO de apresentação — `stroke=` na linha da
+ * grade, `fill=` no rótulo das marcas —, e `var()` não resolve em atributo:
+ * `var()` é valor de propriedade CSS, não de atributo. Foi por isso que o
+ * `graficos.ts` mantinha uma segunda cópia dos tokens, em hexadecimal, com o
+ * nome do token de origem no comentário ao lado.
+ *
+ * Essa cópia divergiu DUAS vezes. A última na E14, que subiu o `--border-color`
+ * do escuro de `#1E3A5F` para `#2A4463`: a recópia do token entrou, a cópia da
+ * moldura não, e nada acusou por três emendas.
+ *
+ * ── O que resolve, e a prova ─────────────────────────────────────────
+ *
+ * Atributo de apresentação tem especificidade ZERO, e **perde para qualquer
+ * regra CSS**. Então basta mirar as classes que o Recharts já emite — e o token
+ * volta a ser lido de um lugar só.
+ *
+ * Medido, e não citado da especificação. No Chrome 153, com um `<text
+ * fill="#ff0000">` e um `<line stroke="#00ff00">` sob uma regra de classe, SEM
+ * `!important`:
+ *
+ *     fill    #ff0000  ->  computado  rgb(1, 2, 3)
+ *     stroke  #00ff00  ->  computado  rgb(4, 5, 6)
+ *
+ * O mesmo em jsdom, e o caso está preso em `src/lib/graficos-css.test.ts`.
+ *
+ * ── O custo, que é acoplamento e está declarado ──────────────────────
+ *
+ * Isto acopla aos nomes de classe do Recharts. O acoplamento anterior era
+ * INVISÍVEL — dependia de alguém lembrar de atualizar a cópia — e já falhou.
+ * Este é visível, mora aqui, e está preso por caso de teste que renderiza um
+ * gráfico e afirma que as classes saem no DOM: uma renomeação em versão maior
+ * reprova em voz alta, em vez de a cor sumir calada.
+ */
+
+/* ── O grafico de STATUS le os --chart-* da E18 ───────────────────────
+ *
+ * Uma classe por slot, e nao hexadecimal em JS: e o mesmo caminho da moldura,
+ * pelo mesmo motivo — atributo de apresentacao perde para regra CSS.
+ *
+ * Cada regra pinta `fill` E `background-color` de proposito: a mesma classe
+ * serve a fatia da rosca, que e SVG, e ao marcador da legenda, que e um `span`
+ * de HTML. Uma fonte so para os dois, e nada para manter em sincronia.
+ *
+ * A tabela e a ordem dos slots estao em `src/lib/graficos.ts`. Os slots 4 a 7
+ * existem na E18 e nao tem regra aqui: nao ha serie que os ocupe, e declarar
+ * regra sem dono seria convidar alguem a usa-los fora da tabela.
+ */
+.serie-status-1 { fill: var(--chart-1); background-color: var(--chart-1); }
+.serie-status-2 { fill: var(--chart-2); background-color: var(--chart-2); }
+.serie-status-3 { fill: var(--chart-3); background-color: var(--chart-3); }
+
+.recharts-cartesian-grid line {
+  stroke: rgb(var(--borda));            /* era estiloDoGrafico.grade */
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: rgb(var(--conteudo-suave));     /* era estiloDoGrafico.texto */
+}
+
+.recharts-tooltip-cursor {
+  fill: rgb(var(--borda) / 0.3);        /* era cursor={{ fill: estilo.grade, fillOpacity: 0.3 }} */
+}
+
 /* Ícone do calendário branco no modo escuro */
 .dark input[type='date']::-webkit-calendar-picker-indicator {
   filter: invert(1);
@@ -124,19 +260,27 @@ body,
  * discreta o bastante para não competir com o conteúdo e visível o bastante
  * para dizer que há mais coisa abaixo.
  *
- * Continua saindo do token (`--borda-forte`) e não de um cinza cravado: no
- * claro ela precisa escurecer para aparecer, no escuro precisa clarear, e a
- * variável já faz essa troca sozinha. Deixou de ser quadrada junto com o resto
- * do sistema. */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+ * Continua saindo do token (`--borda-forte` = `--border-strong`) e não de um
+ * cinza cravado: no claro ela precisa escurecer para aparecer, no escuro
+ * precisa clarear, e a variável já faz essa troca sozinha.
+ *
+ * Voltou a ser reta com o resto do sistema (decisão D2-a): "ChamadosHS: reto,
+ * em tudo" — `DS/readme.md`, Fundamentos visuais → Cantos. */
+/* A LARGURA e a TRILHA saem do pacote, e não daqui.
+ *
+ * Havia aqui `::-webkit-scrollbar { width: 6px; height: 6px }` e
+ * `::-webkit-scrollbar-track { background: transparent }` — os dois **byte a
+ * byte idênticos** ao `design-system/tokens/base.css`. Vieram de carona quando
+ * se copiou o bloco inteiro para customizar o polegar.
+ *
+ * Não eram decisão: eram carona. E carona custa o mesmo que cópia — no dia em
+ * que o pacote levar a barra a 8px, estas linhas seguram 6 caladas.
+ *
+ * O que fica abaixo é decisão de verdade, e por isso continua: canto reto pela
+ * D2-a, e cor por token nosso em vez do slate cravado do pacote.
+ */
 ::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
+  border-radius: var(--radius-none);
   background-color: rgb(var(--borda-forte) / 0.6);
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -145,21 +289,13 @@ body,
 
 /* Toast
  *
- * Consumidas em App.tsx, na configuração do react-hot-toast. Ficam como
- * variáveis porque a biblioteca recebe um objeto de estilo em JS e não
- * enxerga classe do Tailwind. */
-@layer base {
-  :root {
-    --toast-bg: #ffffff;
-    --toast-color: #0f172a;
-    --toast-border: #e2e8f0;
-  }
-  .dark {
-    --toast-bg: #1a2f4a;
-    --toast-color: #f1f5f9;
-    --toast-border: #1e3a5f;
-  }
-}
+ * `--toast-bg`, `--toast-color` e `--toast-border` NÃO são declarados aqui:
+ * vêm de `design-system/tokens/colors.css`, que já os define nos dois temas.
+ * Eram seis hexadecimais cravados nesta altura do arquivo e saíram na Fase 1.
+ *
+ * Continuam sendo consumidos em `App.tsx`, na configuração do react-hot-toast,
+ * porque a biblioteca recebe um objeto de estilo em JS e não enxerga classe do
+ * Tailwind. */
 
 /* 🎯 Animação para tooltip do botão Central HS */
 @keyframes fadeIn {
@@ -177,15 +313,48 @@ body,
   animation: fadeIn 0.2s ease-out;
 }
 
-/* Respeita quem pediu menos movimento no sistema operacional. A interface
- * nova tem transição em borda, fundo e realce; para quem marcou essa
- * preferência, isso é desconforto, não polimento. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+/* ── A regra de movimento reduzido é DO PACOTE, e saiu daqui ────────
+ *
+ * Havia aqui um bloco `@media (prefers-reduced-motion: reduce)` **byte a byte
+ * idêntico** ao de `design-system/tokens/motion.css`. A §22 do prompt mestre é
+ * explícita: *"o `base.css`/`motion.css` já zera; NÃO SOBRESCREVA"*.
+ *
+ * E não era duplicata inofensiva: medido no CSS **compilado**, o bloco do pacote
+ * saía na linha 789 e o local na 3707. Mesma especificidade, mesmo `!important`
+ * — **o último vence, e o último era o local.**
+ *
+ * O dia em que o pacote emendasse a regra — acrescentando `scroll-behavior:
+ * auto`, por exemplo — a emenda chegaria ao arquivo e seria **silenciosamente
+ * sobrescrita** por esta cópia. É a forma exata da deriva da moldura na E14: o
+ * pacote anda, a cópia não, e nada acusa.
+ *
+ * Conferido que a remoção é segura: `design-system/styles.css` importa
+ * `tokens/motion.css` na linha 5, e a regra continua no CSS compilado.
+ */
+
+/* Peso do traço dos ícones DENTRO de botão.
+ *
+ * A regra é do pacote, em readme.md → ICONOGRAFIA: "Ícones de traço, 24×24,
+ * stroke: currentColor, pontas e junções arredondadas. **Peso 1.75 na
+ * navegação, 2 dentro de botão e em avisos.**"
+ *
+ * Está em CSS, e não repetida em cada `<IconeX strokeWidth={2} />`, porque a
+ * regra é CONTEXTUAL: o mesmo ícone pesa 1.75 no menu e 2 no botão. Escrita no
+ * sítio, ela seria dezenas de repetições que ninguém consegue manter iguais —
+ * e a primeira que alguém esquecesse ficaria com o traço da navegação dentro de
+ * um botão, sem nada acusar.
+ *
+ * `stroke-width` como propriedade CSS vence o atributo `strokeWidth` do SVG:
+ * atributo de apresentação tem a menor precedência da cascata. É por isso que
+ * isto funciona sem tocar em `icones.tsx`.
+ *
+ * Escopado por `[data-botao]`, que só `Button` e `BotaoDeAcao` põem — e NÃO
+ * por `button svg`. A diferença importa: a barra lateral desenha os itens de
+ * navegação com marcação própria, e um seletor por elemento engordaria o traço
+ * do menu inteiro, que é exatamente o que a regra manda deixar em 1.75.
+ *
+ * Avisos ficam de fora por ora: não existe primitivo de aviso aqui — os avisos
+ * são blocos escritos nas telas, e entram nas Fases 11–16 junto com elas. */
+[data-botao] svg {
+  stroke-width: 2;
 }

@@ -1,0 +1,273 @@
+# Checkpoint 3 — páginas principais (Fases 11 a 15)
+
+## O resultado, em uma linha
+
+As cinco fases fecharam, **537 testes em 46 arquivos passam, a catraca de
+contraste está em zero**, e restam **duas decisões abertas** e **uma evidência
+que este ambiente não consegue produzir**.
+
+## O que a §26 pede, e o que está aqui
+
+| Evidência exigida | Estado |
+|---|---|
+| Checklist da §29 de cada página migrada, preenchido e conferido | **completo**, cinco fichas |
+| Screenshots antes/depois, 1366×768 e 390×844, dois temas | **dezesseis produzidas** em 08/09/2026 — ver abaixo |
+
+### As cinco fichas
+
+| Fase | Página | Itens que falhavam |
+|---|---|---|
+| 11 | `CategoriasTab` (template de listagem) | 3 |
+| 11 | `CategoriaModal` (template de formulário) | — |
+| 12 | `SetoresTab` e `UsuariosTab` | 1, o mesmo nas duas |
+| 13 | `Dashboard` | 3, mais 3 achados depois (adendo) |
+| 15 | `ChamadoDetalhes`, quadro, avaliação e SLA | 2 |
+
+Não há ficha da Fase 14 porque ela não tocou nenhuma tela que a ficha da 15 não
+cubra: trabalhou os botões de ação do `ChamadoDetalhes`, e a ficha da 15 cobre
+aquela tela de ponta a ponta.
+
+### Os screenshots: as dezesseis existem, e o que elas provam
+
+Produzidas em **08/09/2026**, contra a **API de produção em leitura pura**, sob
+exceção autorizada e registrada. As imagens ficam **fora do repositório**, em
+`docs/design-system-migration/capturas-locais/`, ignorada inteira no
+`.gitignore`. As fichas ficam dentro: `fichas-das-capturas.md`, uma seção por
+captura, com a saída da sonda, as dimensões conferidas e o que cada quadro
+registra.
+
+O protocolo está em `protocolo-de-captura.md`, e o caminho até elas custou mais
+que elas.
+
+**Não houve "antes".** Fotografar o estado anterior exigiria voltar a um commit
+antigo e entrar no sistema de novo, e a §26 pede o par. O que existe é o
+**depois**, e o "antes" continua sendo o que as cinco fichas da §29 registram por
+leitura de código.
+
+#### Como cada captura foi verificada
+
+Três checagens independentes, e a imagem aberta uma a uma:
+
+| | o que confere | onde roda |
+|---|---|---|
+| **sonda** | identidade da página, `.env`, canário do CSS servido, marcador de tema, tabela, viewport | console do operador, antes da foto |
+| **régua** | `IHDR` do PNG: formato e dimensões exatas | disco, depois da foto |
+| **cor por disco** | a cor dominante de cada faixa horizontal contra os tokens | disco, depois da foto |
+
+**Dezesseis de dezesseis** passam nas três, sem lacuna.
+
+#### O que as dezesseis NÃO provam
+
+Está registrado captura a captura, e vale reunir:
+
+- **Gráficos do painel** — abaixo da dobra em 1366×767. As quatro capturas do
+  painel pegam cabeçalho, filtros e a fileira de cartões, e cortam no começo do
+  bloco de SLA.
+- **Comentários, Histórico, Descrição, Solução e Avaliação** — abaixo da dobra
+  nas quatro capturas do detalhe, em **1366 e em 390**. Foram esses painéis que
+  motivaram a escolha do `CHAM-2025-0006` entre 159 resolvidos, e nenhum aparece.
+- **Distribuição por status** — a massa de produção tem **um status só**
+  (159 resolvidos, zero nos outros cinco cartões). As seis cores semânticas dos
+  cartões estão registradas; distribuição, não.
+- **Estado de erro do formulário** — cortado por prazo, pendência já registrada.
+- **Estado de EDIÇÃO da avaliação** — nenhum dos 159 resolvidos foi aberto pela
+  conta admin, então as estrelas clicáveis não são capturáveis nesta massa.
+
+#### O que elas provam, e não estava provado antes
+
+- **"Cancelar Chamado" como `secondary`** — pendência (1) deste checkpoint,
+  fotografada nas capturas 13 e 14.
+- **Cinco selos em cena nos dois temas** — "Resolvido", "Alta",
+  "Estourado · 120%", "Usuario" e "Administrador".
+- **As três superfícies batendo com os tokens no pixel**, nos dois temas, em
+  todas as dezesseis.
+- **Gaveta fechada em 390** nas oito capturas estreitas.
+- **O divisor entre linhas da tabela**, nas quatro da listagem.
+
+## O que as cinco fases entregaram
+
+Contagem no `src`, fora dos primitivos (`components/ui/`) e dos testes.
+
+| | Antes da Fase 11 | Agora |
+|---|---|---|
+| `<button>` escritos à mão | 24 só no `ChamadoDetalhes` | 1 nele, e é decisão aberta |
+| `<textarea>` | 6 no `ChamadoDetalhes` | 0 em todo o sistema |
+| `<label>` sem apontar para nada | 9 no `ChamadoDetalhes`, 1 no `Dashboard` | 0 |
+| mapas de status/prioridade copiados | 3 cópias | 1 lugar |
+| selos pintados por cor de gráfico | `Dashboard` e `ChamadoDetalhes` | 0 |
+| cópias literais do bloco de aviso | 10 | 0 |
+
+Dezesseis commits, 28 arquivos de `src` tocados.
+
+## Os defeitos de acessibilidade encontrados
+
+Nenhum destes era visível. Todos foram achados lendo código, e vários por
+mutação de teste.
+
+| Onde | O defeito | Família |
+|---|---|---|
+| `ChamadoDetalhes` × 9 | `<label>` sem `for` e sem controle: inerte | mecanismo inexistente |
+| `Dashboard` × 4 | atalho de período dizia o ativo só pela cor | cor sozinha |
+| `Dashboard` | interruptor com rótulo e `title` em desacordo | dois nomes, um controle |
+| `Dashboard`, `Chamados`, `ChamadoDetalhes` | `<button>` que navega | sinal certo, mecanismo errado |
+| `ChamadoDetalhes` | descrição `disabled` impedia copiar o relato | efeito colateral do estado |
+| `ChamadoDetalhes` × 2 | campo com placeholder e nenhum nome | nome que some ao digitar |
+| `SetoresTab`, `UsuariosTab` | idem, na busca | conserto que não transferiu |
+| `ChamadoDetalhes` | erro de carga sem `role`, e fora da tinta | décima cópia do `Aviso` |
+| `ui/Aviso` | `role="alert"` nas quatro variantes | assertivo onde cabia educado |
+| `SelosDeChamado` | papéis separados por 5% de alfa | distinção que não existe |
+
+## Estado depois da aprovação
+
+O operador aprovou o checkpoint com cinco pendências. Quatro estão fechadas:
+
+| | Pendência | Estado |
+|---|---|---|
+| 1 | "Cancelar Chamado" → `secundario`, confirmar do modal fica `danger` | feito, `5f7eecb` |
+| 2 | `Avaliacao`: `useRef` + descarte de resposta antiga | feito, `0793ea6` |
+| 3 | Cor cheia como texto vira item da Fase 16-H | regra registrada; execução na 16 |
+| 4 | Contagem do que resta à mão entra na §32 | registrada; primeira contagem abaixo |
+| 5 | Screenshots: operador sobe a API, a sessão captura | **aguardando o ambiente** |
+
+As três regras foram para o `DECISOES.md` com escopo "vale para os dois".
+
+Com a pendência 1, **`ChamadoDetalhes` chega a zero controle escrito à mão**:
+24 botões, 6 campos e 12 rótulos antes; nenhum agora.
+
+## As duas decisões que estavam abertas
+
+### 1. "Cancelar Chamado" — a única variante que não coube
+
+Detalhe completo na ficha da Fase 15. Em resumo: cancelar **é irreversível**
+pelo front (há `arquivar`/`desarquivar`, não há descancelar), e a regra
+registrada diz "vermelho só em irreversível". Mas hoje ele é vermelho VAZADO, e
+o pacote não tem essa variante — `perigo` é cheio, e converter põe dois botões
+vermelhos cheios ao lado um do outro, apagando a distinção que a nota do código
+defende: "Excluir" é o único em vermelho cheio porque é a única ação sem volta.
+
+**Decidido: `secundario`**, com um refinamento da regra que o operador
+acrescentou e que vale mais que o caso — **o gatilho que só abre confirmação é
+neutro; o vermelho é do botão que confirma**. O gatilho não cancela nada; o
+segundo clique, dentro do modal, é que não tem volta. Registrado no
+`DECISOES.md`, com o gatilho de exclusão como exceção anotada.
+
+### 2. "Fechado" mostrado como "Resolvido"
+
+Já registrada no `DECISOES.md` como pergunta aberta de produto, sem decisão
+minha. Continua valendo: o rótulo não mudou, e o `Badge` usa a variante que o
+mapa dá ao status real.
+
+## O defeito que estava achado e não corrigido
+
+`Avaliacao.tsx` guardava o clique duplo por `useState`, e não por `useRef` — o
+mesmo defeito já corrigido em `UsuariosTab.tsx:567`. Aprovado e corrigido em
+`0793ea6`, com quatro casos conferidos por mutação.
+
+Uma nota do conserto que vale além dele: **não há contador de sequência**, e
+isso está escrito no código para ninguém acrescentar depois achando que falta.
+Ele seria inerte — dentro de uma montagem a trava garante uma requisição só, e
+entre montagens o fechamento antigo segura as refs antigas, cuja marca de
+montagem já é falsa. É a mesma lição do `?? 'neutro'` no `PapelBadge`: uma
+linha que parece proteção a mais e é engrenagem sem caminho que chegue até ela.
+
+## O achado grande, medido e não aplicado
+
+**A cor cheia da rampa usada como texto reprova em dezesseis dos vinte e quatro
+pares**, e em seis reprova até o piso de forma. Documento próprio:
+[`cor-cheia-como-texto.md`](./cor-cheia-como-texto.md).
+
+Veio de um aviso da sessão do HelpHS. A catraca não vê esse caso — ela cobre
+fundo cheio com texto branco, que era o defeito que existia quando foi escrita.
+
+Está medido, o substituto está medido (`--on-tint-*`, pior caso 5,91:1), e a
+proposta de estender a catraca está escrita. **Nada foi corrigido**: são seis
+arquivos e uma regra nova de catraca, o que é uma fase e não um remate — e o
+ponto de parada era aqui.
+
+## O que este checkpoint aprendeu sobre o próprio método
+
+Duas fases foram dadas por prontas e não estavam, e **as duas passaram pela
+conferência sem disparar nada**.
+
+- **Fase 12**: as duas cópias do template receberam a estrutura e não os dois
+  consertos de acessibilidade dele. Cada cópia, olhada sozinha, parecia
+  completa.
+- **Fase 13**: a ficha da §29 do `Dashboard` marcou os dezoito itens, e três
+  controles interativos continuavam escritos à mão, dois deles com defeito.
+
+O motivo é o mesmo nas duas: **a §29 pergunta se a função sobreviveu, não se o
+controle foi migrado.** Ela é uma rede de preservação — pega o que a migração
+teria quebrado. Um controle não tocado atravessa a ficha inteira sem disparar
+nada, porque continua fazendo exatamente o que sempre fez.
+
+O que teria pego as duas: **uma contagem do que resta escrito à mão, por
+arquivo, ao fim de cada fase.** É de uma linha:
+
+```bash
+grep -rc "<button\|<input\|<textarea\|<select" src --include=*.tsx \
+  | grep -v "\.test\.\|components/ui/" | grep -v ":0$"
+```
+
+Aprovada pelo operador, registrada no `DECISOES.md` com escopo "vale para os
+dois", e daqui em diante entra no relatório da §32 de cada fase.
+
+### A contagem desta fase, anotada
+
+A regra diz que a contagem é **lista de conferência, não veredito** — ela conta
+ocorrências e não julga. A primeira rodada mostra por quê: das 31 ocorrências,
+**oito são o padrão aparecendo dentro de comentários** (inclusive comentários
+que explicam a própria migração daquele controle).
+
+| Arquivo | Bruto | Reais | Leitura |
+|---|---|---|---|
+| `Topbar.tsx` | 8 | 8 | fora do escopo das Fases 11–15 |
+| `Dashboard.tsx` | 5 | 2 | ver abaixo |
+| `UsuarioModal.tsx` | 3 | 3 | fora do escopo |
+| `Auditoria.tsx` | 3 | 3 | fora do escopo |
+| `dev/GaleriaDeComponentes.tsx` | 3 | 3 | rota de desenvolvimento |
+| `Avaliacao.tsx` | 1 | 1 | **legítimo** — as cinco estrelas |
+| `KanbanColumn.tsx` | 1 | 1 | **legítimo** — o cartão É um botão |
+| `Chamados.tsx` | 1 | 0 | comentário |
+| `CategoriasTab.tsx` | 1 | 0 | comentário |
+| `Sidebar`, `CentralButton`, `NovoChamadoForm`, `CadastrosBasicos`, `NovoChamado` | 1 cada | 1 cada | fora do escopo |
+
+**Os dois reais do `Dashboard` são os interruptores** que acabaram de receber
+`aria-pressed`: os quatro atalhos de período e o de cancelados.
+
+Os atalhos são **candidatos diretos a conversão**, e vale registrar porque o
+mapeamento é exato: ativo é `bg-sinal text-[var(--text-on-primary)]`, que é
+`Button variante="primario"`; inativo é `bg-superficie-elevada border-borda`,
+que é `secundario`. `Button` estende `ButtonHTMLAttributes`, então o
+`aria-pressed` passa direto. Não converti porque não estava entre os cinco
+itens aprovados — fica para a Fase 16-H, junto do resto.
+
+O de cancelados **não tem variante correspondente**: ligado ele é
+`bg-perigo/20` com `text-on-tint-danger`, um interruptor tingido de perigo, e o
+pacote não modela isso. Fica escrito à mão, com motivo.
+
+### E a proposta de ferramenta
+
+Os `<label>` inertes e os botões-que-navegam são classes que uma máquina pega:
+`jsx-a11y/label-has-associated-control` e `jsx-a11y/anchor-is-valid`. O projeto
+**não tem ESLint** — nem configuração, nem dependência —, então é dependência
+nova e passo novo na suíte, e fica como proposta. Hoje esta classe de defeito
+depende de alguém ler o arquivo, e foi assim que nove rótulos atravessaram três
+fases.
+
+## Uma nota sobre a mutação
+
+Três achados desta rodada vieram de mutar o código e ver se o teste reclamava,
+e não de ler:
+
+- O caso de "interpolações diferentes" da varredura **não provava nada** — o par
+  caía no primeiro ramo, e uma implementação de caminho único passaria igual.
+  Apontado pela sessão do HelpHS, que achou o mesmo no código deles.
+- O `?? 'neutro'` do `PapelBadge` é **redundante hoje**: o `Badge` já tem esse
+  valor como parâmetro padrão. O teste passa sem ele, e passa porque testa o
+  RESULTADO e não o mecanismo — que é o certo, e ficou escrito no teste para
+  ninguém "limpar" a linha achando que é morta.
+- Os dois casos novos do `Aviso` foram conferidos do mesmo jeito antes de
+  entrarem.
+
+Nos três o teste estava certo E o código estava certo. Só o teste não provava o
+que dizia provar — e isso não aparece lendo.

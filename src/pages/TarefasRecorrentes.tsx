@@ -11,8 +11,11 @@ import {
   RotuloDeCampo,
   Seletor,
   Textarea,
+  BlocoCarregando,
+  Checkbox,
+  Card,
 } from '../components/ui';
-import { IconeAgenda, IconeApagar, IconeAtencao, IconeCarregando, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
+import { IconeAgenda, IconeApagar, IconeAtencao, IconeConfereCirculo, IconeDocumento, IconeEditar, IconeEnergia, IconeHistorico, IconeInfo, IconeMais, IconeRepetir, IconeSalvar } from '../components/ui/icones';
 import {
   tarefasRecorrentesService,
   usuariosService,
@@ -387,13 +390,13 @@ const TarefasRecorrentes: React.FC = () => {
     if (ymd < hoje)
       return {
         label: 'Atrasada',
-        classe: 'bg-perigo/15 text-perigo-forte dark:text-perigo-suave',
+        classe: 'bg-perigo/15 text-on-tint-danger',
       };
     if (ymd === hoje)
       return {
         label: 'Hoje',
         classe:
-          'bg-alerta/15 text-alerta-forte dark:text-alerta-suave',
+          'bg-alerta/15 text-on-tint-warning',
       };
     return null;
   };
@@ -412,7 +415,7 @@ const TarefasRecorrentes: React.FC = () => {
     return (
       <div className="space-y-5">
         <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-borda bg-superficie text-sm text-conteudo-tenue">
-          <IconeAtencao className="h-8 w-8 text-alerta" aria-hidden="true" />
+          <IconeAtencao className="h-8 w-8 text-on-tint-warning" aria-hidden="true" />
           <p>Você não tem permissão para acessar Tarefas Recorrentes.</p>
         </div>
       </div>
@@ -428,7 +431,7 @@ const TarefasRecorrentes: React.FC = () => {
       {/* Cabeçalho */}
       <div className="flex flex-col gap-4 rounded-2xl border border-borda bg-superficie px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <IconeRepetir className="h-7 w-7 shrink-0 text-info" aria-hidden="true" />
+          <IconeRepetir className="h-7 w-7 shrink-0 text-on-tint-info" aria-hidden="true" />
           <div>
             <h1 className="text-xl font-extrabold tracking-tight text-conteudo">
               Tarefas Recorrentes
@@ -441,15 +444,13 @@ const TarefasRecorrentes: React.FC = () => {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {/* Filtro */}
-          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-conteudo-suave">
-            <input
-              type="checkbox"
-              checked={mostrarInativas}
-              onChange={(e) => setMostrarInativas(e.target.checked)}
-              className="h-4 w-4 accent-sinal"
-            />
+          <Checkbox
+            marcado={mostrarInativas}
+            aoMudar={setMostrarInativas}
+            className="items-center"
+          >
             Mostrar também as desativadas
-          </label>
+          </Checkbox>
           <Button onClick={abrirCriar}>
             <IconeMais className="h-4 w-4" aria-hidden="true" />
             Nova tarefa
@@ -459,12 +460,11 @@ const TarefasRecorrentes: React.FC = () => {
 
       {/* Lista */}
       {loading ? (
-        <div className="flex h-48 items-center justify-center rounded-xl border border-borda bg-superficie">
-          <IconeCarregando
-            className="h-8 w-8 animate-spin text-info"
-            aria-hidden="true"
-          />
-        </div>
+        // O terceiro bloco silencioso.
+        <BlocoCarregando
+          tamanho="lg"
+          className="h-48 rounded-xl border border-borda bg-superficie"
+        />
       ) : tarefasOrdenadas.length === 0 ? (
         <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-borda bg-superficie text-sm text-conteudo-tenue">
           <IconeRepetir className="h-8 w-8" aria-hidden="true" />
@@ -475,11 +475,14 @@ const TarefasRecorrentes: React.FC = () => {
           {tarefasOrdenadas.map((t) => {
             const st = statusData(t.proxima_data);
             return (
-              <div
+              // `md` e nao `lg`: sao muitos cartoes numa grade de duas
+              // colunas, e 24px de respiro por cartao aumentariam a altura da
+              // lista sem acrescentar leitura. Cartao de conteudo denso e
+              // cartao de pagina inteira nao pedem o mesmo respiro.
+              <Card
                 key={t.id}
-                className={`rounded-xl border border-borda bg-superficie p-5 transition-colors ${
-                  t.ativo ? '' : 'opacity-60'
-                }`}
+                padding="md"
+                className={t.ativo ? undefined : 'opacity-60'}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -577,13 +580,13 @@ const TarefasRecorrentes: React.FC = () => {
                     tamanho="sm"
                     onClick={() => excluir(t)}
                     title={`Excluir ${t.titulo}`}
-                    className="ml-auto border-perigo/40 text-perigo hover:border-perigo/60 hover:bg-perigo/10"
+                    className="ml-auto border-perigo/40 text-on-tint-danger hover:border-perigo/60 hover:bg-perigo/10"
                   >
                     <IconeApagar className="h-4 w-4" aria-hidden="true" />
                     Excluir
                   </Button>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -757,10 +760,11 @@ const TarefasRecorrentes: React.FC = () => {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={salvando}>
-                    {salvando ? (
-                      <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
-                    ) : (
+                  {/* `carregando` em vez do par `disabled` + ícone trocado à
+                      mão: o Button já desenha o anel, já desabilita e já põe
+                      `aria-busy`, que faltava aqui. */}
+                  <Button type="submit" carregando={salvando}>
+                    {!salvando && (
                       <IconeSalvar className="h-4 w-4" aria-hidden="true" />
                     )}
                     Salvar
@@ -785,11 +789,9 @@ const TarefasRecorrentes: React.FC = () => {
               <Button
                 variante="sucesso"
                 onClick={confirmarRealizar}
-                disabled={salvando}
+                carregando={salvando}
               >
-                {salvando ? (
-                  <IconeCarregando className="h-4 w-4 animate-spin" aria-hidden="true" />
-                ) : (
+                {!salvando && (
                   <IconeConfereCirculo className="h-4 w-4" aria-hidden="true" />
                 )}
                 Confirmar
@@ -828,7 +830,7 @@ const TarefasRecorrentes: React.FC = () => {
         <Modal
           aberto
           aoFechar={() => setModal(null)}
-          titulo="Histórico — {selecionada.titulo}"
+          titulo={`Histórico — ${selecionada.titulo}`}
           largura="md"
         >
               {historico.length === 0 ? (
@@ -840,16 +842,16 @@ const TarefasRecorrentes: React.FC = () => {
                   <table className="w-full">
                     <thead className="border-b border-borda">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                           Realizada em
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                           Quem
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                           Prevista
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
                           Observação
                         </th>
                       </tr>

@@ -57,11 +57,23 @@ describe('barra lateral', () => {
     expect(fechada).toContain('w-64');
     expect(fechada).toContain('-translate-x-full');
     // Fechada não desenha o fundo escuro — ele cobriria a tela inteira.
-    expect(fechada).not.toContain('bg-black/50');
+    //
+    // O nome já mudou duas vezes e a asserção nunca mudou de assunto: era
+    // preto cravado a 50%, virou a classe utilitária do `--overlay` na Fase 5
+    // (o token do pacote, preto a 60%) e agora é o mesmo token em valor
+    // arbitrário, sem passar pelo `color-mix` — regra (d) do D8-a, para o véu
+    // não sumir abaixo do piso de browser. O que este caso trava continua
+    // sendo: o fundo só existe com a gaveta aberta.
+    //
+    // Os nomes de classe não aparecem escritos por extenso nestes comentários
+    // de propósito: o extractor do Tailwind lê o arquivo inteiro, comentário
+    // incluído, e geraria a regra antiga como CSS morto — o suficiente para
+    // quem auditar achar que a troca não foi feita.
+    expect(fechada).not.toContain('bg-[var(--overlay)]');
 
     const aberta = barra({ gavetaAberta: true });
     expect(aberta).toContain('translate-x-0');
-    expect(aberta).toContain('bg-black/50');
+    expect(aberta).toContain('bg-[var(--overlay)]');
   });
 
   it('mostra as cinco áreas do sistema, agrupadas', () => {
@@ -85,6 +97,12 @@ describe('barra lateral', () => {
 
     for (const item of ITENS_DO_MENU) {
       expect(html, `${item.label} sumiu no modo recolhido`).toContain(item.label);
+      // O balão de hover é visual: não existe para quem chega pelo teclado
+      // nem para leitor de tela em varredura. O `title` existe para os dois,
+      // e é o que a `AppShell.jsx` do pacote põe no item recolhido.
+      expect(html, `${item.label} sem title no modo recolhido`).toContain(
+        `title="${item.label}"`
+      );
     }
     expect(html).toContain('group-hover:opacity-100');
   });
@@ -97,9 +115,10 @@ describe('barra lateral', () => {
 });
 
 describe('faixa do topo', () => {
-  const topo = (recolhida = false) =>
+  const topo = (recolhida = false, pageTitle?: string) =>
     casca(
       <Topbar
+        pageTitle={pageTitle}
         aoAbrirGaveta={() => {}}
         aoAlternarRecolhida={() => {}}
         recolhida={recolhida}
@@ -121,6 +140,28 @@ describe('faixa do topo', () => {
    */
   it('não tem sino de notificações', () => {
     expect(topo().toLowerCase()).not.toContain('notifica');
+  });
+
+  /**
+   * O `<h1>` da §9 — e o meio-termo entre não ter título nenhum e ter dois.
+   *
+   * As onze páginas desenham o próprio `<h1>` hoje. A prop nasce vazia e cada
+   * tela a preenche no commit em que for migrada, soltando o seu no mesmo
+   * commit (decisão D8, comum ao HelpHS). Estes dois casos travam as duas
+   * pontas: sem a prop, a topbar NÃO desenha cabeçalho — nem sequer um vazio,
+   * que leitor de tela anuncia como cabeçalho sem nome; com ela, desenha um
+   * `<h1>` de verdade, com o texto que recebeu.
+   */
+  it('sem pageTitle não desenha cabeçalho nenhum', () => {
+    expect(topo()).not.toContain('<h1');
+  });
+
+  it('com pageTitle desenha o h1 da página, e um só', () => {
+    const html = topo(false, 'Chamados');
+    // `split` em vez de regex: um `\b` escrito aqui ja virou caractere de
+    // backspace uma vez, e o teste passou a nao casar com nada.
+    expect(html.split('<h1').length - 1).toBe(1);
+    expect(html).toContain('Chamados');
   });
 });
 
@@ -164,6 +205,51 @@ describe('casca', () => {
 
   it('desenha a página que recebe', () => {
     expect(html).toContain('conteúdo da página');
+  });
+
+  /**
+   * O estado inicial da barra e da gaveta.
+   *
+   * As duas props existem para a galeria de desenvolvimento (`/dev/galeria`)
+   * poder fotografar cada estado da casca por URL, sem clique — o que a §26
+   * exige no Checkpoint 1 e não dava para fazer, porque a casca só aparece
+   * depois do login e o login depende da API.
+   *
+   * O primeiro caso é o que importa: SEM as props, o padrão continua o de
+   * sempre. Essa é a regressão que a galeria poderia causar e que ninguém
+   * notaria — a barra abrindo expandida na TV da sala, comendo uma coluna do
+   * quadro de chamados, que é exatamente o motivo de ela nascer recolhida.
+   */
+  const cascaCom = (props: Record<string, unknown> = {}) =>
+    casca(
+      <AppLayout
+        aoAbrirNovidades={() => {}}
+        temNovidade={false}
+        versao="9.9.9"
+        {...props}
+      >
+        <p>conteúdo da página</p>
+      </AppLayout>
+    );
+
+  it('sem as props de galeria, nasce recolhida e sem gaveta', () => {
+    const padrao = cascaCom();
+    expect(padrao).toContain('md:w-[72px]');
+    expect(padrao).not.toContain('md:w-64');
+    expect(padrao).toContain('-translate-x-full');
+    expect(padrao).not.toContain('bg-[var(--overlay)]');
+  });
+
+  it('a galeria consegue abrir a barra', () => {
+    const aberta = cascaCom({ recolhidaInicial: false });
+    expect(aberta).toContain('md:w-64');
+    expect(aberta).not.toContain('md:w-[72px]');
+  });
+
+  it('a galeria consegue abrir a gaveta', () => {
+    const comGaveta = cascaCom({ gavetaAbertaInicial: true });
+    expect(comGaveta).toContain('translate-x-0');
+    expect(comGaveta).toContain('bg-[var(--overlay)]');
   });
 
   /**

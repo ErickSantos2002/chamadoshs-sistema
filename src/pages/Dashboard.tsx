@@ -14,16 +14,38 @@ import {
 import { useChamados } from '../hooks/useChamados';
 import { useAuth } from '../hooks/useAuth';
 import { Chamado, StatusEnum, PrioridadeEnum } from '../types/api';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
-import { Seletor } from '../components/ui';
-import { IconeAlerta, IconeArquivar, IconeAtividade, IconeCarregando, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
+import {
+  Aviso,
+  Badge,
+  BlocoCarregando,
+  Campo,
+  Card,
+  CardHeader,
+  Input,
+  Seletor,
+  Tabela,
+  TabelaCabecalho,
+  TabelaCelula,
+  TabelaCelulaDeCabecalho,
+  TabelaCorpo,
+  TabelaLinha,
+} from '../components/ui';
+import {
+  MarcaBadge,
+  PrioridadeBadge,
+  VARIANTE_DE_STATUS,
+} from '../components/SelosDeChamado';
+import { IconeAlerta, IconeArquivar, IconeAtividade, IconeChamado, IconeConfereCirculo, IconeFecharCirculo, IconeFiltro, IconeOlho, IconeOlhoFechado, IconeProibido, IconeRelogio, IconeSetaDireita } from '../components/ui/icones';
+import { cn } from '../lib/utils';
+import { DicaDoGrafico } from '../components/ui/DicaDoGrafico';
 import {
   corDaPrioridade,
   corDaSerie,
+  classeDeStatus,
   corDoStatus,
-  estiloDoGrafico,
 } from '../lib/graficos';
 
 // ========================================
@@ -83,15 +105,14 @@ const Dashboard: React.FC = () => {
   const { darkMode } = useTheme();
   // Eixos, grade e dica acompanham o tema: antes eram hexadecimais fixos do
   // tema escuro, e no claro a grade sumia contra o fundo branco.
-  const estilo = estiloDoGrafico(darkMode);
 
   const { categorias } = useChamados();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   // Estados locais
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>('todas');
   const [incluirCancelados, setIncluirCancelados] = useState(false);
@@ -143,8 +164,23 @@ const Dashboard: React.FC = () => {
 
         const data = await chamadosService.listarTodos(params);
         setChamados(data);
+        setErro(null);
       } catch (err) {
         console.error('Erro ao carregar chamados do dashboard:', err);
+        // A falha PRECISA aparecer na tela.
+        //
+        // Antes o `catch` so escrevia no console: `chamados` ficava em [], o
+        // `loading` caia, e o painel renderizava zeros. Falha de rede ficava
+        // IDENTICA a "nao ha chamados" — e um painel que responde "zero
+        // abertos" quando na verdade nao conseguiu perguntar e pior que um
+        // painel que nao carrega, porque parece uma afirmacao sobre a
+        // operacao.
+        //
+        // E o mesmo argumento que o `TrilhaErro` da auditoria ja fazia: erro e
+        // um ESTADO, e nao um aviso somado aos outros.
+        setErro(
+          'Não foi possível carregar os chamados. Os números abaixo podem estar desatualizados.'
+        );
       } finally {
         setLoading(false);
       }
@@ -396,10 +432,45 @@ const Dashboard: React.FC = () => {
    * vez de depender de cada cor de status ter contraste suficiente contra a
    * própria versão esmaecida.
    */
-  const seloDaCor = (cor: string): React.CSSProperties => ({
-    backgroundColor: `${cor}22`,
-    borderLeft: `2px solid ${cor}`,
-  });
+  /* `seloDaCor` saiu junto com os selos que ele pintava.
+   *
+   * Era a segunda fonte de verdade para status e prioridade -> cor: a paleta
+   * categorica de graficos a 13% com uma barra de 2px na cor cheia. Quem
+   * carrega isso agora e o mapa da secao 16, em `SelosDeChamado`.
+   *
+   * A funcao ficou sem uso na mesma passagem, e sai por isso — helper de cor
+   * parado num arquivo e convite para a proxima tabela voltar a pintar selo a
+   * mao. `corDoStatus` e `corDaPrioridade` continuam, e continuam certos: eles
+   * pintam GRAFICO, que e o papel para o qual a paleta e certificada.
+   */
+
+  /**
+   * O resumo em texto de um gráfico de distribuição.
+   *
+   * A §29 é explícita sobre barra desenhada: `progressbar` quando há escala de
+   * 0 a 100 e um alvo; `meter` quando é medida sem alvo; e **nenhum papel de
+   * progresso** quando é comparação ou distribuição — nesse caso a barra vai
+   * `aria-hidden`, ou o grupo inteiro leva `role="img"` com `aria-label`.
+   *
+   * Estes gráficos são distribuição: quantos chamados em cada prioridade, em
+   * cada categoria. Não há alvo, e a soma não é um progresso rumo a nada.
+   *
+   * Os números existiam APENAS dentro do SVG do recharts — nos rótulos de eixo
+   * e na altura das barras. Quem não vê o gráfico não recebia nada: nem os
+   * valores, nem sequer a informação de que havia um gráfico ali.
+   */
+  const resumoDoGrafico = (
+    titulo: string,
+    dados: { name: string; value: number }[]
+  ): string => {
+    const comValor = dados.filter((d) => d.value > 0);
+    if (comValor.length === 0) return `${titulo}: sem dados no período.`;
+    return (
+      `${titulo}: ` +
+      comValor.map((d) => `${d.name} ${d.value}`).join(', ') +
+      '.'
+    );
+  };
 
   const formatarData = (data: string): string => {
     return new Date(data).toLocaleDateString('pt-BR', {
@@ -417,18 +488,20 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex min-h-full items-center justify-center">
-        <div className="text-center">
-          <IconeCarregando className="w-12 h-12 animate-spin text-sinal mx-auto mb-4" />
-          <p className="text-conteudo-suave">
-            Carregando dashboard...
-          </p>
-        </div>
+        <BlocoCarregando tamanho="lg">
+          <p className="text-conteudo-suave">Carregando dashboard...</p>
+        </BlocoCarregando>
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
+
+        {/* A falha de carga aparece ANTES dos numeros, e nao no lugar deles.
+            Substituir o painel inteiro esconderia dados que ainda podem valer
+            — de uma carga anterior — e o aviso diz exatamente isso. */}
+        {erro && <Aviso variante="perigo">{erro}</Aviso>}
 
         {/* Cabeçalho da página. O `<div>` de moldura que pintava o fundo saiu:
             quem pinta agora é o `<main>` da casca. */}
@@ -443,19 +516,32 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Filtros */}
-        <div className="rounded-xl border border-borda bg-superficie p-5">
+        <Card padding="lg">
           <div className="mb-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <IconeFiltro className="h-4 w-4 text-conteudo-tenue" />
               <h2 className="text-sm font-semibold text-conteudo">Filtros</h2>
             </div>
 
-            {/* Botão Toggle Cancelados */}
+            {/* Botão Toggle Cancelados.
+
+                `aria-pressed` porque isto e um INTERRUPTOR, e nao um botao de
+                acao: ele tem estado, e o estado precisa ser dito.
+
+                O rotulo visivel ja diz ("Exibindo cancelados" / "Cancelados
+                ocultos"), mas ele e `hidden sm:inline` — em tela estreita some
+                e sobram o icone e a cor. Ai o nome acessivel cai no `title`,
+                que diz a ACAO e nao o estado ("Mostrar cancelados"), e os dois
+                se contradizem conforme a largura da janela.
+
+                Com `aria-pressed` o estado passa a ser dito pelo canal proprio,
+                em qualquer largura, sem depender de qual texto sobrou. */}
             <button
               onClick={() => setIncluirCancelados(!incluirCancelados)}
+              aria-pressed={incluirCancelados}
               className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                 incluirCancelados
-                  ? 'border-perigo/30 bg-perigo/20 text-perigo-forte hover:bg-perigo/30 dark:text-perigo-suave'
+                  ? 'border-perigo/30 bg-perigo/20 text-on-tint-danger hover:bg-perigo/30'
                   : 'border-borda bg-superficie-elevada text-conteudo-suave hover:text-conteudo'
               }`}
               title={incluirCancelados ? 'Ocultar cancelados' : 'Mostrar cancelados'}
@@ -476,12 +562,32 @@ const Dashboard: React.FC = () => {
 
           {/* Período */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-conteudo-suave mb-2">
+            {/* Era um `<label>` sem `htmlFor`, e nao havia como ter um: ele
+                nomeia um GRUPO — quatro atalhos e dois campos de data —, e nao
+                um controle. `<p>` mais `aria-labelledby` diz a mesma coisa
+                pelo mecanismo certo. */}
+            <p
+              id="dashboard-periodo"
+              className="block text-sm font-medium text-conteudo-suave mb-2"
+            >
               Período
-            </label>
+            </p>
 
-            {/* Atalhos */}
-            <div className="flex flex-wrap gap-2 mb-3">
+            {/* Atalhos.
+
+                `aria-pressed` em cada um. Qual esta ativo era dito SO pela cor
+                (`bg-sinal` contra `bg-superficie-elevada`) — nao ha visto, nao
+                ha moldura diferente, nao ha palavra a mais. A §16 proibe cor
+                sozinha, e aqui ela nao estava so informando mal: para quem usa
+                leitor de tela, os quatro eram indistinguiveis.
+
+                `aria-pressed` e nao `aria-current`: sao alternativas de um
+                mesmo controle de filtro, e nao itens de navegacao. */}
+            <div
+              role="group"
+              aria-labelledby="dashboard-periodo"
+              className="flex flex-wrap gap-2 mb-3"
+            >
               {([
                 { key: 'mes', label: 'Este mês' },
                 { key: 'mesPassado', label: 'Mês passado' },
@@ -491,9 +597,10 @@ const Dashboard: React.FC = () => {
                 <button
                   key={p.key}
                   onClick={() => aplicarPreset(p.key)}
+                  aria-pressed={presetAtivo === p.key}
                   className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                     presetAtivo === p.key
-                      ? 'border-transparent bg-sinal text-white dark:text-superficie-base'
+                      ? 'border-transparent bg-sinal text-[var(--text-on-primary)]'
                       : 'border-borda bg-superficie-elevada text-conteudo-suave hover:text-conteudo'
                   }`}
                 >
@@ -504,11 +611,18 @@ const Dashboard: React.FC = () => {
 
             {/* Intervalo personalizado */}
             <div className="flex flex-wrap items-end gap-4">
-              <div>
-                <label className="block text-xs font-medium text-conteudo-tenue mb-1">
-                  De
-                </label>
-                <input
+              {/* Eram dois <input> escritos a mao, com a forma do campo
+                  ANTERIOR a emenda E7: `border-borda` da 1,23:1 contra a
+                  pagina, e a WCAG 1.4.11 pede 3:1 para o limite de um
+                  controle. Os primitivos foram para 4,76:1 na Fase 8 e estes
+                  ficaram para tras — a migracao PIOROU a diferenca entre eles
+                  e o resto do sistema.
+
+                  O rotulo tambem era um <label> sem `htmlFor`, com o campo sem
+                  `id`: clicar no texto nao focava o campo, e o leitor de tela
+                  nao anunciava o nome. O `Campo` amarra os dois. */}
+              <Campo id="periodo-inicio" rotulo="De" className="w-40">
+                <Input
                   type="date"
                   value={periodoInicio}
                   max={periodoFim || undefined}
@@ -516,16 +630,10 @@ const Dashboard: React.FC = () => {
                     setPeriodoInicio(e.target.value);
                     setPresetAtivo('custom');
                   }}
-                  className="rounded-lg border border-borda bg-superficie px-3 py-2 text-sm
-                            text-conteudo transition-colors hover:border-conteudo-tenue
-                            focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-conteudo-tenue mb-1">
-                  Até
-                </label>
-                <input
+              </Campo>
+              <Campo id="periodo-fim" rotulo="Até" className="w-40">
+                <Input
                   type="date"
                   value={periodoFim}
                   min={periodoInicio || undefined}
@@ -533,11 +641,8 @@ const Dashboard: React.FC = () => {
                     setPeriodoFim(e.target.value);
                     setPresetAtivo('custom');
                   }}
-                  className="rounded-lg border border-borda bg-superficie px-3 py-2 text-sm
-                            text-conteudo transition-colors hover:border-conteudo-tenue
-                            focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sinal"
                 />
-              </div>
+              </Campo>
             </div>
           </div>
 
@@ -602,7 +707,7 @@ const Dashboard: React.FC = () => {
             </div>
 
           </div>
-        </div>
+        </Card>
 
         {/* KPIs
             Eram cinco blocos quase idênticos com hexadecimal cravado, e as
@@ -680,11 +785,9 @@ const Dashboard: React.FC = () => {
         {/* ======================================== */}
         {/* MÉTRICAS DE SLA                          */}
         {/* ======================================== */}
-        <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
-          <div className="border-b border-borda px-5 py-4">
-            <p className="text-sm font-semibold text-conteudo">SLA</p>
-          </div>
-          <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
+        <Card padding="lg">
+          <CardHeader titulo="SLA" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                 Resolvidos dentro do prazo
@@ -692,7 +795,7 @@ const Dashboard: React.FC = () => {
               <p
                 className={`mt-2 text-3xl font-bold tabular-nums ${
                   metricasSla.percentualNoPrazo !== null
-                    ? 'text-sucesso-forte dark:text-sucesso-suave'
+                    ? 'text-on-tint-success'
                     : 'text-conteudo-tenue'
                 }`}
               >
@@ -710,7 +813,7 @@ const Dashboard: React.FC = () => {
               <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                 Estourados em aberto
               </p>
-              <p className="mt-2 text-3xl font-bold tabular-nums text-perigo-forte dark:text-perigo-suave">
+              <p className="mt-2 text-3xl font-bold tabular-nums text-on-tint-danger">
                 {metricasSla.estouradosEmAberto}
               </p>
               <p className="mt-1.5 text-xs text-conteudo-tenue">precisam de ação agora</p>
@@ -719,13 +822,13 @@ const Dashboard: React.FC = () => {
               <p className="text-xs font-semibold uppercase tracking-wider text-conteudo-tenue">
                 Em atenção (≥80% do prazo)
               </p>
-              <p className="mt-2 text-3xl font-bold tabular-nums text-alerta-forte dark:text-alerta-suave">
+              <p className="mt-2 text-3xl font-bold tabular-nums text-on-tint-warning">
                 {metricasSla.emAtencao}
               </p>
               <p className="mt-1.5 text-xs text-conteudo-tenue">prestes a estourar</p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Tempo Médio */}
         {metricas.tempoMedioResolucao > 0 && (
@@ -753,12 +856,9 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
           {/* Gráfico de Status */}
-          <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
-            <div className="border-b border-borda px-5 py-4">
-              <p className="text-sm font-semibold text-conteudo">Chamados por Status</p>
-            </div>
-
-            <div className="p-5">
+          <Card padding="lg">
+            <CardHeader titulo="Chamados por Status" />
+            <div>
             {metricas.porStatus.some(s => s.value > 0) ? (
               <>
                 {/* Rosca com o total no meio, como a do HelpHS.
@@ -767,9 +867,36 @@ const Dashboard: React.FC = () => {
                     vizinho. Os nomes e os números foram para a lista abaixo,
                     onde cabem sempre e ficam alinhados numa coluna só. */}
                 <div className="relative">
+                  {/* A rosca sai da arvore de acessibilidade: os nomes e os
+                      numeros dela ja estao na LISTA abaixo, em texto. Anuncia-
+                      la seria ler a mesma distribuicao duas vezes.
+                      
+                      E `aria-hidden` so no desenho, e nao no `<div relative>`
+                      inteiro: o total no centro nao esta repetido em lugar
+                      nenhum, e some junto se o recorte for maior. */}
+                  <div aria-hidden="true">
                   <ResponsiveContainer width="100%" height={190}>
-                    <RChart>
+                    {/* `tabIndex={-1}` porque `aria-hidden` NÃO tira da ordem de
+                        tabulação — tira só da árvore de acessibilidade.
+                        
+                        O Recharts 3 liga a camada de acessibilidade por padrão e
+                        põe `tabIndex={0}` na superfície
+                        (`RootSurface.js:47` — `hasAccessibilityLayer ? 0 :
+                        undefined`). Somado ao nosso `aria-hidden`, isso produzia
+                        uma PARADA DE FOCO QUE NÃO ANUNCIA NADA: quem navega por
+                        teclado parava aqui e o leitor de tela ficava calado.
+                        
+                        `inert` no `<div>` resolveria os dois de uma vez, e está
+                        errado aqui: ele mata também o ponteiro, e a rosca tem
+                        `<Tooltip>` no passar do mouse. */}
+                    <RChart tabIndex={-1}>
+                    {/* O `<Pie>` tem prop PRÓPRIA, e não `tabIndex`:
+                        `rootTabIndex`, com padrão 0 (`Pie.js:532`). Só
+                        `tabIndex` no gráfico arrumava a superfície e deixava o
+                        `g.recharts-pie` para trás — conserto pela metade, que o
+                        caso de teste pegou antes de subir. */}
                       <Pie
+                        rootTabIndex={-1}
                         data={metricas.porStatus}
                         cx="50%"
                         cy="50%"
@@ -779,18 +906,26 @@ const Dashboard: React.FC = () => {
                         dataKey="value"
                         stroke="none"
                       >
-                        {metricas.porStatus.map((entry) => (
-                          <Cell key={entry.name} fill={corDoStatus(entry.name, darkMode)} />
-                        ))}
+                        {metricas.porStatus.map((entry) => {
+                          // A cor vem da CLASSE quando o status foi adotado na
+                          // E18, e do `corDoStatus` quando nao foi. Ver a
+                          // tabela em `lib/graficos.ts`.
+                          const classe = classeDeStatus(entry.name);
+                          return classe ? (
+                            <Cell key={entry.name} className={classe} />
+                          ) : (
+                            <Cell key={entry.name} fill={corDoStatus(entry.name, darkMode)} />
+                          );
+                        })}
                       </Pie>
 
                       <Tooltip
                         wrapperStyle={{ outline: 'none' }}
-                        contentStyle={estilo.dica}
-                        labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                        content={<DicaDoGrafico />}
                       />
                     </RChart>
                   </ResponsiveContainer>
+                  </div>
 
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                     <p className="text-2xl font-bold tabular-nums text-conteudo">
@@ -804,10 +939,20 @@ const Dashboard: React.FC = () => {
                   {metricas.porStatus.map((item) => (
                     <div key={item.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        {/* O marcador da legenda usa a MESMA classe da fatia,
+                            que pinta `fill` e `background-color` — e por isso
+                            os dois nao podem divergir. */}
                         <span
                           aria-hidden="true"
-                          className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                          style={{ backgroundColor: corDoStatus(item.name, darkMode) }}
+                          className={cn(
+                            'h-2.5 w-2.5 shrink-0 rounded-sm',
+                            classeDeStatus(item.name)
+                          )}
+                          style={
+                            classeDeStatus(item.name)
+                              ? undefined
+                              : { backgroundColor: corDoStatus(item.name, darkMode) }
+                          }
                         />
                         <span className="text-xs text-conteudo-suave">{item.name}</span>
                       </div>
@@ -824,30 +969,32 @@ const Dashboard: React.FC = () => {
               </div>
             )}
             </div>
-          </div>
+          </Card>
 
           {/* Gráfico de Prioridade */}
-          <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
-            <div className="border-b border-borda px-5 py-4">
-              <p className="text-sm font-semibold text-conteudo">Chamados por Prioridade</p>
-            </div>
-
-            <div className="p-5">
+          <Card padding="lg">
+            <CardHeader titulo="Chamados por Prioridade" />
+            <div>
             {metricas.porPrioridade.some(p => p.value > 0) ? (
+              <div
+                role="img"
+                aria-label={resumoDoGrafico(
+                  'Chamados por prioridade',
+                  metricas.porPrioridade
+                )}
+              >
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={metricas.porPrioridade} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                   {/* Só a grade horizontal: as verticais competiam com as
                       próprias barras, que já marcam a posição no eixo. */}
-                  <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
 
-                  <XAxis dataKey="name" tick={{ fill: estilo.texto, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: estilo.texto, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
 
                   <Tooltip
-                    cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
                     wrapperStyle={{ outline: 'none' }}
-                    contentStyle={estilo.dica}
-                    labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                    content={<DicaDoGrafico />}
                   />
 
                   <Bar dataKey="value" name="Chamados" radius={[6, 6, 0, 0]}>
@@ -857,32 +1004,36 @@ const Dashboard: React.FC = () => {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-
+              </div>
             ) : (
               <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
                 Sem dados para exibir
               </div>
             )}
             </div>
-          </div>
+          </Card>
 
         </div>
 
         {/* Top 5 Categorias */}
         {metricas.porCategoria.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
-            <div className="border-b border-borda px-5 py-4">
-              <p className="text-sm font-semibold text-conteudo">Top 5 Categorias</p>
-            </div>
-
-            <div className="p-5">
+          <Card padding="lg">
+            <CardHeader titulo="Top 5 Categorias" />
+            <div>
+            <div
+              role="img"
+              aria-label={resumoDoGrafico(
+                'Chamados por categoria',
+                metricas.porCategoria
+              )}
+            >
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={metricas.porCategoria} layout="vertical" margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={estilo.grade} horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
 
                 <XAxis
                   type="number"
-                  tick={{ fill: estilo.texto, fontSize: 11 }}
+                  tick={{ fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   allowDecimals={false}
@@ -893,17 +1044,15 @@ const Dashboard: React.FC = () => {
                 <YAxis
                   dataKey="name"
                   type="category"
-                  tick={{ fill: estilo.texto, fontSize: 11 }}
+                  tick={{ fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   width={120}
                 />
 
                 <Tooltip
-                  cursor={{ fill: estilo.grade, fillOpacity: 0.3 }}
                   wrapperStyle={{ outline: 'none' }}
-                  contentStyle={estilo.dica}
-                  labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                  content={<DicaDoGrafico />}
                 />
 
                 {/* A cor sai da POSIÇÃO na lista, e o índice vem do dado — não
@@ -917,108 +1066,111 @@ const Dashboard: React.FC = () => {
               </BarChart>
             </ResponsiveContainer>
             </div>
-          </div>
+            </div>
+          </Card>
         )}
 
         {/* Tabela de Chamados Recentes */}
-        <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
-          <div className="border-b border-borda px-5 py-4">
-            <p className="text-sm font-semibold text-conteudo">Chamados Recentes</p>
-          </div>
-
-          <div className="p-5">
+        <Card padding="lg">
+          <CardHeader titulo="Chamados Recentes" />
+          <div>
           {metricas.chamadosRecentes.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-superficie-elevada border-b border-borda">
+              <Tabela>
+                <TabelaCabecalho fixo>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                      Protocolo
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-conteudo-suave">
-                      Título
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
+                    <TabelaCelulaDeCabecalho>Protocolo</TabelaCelulaDeCabecalho>
+                    <TabelaCelulaDeCabecalho>Título</TabelaCelulaDeCabecalho>
+                    <TabelaCelulaDeCabecalho className="text-center">
                       Status
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
+                    </TabelaCelulaDeCabecalho>
+                    <TabelaCelulaDeCabecalho className="text-center">
                       Prioridade
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
+                    </TabelaCelulaDeCabecalho>
+                    <TabelaCelulaDeCabecalho className="text-center">
                       Data
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-conteudo-suave">
+                    </TabelaCelulaDeCabecalho>
+                    <TabelaCelulaDeCabecalho className="text-center">
                       Ações
-                    </th>
+                    </TabelaCelulaDeCabecalho>
                   </tr>
-                </thead>
+                </TabelaCabecalho>
 
-                <tbody className="divide-y divide-borda divide-borda">
+                <TabelaCorpo>
                   {metricas.chamadosRecentes.map((chamado) => (
-                    <tr
-                      key={chamado.id}
-                      className="transition-colors hover:bg-superficie-elevada/80"
-                    >
-                      <td className="px-4 py-3 text-sm font-medium text-conteudo">
+                    <TabelaLinha key={chamado.id}>
+                      <TabelaCelula className="font-medium">
                         #{chamado.protocolo}
-                      </td>
+                      </TabelaCelula>
 
-                      <td className="px-4 py-3 text-sm text-conteudo-suave max-w-xs truncate">
+                      <TabelaCelula tenue className="max-w-xs truncate">
                         {chamado.titulo}
-                      </td>
+                      </TabelaCelula>
 
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-2 flex-wrap">
-                          <span
-                            className="inline-flex px-2 py-1 text-xs font-semibold text-conteudo"
-                            style={seloDaCor(
-                              corDoStatus(getStatusDisplay(chamado.status), darkMode)
-                            )}
-                          >
+                      <TabelaCelula className="text-center">
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          {/* A cor sai do mapa da secao 16, e nao mais da
+                              paleta CATEGORICA de graficos.
+
+                              O selo era `corDoStatus(...)` a 13% com uma barra
+                              de 2px na cor cheia — uma SEGUNDA fonte de verdade
+                              para status -> cor, que a secao 5.4 proibe e que
+                              ja tinha divergido do resto: o mesmo chamado
+                              aparecia de um jeito no quadro e de outro aqui.
+
+                              E a mesma forma do defeito que o Avatar tinha: a
+                              paleta de graficos e certificada para FORMA, e
+                              estava sendo usada para carregar TEXTO.
+
+                              O ROTULO nao muda. `getStatusDisplay` mostra
+                              FECHADO como "Resolvido", nesta tela e em
+                              ChamadoDetalhes, e isso e conteudo — a secao 30
+                              nao deixa trocar por motivo visual. Por isso o
+                              `Badge` com a variante do mapa, e nao o
+                              `StatusBadge`, que traria o rotulo do enum. */}
+                          <Badge variante={VARIANTE_DE_STATUS[chamado.status]}>
                             {getStatusDisplay(chamado.status)}
-                          </span>
-                          {chamado.arquivado && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-alerta/15 text-alerta-forte dark:text-alerta-suave">
-                              <IconeArquivar className="w-3 h-3" />
-                              Arquivado
-                            </span>
-                          )}
-                          {chamado.cancelado && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-perigo/15 text-perigo-forte dark:text-perigo-suave">
-                              <IconeProibido className="w-3 h-3" />
-                              Cancelado
-                            </span>
-                          )}
+                          </Badge>
+                          {chamado.arquivado && <MarcaBadge marca="arquivado" />}
+                          {chamado.cancelado && <MarcaBadge marca="cancelado" />}
                         </div>
-                      </td>
+                      </TabelaCelula>
 
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className="inline-flex px-2 py-1 text-xs font-semibold text-conteudo"
-                          style={seloDaCor(corDaPrioridade(chamado.prioridade, darkMode))}
-                        >
-                          {chamado.prioridade}
-                        </span>
-                      </td>
+                      <TabelaCelula className="text-center">
+                        {/* Aqui o rotulo JA e o valor do enum, entao o
+                            `PrioridadeBadge` entra inteiro. */}
+                        <PrioridadeBadge prioridade={chamado.prioridade} />
+                      </TabelaCelula>
 
-                      <td className="px-4 py-3 text-sm text-center text-conteudo-suave">
+                      <TabelaCelula tenue className="text-center">
                         {formatarData(chamado.created_at)}
-                      </td>
+                      </TabelaCelula>
 
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => navigate(`/chamados/${chamado.id}`)}
-                          className="text-sinal hover:brightness-110 font-medium inline-flex items-center gap-1"
+                      <TabelaCelula className="text-center">
+                        {/* Terceiro `<button>` com `navigate()` desta rodada,
+                            depois do "Voltar" do ChamadoDetalhes e do lembrete
+                            de tarefas do quadro. Vai para uma rota, logo e
+                            link: leitor de tela anuncia "link", e voltam o
+                            abrir em nova aba, o menu do botao direito e o
+                            endereco na barra de status.
+
+                            O nome acessivel leva o protocolo. Numa tabela de
+                            dez linhas havia dez "Ver detalhes" identicos, e a
+                            lista de links do leitor de tela nao dizia qual era
+                            qual. */}
+                        <Link
+                          to={`/chamados/${chamado.id}`}
+                          aria-label={`Ver detalhes do chamado ${chamado.protocolo}`}
+                          className="text-sinal hover:brightness-110 font-medium inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                         >
                           Ver detalhes
-                          <IconeSetaDireita className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
+                          <IconeSetaDireita className="h-4 w-4" aria-hidden="true" />
+                        </Link>
+                      </TabelaCelula>
+                    </TabelaLinha>
                   ))}
-                </tbody>
-
-              </table>
+                </TabelaCorpo>
+              </Tabela>
             </div>
           ) : (
             <div className="py-12 text-center">
@@ -1029,7 +1181,7 @@ const Dashboard: React.FC = () => {
             </div>
           )}
           </div>
-        </div>
+        </Card>
     </div>
   );
 };

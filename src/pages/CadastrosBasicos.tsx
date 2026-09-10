@@ -110,10 +110,30 @@ const CadastrosBasicos: React.FC = () => {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-borda bg-superficie">
           {/* Sistema de Abas */}
           <div className="shrink-0 border-b border-borda">
-            <nav className="-mb-px flex overflow-x-auto px-2">
+            {/* `role="tablist"` com `tab`/`tabpanel`, e nao quatro botoes
+                soltos.
+                
+                Sem isso o leitor de tela anuncia "Categorias, botao" quatro
+                vezes, sem dizer que sao alternativas de um mesmo lugar nem
+                qual esta ativa — e a pessoa nao tem como saber que escolher
+                uma troca o conteudo abaixo. Com a marcacao, ele anuncia
+                "Categorias, aba, selecionada, 1 de 4".
+                
+                `aria-controls` e o que amarra a aba ao painel: e por ele que o
+                leitor sabe QUAL regiao mudou quando a escolha muda. */}
+            <nav
+              role="tablist"
+              aria-label="Cadastros básicos"
+              className="-mb-px flex overflow-x-auto px-2"
+            >
               {abasVisiveis.map((aba) => (
                 <button
                   key={aba.id}
+                  type="button"
+                  role="tab"
+                  id={`aba-${aba.id}`}
+                  aria-selected={abaAtiva === aba.id}
+                  aria-controls={`painel-${aba.id}`}
                   onClick={() => setAbaAtiva(aba.id)}
                   className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
                     abaAtiva === aba.id
@@ -125,7 +145,7 @@ const CadastrosBasicos: React.FC = () => {
                   <span>{aba.label}</span>
 
                   {aba.id === 'usuarios' && (
-                    <span className="ml-1 rounded-full bg-alerta/15 px-2 py-0.5 text-[11px] font-semibold text-alerta-forte dark:text-alerta-suave">
+                    <span className="ml-1 rounded-full bg-alerta/15 px-2 py-0.5 text-xs font-semibold text-on-tint-warning">
                       Admin
                     </span>
                   )}
@@ -139,6 +159,14 @@ const CadastrosBasicos: React.FC = () => {
             {abasVisiveis.map((aba) => (
               <div
                 key={aba.id}
+                role="tabpanel"
+                id={`painel-${aba.id}`}
+                aria-labelledby={`aba-${aba.id}`}
+                // O painel escondido sai da arvore de acessibilidade junto
+                // com o `hidden` da classe: sem isto, o leitor de tela leria o
+                // conteudo das quatro abas em sequencia, e a pessoa ouviria a
+                // tabela de usuarios enquanto olha para a de categorias.
+                hidden={abaAtiva !== aba.id}
                 className={`${abaAtiva === aba.id ? 'h-full' : 'hidden'}`}
               >
                 {aba.component}

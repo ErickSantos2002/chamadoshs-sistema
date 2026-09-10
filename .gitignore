@@ -54,3 +54,17 @@ coverage
 # Backups temporários de edição
 *.bak
 .*.bak
+
+# ── Capturas de evidência ────────────────────────────────────────────
+#
+# As dezesseis do Checkpoint 3 foram feitas contra PRODUÇÃO, em leitura pura,
+# por decisão do operador em 04/09/2026 — não há Docker nesta máquina e a
+# credencial de superusuário do PostgreSQL 18 é desconhecida, então não houve
+# ambiente local para levantar massa de teste.
+#
+# Por isso elas contêm nome de solicitante, título de chamado e protocolo de
+# gente real, e NÃO entram no repositório. O diretório inteiro fica de fora.
+#
+# As fichas da §29 e este protocolo são texto, sem dado pessoal, e vão
+# normalmente.
+docs/design-system-migration/capturas-locais/

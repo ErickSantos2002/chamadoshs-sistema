@@ -18,10 +18,10 @@ export type TomDeAcao = 'neutro' | 'info' | 'alerta' | 'sucesso' | 'perigo';
  */
 const TONS: Record<TomDeAcao, string> = {
   neutro: 'hover:bg-superficie-elevada hover:text-conteudo',
-  info: 'hover:bg-info/10 hover:text-info-forte dark:hover:text-info-suave',
-  alerta: 'hover:bg-alerta/10 hover:text-alerta-forte dark:hover:text-alerta-suave',
-  sucesso: 'hover:bg-sucesso/10 hover:text-sucesso-forte dark:hover:text-sucesso-suave',
-  perigo: 'hover:bg-perigo/10 hover:text-perigo-forte dark:hover:text-perigo-suave',
+  info: 'hover:bg-info/10 hover:text-on-tint-info',
+  alerta: 'hover:bg-alerta/10 hover:text-on-tint-warning',
+  sucesso: 'hover:bg-sucesso/10 hover:text-on-tint-success',
+  perigo: 'hover:bg-perigo/10 hover:text-on-tint-danger',
 };
 
 interface BotaoDeAcaoProps {
@@ -65,13 +65,14 @@ export const BotaoDeAcao: React.FC<BotaoDeAcaoProps> = ({
   children,
 }) => (
   <button
+    data-botao=""
     type="button"
     onClick={onClick}
     title={titulo}
     aria-label={descricao ?? titulo}
     className={cn(
       'rounded-lg p-2 text-conteudo-tenue transition-colors',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sinal',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
       TONS[tom]
     )}
   >

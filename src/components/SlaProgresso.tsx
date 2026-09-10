@@ -9,10 +9,22 @@ interface SlaProgressoProps {
   status: StatusEnum;
 }
 
+/* Preenchimento usa --fill-*, e nao o degrau 500 da rampa.
+ *
+ * Medido contra as tres superficies do claro, piso de 3:1 de nao-texto:
+ * `--sucesso` da 2,54 / 2,42 / 2,32 e `--alerta` da 2,15 / 2,05 / 1,96 -- os
+ * dois reprovam, e so no claro. `--fill-success` (#059669) sobe para
+ * 3,77 / 3,60 / 3,44 e `--fill-warning` (#B45309) para 5,02 / 4,80 / 4,58.
+ *
+ * E HIGIENE DE TOKEN, nao correcao de acessibilidade: ao lado da barra vem a
+ * situacao escrita, com icone, entao a cor nao e o unico portador. A regra
+ * esta no DECISOES.md, e existe para nao usar duas reguas -- a E19 da o mesmo
+ * beneficio da duvida ao anel do SlaChip do HelpHS.
+ */
 const COR_DA_BARRA: Record<string, string> = {
-  'No prazo': 'bg-sucesso',
-  'Atenção': 'bg-alerta',
-  'Estourado': 'bg-perigo',
+  'No prazo': 'bg-fill-success',
+  'Atenção': 'bg-fill-warning',
+  'Estourado': 'bg-fill-danger',
 };
 
 /**
@@ -37,7 +49,7 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
       <div
         className={cn(
           'flex items-center gap-1.5 text-xs font-medium',
-          estourou ? 'text-perigo' : 'text-sucesso'
+          estourou ? 'text-on-tint-danger' : 'text-on-tint-success'
         )}
       >
         {estourou ? (
@@ -66,7 +78,31 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
 
   return (
     <div className="space-y-1" title={detalhe}>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-superficie-elevada">
+      {/* `role="progressbar"` com os três valores.
+       *
+       * A barra dizia o consumo do prazo APENAS pelo comprimento pintado, que
+       * é informação puramente visual. O `title` do contêiner acima não
+       * resolve: `title` não é anunciado de forma confiável, e em teclado ele
+       * nem aparece.
+       *
+       * `aria-valuenow` leva o valor SATURADO, o mesmo que a barra desenha, e
+       * não o percentual cru: com o prazo estourado o cru passa de 100 e
+       * ficaria fora do intervalo declarado. O número real continua no texto
+       * abaixo e no `title`, que é onde ele cabe.
+       *
+       * Veio do `Progress.jsx` do pacote — que é este mesmo componente,
+       * capturado daqui. O pacote acrescentou a semântica ao capturá-lo, e ela
+       * nunca voltou para cá. É o gêmeo do que a emenda E7-b ensinou: depois
+       * de criar alguma coisa, varra quem deveria tê-la.
+       */}
+      <div
+        role="progressbar"
+        aria-valuenow={largura}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={detalhe}
+        className="h-1 w-full overflow-hidden rounded-full bg-superficie-elevada"
+      >
         <div
           className={cn(
             'h-full rounded-full transition-all duration-700',
@@ -79,7 +115,7 @@ export const SlaProgresso: React.FC<SlaProgressoProps> = ({ sla, status }) => {
       <div
         className={cn(
           'flex items-center gap-1.5 text-xs font-medium',
-          estourou ? 'text-perigo' : 'text-conteudo-tenue'
+          estourou ? 'text-on-tint-danger' : 'text-conteudo-tenue'
         )}
       >
         {estourou && <IconeAlerta className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}

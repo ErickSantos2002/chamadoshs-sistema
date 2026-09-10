@@ -3,8 +3,9 @@ import { slaConfigsService } from '../../services/chamadoshsapi';
 import { PrioridadeEnum, SLAConfig } from '../../types/api';
 import { EXPEDIENTE, MINUTOS_POR_DIA_UTIL, formatarPrazo } from '../../lib/prazo';
 import { cn } from '../../lib/utils';
-import { Badge, Button, Input, Modal, RotuloDeCampo, VarianteBadge } from '../ui';
-import { IconeAlerta, IconeCarregando, IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
+import { Aviso, BlocoCarregando, Button, Input, Modal, RotuloDeCampo } from '../ui';
+import { PrioridadeBadge } from '../SelosDeChamado';
+import { IconeEditar, IconeEscudoConfere, IconeRelogio, IconeSino } from '../ui/icones';
 
 interface SlaTabProps {
   /** Indica se a aba SLA está ativa/visível no momento. */
@@ -26,13 +27,6 @@ const ORDEM: PrioridadeEnum[] = [
   PrioridadeEnum.BAIXA,
 ];
 
-const VARIANTE: Record<PrioridadeEnum, VarianteBadge> = {
-  [PrioridadeEnum.CRITICA]: 'perigo',
-  [PrioridadeEnum.ALTA]: 'alerta',
-  [PrioridadeEnum.MEDIA]: 'info',
-  [PrioridadeEnum.BAIXA]: 'neutro',
-};
-
 /**
  * A barra usa a cor da prioridade, menos em "Baixa": o cinza do selo some
  * contra o trilho, e como "Baixa" tem o maior prazo a barra fica com a largura
@@ -40,9 +34,9 @@ const VARIANTE: Record<PrioridadeEnum, VarianteBadge> = {
  * `conteudo-suave` mantém o tom neutro do selo e ainda contrasta.
  */
 const BARRA: Record<PrioridadeEnum, string> = {
-  [PrioridadeEnum.CRITICA]: 'bg-perigo',
-  [PrioridadeEnum.ALTA]: 'bg-alerta',
-  [PrioridadeEnum.MEDIA]: 'bg-info',
+  [PrioridadeEnum.CRITICA]: 'bg-fill-danger',
+  [PrioridadeEnum.ALTA]: 'bg-fill-warning',
+  [PrioridadeEnum.MEDIA]: 'bg-fill-info',
   [PrioridadeEnum.BAIXA]: 'bg-conteudo-suave',
 };
 
@@ -167,17 +161,16 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
       </div>
 
       {erro && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-perigo/30 bg-perigo/10 px-4 py-3 text-sm text-perigo-forte dark:text-perigo-suave">
-          <IconeAlerta className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          {erro}
-        </div>
+        <Aviso variante="perigo" className="shrink-0">{erro}</Aviso>
       )}
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto">
         {carregando ? (
-          <div className="flex h-48 items-center justify-center text-sm text-conteudo-tenue">
-            <IconeCarregando className="h-6 w-6 animate-spin" aria-hidden="true" />
-          </div>
+          // Este bloco era SILENCIOSO: o anel tinha `aria-hidden` e não havia
+          // texto nenhum ao lado. Quem usa leitor de tela não ouvia "pouco",
+          // não ouvia NADA enquanto a região carregava — e não tinha como
+          // distinguir sistema trabalhando de sistema travado.
+          <BlocoCarregando className="h-48" />
         ) : (
           <div className="overflow-hidden rounded-xl border border-borda bg-superficie">
             {ordenadas.map((config, indice) => (
@@ -189,7 +182,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                 )}
               >
                 <div className="w-24 shrink-0">
-                  <Badge variante={VARIANTE[config.prioridade]}>{config.prioridade}</Badge>
+                  <PrioridadeBadge prioridade={config.prioridade} />
                 </div>
 
                 <div className="flex min-w-[10rem] flex-1 flex-col gap-2">
