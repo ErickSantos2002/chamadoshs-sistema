@@ -191,7 +191,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               >
                 {/* Protocolo e prioridade */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-[11px] text-conteudo-tenue">
+                  <span className="font-mono text-xs text-conteudo-tenue">
                     {chamado.protocolo}
                   </span>
                   {/*

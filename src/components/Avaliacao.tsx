@@ -171,7 +171,7 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
             {[1, 2, 3, 4, 5].map((n) => (
               <span key={n}>{estrela(n <= nota)}</span>
             ))}
-            <span className="ml-1 rounded bg-superficie-elevada px-2 py-0.5 text-[11px] text-conteudo-tenue">
+            <span className="ml-1 rounded bg-superficie-elevada px-2 py-0.5 text-xs text-conteudo-tenue">
               {nota} de 5
             </span>
           </>
@@ -203,7 +203,7 @@ export const Avaliacao: React.FC<AvaliacaoProps> = ({
         ))}
 
         {nota && (
-          <span className="ml-1 rounded bg-superficie-elevada px-2 py-0.5 text-[11px] text-conteudo-tenue">
+          <span className="ml-1 rounded bg-superficie-elevada px-2 py-0.5 text-xs text-conteudo-tenue">
             {nota} de 5
           </span>
         )}

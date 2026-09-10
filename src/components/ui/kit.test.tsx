@@ -152,10 +152,28 @@ describe('foco', () => {
    * recuado, então quem navega por teclado depende do anel para saber onde
    * está.
    */
-  it('o campo acende um anel de 2px, não de 1px', () => {
+  /**
+   * Atualizado em 10/09/2026, e a regra que justifica está dita.
+   *
+   * A afirmação era `focus:ring-2`. Passou a `focus-visible:ring-2` porque o
+   * checklist do `adocao.md` do pacote, item 9, pede **`focus-visible` com anel
+   * de 2px, e não `focus`** — sem qualificar por elemento.
+   *
+   * Em `<input>` e `<textarea>` os dois **coincidem** hoje: o navegador dá
+   * indicador visível a todo controle de entrada de texto, inclusive no clique
+   * de mouse. Então esta mudança **não move um pixel** — e foi feita mesmo
+   * assim, porque divergência sem efeito hoje é divergência com efeito no dia
+   * em que o navegador mudar de critério.
+   *
+   * O caso irmão, logo abaixo, é o que **tem** efeito: o `Button` é `<button>`,
+   * e ali `:focus` acende no clique enquanto `:focus-visible` não.
+   */
+  it('o campo acende um anel de 2px, e só por focus-visible', () => {
     const campo = comTema(<Input />);
-    expect(campo).toContain('focus:ring-2');
-    expect(campo).not.toContain('focus:ring-1');
+    expect(campo).toContain('focus-visible:ring-2');
+    expect(campo).not.toContain('ring-1');
+    // E não sobrou `focus:` puro, que era o estado anterior.
+    expect(campo).not.toMatch(/(^|\s)focus:ring/);
   });
 
   it('o botão mostra o anel só para quem navega por teclado', () => {

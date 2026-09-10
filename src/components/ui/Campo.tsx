@@ -70,7 +70,16 @@ export const FORMA_DE_CAMPO = [
   // então isto não muda um pixel. Muda a procedência: `--focus-ring` é o token
   // que o pacote reserva para anel de foco, e no dia em que ele se separar de
   // `--action` o campo acompanha sem ninguém lembrar de vir aqui.
-  'transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]',
+  // `focus-visible:` e não `focus:`.
+  //
+  // Em `<input>` e `<textarea>` os dois COINCIDEM: o navegador considera que
+  // controle de entrada de texto sempre merece indicador visível, então clicar
+  // com o mouse casa as duas pseudoclasses. **Hoje isto não muda um pixel.**
+  //
+  // Muda amanhã. Divergência sem efeito hoje é divergência com efeito no dia em
+  // que o navegador mudar de critério — e o guia do pacote pede `focus-visible`
+  // sem qualificar por elemento.
+  'transition-colors focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
 ].join(' ');
 
 interface RotuloDeCampoProps extends React.LabelHTMLAttributes<HTMLLabelElement> {

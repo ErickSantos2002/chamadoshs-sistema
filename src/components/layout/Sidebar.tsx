@@ -245,7 +245,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Ver o que há de novo nessa versão
             </span>
           </div>
-          <p className="text-[11px] text-conteudo-tenue">
+          <p className="text-xs text-conteudo-tenue">
             © 2026 Health &amp; Safety Tech
           </p>
         </div>

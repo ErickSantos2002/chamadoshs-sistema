@@ -416,7 +416,11 @@ export const Seletor: React.FC<SeletorProps> = ({
             : invalido
               ? 'border-perigo'
               : 'border-borda-control',
-          'focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]'
+          // `focus-visible:` e não `focus:`, e a diferença é visível: isto é
+          // um `<button>`, e em botão o `:focus` acende no CLIQUE DE MOUSE
+          // enquanto o `:focus-visible` não. O anel de 2px aparecendo a cada
+          // clique é exatamente o que `focus-visible` existe para evitar.
+          'focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]'
         )}
       >
         {escolhida?.cor && (

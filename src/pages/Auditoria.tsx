@@ -343,7 +343,7 @@ const Auditoria: React.FC = () => {
                     <td className="px-4 py-3 align-top">
                       {/* Pastilha de metadado: o tipo do cadastro é dado sobre a
                           linha, não título de seção — `Rotulo` é rótulo de seção. */}
-                      <span className="inline-block rounded bg-superficie-elevada px-2 py-0.5 text-[11px] text-conteudo-tenue">
+                      <span className="inline-block rounded bg-superficie-elevada px-2 py-0.5 text-xs text-conteudo-tenue">
                         {NOME_DO_ALVO[evento.alvo_tipo] ?? evento.alvo_tipo}
                       </span>
                       <span className="mt-1 block text-conteudo">

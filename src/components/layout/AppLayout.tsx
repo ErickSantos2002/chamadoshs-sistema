@@ -110,7 +110,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           Passou pelo Checkpoint 1 porque a conferência da §26 mediu o token
           `--action`, não as classes que as telas escrevem por cima dele.
 
-          Com o token: 5,29:1 no claro e 5,11:1 no escuro. */}
+          Com o token: 5,29:1 no claro e 5,11:1 no escuro.
+
+          ── E o `focus:` daqui é PROPOSITAL — não troque por `focus-visible:`
+          ───────────────────────────────────────────────────────────
+
+          O guia do pacote pede `focus-visible` com anel de 2px, e o resto do
+          sistema obedece. **Aqui não**, e o motivo é o que este link é.
+
+          Um atalho de pular conteúdo existe para APARECER quando recebe foco.
+          Se aparecesse só em `:focus-visible`, um foco que o navegador julgasse
+          não merecer indicador o deixaria invisível — e um atalho invisível que
+          recebe Tab é pior que atalho nenhum: a pessoa tabula, o foco está em
+          lugar nenhum visível, e o próximo Tab já passou.
+
+          `focus:` é o que garante que ele se mostre em qualquer caminho de
+          foco. Está registrado como exceção do item 9 do checklist do
+          `adocao.md`, com este motivo. */}
       <a
         href="#conteudo-principal"
         className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-sinal focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-[var(--text-on-primary)]"
