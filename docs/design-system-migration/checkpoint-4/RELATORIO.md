@@ -15,27 +15,38 @@ foi feito, **o que não foi**, e o que fica pendente com nome e custo.
 
 ---
 
-> # ⏰ O QUE FAZER HOJE: **NÃO EMPURRAR EM `main`**
+> # A LINHA DE BASE PERECEU — e não é mais pendência, é fato
 >
-> Esta é a **única pendência com prazo**, e o prazo não é nosso — é de quem tiver
-> acesso ao repositório.
+> **Atualizado em 10/09/2026, depois do encerramento.** O que esta seção dizia
+> — *"não empurrar em `main`"* — **deixou de valer no mesmo dia**.
 >
-> As 32 capturas antes/depois não existem. O "antes" só é recuperável porque
-> `main` continua em **`165d9198…`**, que é onde o ramo nasceu. Uma
-> `git worktree` ali reproduz o estado anterior em minutos.
+> O operador **fez o merge do PR #4 e o deploy**. `main` recebeu os 174 commits
+> do ramo e está em **`1831fd2`**.
 >
-> **Um push em `main` acaba com isso.** Não some do histórico — some da
-> facilidade: vira arqueologia de commit, e alguém terá de **decidir** qual
-> commit era o estado anterior, que é decisão e não comando.
+> **Não foi descuido de terceiro: foi decisão do operador, com o custo na mesa.**
+>
+> ### O que se perdeu, e o que não
 >
 > | | |
 > |---|---|
-> | custo de preservar | **zero** — é não fazer nada |
-> | custo de perder | a comparação antes/depois, **para sempre** |
+> | o commit `165d919` | ✅ **preservado** — continua alcançável, e agora com tag própria |
+> | reconstruir o "antes" por `worktree` limpa | ❌ **perdido na prática** |
+> | a comparação antes/depois da §28 | ❌ **não será feita contra este "antes"** |
 >
-> A receita de remontagem está em
-> `docs/design-system-migration/fase-19/LINHA-DE-BASE.md`, com as quatro
-> diferenças declaradas e o passo do `.env`, sem o qual ela não vale.
+> ```
+> tag linha-de-base-165d919  →  165d9198…   no origin
+> tag antes-do-rebase        →  da1c37b     no origin
+> ```
+>
+> As duas tags mantêm os pontos **endereçáveis para sempre**, e não dependem mais
+> de `main` ficar parada. O que elas não devolvem é a facilidade: reconstruir
+> agora exige montar worktree sobre uma árvore que já divergiu, com as quatro
+> diferenças declaradas e o `npm install` das dependências antigas.
+>
+> **A §28 fica como dívida sem contraparte:** as 32 capturas continuam nomeadas
+> como pendência, mas o "antes" que elas comparariam não é mais reconstruível a
+> baixo custo. Se a comparação for retomada, será contra um "antes" reconstruído
+> — e isso precisa estar dito em qualquer relatório que a use.
 
 ---
 
