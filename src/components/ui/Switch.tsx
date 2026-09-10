@@ -101,12 +101,16 @@ export const Switch: React.FC<SwitchProps> = ({
         )}
       />
 
-      {/* Botão */}
+      {/* Botão. `left` declarado, como no pacote e no HelpHS: sem ele a
+          posição vem do alinhamento de quem contém o interruptor. Aqui o
+          `<label>` alinha à esquerda e dava certo por acaso; a cópia deste
+          desenho dentro de um `<button>`, no menu do usuário, vazava do
+          trilho. Com 2px de cada lado, as duas posições ficam simétricas. */}
       <span
         aria-hidden="true"
         className={cn(
-          'absolute top-0.5 h-4 w-4 rounded-full bg-[var(--text-on-primary)] shadow transition-transform',
-          ligado ? 'translate-x-4' : 'translate-x-0.5'
+          'absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-[var(--text-on-primary)] shadow transition-transform',
+          ligado ? 'translate-x-4' : 'translate-x-0'
         )}
       />
     </span>

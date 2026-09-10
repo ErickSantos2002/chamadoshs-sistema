@@ -30,6 +30,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.7.8',
+    data: '2026-09-10',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'No menu com o seu nome, o interruptor do "Modo escuro" voltou a funcionar como interruptor: a bolinha fica à esquerda no modo claro e à direita no escuro, sempre dentro do trilho. Antes ela aparecia do lado direito mesmo no claro e, no escuro, escapava para fora do trilho até a borda do menu.',
+      },
+    ],
+  },
+  {
     versao: '1.7.7',
     data: '2026-09-09',
     itens: [

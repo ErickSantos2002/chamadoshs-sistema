@@ -225,10 +225,16 @@ export const Topbar: React.FC<TopbarProps> = ({
                       : 'border-borda-control bg-superficie-elevada'
                   )}
                 />
+                {/* O `left` declarado é o que segura a bolinha no trilho.
+                    Sem ele, ela cai na posição estática, que herda o
+                    alinhamento de quem a contém — e `<button>` centraliza por
+                    padrão: a bolinha nascia no meio do trilho, ficava à
+                    direita no claro e, ligada, vazava 14px até a borda do
+                    painel. `interruptor.test.tsx` trava a conta. */}
                 <span
                   className={cn(
-                    'absolute top-0.5 h-4 w-4 rounded-full bg-[var(--text-on-primary)] shadow transition-transform duration-200',
-                    darkMode ? 'translate-x-4' : 'translate-x-0.5'
+                    'absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-[var(--text-on-primary)] shadow transition-transform duration-200',
+                    darkMode ? 'translate-x-4' : 'translate-x-0'
                   )}
                 />
               </span>
