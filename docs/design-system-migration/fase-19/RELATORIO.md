@@ -1,124 +1,165 @@
-# Fase 19 — regressão visual: **o que ESTE RAMO mudou**
+# Fase 19 — **a regressão visual NÃO foi feita**
 
-> ### Leia esta linha antes de qualquer imagem
+> ### As 32 capturas não existem
 >
-> As 32 capturas comparam o ramo `chore/design-system-adoption` contra `main`.
-> **Não** comparam "antes e depois da migração do design system".
+> A comparação antes/depois exigida pela §28 **não foi realizada**. À mão custa
+> uma sessão inteira de operador; por automação exigiria montar Playwright, que
+> o projeto não tem.
 >
-> Quando o ramo nasceu, em `165d919`, as **Fases 1 a 6 já estavam em `main`** —
-> tokens do pacote, fonte Plus Jakarta Sans, tema claro/escuro, `AppLayout`,
-> `Sidebar` e `Topbar`. O "antes" destas fotos **já é um sistema com o design
-> system aplicado na fundação**.
->
-> O que elas mostram é o trabalho das Fases 7 a 18: primitivos, telas, cartões,
-> gráficos, acessibilidade.
+> **Decisão do operador, 10/09/2026.** Não é corte de escopo por prazo apertado:
+> é o reconhecimento de que o caminho manual custa mais do que entrega, e de que
+> o caminho barato ainda não foi construído.
 
-**10/09/2026.** É a primeira comparação antes/depois desta migração, e ela só
-existe porque `main` não se moveu em nove dias.
+**Este relatório existe para que ninguém leia a Fase 19 como cumprida.**
 
 ---
 
-## Por que só agora, e o que isso custou
+## 1. O que a fase entrega, de fato
 
-A §28 pede o "antes" tirado **na Fase 0**, antes de qualquer alteração. O
-relatório da Fase 0 registra a intenção e o adiamento:
+| entrega | estado |
+|---|---|
+| `npm run build` com os três passos encadeados | ✅ **primeira execução da migração**, verde em 14,93s |
+| os três vazios da `Auditoria` presos em teste | ✅ 5 casos, com **mutação** provando que pegam |
+| ausência de `lint` | ✅ **declarada** — §27: script fora do `package.json` não existe |
+| ausência de Playwright / e2e | ✅ **declarada** desde a Fase 0 |
+| levantamento do que a comparação mediria | ✅ `LINHA-DE-BASE.md` |
+| **as 32 capturas** | ❌ **não feitas** |
 
-> *"Sem screenshots de linha de base ainda: o projeto não tem Playwright, e a §28
-> pede captura manual. Faço na Fase 1…"*
+### O build
 
-**Não há pasta `fase-1`.** O "antes" nunca foi tirado, e passaram-se quinze
-fases.
+```
+> chamadoshs-sistema@1.7.7 build
+> npm run validar:paleta && tsc --noEmit && vite build
+  Paleta validada.
+✓ built in 14.93s
+```
 
-Ele foi recuperado por `git worktree` em `main`, que continua em `165d9198…` —
-conferido nos dois lados, local e remoto, antes de montar. **O risco estava
-datado no `DECISOES.md` desde 09/09**, com o procedimento escrito: conferir
-`git rev-parse main` *antes* de contar com a worktree, e não depois de planejar
-em cima dela.
+Nunca havia rodado nesta migração — só `tsc` e o validador, que são dois dos três
+passos que ele encadeia.
 
-Se `main` tivesse andado, o "antes" não sumiria do histórico — sumiria da
-facilidade, virando arqueologia de commit em vez de um comando.
+### Os três vazios
 
----
+Cinco casos novos em `auditoria-vazios.test.tsx`. O que os faz valer é a
+mutação: **colapsar o ternário de três ramos para dois derruba exatamente os dois
+casos do defeito**, e os outros três continuam passando.
 
-## O arranjo da sessão
-
-| | **antes** | **depois** |
-|---|---|---|
-| commit | `165d919` **+ 4 diferenças declaradas** | ramo, `9245e75` |
-| porta | 5173 | 5174 |
-| versão | 1.7.6 | 1.7.7 |
-
-As quatro diferenças da worktree estão em `LINHA-DE-BASE.md`, com o motivo de
-cada uma e por que nenhuma afeta o que a foto mostra.
-
-**Condições fixadas pelo operador:**
-
-1. Mesma sessão, mesmas quatro telas, mesmos dois viewports e temas, mesma massa.
-2. **Alternando por tela**, e não em bloco — se algo mudar no meio da sessão,
-   muda para os dois lados do mesmo par em vez de contaminar um lado inteiro.
-3. Leitura pura nos dois.
+O defeito que eles prendem já estava corrigido — e *defeito já corrigido volta
+calado se ninguém o prender*.
 
 ---
 
-## O que a montagem já encontrou
+## 2. A última verificação visual deste sistema é de 08/09
+
+**As dezesseis capturas do Checkpoint 3.** Depois delas vieram três fases:
+
+| fase | o que mudou na tela |
+|---|---|
+| **16-H** | cor cheia como texto (13 usos), `--chart-*` no gráfico de status, preenchimento nu, moldura e dica do gráfico |
+| **16-mestre** | quatro cartões passando ao primitivo, com respiro mudando de `p-5`/`px-8 py-10` para `md`/`lg` |
+| **18** | `tabIndex` no gráfico, e a regra de movimento reduzido saindo do CSS local |
+
+> **Nenhuma tela foi olhada depois dessas três fases.**
+
+O que existe no lugar de olhar: `tsc`, o validador com nove catracas, 647 casos
+de teste, e as medições da sonda. Nada disso vê **aparência** — vê token, classe,
+geometria e contraste calculado.
+
+A mudança de respiro dos quatro cartões, em particular, **mudou pixels e não foi
+fotografada por ninguém**.
+
+---
+
+## 3. A linha de base continua recuperável — e o risco é datado
+
+Conferido em 10/09/2026, nos dois lados:
+
+```
+main LOCAL : 165d9198fc60e0887a025653a5a2898bc042b6cc
+main REMOTO: 165d9198fc60e0887a025653a5a2898bc042b6cc
+```
+
+A worktree e o servidor da 5173 **foram derrubados** — deliberadamente, porque
+servidor parado de pé já mediu o produto errado neste projeto duas vezes. A
+receita completa para remontar está em `LINHA-DE-BASE.md`, com as quatro
+diferenças declaradas e o passo do `.env`, sem o qual a comparação não vale.
+
+> ### Risco datado
+>
+> **Enquanto `main` estiver em `165d9198…`, a comparação é possível. Depois de um
+> push nela, deixa de ser — e para sempre**, porque o estado que se queria
+> fotografar é exatamente *"o que havia antes deste ramo"*.
+>
+> Não é perda de conveniência: é perda do objeto.
+
+---
+
+## 4. Pendência nomeada: **32 capturas por Playwright**
+
+É o único caminho que não custa uma sessão de operador.
+
+**Se e quando for retomada, o script é a primeira coisa** — não as capturas. Um
+roteiro que carrega as quatro telas nas duas portas, escreve o tema em
+`localStorage` antes de cada carga, espera as transições drenarem e fotografa
+resolve em minutos o que à mão consome uma tarde, e resolve **sempre**, e não
+uma vez.
+
+O que ele precisa saber, e está tudo escrito:
+
+- as quatro diferenças da worktree e a receita de montagem — `LINHA-DE-BASE.md`;
+- as sete checagens antes de cada foto — `protocolo-de-captura.md`;
+- a **sétima**, que é a nova: `visibilityState === 'visible'` e
+  `getAnimations()` vazio. Num roteiro Playwright ela é trivial e **confiável**,
+  ao contrário do arranjo manual, onde o portão teve de mudar de dono.
+
+---
+
+## 5. O que a fase encontrou, mesmo sem as capturas
 
 ### O `.env` ausente quase produziu 32 imagens incomparáveis
 
-A worktree nasceu sem `.env` — ele é gitignored. E `api.ts` recua:
-
-```ts
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-```
-
-**As duas metades apontavam para APIs diferentes.** E falharia calada:
+A worktree nasceu sem `.env` — ele é gitignored — e `api.ts` recua para
+`http://localhost:8000`. **As duas metades apontavam para APIs diferentes.**
 
 > **O recuo não dá erro. Dá uma URL.**
 
-Sem exceção, sem aviso, sem log. A tela renderizaria a casca com zero dado —
-exatamente como renderizaria uma base vazia. As imagens sairiam com o "antes"
-vazio, e a leitura natural seria *"o painel antigo não tinha dados"*.
+A tela renderizaria a casca com zero dado, exatamente como renderizaria uma base
+vazia. O que pegou foi **ler o `baseURL` no navegador em vez de supor**.
 
-O que pegou foi **ler o `baseURL` no navegador em vez de supor**. É a regra da
-identidade da página aplicada a um objeto novo: identidade diz *que página é
-esta*; atualidade, *que versão dela é*; **destino, com quem ela está falando**.
+### Aba oculta congela transição — e quase virou achado falso
 
-### O `strictPort` que o `165d919` não tinha
+`body` e `main` carregam `transition-colors` de 150ms. Em aba oculta o Chrome não
+faz as animações andarem: as transições ficam em `currentTime: 0` e
+`getComputedStyle` devolve a **cor de partida**, indefinidamente.
 
-O `vite.config.ts` daquele commit **não declara porta nem `strictPort`** — é
-anterior à decisão da porta. Sem a linha acrescentada, o servidor do "antes"
-poderia subir na 5174 e as duas metades seriam o mesmo código sem ninguém
-perceber.
+Isso foi lido, por alguns minutos, como defeito de produção — texto quase preto
+sobre fundo navy, contraste perto de 1:1. **Não existe.**
 
-### A sessão de login é separada
+E o mais forte não é o do toggle: **numa carga limpa, sem ninguém trocar tema**,
+`main` sai correto e `body` fica congelado. A sétima checagem não é sobre trocar
+de tema — é sobre **medir em aba não pintada**, e alcança qualquer medição de
+estilo computado.
 
-`localStorage` é por origem, então a 5173 não herda a sessão da 5174. Quem entra
-é o operador — credencial não passa por aqui.
+### O portão mudou de dono
 
----
+A sétima checagem **não é executável pelo agente**: a extensão reporta `hidden`
+mesmo com a janela à frente. Três medições, com 8 segundos de atraso, todas
+`hidden`.
 
-## As 32 capturas
+> Trava que o autor não consegue passar travaria as 32 por construção. **O portão
+> é do operador, e não da sessão.**
 
-*(a preencher conforme os pares forem fotografados)*
+### E três erros meus, todos pegos antes de virarem afirmação
 
-| # | tela | rota | viewport | tema | antes | depois |
-|---|---|---|---|---|---|---|
-| 1–4 | painel | `/dashboard` | 1366×768 e 390×844 | claro e escuro | ⏳ | ⏳ |
-| 5–8 | listagem | `/cadastros` | idem | idem | ⏳ | ⏳ |
-| 9–12 | formulário | `/chamados/novo` | idem | idem | ⏳ | ⏳ |
-| 13–16 | detalhe | `/chamados/6` | idem | idem | ⏳ | ⏳ |
+Provar se trocar tema sem recarregar dá o mesmo DOM custou **~72 chamadas contra
+24 estimadas**, e a diferença foi inteiramente de instrumento: **seletor
+instável**, **funções de impressão diferentes nas duas pontas**, **aba oculta**.
 
-Os nomes usam o viewport **pedido**; a **régua medida** vai na ficha de cada
-captura — foi ela que pegou a janela travada na Fase 17, e os arquivos do
-Checkpoint 3 mostram que o real foi 1366×767 e 389×843.
+Nenhum entrou em relatório, ficha ou commit como achado. O terceiro foi pego pela
+regra que o `DECISOES.md` já continha.
 
 ---
 
-## O resto da fase
+## Estado ao fechar
 
-| item | estado |
-|---|---|
-| `build` com os três passos encadeados | ✅ **primeira execução da migração**, verde em 14,93s |
-| os três vazios da `Auditoria` presos em teste | ✅ 5 casos, com mutação provando que pegam |
-| `lint` | **não existe** no `package.json` — §27: script que não está lá, não existe |
-| Playwright / e2e | **não existe** — registrado na Fase 0 |
-| as 32 capturas | ⏳ |
+- **647 casos, 62 arquivos.** `tsc`, `validar-paleta` e `build` verdes.
+- **A §28 não está cumprida**, e o Checkpoint 4 precisa saber disso.

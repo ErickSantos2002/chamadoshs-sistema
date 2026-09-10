@@ -172,3 +172,63 @@ tinham acontecido quando o ramo se separou.
 > `chore/design-system-adoption` mudou"**, e não *"o que a migração inteira
 > mudou"*. A diferença é real e precisa estar escrita: a fundação — tokens,
 > fontes, tema, casca — já estava em `main` antes do ramo.
+
+
+---
+
+## A RECEITA, que substitui a worktree
+
+**10/09/2026.** O servidor da 5173 foi derrubado e a worktree foi desregistrada
+do git ao fim da fase.
+
+> **Detalhe honesto:** `git worktree remove` **falhou** com *"Filename too long"*
+> — os caminhos de `node_modules` estouram o limite do Windows. O
+> `git worktree prune` passou, então **o git não a rastreia mais**
+> (`git worktree list` mostra só a principal), mas **os arquivos continuam no
+> diretório temporário da sessão**, que é apagado por fora.
+>
+> Registrado porque "removida" e "desregistrada, com os arquivos ainda lá" não
+> são a mesma frase — e quem tentar remontar no mesmo caminho vai encontrar
+> lixo.
+Isto é deliberado: **servidor parado de pé já mediu o produto errado neste
+projeto duas vezes**, e um artefato que ninguém está usando é só uma armadilha
+esperando.
+
+O que se perde ao derrubar é **tempo**, não possibilidade. Remontar:
+
+```bash
+# 1. o portao: main tem de estar em 165d919, nos DOIS lados
+git rev-parse main && git rev-parse origin/main
+#    esperado: 165d9198fc60e0887a025653a5a2898bc042b6cc
+
+# 2. a worktree
+git worktree add <caminho> 165d919
+
+# 3. as dependencias DELA (tem @fontsource, que o ramo removeu) -- alguns minutos
+cd <caminho> && npm install
+
+# 4. as quatro diferencas declaradas
+#    a) index.html:   <html lang="pt-BR" data-app="chamadoshs">
+#    b) vite.config:  server: { port: 5173, strictPort: true }
+#    c) cp .env do repositorio principal   <-- SEM ISTO A COMPARACAO NAO VALE
+#    d) package-lock.json e reescrito pelo npm install, e isso e esperado
+
+# 5. subir, e CONFERIR antes de medir
+npm run dev
+#    porta 5173 | data-app chamadoshs | baseURL de producao | 1.7.6 | massa igual
+```
+
+O passo **4c** é o que quase arruinou a montagem: sem `.env`, `api.ts` recua para
+`http://localhost:8000` **sem erro**, e as duas metades falam com APIs
+diferentes.
+
+### O único ponto irrecuperável
+
+**`main` em `165d919`.** Se ela andar, o "antes" não some do histórico — some da
+facilidade: vira arqueologia de commit, e alguém terá de decidir **qual** commit
+era o estado anterior, que é decisão e não comando.
+
+> **Risco datado, 10/09/2026:** enquanto `main` estiver em `165d9198…`, a
+> comparação é possível. Depois de um push nela, deixa de ser — e **para
+> sempre**, porque o estado que se queria fotografar é exatamente "o que havia
+> antes deste ramo".
