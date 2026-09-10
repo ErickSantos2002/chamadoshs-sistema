@@ -7,7 +7,30 @@
 | **Namespace do manifesto** | `HealthAmpSafetyDesignSystem_ef9f35` |
 | **Sincronização do pacote com os repositórios** | 23/08/2026 (`DS/github.md`) |
 | **Copiado para cá em** | 02/09/2026, Fase 1 |
+| **Adoção, status** | Fase 20 de 20. **A regressão visual da §28 NÃO foi feita** — ver o aviso abaixo |
 | **Estratégia** | Opção A — tokens e componentes locais sincronizados (§6 do prompt mestre). Sem pacote npm, sem monorepo |
+
+> ## ⚠️ A REGRESSÃO VISUAL DA §28 NÃO FOI FEITA
+>
+> **A última verificação de tela deste sistema é de 08/09/2026** — as dezesseis
+> capturas do Checkpoint 3.
+>
+> Depois delas vieram três fases que **mudaram pixels**: a **16-H**, a
+> **16-mestre** (quatro cartões passando ao primitivo, com o respiro mudando de
+> `p-5` e `px-8 py-10` para `md` e `lg`) e a **18**.
+>
+> **Nenhuma tela foi olhada depois dessas três fases.** `tsc`, o validador com
+> nove catracas, 647 casos e a sonda da §20 não veem aparência — veem token,
+> classe, geometria e contraste calculado.
+>
+> Pendência nomeada: **32 capturas por Playwright**. A receita da linha de base
+> está em `docs/design-system-migration/fase-19/LINHA-DE-BASE.md`, e enquanto
+> `main` estiver em `165d9198…` a comparação é possível — depois de um push
+> nela, deixa de ser.
+>
+> **Quem ler só este arquivo precisa saber disto**, e por isso ele está aqui e
+> também em `adocao-chamadoshs.md`: os dois têm leitores diferentes, e cada um
+> lê um.
 
 ## Como atualizar
 
@@ -700,12 +723,23 @@ Esta é a lista fechada, em 09/09/2026:
 | **`Colchetes`** | primitivo próprio, pele de console | D2-a |
 | **`Rotulo`** | primitivo próprio | Fase 7 |
 | **Ponte em português (D3-a)** | 22 tokens em `R G B` no `src/styles/index.css`, guardados por catraca de 32 pares | **09/09/2026** |
+| **Paginação sem "Mostrando X a Y de N"** | `Auditoria` mostra "Página N" — a API não dá contagem total, e pedê-la custaria uma segunda varredura das duas tabelas **por página** | **10/09/2026** |
 
 > **Nada além destas é exceção.** Se algo mais divergir do pacote, é defeito —
 > e a conduta é corrigir, não acrescentar linha a esta tabela.
 
-A única entrada nova em relação à lista da §33 é a ponte, e ela entrou por
-**decisão registrada com motivo**, e não por acomodação.
+Duas entradas são novas em relação à lista da §33, e as duas entraram por
+**decisão registrada com motivo**, e não por acomodação: a **ponte** e a
+**paginação**.
+
+A da paginação tem **data de queda**: ela existe pelo custo, e não pelo desenho.
+No dia em que houver contagem barata — um `COUNT` indexado, ou um cabeçalho
+`X-Total-Count` —, a frase entra e a exceção sai.
+
+E há uma exceção de acessibilidade fora desta tabela, declarada em
+`adocao-chamadoshs.md`, item 9: **o link de pular conteúdo usa `focus:` e não
+`focus-visible:`**, porque ele existe para APARECER ao foco, e atalho invisível
+que recebe Tab é pior que atalho nenhum.
 
 ### O login SAIU desta lista, e por decisão — não por engano
 
