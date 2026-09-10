@@ -7,7 +7,7 @@
 | **Namespace do manifesto** | `HealthAmpSafetyDesignSystem_ef9f35` |
 | **Sincronização do pacote com os repositórios** | 23/08/2026 (`DS/github.md`) |
 | **Copiado para cá em** | 02/09/2026, Fase 1 |
-| **Adoção, status** | Fase 20 de 20. **A regressão visual da §28 NÃO foi feita** — ver o aviso abaixo |
+| **Adoção, status** | **Checkpoint 4** — as vinte fases fechadas. **A regressão visual da §28 NÃO foi feita** — ver o aviso abaixo |
 | **Estratégia** | Opção A — tokens e componentes locais sincronizados (§6 do prompt mestre). Sem pacote npm, sem monorepo |
 
 > ## ⚠️ A REGRESSÃO VISUAL DA §28 NÃO FOI FEITA

@@ -175,5 +175,15 @@ dado ausente.
 
 O guia sugere HelpHS → ChamadosHS → DataCoreHS → TalentHS.
 
-**O ChamadosHS está na Fase 20 de 20**, com o Checkpoint 4 à frente — e com a
-§28 por cumprir, que é o que este documento abre dizendo.
+**O ChamadosHS fechou as vinte fases**, e o **Checkpoint 4** está escrito em
+`docs/design-system-migration/checkpoint-4/RELATORIO.md` — com o que a migração
+entregou, o que não entregou e as dez pendências com nome e custo.
+
+Duas coisas que este documento não dizia e o checkpoint achou:
+
+- **O contrato do `pageTitle` nunca foi cumprido.** As dez páginas ainda desenham
+  o próprio `<h1>` e nenhuma passa `pageTitle` — a §9 planejada nas Fases 11–16 e
+  não executada em nenhuma.
+- **O Dashboard nunca foi comparado ao template oficial.** O
+  `templates/dashboard/Dashboard.dc.html` é cartão para abrir lado a lado, e isso
+  é comparação de tela — que é justamente o que a §28 não teve.
