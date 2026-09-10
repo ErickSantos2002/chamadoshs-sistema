@@ -23,6 +23,9 @@ Cinco, e cada uma nasceu do defeito que existia na hora.
 | **nome acessível** | `aria-label` que apaga conteúdo visível, em tag de abertura, `.tsx` | só `.tsx`; `design-system/` excluído |
 | **fundo cheio** | `bg-*` com **`text-white`** no mesmo conjunto de classes, casando variantes (`md:hover:`), `.ts`/`.tsx` | **só `text-white`** — texto por token pareado está fora de escopo, de propósito |
 | **rótulo no breakpoint** | `<Button>`/`<button>` com rótulo em `hidden (sm\|md\|lg\|xl):(inline\|block\|flex)` e sem `aria-label`, `title` ou `sr-only` | só essas duas tags; `<a>` e `role="button"` não |
+| **cópia de token** | hexadecimal igual ao de um token do pacote, resolvido, **ou** com `--token` no comentário; `src` em `.ts`/`.tsx` | fora de `design-system/` e de `*.test.*`; **não vê hex de 3 dígitos nem `rgb()`** — conferido: não há |
+| **dica própria** | `<Tooltip>` sem `content={<DicaDoGrafico />}`, no texto **sem comentário** | só `.tsx`; menção em prosa não conta desde 09/09/2026 |
+| **cópia de BLOCO CSS** | — | **NÃO EXISTE.** A busca foi feita à mão, uma vez, e achou 2 cópias e 2 sobrescritas. Virar catraca depende de decidir o que ela faz com sobrescrita legítima |
 
 ## As medições de paleta
 
@@ -205,3 +208,39 @@ Vão 2 estava aqui desde sempre e só apareceu quando alguém foi enumerar as
 fronteiras — o que significa que **pode haver um quinto**, e que a tabela precisa
 ser refeita quando entrar catraca nova. Ela é instrumento, não certificado, e
 cai na mesma família de todos os outros: mede o que diz medir.
+
+
+---
+
+## VÃOS CONHECIDOS — declarados, e não corrigíveis sem custo maior
+
+Acrescentado em 10/09/2026, ao fim da Fase 18.
+
+### A armadilha de foco do modal não cobre o cromo do navegador
+
+O `Modal` prende `Tab` em JS (`prenderTab` no `keydown`), com quatro casos de
+teste. **Ela intercepta a tecla; não remove o fundo da ordem de tabulação** —
+com o modal aberto, os 38 elementos de trás continuam tabuláveis.
+
+Na prática isso basta, porque `Tab` sempre passa pelo interceptador. **O vão é o
+foco que REENTRA na página por fora**: F6, barra de endereço, painel de
+desenvolvedor. O navegador devolve o foco ao começo do documento, **fora do
+modal**, e dali o Tab caminha pelo fundo até reencontrar o painel.
+
+`inert` no fundo cobriria, por atuar no nível da plataforma — e **custaria o
+ponteiro**: mataria hover e clique em tudo atrás, incluindo o que hoje funciona
+de propósito.
+
+**Fica como vão, e não como pendência.** A diferença importa: pendência é o que
+alguém vai fazer; vão é o que se decidiu não fazer, com o motivo escrito.
+
+### `aria-hidden` sem `tabIndex` — e nada vigia
+
+A armadilha `aria-hidden` + `tabIndex` foi consertada na rosca do painel, e está
+nomeada no `DECISOES.md`. **Não há catraca para ela.**
+
+Escrever uma exigiria decidir o que fazer com o caso legítimo — elemento
+`aria-hidden` que NÃO é focável é a maioria esmagadora — e com bibliotecas que
+põem `tabIndex` sem avisar, que é justamente o caso que produziu o defeito.
+
+Hoje o que vigia é um caso de teste, e ele cobre **um** gráfico.
