@@ -234,6 +234,83 @@ de propósito.
 **Fica como vão, e não como pendência.** A diferença importa: pendência é o que
 alguém vai fazer; vão é o que se decidiu não fazer, com o motivo escrito.
 
+### O painel do menu do usuário não REPINTA na troca de tema
+
+**Acrescentado em 10/09/2026**, depois de reproduzido em produção pelo operador.
+
+#### O que é
+
+Trocar o tema **com o menu do usuário aberto** deixa o painel preso na pintura
+anterior. A página inteira muda; o painel, não.
+
+E o gatilho do tema **vive dentro desse menu** — então este é o **caminho normal**
+de quem troca de tema, e não um caso de borda.
+
+#### A medição, no instante do defeito, em produção
+
+```
+html:            "dark"
+--superficie:    "19 34 56"
+PAINEL_BG:       "rgb(19, 34, 56)"     <- computado, CORRETO
+texto:           "rgb(241, 245, 249)"
+
+e a tela mostrando o painel BRANCO
+```
+
+> **Estilo certo, pixel errado.**
+
+Confirmação adicional do operador: **abrir o DevTools fez o painel virar navy
+sozinho**, sem nada mudar no estilo — que é a assinatura de uma invalidação de
+pintura que não aconteceu.
+
+#### Por que só o painel
+
+| | onde vive | camada |
+|---|---|---|
+| painel do menu | dentro do `<header>`, `shrink-0` | estática |
+| cartões da página | dentro do `<main class="overflow-y-auto">` | **contêiner de rolagem**, que o navegador costuma promover — e camada promovida é repintada |
+
+**Hipótese, não medida.** Explica a assimetria que o operador observou, e não foi
+confirmada.
+
+#### Por que NÃO há catraca, e nem teste
+
+**Este ambiente não consegue observar pintura.** A aba do agente reporta
+`hidden`, e aba oculta não pinta.
+
+E há algo pior que a limitação:
+
+> **Qualquer observação destrói o fenômeno.** Capturar tela e abrir o DevTools
+> **forçam o repaint** que o defeito consiste em não ter. O ato de medir conserta
+> o que se quer medir.
+
+E o teste de estilo **passaria sobre o defeito vivo** — medido nas duas direções,
+no mesmo nó, sem remontar: o estilo computado acompanha sempre. Escrever esse
+caso seria criar mais um instrumento que afirma o que não mede.
+
+#### RECEITA DE REPRODUÇÃO MANUAL
+
+1. abrir a aplicação no tema **claro**;
+2. abrir o **menu do usuário** (avatar, no canto superior direito);
+3. clicar em **"Modo escuro"** — **sem fechar o menu**;
+4. olhar o painel: a página fica navy e **o painel continua branco**.
+
+O caminho inverso — escuro → claro — deixa o painel navy sobre página clara.
+
+**Não abra o DevTools antes de olhar**, porque isso conserta o que se quer ver.
+
+#### As saídas conhecidas, e nenhuma foi verificada
+
+| candidata | como resolveria | custo |
+|---|---|---|
+| forçar invalidação no `ThemeContext` — uma leitura de layout após trocar a classe | invalida tudo de uma vez | uma leitura por troca; **não perde foco** |
+| remontar o painel por `key={tema}` | nó novo garante pintura nova **por construção** | **leva o foco embora** do botão que a pessoa acabou de clicar |
+| fechar o menu ao trocar o tema | o painel remonta na próxima abertura | muda comportamento |
+
+**Nenhuma foi aplicada.** Aplicar conserto que este ambiente não consegue
+verificar seria o "corrigir às cegas" que esta migração recusou a semana inteira
+— e a verificação, aqui, exige deploy e o olho do operador.
+
 ### `aria-hidden` sem `tabIndex` — e nada vigia
 
 A armadilha `aria-hidden` + `tabIndex` foi consertada na rosca do painel, e está
