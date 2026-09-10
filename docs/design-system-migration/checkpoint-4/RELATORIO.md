@@ -15,6 +15,30 @@ foi feito, **o que não foi**, e o que fica pendente com nome e custo.
 
 ---
 
+> # ⏰ O QUE FAZER HOJE: **NÃO EMPURRAR EM `main`**
+>
+> Esta é a **única pendência com prazo**, e o prazo não é nosso — é de quem tiver
+> acesso ao repositório.
+>
+> As 32 capturas antes/depois não existem. O "antes" só é recuperável porque
+> `main` continua em **`165d9198…`**, que é onde o ramo nasceu. Uma
+> `git worktree` ali reproduz o estado anterior em minutos.
+>
+> **Um push em `main` acaba com isso.** Não some do histórico — some da
+> facilidade: vira arqueologia de commit, e alguém terá de **decidir** qual
+> commit era o estado anterior, que é decisão e não comando.
+>
+> | | |
+> |---|---|
+> | custo de preservar | **zero** — é não fazer nada |
+> | custo de perder | a comparação antes/depois, **para sempre** |
+>
+> A receita de remontagem está em
+> `docs/design-system-migration/fase-19/LINHA-DE-BASE.md`, com as quatro
+> diferenças declaradas e o passo do `.env`, sem o qual ela não vale.
+
+---
+
 ## O que a migração entregou
 
 ### A fundação
@@ -109,6 +133,59 @@ seis fases que deviam fazê-la. **A Fase 20 era quem devia pegar, e pegou.**
 
 ---
 
+## Pendência com nome próprio: a §9 do `pageTitle`
+
+**Não é uma linha entre as dez.** É um contrato **escrito no código**, planejado
+para seis fases, **executado em zero**, e achado no último dia pelo mecanismo que
+devia achá-lo.
+
+O plano está no `Topbar.tsx`, e é explícito:
+
+> *"Cada tela passa a preencher no commit em que for migrada (Fases 11–16),
+> **soltando no mesmo commit o `<h1>` que tem hoje e rebaixando o cabeçalho
+> próprio para `<h2>`**. É a troca dentro do mesmo commit que garante que nunca
+> haja dois nem zero. **A Fase 20 confere:** nenhuma página com `<h1>` dentro do
+> `<main>`, todas com `pageTitle`."*
+
+Medido em 10/09/2026: **as dez páginas desenham o próprio `<h1>`, e nenhuma passa
+`pageTitle`.** Só a galeria de dev usa.
+
+### O custo real de cumpri-lo agora é maior do que "dez páginas"
+
+`App.tsx` renderiza `<AppLayout>` **envolvendo** `<AppRoutes />`. As páginas são
+**filhas** da casca — então **nenhuma delas pode passar `pageTitle` por prop**.
+
+| o que é preciso | tamanho |
+|---|---|
+| **encanamento novo** — um mapa rota→título no router, ou um contexto que a página alimente | não existe hoje |
+| dez páginas | soltar o `<h1>`, rebaixar o cabeçalho próprio |
+| **e a parte que pesa** | várias telas têm o título dentro de uma **barra de cabeçalho** com subtítulo e ações — `TarefasRecorrentes`, `NovoChamado`, `Auditoria`. Tirar o título dali **muda o desenho da barra**, e não só a semântica |
+
+> **Cumprir a §9 agora mudaria dez telas — e não há "antes" para comparar.** É o
+> argumento mais forte para fazê-lo **depois** das 32 capturas, e não antes.
+
+### O que se perde deixando como está
+
+**Nada quebra.** Cada página tem exatamente um `<h1>`, que é o correto para leitor
+de tela. O que se perde é outra coisa:
+
+- **a casca canônica da §9 não está cumprida** — a `Topbar` tem o lugar do título
+  e ele fica vazio, em todas as telas;
+- **o HelpHS decidiu igual** (D8 do `DECISOES.md`), então os dois produtos
+  divergem de uma decisão compartilhada, e divergem **em silêncio**;
+- e o pior: **isto é decisão por omissão.** Ninguém decidiu que as páginas
+  desenhariam o próprio `<h1>` — elas continuaram desenhando porque as seis fases
+  que deviam trocar não trocaram.
+
+> **"As páginas desenham o próprio `<h1>`" não é decisão: é o estado anterior
+> sobrevivendo por inércia** — exatamente a forma da linha do D2-a que prometia o
+> retorno da malha, e da ponte que se dizia temporária por quinze fases.
+>
+> **Temporário sem data é permanente sem registro.** Aqui é pior: nem temporário
+> se dizia — só ficou.
+
+---
+
 ## A §33, item a item
 
 **25 itens.** Dois são do HelpHS e não fecham aqui.
@@ -192,3 +269,23 @@ se pagaram:
    pensa — antes de qualquer medição que vire afirmação.**
 3. **Antes de escrever instrumento novo: o defeito escapa hoje?** Se já é pego,
    o instrumento novo acrescenta superfície, não cobertura.
+
+
+---
+
+## O que este checkpoint NÃO autoriza
+
+**Aprovação do Checkpoint 4 é aprovação do TRABALHO, e não autorização de
+merge.**
+
+| ação | estado |
+|---|---|
+| abrir PR | ❌ **não** |
+| fazer merge | ❌ **não** |
+| tocar em `main` | ❌ **não** — e ver o aviso do prazo, acima |
+
+O ramo `chore/design-system-adoption` fica no `origin`, com a tag
+`antes-do-rebase` marcando `da1c37b`.
+
+**A decisão de merge é do operador com o Nicholson**, e passa pelo registro no
+SGI que a regra 7 exige. Nada aqui a antecipa.
