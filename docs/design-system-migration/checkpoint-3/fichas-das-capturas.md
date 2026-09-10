@@ -9,6 +9,21 @@ Cada linha traz a saída da sonda e o tamanho em pixels da imagem devolvida — 
 duas provas, uma da página e outra do quadro. O protocolo está em
 `protocolo-de-captura.md`.
 
+> ## Ressalva acrescentada em 10/09/2026
+>
+> **Estas dezesseis não tiveram a sétima checagem** — `visibilityState` visível e
+> `getAnimations()` vazio —, porque ela só foi escrita na Fase 19, quando se
+> descobriu que `body` e `main` transicionam cor em 150ms e que **aba oculta
+> congela a transição na cor de partida**.
+>
+> **Não são refeitas por isso**, por decisão do operador: foram tiradas à mão,
+> bem depois de cada troca de tema, com a aba em primeiro plano, e o par de
+> leituras da sonda bateu nas duas pontas de cada uma.
+>
+> A ressalva fica porque **"não tivemos a trava" é diferente de "estava
+> garantido"**. Nada indica cor de transição nelas; o que não se pode dizer é
+> que estivesse assegurado.
+
 ## As duas provas de cada captura
 
 **A sonda**, antes da foto: identidade da página, `.env`, canário do CSS

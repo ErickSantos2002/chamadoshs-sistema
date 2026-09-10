@@ -132,6 +132,69 @@ uma tabela normal, e a captura sai sem o elemento que a E14 mudou.
 `--tabela` nas telas que têm tabela — listagem e painel. As outras duas rodam
 sem ele.
 
+## Antes de cada foto, a SÉTIMA checagem: a aba está PINTANDO?
+
+**Acrescentada em 10/09/2026**, na Fase 19, e ela é a única das sete que não
+existia quando as dezesseis foram tiradas.
+
+```js
+document.visibilityState === 'visible'  &&  document.body.getAnimations().length === 0
+```
+
+### Por que ela existe
+
+`body` e `main` carregam `transition-colors` — 150ms em `color`,
+`background-color`, `border-color`, `fill` e `stroke`. **Uma foto disparada
+durante a transição pega cor intermediária.**
+
+E há um caso pior, que foi como isto apareceu. **Em aba oculta o Chrome não faz
+as animações andarem.** Medido:
+
+```
+visibilidade: "hidden"
+transicoes: [ { prop: "color", estado: "running", t: 0 },
+              { prop: "background-color", estado: "running", t: 0 } ]
+--conteudo no body: 241 245 249     (alvo, tema escuro)
+color computado:    rgb(15, 23, 42) (partida, tema claro)
+```
+
+As transições ficam **paradas em `currentTime: 0` indefinidamente**, e o
+`getComputedStyle` devolve a cor de **partida**. Aos nove segundos ainda era a
+cor do tema anterior.
+
+> **A tela mostra o tema novo no fundo e o tema velho no texto herdado**, e não
+> converge nunca enquanto a aba não for pintada.
+
+### O achado falso que ela evitou
+
+Isto foi lido, por alguns minutos, como **defeito de produto**: texto quase preto
+(`rgb(15,23,42)`) sobre fundo navy (`rgb(13,27,42)`), contraste perto de 1:1, em
+treze elementos — *"Cancelados ocultos"*, *"Todos"*, *"Todas"*, *"Baixa"*.
+
+**Não existe.** É artefato de medir numa aba que não está sendo pintada. O que
+separou o relato falso do relato foi conferir `visibilityState` **antes** de
+afirmar — a regra que este protocolo já tinha, aplicada a um objeto novo.
+
+### A ressalva RETROATIVA sobre as dezesseis
+
+**As dezesseis capturas do Checkpoint 3 não tiveram esta trava.** Ela não
+existia.
+
+**Elas não serão refeitas por isso**, por decisão do operador, e o motivo é
+concreto: foram tiradas **à mão, bem depois de cada troca de tema**, com a aba
+em primeiro plano, e o par de leituras da sonda bateu nas duas pontas de cada
+uma.
+
+Mas a ficha delas leva a ressalva, porque:
+
+> **"Não tivemos a trava" é diferente de "estava garantido".**
+
+O que se sabe das dezesseis é que nada indica cor de transição nelas. O que não
+se sabe é se estava garantido — e a diferença entre as duas frases é exatamente
+o que esta trava passa a produzir daqui em diante.
+
+---
+
 ## Antes de cada foto, o quadro — a sexta checagem
 
 A sonda mede a página. Sem esta checagem ela não media o **quadro**, e o quadro
