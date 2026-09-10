@@ -184,6 +184,32 @@ de tela. O que se perde é outra coisa:
 > **Temporário sem data é permanente sem registro.** Aqui é pior: nem temporário
 > se dizia — só ficou.
 
+### E o que esta pendência ILUSTRA
+
+Ela entrou na lista das dez como **"uma troca por tela"** — estimativa minha, dada
+de cabeça, no mesmo parágrafo em que eu a descobria.
+
+Ao dimensioná-la para este relatório, a estimativa caiu:
+
+| eu disse | o que é |
+|---|---|
+| uma troca por tela | **encanamento que não existe** — as páginas são filhas da casca e não alcançam a prop |
+| — | mais as dez páginas |
+| — | mais **três barras de cabeçalho redesenhadas**, porque nelas o título divide o bloco com subtítulo e ações |
+
+> **A pendência que parecia a mais barata das dez era a mais cara — e só se
+> soube ao tentar dimensioná-la.**
+
+É a mesma forma que atravessou a semana inteira, agora numa estimativa em vez de
+num instrumento:
+
+> **Estimativa não conferida é a mesma coisa que medição não feita.** As duas
+> afirmam; nenhuma das duas mediu.
+
+E foi a terceira vez nesta migração que uma conta minha saiu pela metade — as
+chamadas da Fase 17, as da prova do tema, e agora esta. Nas três, **contei o
+caminho e esqueci quantas vezes se anda por ele.**
+
 ---
 
 ## A §33, item a item
@@ -238,7 +264,7 @@ Em vez disso: `git tag antes-do-rebase da1c37b`, **empurrada para o servidor**.
 | 1 | **32 capturas antes/depois** | um roteiro Playwright; a receita da linha de base está escrita |
 | 2 | **a linha de base é perecível** | zero hoje; **infinito** depois de um push em `main` |
 | 3 | **seis fichas da §29** | leitura integral |
-| 4 | **`pageTitle` em dez páginas** | uma troca por tela |
+| 4 | **`pageTitle` em dez páginas** | ~~uma troca por tela~~ — **encanamento novo + dez páginas + três barras de cabeçalho redesenhadas**; ver a seção própria |
 | 5 | **o nó de seis lados** — de onde sai a cor de um status | fecham juntos |
 | 6 | **52 alvos de toque abaixo de 40px** | ordem decidida: formulário, ícone, texto |
 | 7 | **`TarefasRecorrentes` perde nomes em silêncio** | defeito de produto |
