@@ -19,6 +19,154 @@ _Nada pendente._
 
 ---
 
+## [1.7.8] — 2026-09-10
+
+Por Rickelme David.
+
+### ⚠️ Requer ação no deploy
+
+Nada além do rebuild do front.
+
+### Fixed
+
+- **O interruptor do "Modo escuro" vazava do trilho.** A bolinha é `absolute`
+  e não declarava `left`, então caía na posição estática — que herda o
+  `text-align: center` que o navegador dá a todo `<button>` e o preflight do
+  Tailwind não desfaz. Desligada ficava à direita; ligada, 14px para fora do
+  trilho, até a borda do painel. `left-0.5` declarado no `Topbar` e no `Switch`
+  do kit, de onde o desenho foi copiado. `interruptor.test.tsx` trava a conta.
+- **Tentativa, não verificada:** trocar o tema com o menu do usuário aberto
+  deixava o painel na pintura anterior. O `ThemeContext` passou a forçar uma
+  leitura de layout a cada troca. É hipótese: qualquer observação — captura,
+  DevTools — força a repintura que o defeito consiste em não ter, então a
+  verificação é humana, pela receita em
+  `docs/design-system-migration/fase-16/TABELA-DAS-CATRACAS.md`, em vãos
+  conhecidos.
+
+---
+
+## [1.7.7] — 2026-09-10
+
+Por Rickelme David.
+
+A adoção do design system compartilhado com o HelpHS: o PR #4
+(`chore/design-system-adoption`), 173 commits de 02/09 a 10/09, em 20 fases,
+com merge em `1831fd2`. A versão subiu em 09/09 dentro do ramo e foi ao ar com
+o merge. O relatório de fechamento, com o que foi e o que não foi entregue, é
+`docs/design-system-migration/checkpoint-4/RELATORIO.md`.
+
+### ⚠️ Requer ação no deploy
+
+Nada além do rebuild do front. `@fontsource` saiu das dependências — a fonte
+passou a vir do pacote, e o `npm install` do build resolve sozinho. Sem
+migration, sem variável nova, sem alteração no repositório da API.
+
+### Changed
+
+- **Tokens do pacote** em `src/design-system/`, copiados com hash conferido. O
+  tema claro e escuro passou a ser só por token: nenhum `dark:` residual.
+- **30 primitivos em `src/components/ui/`**, e as telas sobre eles — Dashboard,
+  Cadastros, detalhe do chamado e as demais. Todo botão é `Button`, e botão que
+  navegava virou link.
+- **Contorno dos campos** em `--border-control`: de ~1,2:1 para 4,3–6,8:1,
+  acima dos 3:1 que a WCAG pede para limite de componente.
+- **Piso de 12px** para texto, e o anel de foco passou a `focus-visible`.
+- **Fonte servida pelo pacote**, no próprio bundle.
+- **Avatar** com a paleta do pacote, sem emprestar cor de gráfico.
+- **O gráfico de status** adota a E18, exceto `resolved` e `closed`.
+- **Porta de desenvolvimento 5174, com `strictPort`**: o `npm run dev` morre em
+  vez de subir em outra porta, porque é a lista de origens da API que decide a
+  porta.
+
+### Added
+
+- **Travas no `validar-paleta`**, encadeadas ao build: contraste de texto e de
+  gráfico, separação ΔE entre séries, a ponte do D3-a contra o pacote,
+  modificador de opacidade em token com alfa, nome acessível que apaga o
+  conteúdo visível, botão sem nome abaixo de `sm`, cópia de token, cor cheia
+  usada como texto e `<Tooltip>` sem dica própria.
+- **Galerias de dev** da casca e dos componentes, com contraste medido ao vivo,
+  para fotografar a interface sem a API.
+- **647 casos de teste em 62 arquivos** no fechamento da migração.
+
+### Fixed
+
+- **A dica dos gráficos** trazia o texto na cor da série: 12 pares abaixo de
+  4,5:1.
+- **O histórico de tarefa recorrente mostrava `{selecionada.titulo}` ao pé da
+  letra** — atributo JSX com string literal não interpola. Estava em produção.
+- **Duplo clique na avaliação** podia gravar a nota da última resposta a
+  chegar, e não a do último clique. Trava por `useRef`.
+- **Duplo clique no reset de senha** disparava duas trocas em paralelo.
+- **O `UsuarioModal` não tinha `autoComplete="new-password"`**, e o navegador
+  oferecia a senha salva do administrador para a conta nova.
+- **Esc numa lista do `Seletor` fechava o modal** junto: `preventDefault` sem
+  `stopPropagation`.
+- **O modal passou a prender o foco** de verdade.
+- **Acessibilidade:** o cartão do quadro virou `article` com título; o
+  `Seletor` parou de apagar o valor escolhido do próprio nome; o landmark de
+  navegação ganhou nome; três botões perdiam o nome abaixo de `sm`; um gráfico
+  `aria-hidden` estava na ordem de tabulação; a regra de movimento reduzido
+  copiada do pacote vencia a nossa por ordem; o link de pular conteúdo era
+  branco sobre azul-claro no escuro; dois controles do Dashboard diziam estado
+  só pela cor.
+- **A confirmação de exclusão dos cadastros** era da tabela, e não da linha.
+
+### Removed
+
+- O pulso perpétuo do botão flutuante.
+- A linha de tabela clicável só por mouse, no primitivo de tabela.
+- `EmConstrucao`, página sem rota e sem import.
+- `@fontsource`.
+
+### Não entregue
+
+Está no relatório, com custo. Os três que mais pesam:
+
+- **A regressão visual não foi feita.** As 32 capturas antes/depois não
+  existem, e a última verificação de tela é de 08/09 — três fases mudaram
+  pixels depois dela. Com o merge, o "antes" deixou de ser reconstruível a
+  baixo custo; as tags `linha-de-base-165d919` e `antes-do-rebase` mantêm os
+  pontos endereçáveis.
+- **O `pageTitle` da §9 não foi cumprido** em nenhuma das dez páginas, e exige
+  encanamento que não existe: as páginas são filhas da casca.
+- **52 alvos de toque abaixo de 40px.**
+
+---
+
+## [1.7.1 – 1.7.6] — 2026-08-27 a 2026-09-02
+
+Por Rickelme David.
+
+### ⚠️ Requer ação no deploy
+
+Nada além do rebuild do front.
+
+### Added
+
+- **Filtro por pessoa no quadro** (1.7.3), ao lado dos de prioridade e
+  categoria, com a opção "Sem responsável". Aparece para técnicos e
+  administradores.
+
+### Changed
+
+- **A barra lateral começa recolhida** (1.7.2). Sobra largura para o quadro na
+  TV da sala, onde uma coluna ficava para fora da tela.
+- **O aviso de novidades parou de abrir sozinho** (1.7.5). O número da versão,
+  no rodapé do menu, ganha um ponto quando há novidade não lida.
+- **Os ícones de ação dos cadastros ganharam nome** no hover (1.7.6):
+  "Visualizar", "Editar", "Resetar senha", "Desativar".
+
+### Fixed
+
+- **O quadro voltou a mostrar as seis colunas** (1.7.1). Com o visual da 1.7.0
+  ele abria com uma coluna ocupando a tela inteira, e as outras ficavam atrás
+  da barra de rolagem.
+- **Nenhuma janela fecha mais no clique de fora** (1.7.4) — o que estava
+  digitado se perdia sem aviso. Elas saem pelo X ou pela tecla Esc.
+
+---
+
 ## [1.7.0] — 2026-08-27
 
 O front inteiro passou a usar a linguagem visual do **HelpHS**. Funcionalidade
