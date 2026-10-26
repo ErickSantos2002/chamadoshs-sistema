@@ -19,6 +19,12 @@ import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import { ehDaPessoa, responsaveisDosChamados } from '../lib/pessoas';
 import { agruparPorColuna, estaNoFluxo } from '../lib/quadro';
+import {
+  OPCOES_DE_SETOR,
+  casaComFiltroDeSetor,
+  temSetoresMisturados,
+  type FiltroDeSetor,
+} from '../lib/setor';
 import { cn } from '../lib/utils';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
@@ -62,6 +68,14 @@ const Chamados: React.FC = () => {
   const [filtroPessoa, setFiltroPessoa] = useState<string>('');
 
   /**
+   * Filtro por setor de destino. Filtra o que JÁ veio, no navegador, e não
+   * vai para a requisição: a API no ar é anterior ao campo e ignoraria o
+   * parâmetro — devolveria tudo, e o quadro mostraria "Qualidade" com
+   * chamado de TI dentro. A regra de casamento vive em `lib/setor`.
+   */
+  const [filtroSetor, setFiltroSetor] = useState<FiltroDeSetor>('');
+
+  /**
    * Arquivado e cancelado não são etapas do atendimento e não podem disputar
    * espaço com o trabalho do dia: ficam atrás de um interruptor, desligado por
    * padrão. Um só, e não dois — são a mesma pergunta ("cadê o que saiu do
@@ -78,13 +92,14 @@ const Chamados: React.FC = () => {
   const [chamadoAberto, setChamadoAberto] = useState<number | null>(null);
 
   const temFiltro = Boolean(
-    filtroPrioridade || filtroCategoria || filtroPessoa || busca
+    filtroPrioridade || filtroCategoria || filtroPessoa || filtroSetor || busca
   );
 
   const limparFiltros = () => {
     setFiltroPrioridade('');
     setFiltroCategoria('');
     setFiltroPessoa('');
+    setFiltroSetor('');
     setBusca('');
   };
 
@@ -193,12 +208,25 @@ const Chamados: React.FC = () => {
     [chamados, usuarios]
   );
 
+  /**
+   * O seletor de setor só aparece quando há escolha: com todo chamado em TI —
+   * que é o quadro inteiro enquanto a API não conhece outro setor — ele teria
+   * uma opção útil só.
+   *
+   * A mistura é medida em `chamados`, e não na lista já filtrada, pelo mesmo
+   * motivo da lista de pessoas acima; e o filtro LIGADO segura o seletor na
+   * tela mesmo se a mistura acabar numa recarga. Sem isso, um quadro
+   * esvaziado pelo filtro esconderia justamente o controle que o esvaziou.
+   */
+  const mostrarFiltroSetor = filtroSetor !== '' || temSetoresMisturados(chamados);
+
   // Filtra os chamados localmente. A busca cobre título e protocolo: quem
   // lembra do assunto raramente lembra do número.
   const chamadosFiltrados = chamadosNoEscopo.filter((chamado) => {
     if (filtroPrioridade && chamado.prioridade !== filtroPrioridade) return false;
     if (filtroCategoria && chamado.categoria_id !== filtroCategoria) return false;
     if (!ehDaPessoa(chamado, filtroPessoa)) return false;
+    if (!casaComFiltroDeSetor(chamado, filtroSetor)) return false;
 
     if (busca) {
       const termo = busca.toLowerCase();
@@ -334,6 +362,16 @@ const Chamados: React.FC = () => {
             ]}
             className="w-48"
           />
+
+          {mostrarFiltroSetor && (
+            <Seletor
+              rotulo="Filtrar por setor"
+              valor={filtroSetor}
+              aoMudar={(v) => setFiltroSetor(v as FiltroDeSetor)}
+              opcoes={OPCOES_DE_SETOR}
+              className="w-48"
+            />
+          )}
 
           {/* Filtro por pessoa: o responsável, que é a inicial que o card
               mostra no canto. Só para a equipe.
