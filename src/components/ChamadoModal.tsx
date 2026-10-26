@@ -15,7 +15,7 @@ import {
   Seletor,
   Textarea,
 } from './ui';
-import { MarcaBadge, PrioridadeBadge, StatusBadge } from './SelosDeChamado';
+import { MarcaBadge, PrioridadeBadge, SetorBadge, StatusBadge } from './SelosDeChamado';
 import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
@@ -353,6 +353,9 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={chamado.status} />
               <PrioridadeBadge prioridade={chamado.prioridade} />
+              {/* Sempre, inclusive TI: o cartão só marca a exceção, e é aqui
+                  que se confere para onde o chamado foi. */}
+              <SetorBadge chamado={chamado} />
               {chamado.arquivado && <MarcaBadge marca="arquivado" />}
               {chamado.cancelado && <MarcaBadge marca="cancelado" />}
             </div>

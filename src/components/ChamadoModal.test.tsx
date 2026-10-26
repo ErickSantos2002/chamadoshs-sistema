@@ -173,3 +173,65 @@ describe('ChamadoModal e o quadro', () => {
     expect(atualizar).toHaveBeenCalledWith(1, { tecnico_responsavel_id: 1 });
   });
 });
+
+describe('ChamadoModal — o setor de destino', () => {
+  /**
+   * Reabre a janela num chamado que não está no quadro (id 2), para o
+   * cache-miss cair no `buscar` com o setor da vez.
+   */
+  const abrirComSetor = async (extra: Record<string, unknown>) => {
+    vi.spyOn(chamadosService, 'buscar').mockResolvedValue({
+      ...CHAMADO,
+      id: 2,
+      ...extra,
+    } as Chamado);
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={SESSAO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <ChamadoModal chamadoId={2} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+  };
+
+  const texto = () => document.body.textContent ?? '';
+
+  // A janela mostra o setor SEMPRE, inclusive TI — é onde se confere.
+  it('API antiga, sem o campo: mostra TI', () => {
+    expect(texto()).toContain('Setor de destino: TI');
+  });
+
+  it('TI explícito: mostra TI', async () => {
+    await abrirComSetor({ setor_destino: 'TI' });
+    expect(texto()).toContain('Setor de destino: TI');
+  });
+
+  it('Qualidade: mostra Qualidade', async () => {
+    await abrirComSetor({ setor_destino: 'QUALIDADE' });
+    expect(texto()).toContain('Setor de destino: Qualidade');
+    expect(texto()).not.toContain('Setor de destino: TI');
+  });
+
+  it('valor desconhecido: selo neutro com o que chegou, e não TI', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await abrirComSetor({ setor_destino: '<b>RH</b>' });
+    expect(texto()).toContain('Setor não reconhecido: <b>RH</b>');
+    // Como texto: não virou elemento.
+    expect(document.querySelector('b')).toBeNull();
+    expect(texto()).not.toContain('Setor de destino: TI');
+  });
+
+  it('o selo fica junto do status e da prioridade', async () => {
+    await abrirComSetor({ setor_destino: 'QUALIDADE' });
+    const selo = Array.from(document.querySelectorAll('span')).find(
+      (s) => s.textContent === 'Setor de destino: Qualidade'
+    );
+    expect(selo, 'selo de setor não apareceu').toBeTruthy();
+    expect(selo!.parentElement!.textContent).toContain('Em Andamento');
+    expect(selo!.parentElement!.textContent).toContain('Média');
+  });
+});
