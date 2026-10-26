@@ -345,6 +345,30 @@ describe('quadro com TI e Qualidade (cenário C)', () => {
   });
 });
 
+describe('erro de carga', () => {
+  it('a falha continua anunciada como antes, e sem seletor de setor', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    listarTodos.mockRejectedValue(new Error('fora do ar'));
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={sessao('Administrador')}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <MemoryRouter>
+                <Chamados />
+              </MemoryRouter>
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain(
+      'Erro ao carregar chamados'
+    );
+    expect(seletor('setor')).toBeUndefined();
+  });
+});
+
 describe('perfil Usuario', () => {
   it('continua pedindo só os próprios chamados, e o setor filtra por cima', async () => {
     await montar(MISTURADO, 'Usuario');

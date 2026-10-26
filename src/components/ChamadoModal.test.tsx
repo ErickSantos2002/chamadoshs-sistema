@@ -217,8 +217,13 @@ describe('ChamadoModal — o setor de destino', () => {
   });
 
   it('valor desconhecido: selo neutro com o que chegou, e não TI', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await abrirComSetor({ setor_destino: '<b>RH</b>' });
+    // O selo montado avisa — e uma vez só, mesmo redesenhando.
+    await abrirComSetor({ setor_destino: '<b>RH</b>' });
+    const doSetor = aviso.mock.calls.filter(([m]) => String(m).startsWith('[setor]'));
+    expect(doSetor).toHaveLength(1);
+    expect(doSetor[0][0]).toContain('chamado 2');
     expect(texto()).toContain('Setor não reconhecido: <b>RH</b>');
     // Como texto: não virou elemento.
     expect(document.querySelector('b')).toBeNull();

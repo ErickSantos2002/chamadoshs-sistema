@@ -218,7 +218,8 @@ const Chamados: React.FC = () => {
    * tela mesmo se a mistura acabar numa recarga. Sem isso, um quadro
    * esvaziado pelo filtro esconderia justamente o controle que o esvaziou.
    */
-  const mostrarFiltroSetor = filtroSetor !== '' || temSetoresMisturados(chamados);
+  const setoresMisturados = useMemo(() => temSetoresMisturados(chamados), [chamados]);
+  const mostrarFiltroSetor = filtroSetor !== '' || setoresMisturados;
 
   // Filtra os chamados localmente. A busca cobre título e protocolo: quem
   // lembra do assunto raramente lembra do número.

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Badge, type VarianteBadge } from './ui';
 import { Chamado, PrioridadeEnum, SetorDestinoEnum, StatusEnum } from '../types/api';
 import { getRoleName } from '../utils/roleMapper';
+import { cn } from '../lib/utils';
 import { avisarSetorInesperado, rotuloDoSetor, setorDoChamado } from '../lib/setor';
 
 /**
@@ -231,7 +232,7 @@ export const SetorBadge: React.FC<
   if (leitura.origem === 'inesperado') {
     const texto = `Setor não reconhecido: ${leitura.recebido}`;
     return (
-      <Badge variante="discreto" title={texto} className={`max-w-full ${className ?? ''}`}>
+      <Badge variante="discreto" title={texto} className={cn('max-w-full', className)}>
         <span className="min-w-0 truncate">{texto}</span>
       </Badge>
     );
