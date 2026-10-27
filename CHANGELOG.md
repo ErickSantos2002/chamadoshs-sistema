@@ -16,7 +16,8 @@ informação se perde entre quem escreve o código e quem sobe.
 ## [Não publicado]
 
 Por Rickelme David. Branches `feat/setor-destino-fe-1` (FE-1, exibição e
-filtro) e `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade), da
+filtro), `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade) e
+`feat/setor-destino-fe-3` (FE-3, atendimento da Qualidade), da
 funcionalidade Setor de Destino. Sobe como **1.8.0** quando for publicada; a
 versão não subiu aqui porque o `package.json` acende o aviso de novidades, e o
 aviso só faz sentido quando a Qualidade estiver ligada na API.
@@ -36,6 +37,13 @@ ar hoje (rota ausente) e contra a API-2 sem `SETOR_QUALIDADE_ID` (503), o
 formulário de abertura é exatamente o de antes. **Não configurar
 `SETOR_QUALIDADE_ID` antes do API-3 e do FE-3**: é essa variável que liga a
 abertura para todo mundo, sem rebuild do front.
+
+O FE-3 também **não tem ordem obrigatória com a API**, mas só funciona com o
+API-3 (`chamadoshs-api`, `d5e327f`) no ar. O front pergunta à API se ela tem o
+atendimento da Qualidade, sem token e sem escrever nada; contra a API de hoje,
+a API-1 e a API-2 a resposta é "não", e nada muda na tela. Para quem não é da
+equipe, o quadro passa a fazer uma segunda listagem (a dos atribuídos), que
+contra a API de hoje volta vazia.
 
 ### Added
 
@@ -67,6 +75,37 @@ abertura para todo mundo, sem rebuild do front.
   indisponível. Abra para a TI ou tente mais tarde.", o texto digitado fica, e
   o envio só volta a sair se a pessoa escolher TI. Responsável que deixou de
   ser elegível (400) recarrega a lista, e a escolha que saiu dela é refeita.
+- **Quem atende a Qualidade vê os chamados que atende (FE-3).** Além dos
+  chamados que abriu, quem não é da equipe passa a ver no quadro os da
+  Qualidade em que é o responsável — e só esses: chamado da TI não entra. O
+  botão **"Atribuídos a mim"** mostra só eles; aparece quando há algum, fica
+  enquanto ligado e entra no "Limpar". Técnico e Administrador continuam vendo
+  o quadro de sempre.
+- **Atendimento da Qualidade pelo responsável (FE-3).** Quem é o responsável
+  por um chamado da Qualidade e está entre os atendentes muda o status —
+  iniciar, aguardando, resolver, retomar, reabrir — pelos mesmos botões de
+  sempre, na janela e na página, qualquer que seja o perfil. Resolver continua
+  pedindo a solução, com o mesmo mínimo. As ações não aparecem em chamado
+  cancelado ou arquivado. Se a API não tiver o atendimento, aparece "O
+  atendimento da Qualidade não está disponível nesta versão do sistema." e as
+  ações somem; o pedido nunca é refeito por outro caminho.
+
+### Changed
+
+- **Trocar o responsável de um chamado da Qualidade (FE-3).** Na janela e na
+  edição da página, a lista é a dos atendentes da Qualidade, sem "Sem
+  atribuição". Quem já está no chamado sem estar na lista continua marcado
+  "(fora dos atendentes)" até alguém trocar de propósito. Sem o API-3 o campo
+  fica só leitura. Na TI nada muda.
+
+### Fixed
+
+- **A edição de um chamado da Qualidade não desfaz mais o trabalho de outra
+  pessoa (FE-3).** Antes, salvar a página mandava todos os campos, e quem
+  estava com ela aberta desde antes devolvia o status antigo ao trocar só a
+  prioridade. Agora vai só o que mudou, e o chamado é relido antes de salvar:
+  se alguém mexeu num campo que a pessoa também editou, nada é salvo, o que ela
+  digitou fica e um aviso diz o que mudou. Na TI a edição segue como era.
 
 ### Pendências conhecidas
 
@@ -82,6 +121,15 @@ abertura para todo mundo, sem rebuild do front.
 - **A dica "Você fica como técnico responsável." não é verdade na TI**: a API
   descarta o `tecnico_responsavel_id` na abertura. Na Qualidade a dica não
   aparece.
+- **FE-3 validado só por testes automatizados**, contra o contrato do API-3
+  (`d5e327f`) e as respostas reais das quatro versões da API à sonda. Teste
+  manual e visual pendentes, pelo mesmo motivo do FE-2.
+- **Edição simultânea: resta uma janela curta.** Entre a releitura e o
+  salvamento outra escrita ainda passa sem ser vista. Fechar de vez pede
+  controle de versão na API (409 quando o chamado mudou), fora desta etapa.
+- **Ações da equipe em cancelado e arquivado na página do chamado** continuam
+  como estavam (D-12): o atendimento novo não aparece nesses chamados, mas os
+  botões de sempre da equipe sim.
 
 ---
 
