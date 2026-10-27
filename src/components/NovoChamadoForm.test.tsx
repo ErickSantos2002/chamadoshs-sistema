@@ -102,6 +102,17 @@ const montar = async (quem: React.ContextType<typeof AuthContext>) => {
   });
 };
 
+/**
+ * Desmonta e monta de novo. Para casos em laço: `root.render` com a mesma
+ * árvore só reconcilia, e o efeito da consulta não roda outra vez — o laço
+ * conferiria o primeiro caso repetidas vezes.
+ */
+const remontar = async (quem: React.ContextType<typeof AuthContext>) => {
+  act(() => root.unmount());
+  root = createRoot(host);
+  await montar(quem);
+};
+
 /** Digita como o React enxerga: pelo setter nativo e um evento `input`. */
 const digitar = async (id: string, valor: string) => {
   const campo = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement;
@@ -471,9 +482,10 @@ describe('disponibilidade — o que a consulta decide', () => {
 
   /** A API do ar hoje: o formulário é exatamente o de antes. */
   it('backend sem a rota (404, 405, 422): sem escolha de setor', async () => {
-    for (const status of [404, 405, 422]) {
+    for (const [i, status] of [404, 405, 422].entries()) {
       atendentes.mockRejectedValue(erroHttp(status));
-      await montar(USUARIO);
+      await remontar(USUARIO);
+      expect(atendentes, String(status)).toHaveBeenCalledTimes(i + 1);
       expect(grupo(), String(status)).toBeNull();
       expect(document.querySelector('input[type="radio"]'), String(status)).toBeNull();
       expect(document.getElementById('titulo'), String(status)).toBeTruthy();
@@ -496,8 +508,8 @@ describe('disponibilidade — o que a consulta decide', () => {
       erroHttp(502),
     ]) {
       atendentes.mockRejectedValue(erro);
-      await montar(USUARIO);
-      expect(grupo()).toBeNull();
+      await remontar(USUARIO);
+      expect(grupo(), JSON.stringify(erro)).toBeNull();
     }
   });
 
@@ -682,7 +694,7 @@ describe('modo Qualidade — os campos', () => {
 
   it('a equipe continua vendo o solicitante, pela regra de hoje', async () => {
     for (const quem of [TECNICO, ADMIN]) {
-      await montar(quem);
+      await remontar(quem);
       await marcar('Qualidade');
       expect(document.getElementById('solicitante'), quem.user!.role).toBeTruthy();
     }
