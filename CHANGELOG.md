@@ -15,10 +15,11 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ## [Não publicado]
 
-Por Rickelme David. Branch `feat/setor-destino-fe-1`, local — FE-1 da
+Por Rickelme David. Branches `feat/setor-destino-fe-1` (FE-1, exibição e
+filtro) e `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade), da
 funcionalidade Setor de Destino. Sobe como **1.8.0** quando for publicada; a
-versão não subiu aqui porque o `package.json` acende o aviso de novidades, e
-não haverá aviso enquanto a Qualidade não puder abrir chamado (FE-2).
+versão não subiu aqui porque o `package.json` acende o aviso de novidades, e o
+aviso só faz sentido quando a Qualidade estiver ligada na API.
 
 ### ⚠️ Requer ação no deploy
 
@@ -28,6 +29,13 @@ sai igual ao de antes, e a janela e a página passam a mostrar "Setor de
 destino: TI". O filtro e o selo "Qualidade" só aparecem com a API-1
 (`chamadoshs-api`, PR #3, em Draft) e chamados de Qualidade na base, que só a
 API-2 cria.
+
+O FE-2 também **não tem ordem obrigatória com a API**: quem decide se a
+Qualidade aparece é a própria API, pela consulta de atendentes. Contra a API no
+ar hoje (rota ausente) e contra a API-2 sem `SETOR_QUALIDADE_ID` (503), o
+formulário de abertura é exatamente o de antes. **Não configurar
+`SETOR_QUALIDADE_ID` antes do API-3 e do FE-3**: é essa variável que liga a
+abertura para todo mundo, sem rebuild do front.
 
 ### Added
 
@@ -43,6 +51,37 @@ API-2 cria.
 - **Setor que o sistema não reconhece não vira TI.** Aparece como "Setor não
   reconhecido: …" com o valor que chegou, só em "Todos os setores", e avisa no
   console uma vez por chamado. Chamado sem o campo, da API antiga, é TI.
+- **Abertura de chamado para a Qualidade (FE-2).** Quando a API confirma que a
+  Qualidade está ligada, o formulário de abertura oferece "Setor de destino:
+  TI ou Qualidade", com TI marcado. Na Qualidade não há título nem categoria —
+  o título é gerado da descrição — e o responsável é obrigatório, escolhido
+  entre os atendentes que a API devolve, sem escolha automática. Descrição e
+  prioridade atravessam a troca de setor; título, categoria e responsável
+  ficam guardados para quem voltar.
+- **Qualidade sem atendentes aparece desabilitada, com o motivo** ("Nenhum
+  atendente da Qualidade cadastrado"). Qualidade desligada (503) não aparece, e
+  não diz que faltam atendentes — são problemas diferentes, de pessoas
+  diferentes.
+- **A Qualidade nunca vira TI.** Se ela for desligada entre a abertura do
+  formulário e o envio, aparece "A abertura para a Qualidade ficou
+  indisponível. Abra para a TI ou tente mais tarde.", o texto digitado fica, e
+  o envio só volta a sair se a pessoa escolher TI. Responsável que deixou de
+  ser elegível (400) recarrega a lista, e a escolha que saiu dela é refeita.
+
+### Pendências conhecidas
+
+- **Teste manual pendente.** Não há ambiente isolado: o `.env` local aponta
+  para a API de produção. O FE-2 foi validado só pelos testes automatizados,
+  contra o contrato do API-2 (`chamadoshs-api`, PR #4).
+- **Validar a política de SLA da Qualidade antes de ligar.** O quadro de prazos
+  por prioridade aparece nos dois setores, com os prazos de hoje, que são os da
+  TI.
+- **Técnico vê um seletor de solicitante que a API ignora** — ela só honra o
+  solicitante escolhido quando quem abre é Administrador. Vale para os dois
+  setores; mantido como está, para não mudar a TI nesta etapa.
+- **A dica "Você fica como técnico responsável." não é verdade na TI**: a API
+  descarta o `tecnico_responsavel_id` na abertura. Na Qualidade a dica não
+  aparece.
 
 ---
 
