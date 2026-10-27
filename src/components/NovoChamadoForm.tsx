@@ -1,8 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { slaConfigsService } from '../services/chamadoshsapi';
-import { Chamado, ChamadoCreate, PrioridadeEnum, SLAConfig } from '../types/api';
+import {
+  AtendenteQualidade,
+  Chamado,
+  PrioridadeEnum,
+  SLAConfig,
+  SetorDestinoEnum,
+} from '../types/api';
 import { EXPEDIENTE, formatarPrazo } from '../lib/prazo';
 import { corDaPrioridade } from '../lib/graficos';
 import { useTheme } from '../context/ThemeContext';
@@ -16,12 +22,22 @@ import {
   Textarea,
 } from './ui';
 import ContadorMinimo from './ContadorMinimo';
+import { cn } from '../lib/utils';
 import { IconeEscudoConfere, IconeRelogio } from './ui/icones';
 import {
   MINIMO_DESCRICAO,
   MINIMO_TITULO,
   validarMinimo,
 } from '../lib/validacao';
+import {
+  DisponibilidadeQualidade,
+  MENSAGEM_SEM_ATENDENTES,
+  consultarQualidade,
+  interpretarErroDaQualidade,
+  montarCorpoQualidade,
+  montarCorpoTI,
+  validarQualidade,
+} from '../lib/qualidade';
 
 interface NovoChamadoFormProps {
   aoCriar: (chamado: Chamado) => void;
@@ -84,11 +100,116 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
     [prazos, prioridade]
   );
 
+  // ── A Qualidade ──────────────────────────────────────────────────────
+  //
+  // A API decide se ela existe: a consulta de atendentes é a pergunta, e só
+  // `disponivel` oferece o setor (ver `lib/qualidade`). Enquanto a resposta
+  // não chega, o formulário é o da TI de sempre.
+  //
+  // Título, categoria e responsável ficam guardados ao trocar de setor: quem
+  // volta encontra o que digitou. Só o setor marcado decide o que vai no corpo.
+  const [setor, setSetor] = useState<SetorDestinoEnum>(SetorDestinoEnum.TI);
+  const [disponibilidade, setDisponibilidade] =
+    useState<DisponibilidadeQualidade>('verificando');
+  const [atendentes, setAtendentes] = useState<AtendenteQualidade[]>([]);
+  const [responsavelId, setResponsavelId] = useState<number | undefined>();
+
+  const naQualidade = setor === SetorDestinoEnum.QUALIDADE;
+  const idDoMotivo = useId();
+
+  // Cada consulta leva um número, e só a última escreve. A corrida existe na
+  // mesma instância: no StrictMode o efeito roda, é limpo e roda de novo, e a
+  // primeira resposta pode chegar depois da segunda.
+  const consulta = useRef(0);
+
+  const consultar = useCallback(async () => {
+    const minha = ++consulta.current;
+    const resposta = await consultarQualidade();
+    if (minha !== consulta.current) return null;
+    setDisponibilidade(resposta.estado);
+    setAtendentes(resposta.atendentes);
+    return resposta;
+  }, []);
+
+  useEffect(() => {
+    consultar();
+    return () => {
+      consulta.current++;
+    };
+  }, [consultar]);
+
+  // Quem já está na Qualidade continua vendo a escolha, mesmo que ela tenha
+  // ficado indisponível: é por ela que se volta para a TI.
+  const mostrarSetores =
+    disponibilidade === 'disponivel' || disponibilidade === 'sem-atendentes' || naQualidade;
+  const qualidadeLiberada = disponibilidade === 'disponivel';
+  const motivoQualidade = qualidadeLiberada
+    ? null
+    : disponibilidade === 'sem-atendentes'
+      ? MENSAGEM_SEM_ATENDENTES
+      : 'A abertura para a Qualidade está indisponível no momento.';
+
+  const trocarSetor = (novo: SetorDestinoEnum) => {
+    setSetor(novo);
+    setErro(null);
+  };
+
+  const enviarQualidade = async (usuarioId: number) => {
+    // Nunca vira TI: sem a Qualidade, o envio dela simplesmente não sai.
+    if (!qualidadeLiberada) return;
+
+    const problema = validarQualidade({
+      descricao,
+      ehEquipe,
+      solicitanteId,
+      responsavelId,
+      atendentes,
+    });
+    if (problema) {
+      setErro(problema);
+      return;
+    }
+
+    try {
+      setSalvando(true);
+      setErro(null);
+
+      const novo = montarCorpoQualidade({
+        descricao,
+        prioridade,
+        solicitante_id: ehEquipe ? solicitanteId! : usuarioId,
+        tecnico_responsavel_id: responsavelId!,
+      });
+
+      aoCriar(await criarChamado(novo));
+    } catch (err) {
+      console.error('Erro ao criar chamado:', err);
+      const { mensagem, recarregarAtendentes, indisponivel } = interpretarErroDaQualidade(err);
+      setErro(mensagem);
+
+      if (indisponivel) setDisponibilidade('indisponivel');
+
+      if (recarregarAtendentes) {
+        const resposta = await consultar();
+        if (resposta && !resposta.atendentes.some((a) => a.id === responsavelId)) {
+          setResponsavelId(undefined);
+        }
+      }
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!user) {
       setErro('Usuário não autenticado.');
+      return;
+    }
+
+    if (naQualidade) {
+      await enviarQualidade(user.id);
       return;
     }
 
@@ -110,14 +231,15 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       setSalvando(true);
       setErro(null);
 
-      const novo: ChamadoCreate = {
-        solicitante_id: ehEquipe ? solicitanteId! : user.id,
-        titulo: titulo.trim(),
-        descricao: descricao.trim(),
+      const novo = montarCorpoTI({
+        ehEquipe,
+        usuarioId: user.id,
+        solicitanteId,
+        titulo,
+        descricao,
         prioridade,
-        categoria_id: categoriaId,
-        tecnico_responsavel_id: ehEquipe ? user.id : undefined,
-      };
+        categoriaId,
+      });
 
       aoCriar(await criarChamado(novo));
     } catch (err: any) {
@@ -135,22 +257,83 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
         <Aviso variante="perigo">{erro}</Aviso>
       )}
 
-      <div>
-        <RotuloDeCampo htmlFor="titulo" obrigatorio>Título</RotuloDeCampo>
-        <Input
-          id="titulo"
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          maxLength={TITULO_MAXIMO}
-          placeholder="Ex: Impressora do financeiro não conecta"
-          required
-        />
-        <ContadorMinimo
-          valor={titulo}
-          minimo={MINIMO_TITULO}
-          maximo={TITULO_MAXIMO}
-        />
-      </div>
+      {mostrarSetores && (
+        // Rádio nativo, e não o `Seletor`: são duas opções sempre à vista, e o
+        // grupo de mesmo `name` já dá as setas do teclado e o anúncio
+        // "1 de 2" sem nada escrito aqui.
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-conteudo">
+            Setor de destino
+          </legend>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            {[
+              { valor: SetorDestinoEnum.TI, rotulo: 'TI', liberado: true },
+              { valor: SetorDestinoEnum.QUALIDADE, rotulo: 'Qualidade', liberado: qualidadeLiberada },
+            ].map((opcao) => {
+              const marcado = setor === opcao.valor;
+              return (
+                <label
+                  key={opcao.valor}
+                  className={cn(
+                    'inline-flex items-center gap-2 text-sm text-conteudo-suave',
+                    opcao.liberado ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                  )}
+                >
+                  {/* O desenho é o do `Checkbox`, em círculo: input `peer`
+                      escondido, e o anel de foco no que se vê. */}
+                  <input
+                    type="radio"
+                    name={`setor-destino${idDoMotivo}`}
+                    value={opcao.valor}
+                    className="peer sr-only"
+                    checked={marcado}
+                    disabled={!opcao.liberado}
+                    aria-describedby={
+                      !opcao.liberado && motivoQualidade ? idDoMotivo : undefined
+                    }
+                    onChange={() => trocarSetor(opcao.valor)}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors',
+                      marcado ? 'border-sinal' : 'border-borda-control bg-superficie',
+                      'peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--focus-ring)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-superficie'
+                    )}
+                  >
+                    {marcado && <span className="h-2 w-2 rounded-full bg-sinal" />}
+                  </span>
+                  {opcao.rotulo}
+                </label>
+              );
+            })}
+          </div>
+          {motivoQualidade && (
+            <p id={idDoMotivo} className="mt-1 text-xs text-conteudo-tenue">
+              {motivoQualidade}
+            </p>
+          )}
+        </fieldset>
+      )}
+
+      {!naQualidade && (
+        <div>
+          <RotuloDeCampo htmlFor="titulo" obrigatorio>Título</RotuloDeCampo>
+          <Input
+            id="titulo"
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            maxLength={TITULO_MAXIMO}
+            placeholder="Ex: Impressora do financeiro não conecta"
+            required
+          />
+          <ContadorMinimo
+            valor={titulo}
+            minimo={MINIMO_TITULO}
+            maximo={TITULO_MAXIMO}
+          />
+        </div>
+      )}
 
       <div>
         <RotuloDeCampo htmlFor="descricao" obrigatorio>Descrição</RotuloDeCampo>
@@ -185,29 +368,53 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
               })),
             ]}
           />
-          <p className="mt-1 text-xs text-conteudo-tenue">
-            Você fica como técnico responsável.
-          </p>
+          {/* Só na TI: na Qualidade o responsável é escolhido abaixo. */}
+          {!naQualidade && (
+            <p className="mt-1 text-xs text-conteudo-tenue">
+              Você fica como técnico responsável.
+            </p>
+          )}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <RotuloDeCampo htmlFor="categoria">Categoria</RotuloDeCampo>
-          <Seletor
-            id="categoria"
-            rotulo="Categoria"
-            valor={categoriaId ? String(categoriaId) : ''}
-            aoMudar={(v) => setCategoriaId(v ? Number(v) : undefined)}
-            opcoes={[
-              { valor: '', rotulo: 'Sem categoria' },
-              ...categorias.map((categoria) => ({
-                valor: String(categoria.id),
-                rotulo: categoria.nome,
-              })),
-            ]}
-          />
-        </div>
+        {naQualidade ? (
+          <div>
+            <RotuloDeCampo htmlFor="responsavel" obrigatorio>Responsável</RotuloDeCampo>
+            {/* Só quem a API devolveu, e nada escolhido de partida: atribuir a
+                alguém é decisão de quem abre, e "Sem atribuição" a API recusa. */}
+            <Seletor
+              id="responsavel"
+              rotulo="Responsável"
+              valor={responsavelId ? String(responsavelId) : ''}
+              aoMudar={(v) => setResponsavelId(v ? Number(v) : undefined)}
+              opcoes={[
+                { valor: '', rotulo: 'Selecione o responsável' },
+                ...atendentes.map((atendente) => ({
+                  valor: String(atendente.id),
+                  rotulo: atendente.nome,
+                })),
+              ]}
+            />
+          </div>
+        ) : (
+          <div>
+            <RotuloDeCampo htmlFor="categoria">Categoria</RotuloDeCampo>
+            <Seletor
+              id="categoria"
+              rotulo="Categoria"
+              valor={categoriaId ? String(categoriaId) : ''}
+              aoMudar={(v) => setCategoriaId(v ? Number(v) : undefined)}
+              opcoes={[
+                { valor: '', rotulo: 'Sem categoria' },
+                ...categorias.map((categoria) => ({
+                  valor: String(categoria.id),
+                  rotulo: categoria.nome,
+                })),
+              ]}
+            />
+          </div>
+        )}
 
         <div>
           <RotuloDeCampo htmlFor="prioridade">Prioridade</RotuloDeCampo>
@@ -261,7 +468,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
         <Button type="button" variante="secundario" onClick={aoCancelar}>
           Cancelar
         </Button>
-        <Button type="submit" carregando={salvando}>
+        <Button type="submit" carregando={salvando} disabled={naQualidade && !qualidadeLiberada}>
           Abrir chamado
         </Button>
       </div>
