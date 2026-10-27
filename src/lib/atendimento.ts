@@ -1,4 +1,6 @@
 import { chamadosService } from '../services/chamadoshsapi';
+import { Chamado, SetorDestinoEnum } from '../types/api';
+import { setorDoChamado } from './setor';
 
 /**
  * O atendimento restrito da Qualidade, fora dos componentes.
@@ -74,4 +76,40 @@ export async function sondarSuporte(): Promise<Exclude<EstadoDoSuporte, 'verific
     );
   }
   return estado;
+}
+
+// ── Os chamados atribuídos ──────────────────────────────────────────────
+//
+// Quem não é da equipe vê os chamados que abriu. Com a Qualidade, passa a ver
+// também os que atende: os da Qualidade com ele de responsável — e só esses.
+// Um chamado da TI atribuído a ele (de antes, ou de uma API que ignora o
+// filtro de setor) não entra: o quadro dele não vira o da TI.
+
+/** Chamado da Qualidade em que `usuarioId` é o responsável atual. */
+export function ehAtribuidoNaQualidade(
+  chamado: Pick<Chamado, 'setor_destino' | 'tecnico_responsavel_id'>,
+  usuarioId: number | undefined
+): boolean {
+  return (
+    usuarioId !== undefined &&
+    chamado.tecnico_responsavel_id === usuarioId &&
+    setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE
+  );
+}
+
+/**
+ * Os próprios, mais os atribuídos que ainda não estão neles. Sem atribuído,
+ * devolve a lista de antes como veio; com eles, ordena por id decrescente,
+ * a mesma ordem do quadro.
+ */
+export function unirChamados(proprios: Chamado[], atribuidos: Chamado[]): Chamado[] {
+  const ids = new Set(proprios.map((c) => c.id));
+  const novos: Chamado[] = [];
+  for (const chamado of atribuidos) {
+    if (ids.has(chamado.id)) continue;
+    ids.add(chamado.id);
+    novos.push(chamado);
+  }
+  if (novos.length === 0) return proprios;
+  return [...proprios, ...novos].sort((a, b) => b.id - a.id);
 }

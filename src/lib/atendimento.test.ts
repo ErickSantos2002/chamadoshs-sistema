@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import axios from 'axios';
 import api from '../services/api';
 import { chamadosService, TIMEOUT_DA_SONDA_MS } from '../services/chamadoshsapi';
-import { classificarSonda, sondarSuporte } from './atendimento';
+import { Chamado, SetorDestinoEnum } from '../types/api';
+import {
+  classificarSonda,
+  ehAtribuidoNaQualidade,
+  sondarSuporte,
+  unirChamados,
+} from './atendimento';
 
 /**
  * A sonda do atendimento. As respostas de referência são as que a aplicação
@@ -124,5 +130,38 @@ describe('sondarSuporte', () => {
     const sonda = vi.spyOn(chamadosService, 'sondarAtendimento').mockRejectedValue(new Error('x'));
     await sondarSuporte();
     expect(sonda).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ehAtribuidoNaQualidade', () => {
+  it('Qualidade com a pessoa de responsável: sim', () => {
+    expect(
+      ehAtribuidoNaQualidade({ setor_destino: SetorDestinoEnum.QUALIDADE, tecnico_responsavel_id: 7 }, 7)
+    ).toBe(true);
+  });
+
+  it('TI, sem setor, setor estranho, outro responsável, sem responsável ou sem usuário: não', () => {
+    expect(ehAtribuidoNaQualidade({ setor_destino: SetorDestinoEnum.TI, tecnico_responsavel_id: 7 }, 7)).toBe(false);
+    expect(ehAtribuidoNaQualidade({ tecnico_responsavel_id: 7 }, 7)).toBe(false);
+    expect(
+      ehAtribuidoNaQualidade({ setor_destino: 'qualidade' as SetorDestinoEnum, tecnico_responsavel_id: 7 }, 7)
+    ).toBe(false);
+    expect(ehAtribuidoNaQualidade({ setor_destino: SetorDestinoEnum.QUALIDADE, tecnico_responsavel_id: 3 }, 7)).toBe(false);
+    expect(ehAtribuidoNaQualidade({ setor_destino: SetorDestinoEnum.QUALIDADE, tecnico_responsavel_id: null } as never, 7)).toBe(false);
+    expect(ehAtribuidoNaQualidade({ setor_destino: SetorDestinoEnum.QUALIDADE, tecnico_responsavel_id: undefined }, undefined)).toBe(false);
+  });
+});
+
+describe('unirChamados', () => {
+  const c = (id: number) => ({ id }) as Chamado;
+
+  it('sem atribuídos novos, a lista de antes, como veio', () => {
+    const proprios = [c(2), c(9), c(4)];
+    expect(unirChamados(proprios, [])).toBe(proprios);
+    expect(unirChamados(proprios, [c(9)])).toBe(proprios);
+  });
+
+  it('com atribuídos, sem repetir e por id decrescente', () => {
+    expect(unirChamados([c(2), c(9)], [c(9), c(5), c(5), c(12)]).map((x) => x.id)).toEqual([12, 9, 5, 2]);
   });
 });

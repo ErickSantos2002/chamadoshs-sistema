@@ -1,7 +1,12 @@
 import { createContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { podeSerResponsavel } from '../utils/roleMapper';
-import { EstadoDoSuporte, sondarSuporte } from '../lib/atendimento';
+import {
+  EstadoDoSuporte,
+  ehAtribuidoNaQualidade,
+  sondarSuporte,
+  unirChamados,
+} from '../lib/atendimento';
 import { DisponibilidadeQualidade, consultarQualidade } from '../lib/qualidade';
 import {
   chamadosService,
@@ -21,6 +26,7 @@ import {
   ChamadoCreateQualidade,
   ChamadoUpdate,
   ComentarioCreate,
+  SetorDestinoEnum,
 } from '../types/api';
 
 /**
@@ -114,14 +120,35 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
       // silêncio. Juntos, faziam um chamado sumir sem deixar rastro na tela.
       const params: any = { incluir_arquivados: true, incluir_cancelados: true };
 
-      // Usuários comuns só veem seus próprios chamados
+      let data: Chamado[];
+
+      // Usuários comuns veem os que abriram e os da Qualidade que atendem.
+      // A segunda listagem é conferida aqui, chamado a chamado: a API anterior
+      // à API-1 ignora `setor_destino` e devolveria também os da TI. Se ela
+      // falhar, o quadro fica com os próprios — que é o quadro de antes.
       if (user.role === 'Usuario') {
-        params.solicitante_id = user.id;
+        const [proprios, atribuidos] = await Promise.all([
+          chamadosService.listarTodos({ ...params, solicitante_id: user.id }),
+          chamadosService
+            .listarTodos({
+              ...params,
+              tecnico_id: user.id,
+              setor_destino: SetorDestinoEnum.QUALIDADE,
+            })
+            .catch((err) => {
+              console.warn('[atendimento] não deu para listar os chamados atribuídos:', err?.response?.status ?? 'sem resposta');
+              return [] as Chamado[];
+            }),
+        ]);
+        data = unirChamados(
+          proprios,
+          atribuidos.filter((c) => ehAtribuidoNaQualidade(c, user.id))
+        );
+      } else {
+        // Técnicos e Admins veem todos os chamados (sem filtro)
+        data = await chamadosService.listarTodos(params);
       }
 
-      // Técnicos e Admins veem todos os chamados (sem filtro)
-
-      const data = await chamadosService.listarTodos(params);
       setChamados(data);
       setChamadosCarregados(true);
     } catch (err: any) {

@@ -299,6 +299,8 @@ export interface ChamadosQueryParams {
   tecnico_id?: number;
   incluir_cancelados?: boolean;
   incluir_arquivados?: boolean;
+  /** A partir da API-1. A anterior ignora: quem filtra confere no front. */
+  setor_destino?: SetorDestinoEnum;
 }
 
 export interface UsuariosQueryParams {
