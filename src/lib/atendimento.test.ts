@@ -7,11 +7,15 @@ import {
   MENSAGEM_QUALIDADE_INDISPONIVEL,
   MENSAGEM_ROTA_INDISPONIVEL,
   MENSAGEM_SEM_RESPOSTA,
+  ROTULO_FORA_DOS_ATENDENTES,
   classificarSonda,
   ehAtribuidoNaQualidade,
+  interpretarErroDaReatribuicao,
   interpretarErroDoAtendimento,
   montarCorpoAtendimento,
+  opcoesDeResponsavelDaQualidade,
   podeAtenderPelaRota,
+  podeReatribuirNaQualidade,
   sondarSuporte,
   unirChamados,
 } from './atendimento';
@@ -246,4 +250,72 @@ describe('interpretarErroDoAtendimento', () => {
       expect(interpretarErroDoAtendimento(erro)).toStrictEqual({ tipo, recarregar, mensagem });
     });
   }
+});
+
+describe('reatribuição na Qualidade', () => {
+  const ATENDENTES = [
+    { id: 7, nome: 'Ana' },
+    { id: 3, nome: 'Bia' },
+  ];
+
+  it('podeReatribuirNaQualidade: só com a API-3 e os atendentes respondendo 200', () => {
+    const base = { suporte: 'suportado' as const, disponibilidade: 'disponivel', atendentes: [] };
+    expect(podeReatribuirNaQualidade(base)).toBe(true);
+    expect(podeReatribuirNaQualidade({ ...base, disponibilidade: 'sem-atendentes' })).toBe(true);
+    expect(podeReatribuirNaQualidade({ ...base, disponibilidade: 'indisponivel' })).toBe(false);
+    expect(podeReatribuirNaQualidade({ ...base, disponibilidade: 'falhou' })).toBe(false);
+    expect(podeReatribuirNaQualidade({ ...base, disponibilidade: 'verificando' })).toBe(false);
+    expect(podeReatribuirNaQualidade({ ...base, suporte: 'nao-suportado' })).toBe(false);
+    expect(podeReatribuirNaQualidade({ ...base, suporte: 'falhou' })).toBe(false);
+  });
+
+  it('opções: os atendentes, sem opção vazia', () => {
+    expect(opcoesDeResponsavelDaQualidade(ATENDENTES, 7, 'Ana')).toStrictEqual([
+      { valor: '7', rotulo: 'Ana' },
+      { valor: '3', rotulo: 'Bia' },
+    ]);
+  });
+
+  it('o atual fora da lista fica, marcado, no topo', () => {
+    expect(opcoesDeResponsavelDaQualidade(ATENDENTES, 12, 'Caio')).toStrictEqual([
+      { valor: '12', rotulo: `Caio ${ROTULO_FORA_DOS_ATENDENTES}` },
+      { valor: '7', rotulo: 'Ana' },
+      { valor: '3', rotulo: 'Bia' },
+    ]);
+  });
+
+  it('sem responsável atual, nada é inventado', () => {
+    expect(opcoesDeResponsavelDaQualidade(ATENDENTES, null, 'x')).toHaveLength(2);
+    expect(opcoesDeResponsavelDaQualidade([], undefined, 'x')).toEqual([]);
+  });
+
+  const resp = (status: number, detail?: string) => ({ response: { status, data: { detail } } });
+
+  it('erro 400: o detail, e recarrega os atendentes', () => {
+    expect(interpretarErroDaReatribuicao(resp(400, 'Atendente não é elegível para a Qualidade'))).toStrictEqual({
+      mensagem: 'Atendente não é elegível para a Qualidade',
+      recarregarAtendentes: true,
+      indisponivel: false,
+    });
+  });
+
+  it('erro 503: Qualidade indisponível', () => {
+    expect(interpretarErroDaReatribuicao(resp(503, 'x'))).toStrictEqual({
+      mensagem: MENSAGEM_QUALIDADE_INDISPONIVEL,
+      recarregarAtendentes: false,
+      indisponivel: true,
+    });
+  });
+
+  it('erro 403: quem avisa é o interceptor', () => {
+    expect(interpretarErroDaReatribuicao(resp(403, 'x')).mensagem).toBeNull();
+  });
+
+  it('rede: mensagem genérica, sem recarga', () => {
+    expect(interpretarErroDaReatribuicao(new Error('rede'))).toStrictEqual({
+      mensagem: 'Não foi possível atribuir o responsável.',
+      recarregarAtendentes: false,
+      indisponivel: false,
+    });
+  });
 });

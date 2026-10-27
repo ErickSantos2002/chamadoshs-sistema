@@ -228,3 +228,71 @@ describe('Qualidade — o atendimento na página', () => {
     expect(host.textContent).not.toContain('Ações Rápidas');
   });
 });
+
+describe('Qualidade — o responsável na edição', () => {
+  const seletorTecnico = () =>
+    Array.from(host.querySelectorAll('[role="combobox"]')).find((b) =>
+      (b.getAttribute('aria-labelledby') ?? '')
+        .split(/\s+/)
+        .some((i) => document.getElementById(i)?.textContent?.includes('Técnico responsável'))
+    ) as HTMLElement | undefined;
+
+  const opcoesDoTecnico = async () => {
+    const s = seletorTecnico();
+    expect(s, 'seletor do técnico não apareceu').toBeTruthy();
+    await act(async () => {
+      s!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    return Array.from(document.querySelectorAll('[role="option"]'));
+  };
+
+  const editar = async (extra: Partial<Chamado> = {}) => {
+    await montar(ADMIN, extra);
+    await clicar('Editar Detalhes');
+  };
+
+  it('as opções são os atendentes, sem "Sem atribuição"', async () => {
+    await editar();
+    const opcoes = (await opcoesDoTecnico()).map((o) => o.textContent?.trim());
+    expect(opcoes).toEqual(['Ana da Qualidade', 'rickelme']);
+  });
+
+  it('o atual fora dos atendentes continua como escolha', async () => {
+    await editar({ tecnico_responsavel_id: 12 });
+    expect(seletorTecnico()?.textContent).toContain('Usuário #12 (fora dos atendentes)');
+  });
+
+  it('trocar e salvar leva o novo responsável', async () => {
+    const atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(async (_id, d) => ({ ...noServidor, ...d }) as Chamado);
+    await editar();
+    const alvo = (await opcoesDoTecnico()).find((o) => o.textContent?.trim() === 'rickelme');
+    await act(async () => {
+      alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await clicar('Salvar');
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(atualizar.mock.calls[0][1]).toHaveProperty('tecnico_responsavel_id', 1);
+  });
+
+  it('API sem a rota: o responsável fica só leitura na edição', async () => {
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 404,
+      dados: { detail: 'Not Found' },
+    });
+    await editar();
+    expect(textos()).toContain('Salvar');
+    expect(seletorTecnico()).toBeUndefined();
+    expect(host.textContent).toContain('A troca de responsável da Qualidade não está disponível agora.');
+  });
+
+  it('chamado da TI: o seletor de sempre', async () => {
+    vi.spyOn(usuariosService, 'listarTodos').mockResolvedValue([
+      { id: 1, nome: 'rickelme', role_id: 1, ativo: true } as Usuario,
+    ]);
+    await editar({ setor_destino: SetorDestinoEnum.TI } as Partial<Chamado>);
+    const opcoes = (await opcoesDoTecnico()).map((o) => o.textContent?.trim());
+    expect(opcoes).toEqual(['Sem atribuição', 'rickelme']);
+  });
+});

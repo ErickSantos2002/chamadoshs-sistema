@@ -7,7 +7,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { useQualidade } from '../hooks/useQualidade';
-import { podeAtenderPelaRota } from '../lib/atendimento';
+import {
+  opcoesDeResponsavelDaQualidade,
+  podeAtenderPelaRota,
+  podeReatribuirNaQualidade,
+} from '../lib/atendimento';
 import { setorDoChamado } from '../lib/setor';
 import AcoesRapidas from '../components/AcoesRapidas';
 import { categoriasService, chamadosService } from '../services/chamadoshsapi';
@@ -130,6 +134,9 @@ const ChamadoDetalhes: React.FC = () => {
     : false;
   const qualidade = useQualidade(ehDaQualidade);
   const atendePelaRota = chamado ? podeAtenderPelaRota(chamado, user?.id, qualidade) : false;
+  // Trocar o responsável da Qualidade é só com a API que valida a troca; sem
+  // ela, o campo fica só leitura na edição e o PUT leva o responsável de antes.
+  const reatribuiNaQualidade = podeEditar && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
 
   useEffect(() => {
     if (id) {
@@ -1007,7 +1014,36 @@ const ChamadoDetalhes: React.FC = () => {
                 </dt>
 
                 <dd>
-                  {modoEdicao ? (
+                  {modoEdicao && ehDaQualidade ? (
+                    reatribuiNaQualidade ? (
+                      // Sem "Sem atribuição": na Qualidade o responsável é
+                      // obrigatório. Quem já está e saiu da lista continua
+                      // como escolha atual até alguém trocar.
+                      <Seletor
+                        rotulo="Técnico responsável"
+                        valor={tecnicoEditado ? String(tecnicoEditado) : ''}
+                        aoMudar={(v) => v && setTecnicoEditado(Number(v))}
+                        opcoes={opcoesDeResponsavelDaQualidade(
+                          qualidade.atendentes,
+                          chamado.tecnico_responsavel_id,
+                          (chamado.tecnico_responsavel_id &&
+                            usuarios[chamado.tecnico_responsavel_id]?.nome) ||
+                            `Usuário #${chamado.tecnico_responsavel_id}`
+                        )}
+                      />
+                    ) : (
+                      <div>
+                        <p className="text-sm font-medium text-conteudo">
+                          {(chamado.tecnico_responsavel_id &&
+                            usuarios[chamado.tecnico_responsavel_id]?.nome) ||
+                            'Sem atribuição'}
+                        </p>
+                        <p className="mt-0.5 text-xs text-conteudo-tenue">
+                          A troca de responsável da Qualidade não está disponível agora.
+                        </p>
+                      </div>
+                    )
+                  ) : modoEdicao ? (
                     <Seletor
                       rotulo="Técnico responsável"
                       valor={tecnicoEditado ? String(tecnicoEditado) : ''}

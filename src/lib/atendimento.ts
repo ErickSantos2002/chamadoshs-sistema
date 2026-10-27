@@ -237,3 +237,64 @@ export function interpretarErroDoAtendimento(erro: unknown): {
   }
   return { tipo: 'outro', mensagem: detail ?? MENSAGEM_GENERICA, recarregar: false };
 }
+
+// ── A reatribuição na Qualidade ─────────────────────────────────────────
+//
+// Na Qualidade o responsável é obrigatório e vem da lista de atendentes. Não
+// há "Sem atribuição" (a API recusa `null` com 400), e quem já está no
+// chamado sem estar na lista — saiu do setor, foi desativado — continua
+// aparecendo como a escolha atual até alguém trocar de propósito. Tirá-lo da
+// lista faria o seletor mostrar outra pessoa, ou nada, e o próximo "Salvar"
+// trocaria o responsável sem ninguém ter pedido.
+
+export const ROTULO_FORA_DOS_ATENDENTES = '(fora dos atendentes)';
+
+/** O seletor da Qualidade pode ser usado: a API sabe validar a troca. */
+export function podeReatribuirNaQualidade(qualidade: QualidadeParaAtender): boolean {
+  return (
+    qualidade.suporte === 'suportado' &&
+    (qualidade.disponibilidade === 'disponivel' ||
+      qualidade.disponibilidade === 'sem-atendentes')
+  );
+}
+
+export function opcoesDeResponsavelDaQualidade(
+  atendentes: ReadonlyArray<{ id: number; nome: string }>,
+  atualId: number | null | undefined,
+  nomeDoAtual: string
+): Array<{ valor: string; rotulo: string }> {
+  const opcoes = atendentes.map((a) => ({ valor: String(a.id), rotulo: a.nome }));
+  if (atualId == null || atendentes.some((a) => a.id === atualId)) return opcoes;
+  return [{ valor: String(atualId), rotulo: `${nomeDoAtual} ${ROTULO_FORA_DOS_ATENDENTES}` }, ...opcoes];
+}
+
+/**
+ * O que fazer com o erro do PUT de troca de responsável na Qualidade.
+ * 400 é atendente que não existe ou deixou de ser elegível: a lista na tela
+ * está velha e recarrega. 503 é a Qualidade desligada. 403 é do interceptor.
+ */
+export function interpretarErroDaReatribuicao(erro: unknown): {
+  mensagem: string | null;
+  recarregarAtendentes: boolean;
+  indisponivel: boolean;
+} {
+  const resposta =
+    erro && typeof erro === 'object'
+      ? (erro as { response?: { status?: unknown; data?: { detail?: unknown } } }).response
+      : undefined;
+  const status = resposta?.status;
+  const detail =
+    typeof resposta?.data?.detail === 'string' && resposta.data.detail.trim()
+      ? resposta.data.detail
+      : undefined;
+
+  if (status === 403) return { mensagem: null, recarregarAtendentes: false, indisponivel: false };
+  if (status === 503) {
+    return { mensagem: MENSAGEM_QUALIDADE_INDISPONIVEL, recarregarAtendentes: false, indisponivel: true };
+  }
+  return {
+    mensagem: detail ?? 'Não foi possível atribuir o responsável.',
+    recarregarAtendentes: status === 400,
+    indisponivel: false,
+  };
+}
