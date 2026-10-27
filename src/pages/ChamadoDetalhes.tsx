@@ -26,6 +26,7 @@ import {
   MarcaBadge,
   PapelBadge,
   PrioridadeBadge,
+  SetorBadge,
   VARIANTE_DE_STATUS,
 } from '../components/SelosDeChamado';
 import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
@@ -898,6 +899,19 @@ const ChamadoDetalhes: React.FC = () => {
                       {categoriaNome}
                     </p>
                   )}
+                </dd>
+              </div>
+
+              {/* Setor de destino. Sempre, inclusive TI, e só leitura também
+                  em modo de edição: mudar o setor de um chamado não é desta
+                  fase. `semPrefixo` porque o `<dt>` já diz o que é. */}
+              <div>
+                <dt className="mb-1.5 block text-xs font-medium text-conteudo-tenue">
+                  Setor de destino
+                </dt>
+
+                <dd>
+                  <SetorBadge chamado={chamado} semPrefixo />
                 </dd>
               </div>
 

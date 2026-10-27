@@ -25,6 +25,15 @@ export enum StatusEnum {
   FECHADO = 'Fechado',
 }
 
+/**
+ * Para qual equipe o chamado foi aberto. Os valores são o contrato com a API;
+ * o rótulo de tela ("Qualidade") vive em `lib/setor`.
+ */
+export enum SetorDestinoEnum {
+  TI = 'TI',
+  QUALIDADE = 'QUALIDADE',
+}
+
 // Autenticação
 export interface LoginRequest {
   nome: string;
@@ -170,6 +179,12 @@ export interface Chamado {
   created_at: string;
   updated_at: string;
   sla?: SLAInfo;
+  /**
+   * Opcional para o front continuar funcionando contra a API anterior ao
+   * campo — ausente é TI. O tipo é o contrato, não uma garantia: quem lê o
+   * valor passa por `lerSetor`, que não confia nele.
+   */
+  setor_destino?: SetorDestinoEnum;
 }
 
 export interface ChamadoCreate {

@@ -140,3 +140,52 @@ describe('cartão do quadro — o ponto de prioridade', () => {
     expect(html).not.toContain('title="Prioridade');
   });
 });
+
+describe('cartão do quadro — o setor de destino', () => {
+  const comSetor = (extra: Record<string, unknown>) =>
+    renderToStaticMarkup(
+      <ThemeProvider>
+        <KanbanColumn
+          title="Em Andamento"
+          descricao="Alguém está trabalhando nisto."
+          colorDot="#3B82F6"
+          items={[{ ...CHAMADO, ...extra } as never]}
+          usuarios={{ 3: { id: 3, nome: 'Lidisay', role_id: 2 } as never }}
+          categorias={[{ id: 2, nome: 'Financeiro' } as never]}
+          aoAbrir={() => {}}
+        />
+      </ThemeProvider>
+    );
+
+  /**
+   * O cenário da API em produção hoje: o campo nem existe. O cartão tem que
+   * sair IGUAL ao de antes — é a mesma marcação do caso sem setor nenhum.
+   */
+  it('API antiga, sem o campo: o cartão sai idêntico ao de antes', () => {
+    expect(comSetor({})).toBe(marcacao());
+    expect(comSetor({})).not.toContain('Setor');
+  });
+
+  it('TI explícito também não ganha selo — é o caso comum', () => {
+    expect(comSetor({ setor_destino: 'TI' })).toBe(marcacao());
+  });
+
+  it('Qualidade ganha o selo, fora do botão', () => {
+    const html = comSetor({ setor_destino: 'QUALIDADE' });
+    expect(html).toContain('Qualidade');
+    const botao = html.slice(html.indexOf('<button'), html.indexOf('</button>'));
+    expect(botao).not.toContain('Qualidade');
+  });
+
+  it('valor desconhecido aparece como não reconhecido, e não como TI', () => {
+    const html = comSetor({ setor_destino: 'RH' });
+    expect(html).toContain('Setor não reconhecido: RH');
+  });
+
+  it('os selos de antes continuam lá ao lado do novo', () => {
+    const html = comSetor({ setor_destino: 'QUALIDADE', arquivado: true });
+    for (const texto of ['Financeiro', 'Alta', 'Arquivado', 'Qualidade']) {
+      expect(html).toContain(texto);
+    }
+  });
+});

@@ -15,7 +15,34 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ## [Não publicado]
 
-_Nada pendente._
+Por Rickelme David. Branch `feat/setor-destino-fe-1`, local — FE-1 da
+funcionalidade Setor de Destino. Sobe como **1.8.0** quando for publicada; a
+versão não subiu aqui porque o `package.json` acende o aviso de novidades, e
+não haverá aviso enquanto a Qualidade não puder abrir chamado (FE-2).
+
+### ⚠️ Requer ação no deploy
+
+Nada além do rebuild do front, e **sem ordem obrigatória com a API**: o campo
+é opcional. Contra a API no ar hoje — que não manda `setor_destino` — o quadro
+sai igual ao de antes, e a janela e a página passam a mostrar "Setor de
+destino: TI". O filtro e o selo "Qualidade" só aparecem com a API-1
+(`chamadoshs-api`, PR #3, em Draft) e chamados de Qualidade na base, que só a
+API-2 cria.
+
+### Added
+
+- **Setor de destino do chamado — TI ou Qualidade — na janela e na página do
+  chamado**, sempre, inclusive TI. Na página é um campo de leitura da ficha;
+  nesta fase não se muda o setor de um chamado.
+- **Selo "Qualidade" no cartão do quadro.** Chamado de TI não ganha selo: é o
+  caso de quase todos, e o selo repetido em todo cartão viraria ruído.
+- **Filtro por setor no quadro**, ao lado de prioridade, categoria e
+  responsável, e incluído no "Limpar". Aparece só quando há chamados de mais de
+  um setor, ou quando já está ligado. Filtra o que já foi carregado — não manda
+  o setor para a API, que hoje ignoraria o parâmetro.
+- **Setor que o sistema não reconhece não vira TI.** Aparece como "Setor não
+  reconhecido: …" com o valor que chegou, só em "Todos os setores", e avisa no
+  console uma vez por chamado. Chamado sem o campo, da API antiga, é TI.
 
 ---
 

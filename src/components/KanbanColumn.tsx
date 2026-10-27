@@ -3,7 +3,7 @@ import { Chamado, Categoria, PrioridadeEnum, Usuario } from '../types/api';
 import { precisaAvaliar } from '../utils/avaliacao';
 import { cn } from '../lib/utils';
 import { Avatar, Badge } from './ui';
-import { MarcaBadge, PrioridadeBadge } from './SelosDeChamado';
+import { MarcaBadge, PrioridadeBadge, SetorBadge } from './SelosDeChamado';
 import SlaProgresso from './SlaProgresso';
 import { IconeEstrela } from './ui/icones';
 
@@ -263,6 +263,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     </Badge>
                   )}
                   <PrioridadeBadge prioridade={chamado.prioridade} />
+
+                  {/* Só quando NÃO é TI. É o setor de quase todo chamado, e
+                      um selo repetido em todo cartão vira ruído que ninguém
+                      lê; o que merece marca é a exceção. A janela e a página
+                      mostram o setor sempre. */}
+                  <SetorBadge chamado={chamado} ocultarTI />
 
                   {/* Mesmas palavras e mesmas variantes que a janela do chamado
                       usa. Dentro das colunas "Arquivado" e "Cancelado" o selo é
