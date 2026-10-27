@@ -172,6 +172,46 @@ describe('ChamadoModal e o quadro', () => {
 
     expect(atualizar).toHaveBeenCalledWith(1, { tecnico_responsavel_id: 1 });
   });
+
+  /** Na TI, tirar o responsável é escolha válida, e viaja como `null`. */
+  it('"Sem atribuição" manda null', async () => {
+    vi.spyOn(chamadosService, 'buscar').mockResolvedValue({
+      ...CHAMADO,
+      id: 3,
+      tecnico_responsavel_id: 1,
+    } as Chamado);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={SESSAO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <ChamadoModal chamadoId={3} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+
+    const seletor = Array.from(document.querySelectorAll('[role="combobox"]')).find((b) =>
+      (b.getAttribute('aria-labelledby') ?? '')
+        .split(/\s+/)
+        .some((i) => document.getElementById(i)?.textContent?.includes('Responsável'))
+    ) as HTMLElement | undefined;
+    expect(seletor, 'seletor de responsável não apareceu').toBeTruthy();
+    await act(async () => {
+      seletor!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const opcao = Array.from(document.querySelectorAll('[role="option"]')).find(
+      (o) => o.textContent?.trim() === 'Sem atribuição'
+    );
+    expect(opcao, 'opção "Sem atribuição" não apareceu').toBeTruthy();
+    await act(async () => {
+      opcao!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(atualizar.mock.calls).toStrictEqual([[3, { tecnico_responsavel_id: null }]]);
+  });
 });
 
 describe('ChamadoModal — o setor de destino', () => {
