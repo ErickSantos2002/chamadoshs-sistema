@@ -84,6 +84,13 @@ const valorDoSetor = (): HTMLElement | null => {
 
 beforeEach(() => {
   vi.spyOn(chamadosService, 'listarTodos').mockResolvedValue([]);
+  // Chamado da Qualidade faz o front sondar o atendimento (FE-3). Sem mock,
+  // a sonda iria ao VITE_API_URL do `.env` — que é a produção.
+  vi.spyOn(chamadosService, 'sondarAtendimento').mockResolvedValue({
+    status: 404,
+    dados: { detail: 'Not Found' },
+  });
+  vi.spyOn(chamadosService, 'listarAtendentesQualidade').mockResolvedValue([]);
   vi.spyOn(comentariosService, 'listarPorChamado').mockResolvedValue([]);
   vi.spyOn(historicoService, 'listarPorChamado').mockResolvedValue([]);
   vi.spyOn(categoriasService, 'listar').mockResolvedValue([]);

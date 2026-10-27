@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
+import { useChamados } from '../hooks/useChamados';
+import { useQualidade } from '../hooks/useQualidade';
 import { chamadosService } from '../services/chamadoshsapi';
+import {
+  interpretarErroDoAtendimento,
+  montarCorpoAtendimento,
+  podeAtenderPelaRota,
+} from '../lib/atendimento';
+import { setorDoChamado } from '../lib/setor';
 import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
 import ContadorMinimo from './ContadorMinimo';
 import { Button, RotuloDeCampo, Textarea } from './ui';
-import { Chamado, StatusEnum } from '../types/api';
+import { Chamado, SetorDestinoEnum, StatusDoAtendimento, StatusEnum } from '../types/api';
 import type { PropsDeIcone } from './ui/icones';
 import { IconeConfereCirculo, IconeDesfazer, IconeIniciar, IconeRelogio } from './ui/icones';
 
@@ -13,9 +21,18 @@ interface AcoesRapidasProps {
   chamado: Chamado;
   /** Recebe o chamado atualizado depois da mudança. */
   aoMudar: (atualizado: Chamado) => void;
+  /**
+   * O chamado na tela pode estar velho — a API recusou por permissão, por
+   * conflito ou porque ele não existe mais. Só no atendimento da Qualidade.
+   */
+  aoPrecisarRecarregar?: () => void;
 }
 
-/** O que dá para fazer a partir de cada status, e com que palavra. */
+/**
+ * O que dá para fazer a partir de cada status, e com que palavra. É também o
+ * mapa de transições da rota de atendimento da Qualidade, que a API guarda
+ * idêntico — por isso os dois caminhos usam os mesmos botões.
+ */
 const TRANSICOES: Partial<
   Record<StatusEnum, Array<{ para: StatusEnum; texto: string; Icone: React.FC<PropsDeIcone> }>>
 > = {
@@ -58,16 +75,36 @@ const TRANSICOES: Partial<
  * Ela é o que fica de registro e o que alguém lê quando o mesmo problema
  * volta. Facilitar o caminho não é motivo para aceitar "ok" como solução, e o
  * mínimo vale igual aqui e na página inteira.
+ *
+ * ── Dois caminhos, os mesmos botões ───────────────────────────────────
+ *
+ * Quem atende um chamado da Qualidade em que é o responsável usa a rota
+ * restrita (`PATCH /atendimento`), seja qual for o perfil — as condições estão
+ * em `podeAtenderPelaRota`. Todo o resto da equipe segue pelo PUT de sempre.
+ * Nunca os dois: quando a rota vale, os botões mudam de caminho, e um erro
+ * dela nunca é repetido pelo PUT.
  */
-export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) => {
+export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
+  chamado,
+  aoMudar,
+  aoPrecisarRecarregar,
+}) => {
   const { user } = useAuth();
+  const { verificarQualidade, marcarAtendimentoIndisponivel, marcarQualidadeIndisponivel } =
+    useChamados();
+  const qualidade = useQualidade(setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE);
   const [resolvendo, setResolvendo] = useState(false);
   const [solucao, setSolucao] = useState('');
   const [salvando, setSalvando] = useState(false);
+  // O `disabled` só chega no próximo desenho; dois cliques no mesmo quadro
+  // passariam os dois. A trava é síncrona.
+  const travado = useRef(false);
 
-  // Mudar status é da equipe. A API recusa para o solicitante, e mostrar o
-  // botão a ele seria oferecer um 403.
-  const podeAgir = user?.role === 'Administrador' || user?.role === 'Tecnico';
+  const pelaRota = podeAtenderPelaRota(chamado, user?.id, qualidade);
+
+  // Mudar status pelo PUT é da equipe. A API recusa para o solicitante, e
+  // mostrar o botão a ele seria oferecer um 403.
+  const podeAgir = pelaRota || user?.role === 'Administrador' || user?.role === 'Tecnico';
 
   // Cancelado e arquivado saem do fluxo normal: reabrir um deles é decisão que
   // vive na página inteira, junto do motivo e do histórico.
@@ -76,26 +113,65 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
       ? (TRANSICOES[chamado.status] ?? [])
       : [];
 
-  if (!disponiveis.length && !resolvendo) return null;
+  if (!podeAgir || (!disponiveis.length && !resolvendo)) return null;
+
+  /**
+   * O erro da rota restrita. O que foi digitado só se perde quando não há
+   * mais o que fazer com ele: rota ou Qualidade fora do ar, ou chamado que
+   * mudou por baixo. Rede e validação mantêm o passo aberto, sem repetir.
+   */
+  const tratarErroDoAtendimento = (err: unknown) => {
+    const { tipo, mensagem, recarregar } = interpretarErroDoAtendimento(err);
+    if (mensagem) toast.error(mensagem);
+
+    if (tipo === 'rota-indisponivel') {
+      marcarAtendimentoIndisponivel();
+      setResolvendo(false);
+    } else if (tipo === 'qualidade-indisponivel') {
+      marcarQualidadeIndisponivel();
+      setResolvendo(false);
+    } else if (tipo === 'sem-permissao') {
+      // Quem atende pode ter mudado: relê os atendentes, e as ações somem se
+      // a pessoa saiu da lista.
+      void verificarQualidade();
+    }
+
+    if (recarregar) {
+      setResolvendo(false);
+      aoPrecisarRecarregar?.();
+    }
+  };
 
   const aplicar = async (novoStatus: StatusEnum, textoDaSolucao?: string) => {
+    if (travado.current) return;
+    travado.current = true;
+    const viaRota = pelaRota;
+
     try {
       setSalvando(true);
-      const atualizado = await chamadosService.atualizar(chamado.id, {
-        status: novoStatus,
-        ...(textoDaSolucao ? { solucao: textoDaSolucao } : {}),
-      });
+      const atualizado = viaRota
+        ? await chamadosService.atender(
+            chamado.id,
+            montarCorpoAtendimento(novoStatus as StatusDoAtendimento, textoDaSolucao)
+          )
+        : await chamadosService.atualizar(chamado.id, {
+            status: novoStatus,
+            ...(textoDaSolucao ? { solucao: textoDaSolucao } : {}),
+          });
 
       aoMudar(atualizado);
       setResolvendo(false);
       setSolucao('');
     } catch (err: any) {
-      // O 403 já é anunciado pelo interceptor; repetir mostraria duas
-      // mensagens para o mesmo erro.
-      if (err?.response?.status !== 403) {
+      if (viaRota) {
+        tratarErroDoAtendimento(err);
+      } else if (err?.response?.status !== 403) {
+        // O 403 já é anunciado pelo interceptor; repetir mostraria duas
+        // mensagens para o mesmo erro.
         toast.error(err?.response?.data?.detail || 'Não foi possível mudar o status.');
       }
     } finally {
+      travado.current = false;
       setSalvando(false);
     }
   };

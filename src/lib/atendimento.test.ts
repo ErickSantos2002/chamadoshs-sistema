@@ -2,10 +2,16 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import axios from 'axios';
 import api from '../services/api';
 import { chamadosService, TIMEOUT_DA_SONDA_MS } from '../services/chamadoshsapi';
-import { Chamado, SetorDestinoEnum } from '../types/api';
+import { Chamado, SetorDestinoEnum, StatusEnum } from '../types/api';
 import {
+  MENSAGEM_QUALIDADE_INDISPONIVEL,
+  MENSAGEM_ROTA_INDISPONIVEL,
+  MENSAGEM_SEM_RESPOSTA,
   classificarSonda,
   ehAtribuidoNaQualidade,
+  interpretarErroDoAtendimento,
+  montarCorpoAtendimento,
+  podeAtenderPelaRota,
   sondarSuporte,
   unirChamados,
 } from './atendimento';
@@ -164,4 +170,80 @@ describe('unirChamados', () => {
   it('com atribuídos, sem repetir e por id decrescente', () => {
     expect(unirChamados([c(2), c(9)], [c(9), c(5), c(5), c(12)]).map((x) => x.id)).toEqual([12, 9, 5, 2]);
   });
+});
+
+describe('podeAtenderPelaRota', () => {
+  const chamado = {
+    setor_destino: SetorDestinoEnum.QUALIDADE,
+    tecnico_responsavel_id: 7,
+    cancelado: false,
+    arquivado: false,
+  };
+  const ok = { suporte: 'suportado' as const, disponibilidade: 'disponivel', atendentes: [{ id: 7 }] };
+
+  it('com as seis condições: sim', () => {
+    expect(podeAtenderPelaRota(chamado, 7, ok)).toBe(true);
+  });
+
+  const casos: Array<[string, Parameters<typeof podeAtenderPelaRota>]> = [
+    ['API sem a rota', [chamado, 7, { ...ok, suporte: 'nao-suportado' }]],
+    ['sonda falhou', [chamado, 7, { ...ok, suporte: 'falhou' }]],
+    ['ainda verificando', [chamado, 7, { ...ok, suporte: 'verificando' }]],
+    ['atendentes com 503', [chamado, 7, { ...ok, disponibilidade: 'indisponivel', atendentes: [] }]],
+    ['atendentes falharam', [chamado, 7, { ...ok, disponibilidade: 'falhou' }]],
+    ['fora da lista de atendentes', [chamado, 7, { ...ok, atendentes: [{ id: 3 }] }]],
+    ['chamado da TI', [{ ...chamado, setor_destino: SetorDestinoEnum.TI }, 7, ok]],
+    ['chamado sem setor', [{ ...chamado, setor_destino: undefined }, 7, ok]],
+    ['outro responsável', [{ ...chamado, tecnico_responsavel_id: 3 }, 7, { ...ok, atendentes: [{ id: 3 }, { id: 7 }] }]],
+    ['cancelado', [{ ...chamado, cancelado: true }, 7, ok]],
+    ['arquivado', [{ ...chamado, arquivado: true }, 7, ok]],
+    ['sem usuário', [chamado, undefined, ok]],
+  ];
+  for (const [nome, args] of casos) {
+    it(`${nome}: não`, () => {
+      expect(podeAtenderPelaRota(...args)).toBe(false);
+    });
+  }
+});
+
+describe('montarCorpoAtendimento', () => {
+  it('iniciar e aguardar: só o status, sem a chave solucao', () => {
+    expect(montarCorpoAtendimento(StatusEnum.EM_ANDAMENTO, 'texto que sobrou')).toStrictEqual({
+      status: StatusEnum.EM_ANDAMENTO,
+    });
+    expect(montarCorpoAtendimento(StatusEnum.AGUARDANDO)).toStrictEqual({
+      status: StatusEnum.AGUARDANDO,
+    });
+  });
+
+  it('resolver: status e solução sem espaço nas pontas', () => {
+    expect(montarCorpoAtendimento(StatusEnum.RESOLVIDO, '  Calibrei o paquímetro.  ')).toStrictEqual({
+      status: StatusEnum.RESOLVIDO,
+      solucao: 'Calibrei o paquímetro.',
+    });
+  });
+});
+
+describe('interpretarErroDoAtendimento', () => {
+  const resp = (status: number, detail?: unknown) => ({ response: { status, data: { detail } } });
+
+  const casos: Array<[string, unknown, string, boolean, string | null]> = [
+    ['404 do roteador', resp(404, 'Not Found'), 'rota-indisponivel', false, MENSAGEM_ROTA_INDISPONIVEL],
+    ['405', resp(405, 'Method Not Allowed'), 'rota-indisponivel', false, MENSAGEM_ROTA_INDISPONIVEL],
+    ['404 do chamado', resp(404, 'Chamado não encontrado'), 'chamado-inexistente', true, 'Chamado não encontrado'],
+    ['404 sem texto', resp(404), 'chamado-inexistente', true, 'Chamado não encontrado.'],
+    ['401', resp(401, 'x'), 'sessao', false, null],
+    ['403', resp(403, 'Só o responsável atual pode atender este chamado'), 'sem-permissao', true, null],
+    ['409', resp(409, 'Chamado cancelado não pode ser atendido'), 'conflito', true, 'Chamado cancelado não pode ser atendido'],
+    ['422', resp(422, 'solucao_obrigatoria'), 'invalido', false, 'solucao_obrigatoria'],
+    ['503', resp(503, 'Abertura de chamados para a Qualidade não está disponível neste ambiente'), 'qualidade-indisponivel', false, MENSAGEM_QUALIDADE_INDISPONIVEL],
+    ['500', resp(500, 'Erro interno'), 'outro', false, 'Erro interno'],
+    ['rede', new Error('Network Error'), 'rede', false, MENSAGEM_SEM_RESPOSTA],
+    ['nada', undefined, 'rede', false, MENSAGEM_SEM_RESPOSTA],
+  ];
+  for (const [nome, erro, tipo, recarregar, mensagem] of casos) {
+    it(`${nome}: ${tipo}`, () => {
+      expect(interpretarErroDoAtendimento(erro)).toStrictEqual({ tipo, recarregar, mensagem });
+    });
+  }
 });

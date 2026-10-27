@@ -65,6 +65,13 @@ let root: Root;
 
 beforeEach(async () => {
   vi.spyOn(chamadosService, 'listarTodos').mockResolvedValue([CHAMADO]);
+  // Chamado da Qualidade faz o front sondar o atendimento (FE-3). Sem mock,
+  // a sonda iria ao VITE_API_URL do `.env` — que é a produção.
+  vi.spyOn(chamadosService, 'sondarAtendimento').mockResolvedValue({
+    status: 404,
+    dados: { detail: 'Not Found' },
+  });
+  vi.spyOn(chamadosService, 'listarAtendentesQualidade').mockResolvedValue([]);
   // O modal monta antes de a lista carregar; o cache-miss cai em `buscar`.
   vi.spyOn(chamadosService, 'buscar').mockResolvedValue(CHAMADO);
   vi.spyOn(comentariosService, 'listarPorChamado').mockResolvedValue([]);
@@ -278,5 +285,67 @@ describe('ChamadoModal — o setor de destino', () => {
     expect(selo, 'selo de setor não apareceu').toBeTruthy();
     expect(selo!.parentElement!.textContent).toContain('Em Andamento');
     expect(selo!.parentElement!.textContent).toContain('Média');
+  });
+});
+
+/**
+ * FE-3: quem atende a Qualidade usa a janela como a equipe usa — o PATCH
+ * restrito, e o card do quadro anda junto.
+ */
+describe('ChamadoModal — atendimento da Qualidade', () => {
+  const QUAL = {
+    ...CHAMADO,
+    id: 4,
+    setor_destino: 'QUALIDADE',
+    tecnico_responsavel_id: 7,
+  } as unknown as Chamado;
+
+  const USUARIO = {
+    ...SESSAO,
+    user: { id: 7, username: 'ana', role: 'Usuario' },
+  } as React.ContextType<typeof AuthContext>;
+
+  it('o usuário responsável atende pela janela, e o quadro acompanha', async () => {
+    act(() => root.unmount());
+    root = createRoot(host);
+    vi.mocked(chamadosService.listarTodos).mockResolvedValue([QUAL]);
+    vi.mocked(chamadosService.buscar).mockResolvedValue(QUAL);
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 405,
+      dados: { detail: 'Method Not Allowed' },
+    });
+    vi.mocked(chamadosService.listarAtendentesQualidade).mockResolvedValue([{ id: 7, nome: 'Ana' }]);
+    const atender = vi
+      .spyOn(chamadosService, 'atender')
+      .mockResolvedValue({ ...QUAL, status: StatusEnum.AGUARDANDO } as Chamado);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar');
+
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={USUARIO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <Sonda />
+              <ChamadoModal chamadoId={4} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+    await act(async () => {
+      await (Sonda as unknown as { carregar: () => Promise<void> }).carregar();
+    });
+
+    const botao = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Aguardando retorno'
+    );
+    expect(botao, 'ação do atendimento não apareceu').toBeTruthy();
+    await act(async () => {
+      botao!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(atender.mock.calls).toStrictEqual([[4, { status: StatusEnum.AGUARDANDO }]]);
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(quadro).toEqual([{ id: 4, status: StatusEnum.AGUARDANDO }]);
   });
 });

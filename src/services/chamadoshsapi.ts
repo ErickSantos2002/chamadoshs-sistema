@@ -10,6 +10,7 @@ import {
   AtendenteQualidade,
   ChamadoCreate,
   ChamadoCreateQualidade,
+  ChamadoAtendimento,
   ChamadoUpdate,
   ChamadosQueryParams,
   Comentario,
@@ -201,6 +202,15 @@ export const chamadosService = {
       validateStatus: () => true,
     });
     return { status: response.status, dados: response.data };
+  },
+
+  /**
+   * Atende um chamado da Qualidade pela rota restrita: só o status e, ao
+   * resolver, a solução. Quem pode usar está em `lib/atendimento`.
+   */
+  async atender(id: number, dados: ChamadoAtendimento): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/atendimento`, dados);
+    return response.data;
   },
 
   /**

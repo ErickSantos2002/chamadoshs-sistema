@@ -6,6 +6,10 @@ import ContadorMinimo from '../components/ContadorMinimo';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
+import { useQualidade } from '../hooks/useQualidade';
+import { podeAtenderPelaRota } from '../lib/atendimento';
+import { setorDoChamado } from '../lib/setor';
+import AcoesRapidas from '../components/AcoesRapidas';
 import { categoriasService, chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
@@ -39,6 +43,7 @@ import {
   PrioridadeEnum,
   ChamadoUpdate,
   Categoria,
+  SetorDestinoEnum,
 } from '../types/api';
 
 const ChamadoDetalhes: React.FC = () => {
@@ -55,6 +60,7 @@ const ChamadoDetalhes: React.FC = () => {
     carregarHistorico,
     carregarTecnicos,
     deletarChamado,
+    aplicarChamado,
   } = useChamados();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
@@ -114,6 +120,16 @@ const ChamadoDetalhes: React.FC = () => {
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
   const podeEditar = isAdmin || isTecnico;
+
+  // O atendimento da Qualidade. Quando ele vale para quem está vendo, as ações
+  // rápidas desta página dão lugar às do `AcoesRapidas`, pela rota restrita —
+  // as condições moram em `podeAtenderPelaRota`. Chamado da TI não consulta
+  // nada (`useQualidade` só sai com `ativo`).
+  const ehDaQualidade = chamado
+    ? setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE
+    : false;
+  const qualidade = useQualidade(ehDaQualidade);
+  const atendePelaRota = chamado ? podeAtenderPelaRota(chamado, user?.id, qualidade) : false;
 
   useEffect(() => {
     if (id) {
@@ -230,6 +246,23 @@ const ChamadoDetalhes: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * O chamado que o atendimento devolveu: a página, o quadro e o histórico.
+   * Sem `carregarDados`: o PATCH já devolve o chamado com o SLA, e recarregar
+   * tudo acenderia o carregamento da página inteira por uma mudança de status.
+   */
+  const aplicarAtendimento = (atualizado: Chamado) => {
+    setChamado(atualizado);
+    aplicarChamado(atualizado);
+    setStatusEditado(atualizado.status);
+    setSolucaoEditada(atualizado.solucao || '');
+    carregarHistorico(atualizado.id)
+      .then(setHistorico)
+      .catch(() => {
+        // O histórico fica o de antes; o status na tela já é o novo.
+      });
   };
 
   const handleEnviarComentario = async () => {
@@ -758,13 +791,24 @@ const ChamadoDetalhes: React.FC = () => {
         </div>
 
         {/* Botões de Ação Rápida */}
-        {podeEditar && !modoEdicao && (
+        {(podeEditar || atendePelaRota) && !modoEdicao && (
           <div className="rounded-xl border border-borda bg-superficie p-5">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-semibold text-conteudo">
                 Ações Rápidas:
               </span>
-              {getBotoesAcao()}
+              {/* Um caminho ou outro, nunca os dois. O da Qualidade não
+                  aparece em cancelado nem arquivado; o da equipe segue como
+                  sempre foi (D-12). */}
+              {atendePelaRota ? (
+                <AcoesRapidas
+                  chamado={chamado}
+                  aoMudar={aplicarAtendimento}
+                  aoPrecisarRecarregar={() => carregarDados(true)}
+                />
+              ) : (
+                getBotoesAcao()
+              )}
             </div>
           </div>
         )}
@@ -981,9 +1025,14 @@ const ChamadoDetalhes: React.FC = () => {
                       {chamado.tecnico_responsavel_id ? (
                         <>
                           <p className="text-sm font-medium text-conteudo">
+                            {/* `tecnicos` só carrega para a equipe; quem
+                                atende a Qualidade sem ser dela acharia o
+                                próprio nome em `usuarios`. */}
                             {tecnicos.find(
                               (t) => t.id === chamado.tecnico_responsavel_id,
-                            )?.nome || 'Não encontrado'}
+                            )?.nome ||
+                              usuarios[chamado.tecnico_responsavel_id]?.nome ||
+                              'Não encontrado'}
                           </p>
 
                           {usuarios[chamado.tecnico_responsavel_id] && (

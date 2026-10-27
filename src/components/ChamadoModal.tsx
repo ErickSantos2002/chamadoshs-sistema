@@ -210,6 +210,19 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   };
 
   /**
+   * O atendimento da Qualidade foi recusado por algo que a tela não sabia —
+   * permissão, conflito, chamado que sumiu. Relê da API, sem passar pelo
+   * cache do contexto, que é justamente o que pode estar velho.
+   */
+  const recarregar = () => {
+    if (!chamado) return;
+    chamadosService
+      .buscar(chamado.id)
+      .then(registrarMudanca)
+      .catch(() => setErro('Erro ao carregar o chamado.'));
+  };
+
+  /**
    * Quem pode aparecer no seletor de responsável.
    *
    * `podeSerResponsavel` é a mesma régua do formulário de edição: equipe, e
@@ -366,7 +379,11 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 quase sempre quer fazer algo com ele, não conferir a data de
                 abertura. O componente some sozinho para quem não pode agir e
                 para chamado cancelado ou arquivado. */}
-            <AcoesRapidas chamado={chamado} aoMudar={registrarMudanca} />
+            <AcoesRapidas
+              chamado={chamado}
+              aoMudar={registrarMudanca}
+              aoPrecisarRecarregar={recarregar}
+            />
 
             <dl className="space-y-3 border-t border-borda pt-4 text-sm">
               <Campo rotulo="Solicitante">
