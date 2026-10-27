@@ -307,6 +307,56 @@ describe('ChamadoModal — atendimento da Qualidade', () => {
     user: { id: 7, username: 'ana', role: 'Usuario' },
   } as React.ContextType<typeof AuthContext>;
 
+  /**
+   * Recusa por algo que a janela não sabia (aqui, 409 de arquivado): ela relê
+   * o chamado pela API, sem o cache do contexto, e as ações somem.
+   */
+  it('recusa com conflito: a janela relê o chamado e esconde as ações', async () => {
+    act(() => root.unmount());
+    root = createRoot(host);
+    vi.mocked(chamadosService.listarTodos).mockResolvedValue([]);
+    vi.mocked(chamadosService.buscar).mockResolvedValue(QUAL);
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 405,
+      dados: { detail: 'Method Not Allowed' },
+    });
+    vi.mocked(chamadosService.listarAtendentesQualidade).mockResolvedValue([{ id: 7, nome: 'Ana' }]);
+    vi.spyOn(chamadosService, 'atender').mockRejectedValue({
+      response: { status: 409, data: { detail: 'Chamado arquivado não pode ser atendido' } },
+    });
+    vi.spyOn(toast, 'error').mockImplementation(() => '');
+
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={USUARIO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <ChamadoModal chamadoId={4} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+    // Outra pessoa arquivou depois que a janela abriu.
+    vi.mocked(chamadosService.buscar).mockResolvedValue({ ...QUAL, arquivado: true } as Chamado);
+    const leituras = vi.mocked(chamadosService.buscar).mock.calls.length;
+    const botao = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Aguardando retorno'
+    );
+    expect(botao, 'ação do atendimento não apareceu').toBeTruthy();
+    await act(async () => {
+      botao!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(vi.mocked(chamadosService.buscar).mock.calls.length).toBe(leituras + 1);
+    expect(document.body.textContent).toContain('Arquivado');
+    expect(
+      Array.from(document.querySelectorAll('button')).some(
+        (b) => b.textContent?.trim() === 'Aguardando retorno'
+      )
+    ).toBe(false);
+  });
+
   it('o usuário responsável atende pela janela, e o quadro acompanha', async () => {
     act(() => root.unmount());
     root = createRoot(host);
