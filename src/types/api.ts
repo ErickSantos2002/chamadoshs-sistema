@@ -196,6 +196,28 @@ export interface ChamadoCreate {
   tecnico_responsavel_id?: number;
 }
 
+/**
+ * Chamado novo para a Qualidade — `ChamadoCreateQualidade` da API.
+ *
+ * Sem `titulo` e sem `categoria_id`, e não por omissão: a API recusa com 422
+ * a PRESENÇA dessas chaves, até com `null`. O título é gerado da descrição.
+ * O corpo sai de `montarCorpoQualidade`, que nunca as cria.
+ */
+export interface ChamadoCreateQualidade {
+  setor_destino: SetorDestinoEnum.QUALIDADE;
+  descricao: string;
+  prioridade: PrioridadeEnum;
+  solicitante_id: number;
+  /** Obrigatório, e um dos que `GET /chamados/atendentes-qualidade` devolve. */
+  tecnico_responsavel_id: number;
+}
+
+/** Quem pode atender um chamado da Qualidade: só o que o seletor precisa. */
+export interface AtendenteQualidade {
+  id: number;
+  nome: string;
+}
+
 export interface ChamadoUpdate {
   titulo?: string;
   descricao?: string;

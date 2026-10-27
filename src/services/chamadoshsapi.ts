@@ -6,7 +6,9 @@ import {
   UsuarioLogado,
   AlterarSenhaRequest,
   Chamado,
+  AtendenteQualidade,
   ChamadoCreate,
+  ChamadoCreateQualidade,
   ChamadoUpdate,
   ChamadosQueryParams,
   Comentario,
@@ -156,10 +158,22 @@ export const chamadosService = {
   },
 
   /**
-   * Cria um novo chamado
+   * Cria um novo chamado. Mesmo POST para os dois setores: a API escolhe a
+   * validação pelo `setor_destino` do corpo — ausente é TI.
    */
-  async criar(dados: ChamadoCreate): Promise<Chamado> {
+  async criar(dados: ChamadoCreate | ChamadoCreateQualidade): Promise<Chamado> {
     const response = await api.post<Chamado>('/chamados/', dados);
+    return response.data;
+  },
+
+  /**
+   * Quem pode ser responsável de um chamado da Qualidade.
+   *
+   * É também a pergunta "a Qualidade existe aqui?": o que esta consulta
+   * responde decide se o formulário oferece o setor — ver `lib/qualidade`.
+   */
+  async listarAtendentesQualidade(): Promise<AtendenteQualidade[]> {
+    const response = await api.get<AtendenteQualidade[]>('/chamados/atendentes-qualidade');
     return response.data;
   },
 

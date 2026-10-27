@@ -15,6 +15,7 @@ import {
   Categoria,
   Usuario,
   ChamadoCreate,
+  ChamadoCreateQualidade,
   ChamadoUpdate,
   ComentarioCreate,
 } from '../types/api';
@@ -31,7 +32,7 @@ type ChamadosContextType = {
   // Funções de chamados
   carregarChamados: () => Promise<void>;
   buscarChamado: (id: number) => Promise<Chamado | null>;
-  criarChamado: (dados: ChamadoCreate) => Promise<Chamado>;
+  criarChamado: (dados: ChamadoCreate | ChamadoCreateQualidade) => Promise<Chamado>;
   atualizarChamado: (id: number, dados: ChamadoUpdate) => Promise<Chamado>;
   deletarChamado: (id: number) => Promise<void>;
   /** Funde na lista um chamado que outro caminho já salvou. Não faz requisição. */
@@ -141,7 +142,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
   );
 
   // Criar novo chamado
-  const criarChamado = useCallback(async (dados: ChamadoCreate): Promise<Chamado> => {
+  const criarChamado = useCallback(async (dados: ChamadoCreate | ChamadoCreateQualidade): Promise<Chamado> => {
     try {
       setLoading(true);
       setError(null);
