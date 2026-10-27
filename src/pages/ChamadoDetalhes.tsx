@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
@@ -8,10 +8,19 @@ import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { useQualidade } from '../hooks/useQualidade';
 import {
+  interpretarErroDaReatribuicao,
   opcoesDeResponsavelDaQualidade,
   podeAtenderPelaRota,
   podeReatribuirNaQualidade,
 } from '../lib/atendimento';
+import {
+  CampoEditavel,
+  FotoDaEdicao,
+  ROTULOS_DOS_CAMPOS,
+  camposEmConflito,
+  diferencaDaEdicao,
+  fotografar,
+} from '../lib/edicaoQualidade';
 import { setorDoChamado } from '../lib/setor';
 import AcoesRapidas from '../components/AcoesRapidas';
 import { categoriasService, chamadosService } from '../services/chamadoshsapi';
@@ -65,6 +74,8 @@ const ChamadoDetalhes: React.FC = () => {
     carregarTecnicos,
     deletarChamado,
     aplicarChamado,
+    verificarQualidade,
+    marcarQualidadeIndisponivel,
   } = useChamados();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
@@ -94,6 +105,13 @@ const ChamadoDetalhes: React.FC = () => {
   );
   const [tecnicoEditado, setTecnicoEditado] = useState<number | undefined>();
   const [solucaoEditada, setSolucaoEditada] = useState('');
+
+  // Edição da Qualidade (ver `lib/edicaoQualidade`). A referência é o chamado
+  // relido ao entrar na edição, e só muda por aqui — uma recarga do contexto
+  // não a toca, senão o "mudou desde que você abriu" deixaria de ver mudança.
+  const referenciaDaEdicao = useRef<FotoDaEdicao | null>(null);
+  const [conflitoNaEdicao, setConflitoNaEdicao] = useState<CampoEditavel[] | null>(null);
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // Estados para modal de resolução
   const [mostrarModalResolucao, setMostrarModalResolucao] = useState(false);
@@ -218,8 +236,123 @@ const ChamadoDetalhes: React.FC = () => {
     }
   };
 
+  /** Os campos da edição a partir de um chamado — todos, ou só os de `campos`. */
+  const preencherEdicao = (fonte: Chamado, campos?: CampoEditavel[]) => {
+    const vale = (c: CampoEditavel) => !campos || campos.includes(c);
+    if (vale('categoria_id')) setCategoriaEditada(fonte.categoria_id ?? undefined);
+    if (vale('status')) setStatusEditado(fonte.status);
+    if (vale('prioridade')) setPrioridadeEditada(fonte.prioridade);
+    if (vale('tecnico_responsavel_id')) setTecnicoEditado(fonte.tecnico_responsavel_id ?? undefined);
+    if (vale('solucao')) setSolucaoEditada(fonte.solucao || '');
+  };
+
+  /**
+   * Entrar na edição. Na TI, como sempre. Na Qualidade, relê o chamado antes:
+   * a referência precisa ser o que está no servidor agora, e não o que a
+   * página carregou há meia hora.
+   */
+  const iniciarEdicao = async () => {
+    if (!chamado) return;
+    if (!ehDaQualidade) {
+      setModoEdicao(true);
+      return;
+    }
+
+    try {
+      setSalvandoEdicao(true);
+      const atual = await chamadosService.buscar(chamado.id);
+      referenciaDaEdicao.current = fotografar(atual);
+      setChamado(atual);
+      aplicarChamado(atual);
+      preencherEdicao(atual);
+      setConflitoNaEdicao(null);
+      setModoEdicao(true);
+    } catch {
+      toast.error('Não foi possível abrir a edição. Tente de novo.');
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  };
+
+  const cancelarEdicao = () => {
+    referenciaDaEdicao.current = null;
+    setConflitoNaEdicao(null);
+    setModoEdicao(false);
+  };
+
+  /**
+   * Salvar na Qualidade: só o que mudou, e só se nada do que a pessoa editou
+   * mudou no servidor desde a referência. Num conflito nada é salvo, o que ela
+   * digitou fica nos campos, e o resto passa a mostrar o valor de agora.
+   */
+  const salvarEdicaoDaQualidade = async (referencia: FotoDaEdicao) => {
+    if (!chamado) return;
+
+    const diferenca = diferencaDaEdicao(referencia, {
+      categoria_id: categoriaEditada ?? null,
+      status: statusEditado,
+      prioridade: prioridadeEditada,
+      tecnico_responsavel_id: tecnicoEditado ?? null,
+      solucao: solucaoEditada,
+    });
+
+    if (Object.keys(diferenca).length === 0) {
+      cancelarEdicao();
+      return;
+    }
+
+    setSalvandoEdicao(true);
+    try {
+      let servidor: Chamado;
+      try {
+        servidor = await chamadosService.buscar(chamado.id);
+      } catch {
+        toast.error(
+          'Não foi possível conferir o chamado antes de salvar. O que você editou foi mantido.'
+        );
+        return;
+      }
+
+      const conflitos = camposEmConflito(referencia, fotografar(servidor), diferenca);
+      if (conflitos.length > 0) {
+        referenciaDaEdicao.current = fotografar(servidor);
+        setChamado(servidor);
+        aplicarChamado(servidor);
+        const naoEditados = (Object.keys(ROTULOS_DOS_CAMPOS) as CampoEditavel[]).filter(
+          (c) => !(c in diferenca)
+        );
+        preencherEdicao(servidor, naoEditados);
+        setConflitoNaEdicao(conflitos);
+        return;
+      }
+
+      try {
+        const atualizado = await chamadosService.atualizar(chamado.id, diferenca);
+        aplicarChamado(atualizado);
+      } catch (err) {
+        // A edição fica aberta, com o que foi digitado: o erro aparece em
+        // aviso, e não no lugar da página inteira.
+        const { mensagem, recarregarAtendentes, indisponivel } = interpretarErroDaReatribuicao(err);
+        if (mensagem) toast.error(mensagem);
+        if (indisponivel) marcarQualidadeIndisponivel();
+        if (recarregarAtendentes) void verificarQualidade();
+        return;
+      }
+
+      cancelarEdicao();
+      await carregarDados(true);
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  };
+
   const handleSalvarEdicao = async () => {
     if (!chamado || !user) return;
+
+    if (ehDaQualidade && referenciaDaEdicao.current) {
+      await salvarEdicaoDaQualidade(referenciaDaEdicao.current);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -563,6 +696,28 @@ const ChamadoDetalhes: React.FC = () => {
    * amostra; `Badge` do mapa onde é estado.
    */
 
+  /** O valor de um campo no chamado da tela, para o aviso de conflito. */
+  const valorAtualDoCampo = (campo: CampoEditavel): string => {
+    if (!chamado) return '';
+    switch (campo) {
+      case 'status':
+        return chamado.status;
+      case 'prioridade':
+        return chamado.prioridade;
+      case 'categoria_id':
+        return (
+          categorias.find((c) => c.id === chamado.categoria_id)?.nome ?? 'Sem categoria'
+        );
+      case 'tecnico_responsavel_id':
+        return (
+          (chamado.tecnico_responsavel_id && usuarios[chamado.tecnico_responsavel_id]?.nome) ||
+          'Sem atribuição'
+        );
+      case 'solucao':
+        return chamado.solucao ? 'outro texto' : 'vazia';
+    }
+  };
+
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -766,7 +921,8 @@ const ChamadoDetalhes: React.FC = () => {
                       {/* Botão Editar */}
                       <Button
                         variante="secundario"
-                        onClick={() => setModoEdicao(true)}
+                        onClick={iniciarEdicao}
+                        carregando={salvandoEdicao}
                       >
                         <IconeEditar className="h-4 w-4" />
                         Editar Detalhes
@@ -777,7 +933,8 @@ const ChamadoDetalhes: React.FC = () => {
                       {/* Botão Cancelar Edição */}
                       <Button
                         variante="secundario"
-                        onClick={() => setModoEdicao(false)}
+                        onClick={cancelarEdicao}
+                        disabled={salvandoEdicao}
                       >
                         <IconeFechar className="h-4 w-4" />
                         Cancelar
@@ -785,7 +942,8 @@ const ChamadoDetalhes: React.FC = () => {
 
                       {/* Botão Salvar */}
                       <Button variante="sucesso"
-                        onClick={handleSalvarEdicao}>
+                        onClick={handleSalvarEdicao}
+                        carregando={salvandoEdicao}>
                         <IconeSalvar className="h-4 w-4" />
                         Salvar
                       </Button>
@@ -796,6 +954,18 @@ const ChamadoDetalhes: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Conflito na edição da Qualidade: nada foi salvo. Fica dentro da
+            página, e não no lugar dela — o que foi digitado está logo abaixo. */}
+        {modoEdicao && conflitoNaEdicao && (
+          <Aviso variante="alerta" titulo="Este chamado mudou enquanto você editava">
+            Mudou desde que você abriu a edição:{' '}
+            {conflitoNaEdicao
+              .map((campo) => `${ROTULOS_DOS_CAMPOS[campo]} (agora: ${valorAtualDoCampo(campo)})`)
+              .join(', ')}
+            . Nada foi salvo. O que você editou continua nos campos: confira e salve de novo.
+          </Aviso>
+        )}
 
         {/* Botões de Ação Rápida */}
         {(podeEditar || atendePelaRota) && !modoEdicao && (

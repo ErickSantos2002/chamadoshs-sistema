@@ -296,3 +296,185 @@ describe('Qualidade — o responsável na edição', () => {
     expect(opcoes).toEqual(['Sem atribuição', 'rickelme']);
   });
 });
+
+/**
+ * D-9: a edição da Qualidade relê o chamado ao entrar e antes de salvar, e
+ * manda só o que mudou. A da TI segue como estava (`ChamadoDetalhes.edicao`).
+ */
+describe('Qualidade — edição segura', () => {
+  const nomeDe = (el: Element) =>
+    (el.getAttribute('aria-labelledby') ?? '')
+      .split(/\s+/)
+      .map((i) => document.getElementById(i)?.textContent?.trim() ?? '')
+      .join(' ');
+
+  const seletor = (rotulo: string) =>
+    Array.from(host.querySelectorAll('[role="combobox"]')).find((b) =>
+      nomeDe(b).startsWith(rotulo)
+    ) as HTMLElement | undefined;
+
+  const escolher = async (rotulo: string, opcao: string) => {
+    const s = seletor(rotulo);
+    expect(s, `seletor "${rotulo}" não apareceu`).toBeTruthy();
+    await act(async () => {
+      s!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const alvo = Array.from(document.querySelectorAll('[role="option"]')).find(
+      (o) => o.textContent?.trim() === opcao
+    );
+    expect(alvo, `opção "${opcao}" não apareceu`).toBeTruthy();
+    await act(async () => {
+      alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  };
+
+  let atualizar: MockInstance<typeof chamadosService.atualizar>;
+
+  beforeEach(() => {
+    atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(async (_id, d) => ({ ...noServidor, ...d }) as Chamado);
+  });
+
+  /** Outra pessoa salvou entre a abertura e o salvamento. */
+  const mudarNoServidor = (extra: Partial<Chamado>) => {
+    noServidor = { ...noServidor, ...extra } as Chamado;
+  };
+
+  it('entrar relê o chamado, e os campos partem do que está no servidor agora', async () => {
+    await montar(ADMIN);
+    mudarNoServidor({ prioridade: 'Alta' as Chamado['prioridade'] });
+    const leituras = vi.mocked(chamadosService.buscar).mock.calls.length;
+    await clicar('Editar Detalhes');
+    expect(vi.mocked(chamadosService.buscar).mock.calls.length).toBe(leituras + 1);
+    expect(seletor('Prioridade')?.textContent).toContain('Alta');
+  });
+
+  /**
+   * A referência é a releitura, e não o que a página tinha: se o servidor já
+   * mudou antes de a pessoa abrir a edição, isso não é conflito dela.
+   */
+  it('servidor mudou antes de abrir a edição: sem conflito falso, e só o campo editado', async () => {
+    await montar(ADMIN);
+    mudarNoServidor({ prioridade: 'Alta' as Chamado['prioridade'] });
+    await clicar('Editar Detalhes');
+    await escolher('Status', 'Aguardando');
+    await clicar('Salvar');
+    expect(host.textContent).not.toContain('Este chamado mudou enquanto você editava');
+    expect(atualizar.mock.calls).toStrictEqual([[1, { status: StatusEnum.AGUARDANDO }]]);
+  });
+
+  it('salvar manda só o que mudou', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    await clicar('Salvar');
+    expect(atualizar.mock.calls).toStrictEqual([[1, { prioridade: 'Alta' }]]);
+    expect(textos()).toContain('Editar Detalhes');
+  });
+
+  it('sem mudança: nenhuma requisição de escrita, e a edição fecha', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await clicar('Salvar');
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(textos()).toContain('Editar Detalhes');
+  });
+
+  it('relê antes do PUT', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    const leituras = vi.mocked(chamadosService.buscar).mock.calls.length;
+    await clicar('Salvar');
+    expect(vi.mocked(chamadosService.buscar).mock.calls.length).toBe(leituras + 1);
+  });
+
+  it('mudança remota num campo que a pessoa não editou: salva só o dela', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    mudarNoServidor({ status: StatusEnum.AGUARDANDO });
+    await clicar('Salvar');
+    expect(atualizar.mock.calls).toStrictEqual([[1, { prioridade: 'Alta' }]]);
+    expect(host.textContent).not.toContain('Este chamado mudou enquanto você editava');
+  });
+
+  it('conflito: não salva, avisa, mantém o que foi digitado e atualiza o resto', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Status', 'Resolvido');
+    await escolher('Prioridade', 'Baixa');
+    // Outra pessoa mexeu nos dois campos que esta pessoa também editou.
+    mudarNoServidor({ status: StatusEnum.AGUARDANDO, prioridade: 'Alta' as Chamado['prioridade'] });
+    await clicar('Salvar');
+
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(host.textContent).toContain('Este chamado mudou enquanto você editava');
+    expect(host.textContent).toContain('Status (agora: Aguardando)');
+    expect(host.textContent).toContain('Prioridade (agora: Alta)');
+    // O que a pessoa escolheu continua nos campos, e a edição continua aberta.
+    expect(seletor('Status')?.textContent).toContain('Resolvido');
+    expect(seletor('Prioridade')?.textContent).toContain('Baixa');
+    expect(textos()).toContain('Salvar');
+  });
+
+  it('depois do conflito, salvar de novo leva a escolha contra o valor de agora', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Baixa');
+    mudarNoServidor({ prioridade: 'Alta' as Chamado['prioridade'] });
+    await clicar('Salvar');
+    expect(atualizar).not.toHaveBeenCalled();
+
+    await clicar('Salvar');
+    expect(atualizar.mock.calls).toStrictEqual([[1, { prioridade: 'Baixa' }]]);
+  });
+
+  it('o campo não editado passa a mostrar o valor de agora depois do conflito', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Baixa');
+    mudarNoServidor({ prioridade: 'Alta' as Chamado['prioridade'], status: StatusEnum.AGUARDANDO });
+    await clicar('Salvar');
+    expect(seletor('Status')?.textContent).toContain('Aguardando');
+  });
+
+  it('a releitura antes do PUT falha: não salva, avisa e mantém a edição', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    vi.mocked(chamadosService.buscar).mockRejectedValue(new Error('rede'));
+    await clicar('Salvar');
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+      'Não foi possível conferir o chamado antes de salvar. O que você editou foi mantido.'
+    );
+    expect(seletor('Prioridade')?.textContent).toContain('Alta');
+  });
+
+  it('erro no PUT: avisa sem trocar a página, e a edição fica aberta', async () => {
+    atualizar.mockRejectedValue({
+      response: { status: 400, data: { detail: 'Atendente não é elegível para a Qualidade' } },
+    });
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    await clicar('Salvar');
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith('Atendente não é elegível para a Qualidade');
+    expect(host.textContent).toContain('Desvio na calibração');
+    expect(textos()).toContain('Salvar');
+  });
+
+  it('cancelar e reabrir parte de uma nova releitura, sem aviso antigo', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Baixa');
+    mudarNoServidor({ prioridade: 'Alta' as Chamado['prioridade'] });
+    await clicar('Salvar');
+    await clicar('Cancelar');
+    await clicar('Editar Detalhes');
+    expect(host.textContent).not.toContain('Este chamado mudou enquanto você editava');
+    expect(seletor('Prioridade')?.textContent).toContain('Alta');
+  });
+});
