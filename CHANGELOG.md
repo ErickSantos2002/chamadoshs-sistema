@@ -16,8 +16,9 @@ informação se perde entre quem escreve o código e quem sobe.
 ## [Não publicado]
 
 Por Rickelme David. Branches `feat/setor-destino-fe-1` (FE-1, exibição e
-filtro), `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade) e
-`feat/setor-destino-fe-3` (FE-3, atendimento da Qualidade), da
+filtro), `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade),
+`feat/setor-destino-fe-3` (FE-3, atendimento da Qualidade) e
+`feat/setor-destino-fe-4` (FE-4, controle de concorrência na Qualidade), da
 funcionalidade Setor de Destino. Sobe como **1.8.0** quando for publicada; a
 versão não subiu aqui porque o `package.json` acende o aviso de novidades, e o
 aviso só faz sentido quando a Qualidade estiver ligada na API.
@@ -44,6 +45,15 @@ atendimento da Qualidade, sem token e sem escrever nada; contra a API de hoje,
 a API-1 e a API-2 a resposta é "não", e nada muda na tela. Para quem não é da
 equipe, o quadro passa a fazer uma segunda listagem (a dos atribuídos), que
 contra a API de hoje volta vazia.
+
+O FE-4 **tem ordem: a API-4 (`chamadoshs-api`, `feat/setor-destino-api-4c`,
+`dcb57e1`) sobe antes**. É ela que manda a `versao` do chamado e aceita a
+`versao_esperada`. Na TI nada depende disso: as escritas da TI saem sem
+versão contra qualquer API. Na Qualidade, contra a API-3 — que não manda a
+versão —, o FE-4 não escreve: mostra "O servidor não informou a versão deste
+chamado…" e guarda o que foi digitado. É a falha segura, sem cair para o `PUT`
+nem para a TI; e é por isso que a ordem importa. **`SETOR_QUALIDADE_ID` segue
+desligado** até a homologação integrada da API-4 com o FE-4.
 
 ### Added
 
@@ -115,6 +125,24 @@ contra a API de hoje volta vazia.
   conferência de conflito antes de salvar segue funcionando. Ao cancelar ou
   salvar, a página volta a carregar como sempre. Na TI o comportamento anterior
   foi mantido: ali o comentário ainda repõe os campos.
+- **Duas pessoas no mesmo chamado da Qualidade não se sobrescrevem mais
+  (FE-4).** Toda escrita da Qualidade leva a versão do chamado que a pessoa
+  está vendo: a edição da página, o atendimento pelo responsável, a troca de
+  responsável na janela, e as ações da equipe — status, resolver, cancelar,
+  arquivar, desarquivar. Se outra pessoa gravou antes, a API recusa, a tela
+  avisa "Este chamado foi alterado por outra pessoa. Os dados foram
+  atualizados: confira antes de tentar de novo.", relê o chamado e refaz os
+  botões pelo estado novo. Nada é repetido sozinho: tentar de novo é um clique
+  novo. O que foi digitado fica — os campos da edição, a solução de uma
+  resolução recusada (volta ao reabrir), o motivo do cancelamento. Na edição,
+  a versão é a da releitura feita logo antes de salvar, e a conferência de
+  campos do FE-3 continua valendo. Fecha a janela curta que o FE-3 deixava
+  aberta e trata o M-1, pendentes de homologação integrada.
+- **Ações administrativas na Qualidade sem versão não saem.** Se o chamado
+  chegou sem versão — API desatualizada —, nada é enviado e a pessoa é avisada.
+  A versão não é inventada nem tirada de outro chamado.
+- **Uma resposta atrasada não desfaz mais uma mais nova** no quadro: entre
+  duas leituras do mesmo chamado, fica a de versão maior.
 
 ### Pendências conhecidas
 
@@ -136,11 +164,28 @@ contra a API de hoje volta vazia.
 - **Edição simultânea: resta uma janela curta.** Entre a releitura e o
   salvamento outra escrita ainda passa sem ser vista. Fechar de vez pede
   controle de versão na API (409 quando o chamado mudou), fora desta etapa.
+  *FE-4: tratado com a versão da API-4, pendente de homologação integrada.*
 - **Ações rápidas da equipe na Qualidade sem releitura (M-1).** Técnico e
   Administrador que não são o responsável mudam o status pelo `PUT` de sempre,
   sem reler o chamado: numa tela aberta desde antes, isso pode desfazer o
   status gravado pelo atendente. Decisão pendente antes de ligar a Qualidade;
-  a recomendação é o controle de versão na API (API-4).
+  a recomendação é o controle de versão na API (API-4). *FE-4: as ações levam
+  a versão; o M-1 e o B-1 só contam como resolvidos depois da homologação
+  integrada com a API-4.*
+- **Cancelar com motivo, na Qualidade, não é atômico (FE-4).** São duas
+  escritas: o cancelamento e depois o motivo, com a versão que o cancelamento
+  devolveu. Se a segunda falhar — ou o cancelamento não devolver versão —, o
+  chamado fica cancelado sem motivo, aparece "O chamado foi cancelado, mas o
+  motivo não foi registrado…", o motivo fica no campo e confirmar de novo só
+  registra o motivo. Juntar as duas numa escrita pede mudança na API, fora
+  desta etapa.
+- **Depois de um conflito, a página relê o chamado, mas a lista do quadro só
+  se atualiza na próxima carga dela (FE-4).**
+- **FE-4 validado só por testes automatizados**, contra o contrato da API-4c
+  (`dcb57e1`): 409 com `codigo="versao_desatualizada"` e `versao_atual`, 428
+  sem versão, e a API-3 rejeitando `versao_esperada` no atendimento. Falta a
+  homologação integrada, com as duas pontas no ar e duas sessões no mesmo
+  chamado.
 - **Correção do M-2 sem teste manual**, pelo mesmo motivo do resto do FE-3.
 - **Ações da equipe em cancelado e arquivado na página do chamado** continuam
   como estavam (D-12): o atendimento novo não aparece nesses chamados, mas os
