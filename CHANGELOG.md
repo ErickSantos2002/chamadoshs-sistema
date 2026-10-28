@@ -106,6 +106,15 @@ contra a API de hoje volta vazia.
   prioridade. Agora vai só o que mudou, e o chamado é relido antes de salvar:
   se alguém mexeu num campo que a pessoa também editou, nada é salvo, o que ela
   digitou fica e um aviso diz o que mudou. Na TI a edição segue como era.
+- **Comentar durante a edição de um chamado da Qualidade não apaga mais o que
+  foi editado (FE-3, M-2, `a1bb2a8`).** Antes, enviar um comentário recarregava
+  a página e repunha todos os campos com o que estava no servidor: o que a
+  pessoa tinha escolhido ou digitado e ainda não salvara se perdia. Agora os
+  campos editados ficam como estão, e comentários e histórico continuam sendo
+  atualizados. A referência de quando a edição abriu não é trocada, então a
+  conferência de conflito antes de salvar segue funcionando. Ao cancelar ou
+  salvar, a página volta a carregar como sempre. Na TI o comportamento anterior
+  foi mantido: ali o comentário ainda repõe os campos.
 
 ### Pendências conhecidas
 
@@ -127,6 +136,12 @@ contra a API de hoje volta vazia.
 - **Edição simultânea: resta uma janela curta.** Entre a releitura e o
   salvamento outra escrita ainda passa sem ser vista. Fechar de vez pede
   controle de versão na API (409 quando o chamado mudou), fora desta etapa.
+- **Ações rápidas da equipe na Qualidade sem releitura (M-1).** Técnico e
+  Administrador que não são o responsável mudam o status pelo `PUT` de sempre,
+  sem reler o chamado: numa tela aberta desde antes, isso pode desfazer o
+  status gravado pelo atendente. Decisão pendente antes de ligar a Qualidade;
+  a recomendação é o controle de versão na API (API-4).
+- **Correção do M-2 sem teste manual**, pelo mesmo motivo do resto do FE-3.
 - **Ações da equipe em cancelado e arquivado na página do chamado** continuam
   como estavam (D-12): o atendimento novo não aparece nesses chamados, mas os
   botões de sempre da equipe sim.
