@@ -145,6 +145,44 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('TI — comentar durante a edição', () => {
+  /**
+   * Caracterização, não promessa: na TI a recarga do comentário continua
+   * repondo os campos com o servidor, e o PUT continua completo. A correção
+   * do M-2 é só da Qualidade, que tem a referência da edição segura.
+   */
+  it('a recarga repõe os campos, e o PUT segue completo', async () => {
+    const atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(async (_id, dados) => ({ ...noServidor, ...dados }) as Chamado);
+    vi.spyOn(comentariosService, 'criar').mockImplementation(
+      async (d) => ({ id: 50, ...d }) as never
+    );
+    await montar();
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+
+    const campo = host.querySelector<HTMLTextAreaElement>('textarea[aria-label="Novo comentário"]');
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(campo, 'Comentário no meio da edição.');
+      campo!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await clicar(botao('Enviar Comentário'), 'Enviar Comentário');
+    await clicar(botao('Salvar'), 'Salvar');
+
+    expect(atualizar.mock.calls[0]).toStrictEqual([
+      1,
+      {
+        categoria_id: null,
+        status: StatusEnum.EM_ANDAMENTO,
+        prioridade: 'Média',
+        tecnico_responsavel_id: 1,
+      },
+    ]);
+  });
+});
+
 describe('TI — o PUT da edição', () => {
   it('manda os quatro campos, mesmo os que não mudaram, e relê da API', async () => {
     const atualizar = vi

@@ -210,12 +210,20 @@ const ChamadoDetalhes: React.FC = () => {
         setCategoriaNome('Não especificada');
       }
 
-      // Inicializar estados de edição
-      setCategoriaEditada(chamadoData.categoria_id);
-      setStatusEditado(chamadoData.status);
-      setPrioridadeEditada(chamadoData.prioridade);
-      setTecnicoEditado(chamadoData.tecnico_responsavel_id);
-      setSolucaoEditada(chamadoData.solucao || '');
+      // Inicializar estados de edição — menos com a edição da Qualidade
+      // aberta neste chamado. Comentar no meio dela recarrega a página, e
+      // repor os campos aqui apagaria o que a pessoa escolheu e poria a
+      // mudança de outra pessoa no formulário como se fosse dela. A edição
+      // segue contra a mesma referência, e o salvamento confere o conflito.
+      const edicaoDaQualidadeAberta =
+        referenciaDaEdicao.current !== null && chamado?.id === chamadoData.id;
+      if (!edicaoDaQualidadeAberta) {
+        setCategoriaEditada(chamadoData.categoria_id);
+        setStatusEditado(chamadoData.status);
+        setPrioridadeEditada(chamadoData.prioridade);
+        setTecnicoEditado(chamadoData.tecnico_responsavel_id);
+        setSolucaoEditada(chamadoData.solucao || '');
+      }
 
       // Carregar técnicos e categorias se for admin ou técnico
       if (podeEditar) {

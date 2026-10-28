@@ -478,3 +478,183 @@ describe('Qualidade — edição segura', () => {
     expect(seletor('Prioridade')?.textContent).toContain('Alta');
   });
 });
+
+/**
+ * M-2: comentar durante a edição recarrega a página (`carregarDados`), e a
+ * recarga repunha os valores do servidor em todos os campos — o que a pessoa
+ * tinha escolhido sumia, e uma mudança de outra pessoa entrava no formulário
+ * como se fosse dela. Agora a recarga atualiza o chamado, os comentários e o
+ * histórico, e a edição aberta fica como estava, contra a mesma referência.
+ */
+describe('Qualidade — comentar durante a edição', () => {
+  const nomeDe = (el: Element) =>
+    (el.getAttribute('aria-labelledby') ?? '')
+      .split(/\s+/)
+      .map((i) => document.getElementById(i)?.textContent?.trim() ?? '')
+      .join(' ');
+
+  const seletor = (rotulo: string) =>
+    Array.from(host.querySelectorAll('[role="combobox"]')).find((b) =>
+      nomeDe(b).startsWith(rotulo)
+    ) as HTMLElement | undefined;
+
+  const escolher = async (rotulo: string, opcao: string) => {
+    const s = seletor(rotulo);
+    expect(s, `seletor "${rotulo}" não apareceu`).toBeTruthy();
+    await act(async () => {
+      s!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const alvo = Array.from(document.querySelectorAll('[role="option"]')).find(
+      (o) => o.textContent?.trim() === opcao
+    );
+    expect(alvo, `opção "${opcao}" não apareceu`).toBeTruthy();
+    await act(async () => {
+      alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  };
+
+  const digitar = async (rotulo: string, valor: string) => {
+    const campo = host.querySelector<HTMLTextAreaElement>(`textarea[aria-label="${rotulo}"]`);
+    expect(campo, `campo "${rotulo}" não apareceu`).toBeTruthy();
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(campo, valor);
+      campo!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  };
+
+  const comentar = async (texto: string) => {
+    await digitar('Novo comentário', texto);
+    await clicar('Enviar Comentário');
+  };
+
+  const solucaoNaTela = () =>
+    host.querySelector<HTMLTextAreaElement>('textarea[aria-label="Solução"]')?.value;
+
+  const mudarNoServidor = (extra: Partial<Chamado>) => {
+    noServidor = { ...noServidor, ...extra } as Chamado;
+  };
+
+  let atualizar: MockInstance<typeof chamadosService.atualizar>;
+  let criarComentario: MockInstance<typeof comentariosService.criar>;
+
+  beforeEach(() => {
+    atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(async (_id, d) => ({ ...noServidor, ...d }) as Chamado);
+    criarComentario = vi
+      .spyOn(comentariosService, 'criar')
+      .mockImplementation(async (d) => ({ id: 50, ...d }) as never);
+  });
+
+  it('o que foi escolhido e digitado fica; histórico e comentários são relidos', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    await digitar('Solução', 'Recalibrei o paquímetro com o padrão.');
+
+    vi.mocked(historicoService.listarPorChamado).mockResolvedValue([
+      {
+        id: 9,
+        chamado_id: 1,
+        usuario_id: 1,
+        acao: 'Comentário adicionado',
+        created_at: '2026-09-02T10:00:00',
+      },
+    ]);
+    const historicos = vi.mocked(historicoService.listarPorChamado).mock.calls.length;
+    const comentarios = vi.mocked(comentariosService.listarPorChamado).mock.calls.length;
+    await comentar('Aguardando o padrão voltar do laboratório.');
+
+    expect(criarComentario).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(historicoService.listarPorChamado).mock.calls.length).toBe(historicos + 1);
+    expect(vi.mocked(comentariosService.listarPorChamado).mock.calls.length).toBe(comentarios + 1);
+    expect(host.textContent).toContain('Comentário adicionado');
+
+    expect(textos()).toContain('Salvar');
+    expect(seletor('Prioridade')?.textContent).toContain('Alta');
+    expect(solucaoNaTela()).toBe('Recalibrei o paquímetro com o padrão.');
+
+    await clicar('Salvar');
+    expect(atualizar.mock.calls).toStrictEqual([
+      [1, { prioridade: 'Alta', solucao: 'Recalibrei o paquímetro com o padrão.' }],
+    ]);
+  });
+
+  it('sem nada editado: comentar não abre escrita, e salvar fecha sem PUT', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await comentar('Só um registro.');
+    expect(textos()).toContain('Salvar');
+    await clicar('Salvar');
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(textos()).toContain('Editar Detalhes');
+  });
+
+  /**
+   * A mudança de outra pessoa que a recarga trouxe não entra no campo que a
+   * pessoa editou: ela continua vendo a escolha dela, e o salvamento acusa o
+   * conflito contra a referência de quando abriu a edição.
+   */
+  it('mudança remota conflitante: a escolha fica, e salvar acusa o conflito', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Baixa');
+    mudarNoServidor({ prioridade: 'Alta' as Chamado['prioridade'] });
+    await comentar('Mudei a prioridade, confere?');
+
+    expect(seletor('Prioridade')?.textContent).toContain('Baixa');
+    await clicar('Salvar');
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(host.textContent).toContain('Este chamado mudou enquanto você editava');
+    expect(host.textContent).toContain('Prioridade (agora: Alta)');
+    expect(seletor('Prioridade')?.textContent).toContain('Baixa');
+  });
+
+  /**
+   * Num campo que a pessoa não editou, a mudança remota também não entra no
+   * formulário — senão viraria "diferença" e iria no PUT como se fosse dela.
+   * Como o campo não vai, o servidor guarda o valor da outra pessoa.
+   */
+  it('mudança remota num campo não editado: não entra no formulário, e não vai no PUT', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    mudarNoServidor({ status: StatusEnum.AGUARDANDO });
+    await comentar('Registro do dia.');
+
+    expect(seletor('Status')?.textContent).toContain('Em Andamento');
+    await clicar('Salvar');
+    expect(host.textContent).not.toContain('Este chamado mudou enquanto você editava');
+    expect(atualizar.mock.calls).toStrictEqual([[1, { prioridade: 'Alta' }]]);
+  });
+
+  it('cancelar depois do comentário, e entrar de novo: parte do servidor de agora', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Baixa');
+    await comentar('Antes de cancelar.');
+    await clicar('Cancelar');
+
+    mudarNoServidor({ prioridade: 'Alta' as Chamado['prioridade'] });
+    await clicar('Editar Detalhes');
+    expect(seletor('Prioridade')?.textContent).toContain('Alta');
+    await clicar('Salvar');
+    expect(atualizar).not.toHaveBeenCalled();
+  });
+
+  /** Fora da edição a recarga volta a preencher os campos, como sempre. */
+  it('depois de salvar, a próxima edição não herda a referência antiga', async () => {
+    await montar(ADMIN);
+    await clicar('Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    await clicar('Salvar');
+    expect(atualizar).toHaveBeenCalledTimes(1);
+
+    mudarNoServidor({ prioridade: 'Baixa' as Chamado['prioridade'], status: StatusEnum.AGUARDANDO });
+    await comentar('Depois de salvar.');
+    await clicar('Editar Detalhes');
+    expect(seletor('Prioridade')?.textContent).toContain('Baixa');
+    expect(seletor('Status')?.textContent).toContain('Aguardando');
+  });
+});
