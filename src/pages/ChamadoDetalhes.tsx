@@ -23,10 +23,12 @@ import {
 } from '../lib/edicaoQualidade';
 import { setorDoChamado } from '../lib/setor';
 import {
+  MENSAGEM_CONFLITO_DE_VERSAO,
   MENSAGEM_SEM_VERSAO,
   MENSAGEM_VERSAO_AUSENTE,
   ehConflitoDeVersao,
   ehVersaoAusente,
+  escreveSemVersao,
   precondicaoDaEscrita,
 } from '../lib/versao';
 import AcoesRapidas from '../components/AcoesRapidas';
@@ -129,6 +131,12 @@ const ChamadoDetalhes: React.FC = () => {
     StatusEnum.RESOLVIDO,
   );
   const [solucaoModal, setSolucaoModal] = useState('');
+  // A solução digitada numa resolução que a API recusou por versão (FE-4):
+  // volta no próximo "resolver", em vez da solução gravada.
+  const rascunhoDaResolucao = useRef<string | null>(null);
+  // Depois de um 409/428 de versão, enquanto a página relê: as ações do
+  // estado velho saem de cena até o chamado novo chegar.
+  const [atualizandoAposConflito, setAtualizandoAposConflito] = useState(false);
 
   // Estados para modais de cancelar e arquivar
   const [mostrarModalCancelar, setMostrarModalCancelar] = useState(false);
@@ -500,6 +508,24 @@ const ChamadoDetalhes: React.FC = () => {
   };
 
 
+  /**
+   * Recusa por versão numa escrita da Qualidade (FE-4): nada foi gravado.
+   * Avisa, relê o chamado e só então devolve as ações — feitas a partir do
+   * chamado novo. Nunca repete a escrita. `false` é "não foi por versão".
+   */
+  const recarregarAposRecusaDeVersao = async (err: unknown): Promise<boolean> => {
+    const conflito = ehConflitoDeVersao(err);
+    if (!conflito && !ehVersaoAusente(err)) return false;
+    toast.error(conflito ? MENSAGEM_CONFLITO_DE_VERSAO : MENSAGEM_VERSAO_AUSENTE);
+    setAtualizandoAposConflito(true);
+    try {
+      await carregarDados(true);
+    } finally {
+      setAtualizandoAposConflito(false);
+    }
+    return true;
+  };
+
   // Função para mudança rápida de status
   const handleMudancaRapidaStatus = async (novoStatus: StatusEnum) => {
     // Se for resolver ou fechar, abrir modal para solicitar solução
@@ -508,7 +534,7 @@ const ChamadoDetalhes: React.FC = () => {
       novoStatus === StatusEnum.FECHADO
     ) {
       setStatusAlvo(novoStatus);
-      setSolucaoModal(chamado?.solucao || '');
+      setSolucaoModal(rascunhoDaResolucao.current ?? (chamado?.solucao || ''));
       setMostrarModalResolucao(true);
       return;
     }
@@ -516,16 +542,26 @@ const ChamadoDetalhes: React.FC = () => {
     // Para outros status, fazer mudança direta
     if (!chamado || !user) return;
 
+    // Na Qualidade, a versão do chamado desta página (M-1): se outra pessoa
+    // mudou o status depois que ela carregou, a API recusa em vez de desfazer.
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
+
     try {
       setLoading(true);
 
       const dadosAtualizacao: ChamadoUpdate = {
         status: novoStatus,
+        ...precondicao,
       };
 
       await atualizarChamado(chamado.id, dadosAtualizacao);
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
+      if (await recarregarAposRecusaDeVersao(err)) return;
       console.error('Erro ao atualizar status:', err);
       setError('Erro ao atualizar status.');
     } finally {
@@ -545,19 +581,35 @@ const ChamadoDetalhes: React.FC = () => {
 
     if (!chamado || !user) return;
 
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
+
     try {
       setLoading(true);
 
       const dadosAtualizacao: ChamadoUpdate = {
         status: statusAlvo,
         solucao: solucaoModal,
+        ...precondicao,
       };
 
       await atualizarChamado(chamado.id, dadosAtualizacao);
       setMostrarModalResolucao(false);
       setSolucaoModal('');
+      rascunhoDaResolucao.current = null;
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
+      // Recusa por versão: o modal fecha (o status pode já não ser o que ele
+      // pressupunha) e a solução fica guardada para o próximo "resolver".
+      if (ehConflitoDeVersao(err) || ehVersaoAusente(err)) {
+        rascunhoDaResolucao.current = solucaoModal;
+        setMostrarModalResolucao(false);
+        await recarregarAposRecusaDeVersao(err);
+        return;
+      }
       console.error('Erro ao atualizar chamado:', err);
       setError('Erro ao atualizar chamado.');
     } finally {
@@ -575,6 +627,16 @@ const ChamadoDetalhes: React.FC = () => {
     const problema = validarMinimo(motivoCancelamento, MINIMO_SOLUCAO, 'Motivo');
     if (problema) {
       toast.error(problema);
+      return;
+    }
+
+    // Fora da TI (FE-4), o cancelamento com motivo são DUAS escritas, e não
+    // uma transação: cancelar, depois o PUT do motivo com a versão que o
+    // cancelamento devolveu — a de antes já não vale, o cancelamento a subiu.
+    // Se a segunda falhar, o chamado fica cancelado sem motivo; o motivo fica
+    // no campo, e um novo "Confirmar" só registra o motivo.
+    if (!escreveSemVersao(chamado)) {
+      await cancelarComVersao(chamado);
       return;
     }
 
@@ -600,19 +662,83 @@ const ChamadoDetalhes: React.FC = () => {
     }
   };
 
+  /** As duas escritas do cancelamento da Qualidade. Ver `handleCancelarChamado`. */
+  const cancelarComVersao = async (alvo: Chamado) => {
+    const MOTIVO_NAO_REGISTRADO =
+      'O chamado foi cancelado, mas o motivo não foi registrado. O motivo continua no campo: confirme de novo para registrá-lo.';
+
+    setProcessando(true);
+    try {
+      // Já cancelado (a primeira escrita passou antes): só falta o motivo.
+      let cancelado = alvo;
+      if (!alvo.cancelado) {
+        const precondicao = precondicaoDaEscrita(alvo);
+        if (precondicao === null) {
+          toast.error(MENSAGEM_SEM_VERSAO);
+          return;
+        }
+        try {
+          cancelado = await chamadosService.cancelar(alvo.id, precondicao.versao_esperada);
+        } catch (err: any) {
+          if (await recarregarAposRecusaDeVersao(err)) return;
+          toast.error(err?.response?.data?.detail || 'Erro ao cancelar chamado.');
+          return;
+        }
+        setChamado(cancelado);
+        aplicarChamado(cancelado);
+      }
+
+      // A versão é a que o cancelamento devolveu, do mesmo chamado. Sem ela,
+      // o PUT não sai — com a versão velha ele levaria 409, e sem nenhuma, 428.
+      const precondicaoDoMotivo = cancelado.id === alvo.id ? precondicaoDaEscrita(cancelado) : null;
+      if (precondicaoDoMotivo === null) {
+        toast.error(MOTIVO_NAO_REGISTRADO);
+        return;
+      }
+      try {
+        await atualizarChamado(alvo.id, { solucao: motivoCancelamento, ...precondicaoDoMotivo });
+      } catch (err: any) {
+        toast.error(MOTIVO_NAO_REGISTRADO);
+        if (ehConflitoDeVersao(err) || ehVersaoAusente(err)) {
+          setAtualizandoAposConflito(true);
+          try {
+            await carregarDados(true);
+          } finally {
+            setAtualizandoAposConflito(false);
+          }
+        }
+        return;
+      }
+
+      setMostrarModalCancelar(false);
+      setMotivoCancelamento('');
+      navigate('/chamados', { replace: true });
+    } finally {
+      setProcessando(false);
+    }
+  };
+
   // Função para arquivar chamado
   const handleArquivarChamado = async () => {
     if (!chamado || !user) return;
+
+    // Na Qualidade, as marcas levam a versão do chamado desta página. Na TI,
+    // `{}`: a requisição sai sem corpo, como sempre.
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
 
     try {
       setProcessando(true);
 
       if (chamado.arquivado) {
         // Desarquivar
-        await chamadosService.desarquivar(chamado.id);
+        await chamadosService.desarquivar(chamado.id, precondicao.versao_esperada);
       } else {
         // Arquivar
-        await chamadosService.arquivar(chamado.id);
+        await chamadosService.arquivar(chamado.id, precondicao.versao_esperada);
       }
 
       setMostrarModalArquivar(false);
@@ -620,6 +746,11 @@ const ChamadoDetalhes: React.FC = () => {
       // Redireciona para a página de chamados
       navigate('/chamados', { replace: true });
     } catch (err: any) {
+      if (ehConflitoDeVersao(err) || ehVersaoAusente(err)) {
+        setMostrarModalArquivar(false);
+        await recarregarAposRecusaDeVersao(err);
+        return;
+      }
       console.error('Erro ao arquivar/desarquivar chamado:', err);
       toast.error(err?.response?.data?.detail || 'Erro ao processar solicitação.');
     } finally {
@@ -1062,6 +1193,10 @@ const ChamadoDetalhes: React.FC = () => {
                   aoMudar={aplicarAtendimento}
                   aoPrecisarRecarregar={() => carregarDados(true)}
                 />
+              ) : atualizandoAposConflito ? (
+                <p role="status" className="text-sm text-conteudo-suave">
+                  Este chamado mudou. Atualizando os dados antes de liberar as ações…
+                </p>
               ) : (
                 getBotoesAcao()
               )}

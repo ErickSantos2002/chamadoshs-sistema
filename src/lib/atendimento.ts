@@ -288,16 +288,28 @@ export function opcoesDeResponsavelDaQualidade(
   return [{ valor: String(atualId), rotulo: `${nomeDoAtual} ${ROTULO_FORA_DOS_ATENDENTES}` }, ...opcoes];
 }
 
+export const MENSAGEM_ATRIBUICAO_MUDOU =
+  'Este chamado mudou enquanto você escolhia o responsável. Nada foi salvo: confira quem é o responsável agora e escolha de novo.';
+
 /**
  * O que fazer com o erro do PUT de troca de responsável na Qualidade.
  * 400 é atendente que não existe ou deixou de ser elegível: a lista na tela
  * está velha e recarrega. 503 é a Qualidade desligada. 403 é do interceptor.
+ * 409 de versão (FE-4): outra pessoa gravou antes — o chamado na tela está
+ * velho e é relido; a troca não é repetida. 428: a versão não foi.
  */
 export function interpretarErroDaReatribuicao(erro: unknown): {
   mensagem: string | null;
   recarregarAtendentes: boolean;
   indisponivel: boolean;
+  recarregarChamado: boolean;
 } {
+  if (ehConflitoDeVersao(erro)) {
+    return { mensagem: MENSAGEM_ATRIBUICAO_MUDOU, recarregarAtendentes: false, indisponivel: false, recarregarChamado: true };
+  }
+  if (ehVersaoAusente(erro)) {
+    return { mensagem: MENSAGEM_VERSAO_AUSENTE, recarregarAtendentes: false, indisponivel: false, recarregarChamado: true };
+  }
   const resposta =
     erro && typeof erro === 'object'
       ? (erro as { response?: { status?: unknown; data?: { detail?: unknown } } }).response
@@ -308,13 +320,16 @@ export function interpretarErroDaReatribuicao(erro: unknown): {
       ? resposta.data.detail
       : undefined;
 
-  if (status === 403) return { mensagem: null, recarregarAtendentes: false, indisponivel: false };
+  if (status === 403) {
+    return { mensagem: null, recarregarAtendentes: false, indisponivel: false, recarregarChamado: false };
+  }
   if (status === 503) {
-    return { mensagem: MENSAGEM_QUALIDADE_INDISPONIVEL, recarregarAtendentes: false, indisponivel: true };
+    return { mensagem: MENSAGEM_QUALIDADE_INDISPONIVEL, recarregarAtendentes: false, indisponivel: true, recarregarChamado: false };
   }
   return {
     mensagem: detail ?? 'Não foi possível atribuir o responsável.',
     recarregarAtendentes: status === 400,
     indisponivel: false,
+    recarregarChamado: false,
   };
 }

@@ -855,3 +855,233 @@ describe('Qualidade — a versão na edição (FE-4)', () => {
     expect(vi.mocked(toast.error)).not.toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
   });
 });
+
+/**
+ * FE-4, M-1: as ações da equipe na página — status, resolução, cancelar,
+ * arquivar, desarquivar — num chamado da Qualidade que ela não atende. Todas
+ * levam a versão do chamado da página; um 409 de versão relê, refaz as ações
+ * a partir do chamado novo e não repete nada.
+ */
+describe('Qualidade — as ações da equipe com versão (FE-4)', () => {
+  const conflito = (versaoAtual: number) => ({
+    response: {
+      status: 409,
+      data: {
+        detail: 'Este chamado foi alterado por outra pessoa. Atualize e tente de novo.',
+        codigo: 'versao_desatualizada',
+        versao_atual: versaoAtual,
+      },
+    },
+  });
+  const MOTIVO = 'Aberto em duplicidade com o CHAM-2026-0100.';
+  const SOLUCAO = 'Recalibrei o paquímetro com o padrão.';
+  const MOTIVO_NAO_REGISTRADO =
+    'O chamado foi cancelado, mas o motivo não foi registrado. O motivo continua no campo: confirme de novo para registrá-lo.';
+
+  /** O último botão com este texto — o do modal, quando a página tem um igual. */
+  const clicarNoUltimo = async (texto: string) => {
+    const todos = Array.from(host.querySelectorAll('button')).filter((b) => b.textContent?.trim() === texto);
+    expect(todos.length, `botão "${texto}" não apareceu`).toBeGreaterThan(0);
+    await act(async () => {
+      todos[todos.length - 1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  };
+
+  const digitarNo = async (id: string, valor: string) => {
+    const campo = host.querySelector<HTMLTextAreaElement>(`#${id}`);
+    expect(campo, `campo #${id} não apareceu`).toBeTruthy();
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(campo, valor);
+      campo!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  };
+
+  let atualizar: MockInstance<typeof chamadosService.atualizar>;
+  let cancelar: MockInstance<typeof chamadosService.cancelar>;
+  let arquivar: MockInstance<typeof chamadosService.arquivar>;
+  let desarquivar: MockInstance<typeof chamadosService.desarquivar>;
+
+  beforeEach(() => {
+    const gravar = (mudanca: Partial<Chamado>) => {
+      noServidor = { ...noServidor, ...mudanca, versao: (noServidor.versao ?? 0) + 1 } as Chamado;
+      return noServidor;
+    };
+    atualizar = vi.spyOn(chamadosService, 'atualizar').mockImplementation(async (_id, d) => {
+      const { versao_esperada: _v, ...campos } = d;
+      return gravar(campos as Partial<Chamado>);
+    });
+    cancelar = vi.spyOn(chamadosService, 'cancelar').mockImplementation(async () => gravar({ cancelado: true }));
+    arquivar = vi.spyOn(chamadosService, 'arquivar').mockImplementation(async () => gravar({ arquivado: true }));
+    desarquivar = vi
+      .spyOn(chamadosService, 'desarquivar')
+      .mockImplementation(async () => gravar({ arquivado: false }));
+  });
+
+  it('mudar status leva a versão do chamado da página', async () => {
+    await montar(ADMIN);
+    await clicar('Aguardando Retorno');
+    expect(atualizar.mock.calls).toStrictEqual([[1, { status: StatusEnum.AGUARDANDO, versao_esperada: 3 }]]);
+  });
+
+  it('409: avisa, relê, refaz os botões pelo status novo e não repete', async () => {
+    await montar(ADMIN);
+    // O responsável pôs em Aguardando depois que a página carregou.
+    atualizar.mockImplementationOnce(async () => {
+      noServidor = { ...noServidor, status: StatusEnum.AGUARDANDO, versao: 4 } as Chamado;
+      throw conflito(4);
+    });
+    const leituras = vi.mocked(api.get).mock.calls.length;
+    await clicar('Marcar como Resolvido');
+    await digitarNo('solucao-resolucao', SOLUCAO);
+    await clicarNoUltimo('Marcar como Resolvido');
+
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+    expect(vi.mocked(api.get).mock.calls.length).toBeGreaterThan(leituras);
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    // A página continua (sem a tela de erro), com os botões do status novo.
+    expect(host.textContent).toContain('Desvio na calibração');
+    expect(textos()).toContain('Retomar Atendimento');
+    expect(textos()).not.toContain('Aguardando Retorno');
+    // O modal fechou; reabrir traz a solução que a pessoa tinha digitado.
+    expect(host.querySelector('#solucao-resolucao')).toBeNull();
+    await clicar('Marcar como Resolvido');
+    expect(host.querySelector<HTMLTextAreaElement>('#solucao-resolucao')?.value).toBe(SOLUCAO);
+
+    // A nova tentativa é um clique novo, com a versão nova.
+    await clicarNoUltimo('Marcar como Resolvido');
+    expect(atualizar.mock.calls[1]).toStrictEqual([
+      1,
+      { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO, versao_esperada: 4 },
+    ]);
+  });
+
+  it('428: avisa e relê, sem repetir', async () => {
+    atualizar.mockRejectedValueOnce({ response: { status: 428, data: { detail: 'Informe a versão do chamado' } } });
+    await montar(ADMIN);
+    await clicar('Aguardando Retorno');
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_VERSAO_AUSENTE);
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(host.textContent).toContain('Desvio na calibração');
+  });
+
+  it('sem versão válida: nem o status nem a resolução saem', async () => {
+    await montar(ADMIN, { versao: undefined });
+    await clicar('Aguardando Retorno');
+    await clicar('Marcar como Resolvido');
+    await digitarNo('solucao-resolucao', SOLUCAO);
+    await clicarNoUltimo('Marcar como Resolvido');
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
+    expect(host.querySelector<HTMLTextAreaElement>('#solucao-resolucao')?.value).toBe(SOLUCAO);
+  });
+
+  describe('cancelar: duas escritas, e a segunda com a versão nova', () => {
+    const abrirCancelamento = async () => {
+      await clicar('Cancelar Chamado');
+      await digitarNo('motivo-cancelamento', MOTIVO);
+    };
+
+    it('cancela com a versão da página, e o motivo vai com a versão que o cancelamento devolveu', async () => {
+      await montar(ADMIN);
+      await abrirCancelamento();
+      await clicarNoUltimo('Sim, cancelar');
+      expect(cancelar.mock.calls).toStrictEqual([[1, 3]]);
+      expect(atualizar.mock.calls).toStrictEqual([[1, { solucao: MOTIVO, versao_esperada: 4 }]]);
+    });
+
+    it('409 no cancelamento: avisa, relê, não cancela nem grava motivo, e o motivo fica', async () => {
+      cancelar.mockRejectedValueOnce(conflito(5));
+      await montar(ADMIN);
+      await abrirCancelamento();
+      await clicarNoUltimo('Sim, cancelar');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(cancelar).toHaveBeenCalledTimes(1);
+      expect(host.querySelector<HTMLTextAreaElement>('#motivo-cancelamento')?.value).toBe(MOTIVO);
+    });
+
+    it('o cancelamento não devolve versão: o motivo não sai, e a pessoa é avisada', async () => {
+      cancelar.mockImplementationOnce(async () => ({ ...noServidor, cancelado: true, versao: undefined }) as Chamado);
+      await montar(ADMIN);
+      await abrirCancelamento();
+      await clicarNoUltimo('Sim, cancelar');
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MOTIVO_NAO_REGISTRADO);
+      expect(host.querySelector<HTMLTextAreaElement>('#motivo-cancelamento')?.value).toBe(MOTIVO);
+    });
+
+    it('409 no motivo: avisa; confirmar de novo só registra o motivo, sem cancelar outra vez', async () => {
+      await montar(ADMIN);
+      atualizar.mockImplementationOnce(async () => {
+        noServidor = { ...noServidor, prioridade: 'Alta', versao: 5 } as Chamado;
+        throw conflito(5);
+      });
+      await abrirCancelamento();
+      await clicarNoUltimo('Sim, cancelar');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MOTIVO_NAO_REGISTRADO);
+      expect(cancelar).toHaveBeenCalledTimes(1);
+      expect(host.querySelector<HTMLTextAreaElement>('#motivo-cancelamento')?.value).toBe(MOTIVO);
+
+      await clicarNoUltimo('Sim, cancelar');
+      expect(cancelar).toHaveBeenCalledTimes(1);
+      expect(atualizar.mock.calls[1]).toStrictEqual([1, { solucao: MOTIVO, versao_esperada: 5 }]);
+    });
+
+    it('sem versão na página: nada sai', async () => {
+      await montar(ADMIN, { versao: undefined });
+      await abrirCancelamento();
+      await clicarNoUltimo('Sim, cancelar');
+      expect(cancelar).not.toHaveBeenCalled();
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
+    });
+  });
+
+  describe('arquivar e desarquivar', () => {
+    it('arquivar leva a versão', async () => {
+      await montar(ADMIN);
+      await clicar('Arquivar');
+      await clicarNoUltimo('Sim, arquivar');
+      expect(arquivar.mock.calls).toStrictEqual([[1, 3]]);
+    });
+
+    it('desarquivar leva a versão', async () => {
+      await montar(ADMIN, { arquivado: true });
+      await clicar('Desarquivar');
+      await clicarNoUltimo('Sim, desarquivar');
+      expect(desarquivar.mock.calls).toStrictEqual([[1, 3]]);
+    });
+
+    it('409: avisa, fecha, relê e não repete', async () => {
+      arquivar.mockImplementationOnce(async () => {
+        noServidor = { ...noServidor, arquivado: true, versao: 4 } as Chamado;
+        throw conflito(4);
+      });
+      await montar(ADMIN);
+      await clicar('Arquivar');
+      await clicarNoUltimo('Sim, arquivar');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(arquivar).toHaveBeenCalledTimes(1);
+      expect(host.textContent).not.toContain('Sim, arquivar');
+      // Relido: alguém já arquivou, e o botão agora é o de desarquivar.
+      expect(textos()).toContain('Desarquivar');
+    });
+
+    it('428: avisa, sem repetir', async () => {
+      arquivar.mockRejectedValueOnce({ response: { status: 428, data: { detail: 'Informe a versão do chamado' } } });
+      await montar(ADMIN);
+      await clicar('Arquivar');
+      await clicarNoUltimo('Sim, arquivar');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_VERSAO_AUSENTE);
+      expect(arquivar).toHaveBeenCalledTimes(1);
+    });
+
+    it('sem versão: nada sai', async () => {
+      await montar(ADMIN, { versao: undefined });
+      await clicar('Arquivar');
+      await clicarNoUltimo('Sim, arquivar');
+      expect(arquivar).not.toHaveBeenCalled();
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
+    });
+  });
+});

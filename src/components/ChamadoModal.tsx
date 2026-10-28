@@ -12,6 +12,7 @@ import {
   podeReatribuirNaQualidade,
 } from '../lib/atendimento';
 import { setorDoChamado } from '../lib/setor';
+import { MENSAGEM_SEM_VERSAO, precondicaoDaEscrita } from '../lib/versao';
 import { Chamado, Comentario, SetorDestinoEnum } from '../types/api';
 import {
   Avatar,
@@ -283,21 +284,34 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   /**
    * Troca o responsável de um chamado da Qualidade. Escolher quem já está não
    * sai: não há mudança, e a API não precisa ser consultada para isso.
+   *
+   * Leva a versão do chamado desta janela (FE-4): se outra pessoa trocou o
+   * responsável — ou mudou qualquer coisa — depois que ela abriu, a API
+   * recusa com 409, a janela relê e a troca não é repetida.
    */
   const atribuirNaQualidade = async (valor: string) => {
     if (!chamado || !valor || Number(valor) === chamado.tecnico_responsavel_id) return;
+
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
 
     try {
       setAtribuindo(true);
       const atualizado = await chamadosService.atualizar(chamado.id, {
         tecnico_responsavel_id: Number(valor),
+        ...precondicao,
       });
       registrarMudanca(atualizado);
     } catch (err) {
-      const { mensagem, recarregarAtendentes, indisponivel } = interpretarErroDaReatribuicao(err);
+      const { mensagem, recarregarAtendentes, indisponivel, recarregarChamado } =
+        interpretarErroDaReatribuicao(err);
       if (mensagem) toast.error(mensagem);
       if (indisponivel) marcarQualidadeIndisponivel();
       if (recarregarAtendentes) void verificarQualidade();
+      if (recarregarChamado) recarregar();
     } finally {
       setAtribuindo(false);
     }

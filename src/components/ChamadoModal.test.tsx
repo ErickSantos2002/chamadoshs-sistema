@@ -13,7 +13,8 @@ import {
 } from '../services/chamadoshsapi';
 import { Chamado, StatusEnum, Usuario } from '../types/api';
 import toast from 'react-hot-toast';
-import { MENSAGEM_QUALIDADE_INDISPONIVEL } from '../lib/atendimento';
+import { MENSAGEM_ATRIBUICAO_MUDOU, MENSAGEM_QUALIDADE_INDISPONIVEL } from '../lib/atendimento';
+import { MENSAGEM_SEM_VERSAO } from '../lib/versao';
 import ChamadoModal from './ChamadoModal';
 
 /**
@@ -414,6 +415,7 @@ describe('ChamadoModal — reatribuição na Qualidade', () => {
     id: 5,
     setor_destino: 'QUALIDADE',
     tecnico_responsavel_id: 7,
+    versao: 3,
   } as unknown as Chamado;
 
   const abrir = async (extra: Partial<Chamado> = {}) => {
@@ -484,7 +486,7 @@ describe('ChamadoModal — reatribuição na Qualidade', () => {
   it('trocar manda só o novo responsável', async () => {
     await abrir();
     await escolherOpcao('Bia');
-    expect(atualizar.mock.calls).toStrictEqual([[5, { tecnico_responsavel_id: 3 }]]);
+    expect(atualizar.mock.calls).toStrictEqual([[5, { tecnico_responsavel_id: 3, versao_esperada: 3 }]]);
   });
 
   it('escolher quem já está não faz requisição', async () => {
@@ -535,5 +537,39 @@ describe('ChamadoModal — reatribuição na Qualidade', () => {
     const opcoes = (await abrirOpcoes()).map((o) => o.textContent?.trim());
     expect(opcoes[0]).toBe('Sem atribuição');
     expect(chamadosService.sondarAtendimento).not.toHaveBeenCalled();
+  });
+
+  /**
+   * FE-4: outra pessoa trocou o responsável depois que a janela abriu. A API
+   * recusa a troca velha com 409; a janela relê e mostra quem está agora, e
+   * a troca não é repetida.
+   */
+  it('409 de versão: avisa, relê o responsável atual e não repete', async () => {
+    await abrir();
+    vi.mocked(chamadosService.buscar).mockResolvedValue({ ...QUAL, tecnico_responsavel_id: 3, versao: 4 } as Chamado);
+    atualizar.mockRejectedValueOnce({
+      response: { status: 409, data: { detail: 'x', codigo: 'versao_desatualizada', versao_atual: 4 } },
+    });
+    const leituras = vi.mocked(chamadosService.buscar).mock.calls.length;
+    await escolherOpcao('Bia');
+    await act(async () => {});
+
+    expect(atualizar.mock.calls).toStrictEqual([[5, { tecnico_responsavel_id: 3, versao_esperada: 3 }]]);
+    expect(erro).toHaveBeenCalledWith(MENSAGEM_ATRIBUICAO_MUDOU);
+    expect(vi.mocked(chamadosService.buscar).mock.calls.length).toBe(leituras + 1);
+    expect(seletorDoResponsavel()?.textContent).toContain('Bia');
+  });
+
+  it('sem versão válida: a troca não sai', async () => {
+    await abrir({ versao: undefined });
+    await escolherOpcao('Bia');
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(erro).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
+  });
+
+  it('chamado da TI com versão: a troca sai sem versao_esperada', async () => {
+    await abrir({ setor_destino: 'TI', versao: 9 } as Partial<Chamado>);
+    await escolherOpcao('Sem atribuição');
+    expect(atualizar.mock.calls).toStrictEqual([[5, { tecnico_responsavel_id: null }]]);
   });
 });

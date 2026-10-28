@@ -10,6 +10,7 @@ import {
   ROTULO_FORA_DOS_ATENDENTES,
   classificarSonda,
   ehAtribuidoNaQualidade,
+  MENSAGEM_ATRIBUICAO_MUDOU,
   interpretarErroDaReatribuicao,
   interpretarErroDoAtendimento,
   montarCorpoAtendimento,
@@ -320,6 +321,7 @@ describe('reatribuição na Qualidade', () => {
       mensagem: 'Atendente não é elegível para a Qualidade',
       recarregarAtendentes: true,
       indisponivel: false,
+      recarregarChamado: false,
     });
   });
 
@@ -328,6 +330,7 @@ describe('reatribuição na Qualidade', () => {
       mensagem: MENSAGEM_QUALIDADE_INDISPONIVEL,
       recarregarAtendentes: false,
       indisponivel: true,
+      recarregarChamado: false,
     });
   });
 
@@ -340,6 +343,32 @@ describe('reatribuição na Qualidade', () => {
       mensagem: 'Não foi possível atribuir o responsável.',
       recarregarAtendentes: false,
       indisponivel: false,
+      recarregarChamado: false,
     });
+  });
+
+  // FE-4: o 409 de versão relê o CHAMADO (o responsável na tela está velho), e
+  // não é confundido com o 409 de outra coisa.
+  it('409 de versão: avisa que mudou e relê o chamado', () => {
+    const erro = { response: { status: 409, data: { detail: 'x', codigo: 'versao_desatualizada', versao_atual: 6 } } };
+    expect(interpretarErroDaReatribuicao(erro)).toStrictEqual({
+      mensagem: MENSAGEM_ATRIBUICAO_MUDOU,
+      recarregarAtendentes: false,
+      indisponivel: false,
+      recarregarChamado: true,
+    });
+  });
+
+  it('428: avisa e relê o chamado', () => {
+    expect(interpretarErroDaReatribuicao(resp(428, 'Informe a versão do chamado'))).toStrictEqual({
+      mensagem: MENSAGEM_VERSAO_AUSENTE,
+      recarregarAtendentes: false,
+      indisponivel: false,
+      recarregarChamado: true,
+    });
+  });
+
+  it('409 sem o código de versão não relê o chamado', () => {
+    expect(interpretarErroDaReatribuicao(resp(409, 'outra coisa')).recarregarChamado).toBe(false);
   });
 });

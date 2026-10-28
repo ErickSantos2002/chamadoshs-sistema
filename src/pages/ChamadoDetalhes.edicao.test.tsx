@@ -291,6 +291,51 @@ describe('TI — as ações rápidas da página', () => {
   });
 });
 
+describe('TI — cancelar e arquivar sem versão (FE-4)', () => {
+  /** O último botão com este texto: o do modal, quando a página tem um igual. */
+  const ultimo = (texto: string) =>
+    Array.from(host.querySelectorAll('button'))
+      .filter((b) => b.textContent?.trim() === texto)
+      .pop();
+
+  // Com uma API-4 o chamado da TI traz versão; a TI continua sem pré-condição.
+  const COM_VERSAO = { versao: 6, setor_destino: 'TI' } as Partial<Chamado>;
+
+  it('cancelar: o PATCH sai sem versão e o motivo vai pelo PUT de sempre', async () => {
+    const cancelar = vi.spyOn(chamadosService, 'cancelar').mockResolvedValue(CHAMADO);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(COM_VERSAO);
+    await clicar(botao('Cancelar Chamado'), 'Cancelar Chamado');
+    const campo = host.querySelector<HTMLTextAreaElement>('#motivo-cancelamento');
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(campo, 'Duplicado.');
+      campo!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await clicar(ultimo('Sim, cancelar'), 'Sim, cancelar');
+
+    expect(cancelar.mock.calls).toStrictEqual([[1]]);
+    expect(atualizar.mock.calls).toStrictEqual([[1, { solucao: 'Duplicado.' }]]);
+  });
+
+  it('arquivar: o PATCH sai sem versão', async () => {
+    const arquivar = vi.spyOn(chamadosService, 'arquivar').mockResolvedValue(CHAMADO);
+    await montar(COM_VERSAO);
+    await clicar(botao('Arquivar'), 'Arquivar');
+    await clicar(ultimo('Sim, arquivar'), 'Sim, arquivar');
+
+    expect(arquivar.mock.calls).toStrictEqual([[1, undefined]]);
+  });
+
+  it('a mudança de status também sai sem versão', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(COM_VERSAO);
+    await clicar(botao('Aguardando Retorno'), 'Aguardando Retorno');
+
+    expect(atualizar.mock.calls[0]).toStrictEqual([1, { status: StatusEnum.AGUARDANDO }]);
+  });
+});
+
 describe('quem não é da equipe', () => {
   it('não vê edição nem ações rápidas', async () => {
     await montar({}, 'Usuario');
