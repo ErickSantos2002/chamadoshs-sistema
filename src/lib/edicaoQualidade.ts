@@ -22,11 +22,13 @@ import { Chamado, ChamadoUpdate, PrioridadeEnum, StatusEnum } from '../types/api
  * Mudança remota em campo que a pessoa NÃO editou não para nada: o PUT nem
  * leva esse campo.
  *
- * ── O que continua aberto ─────────────────────────────────────────────
+ * ── A janela entre a releitura e o PUT ────────────────────────────────
  *
  * Entre a releitura e o PUT há uma janela, curta, em que outra escrita
- * passa sem ser vista. Fechá-la é trabalho da API — uma versão ou
- * `atualizado_em` conferidos no PUT, com 409 —, e não daqui.
+ * passaria sem ser vista. Quem a fecha é a API (API-4b): o PUT leva a
+ * versão da releitura em `versao_esperada`, e uma escrita que tenha entrado
+ * no meio faz a API recusar com 409, sem gravar nada. A página trata esse
+ * 409 como o conflito acima — relê, mostra, não repete (FE-4).
  */
 
 export type CampoEditavel =

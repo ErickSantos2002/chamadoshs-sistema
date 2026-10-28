@@ -19,6 +19,7 @@ import {
   sondarSuporte,
   unirChamados,
 } from './atendimento';
+import { MENSAGEM_CONFLITO_DE_VERSAO, MENSAGEM_VERSAO_AUSENTE } from './versao';
 
 /**
  * A sonda do atendimento. As respostas de referência são as que a aplicação
@@ -226,6 +227,19 @@ describe('montarCorpoAtendimento', () => {
       solucao: 'Calibrei o paquímetro.',
     });
   });
+
+  it('FE-4: com versão, ela vai junto; sem, a chave nem aparece', () => {
+    expect(montarCorpoAtendimento(StatusEnum.AGUARDANDO, undefined, 7)).toStrictEqual({
+      status: StatusEnum.AGUARDANDO,
+      versao_esperada: 7,
+    });
+    expect(montarCorpoAtendimento(StatusEnum.RESOLVIDO, ' Calibrei o paquímetro. ', 7)).toStrictEqual({
+      status: StatusEnum.RESOLVIDO,
+      solucao: 'Calibrei o paquímetro.',
+      versao_esperada: 7,
+    });
+    expect(montarCorpoAtendimento(StatusEnum.AGUARDANDO)).not.toHaveProperty('versao_esperada');
+  });
 });
 
 describe('interpretarErroDoAtendimento', () => {
@@ -239,6 +253,16 @@ describe('interpretarErroDoAtendimento', () => {
     ['401', resp(401, 'x'), 'sessao', false, null],
     ['403', resp(403, 'Só o responsável atual pode atender este chamado'), 'sem-permissao', true, null],
     ['409', resp(409, 'Chamado cancelado não pode ser atendido'), 'conflito', true, 'Chamado cancelado não pode ser atendido'],
+    // FE-4: o 409 de versão só se separa dos outros pelo `codigo`.
+    [
+      '409 de versão',
+      { response: { status: 409, data: { detail: 'x', codigo: 'versao_desatualizada', versao_atual: 5 } } },
+      'versao-desatualizada',
+      true,
+      MENSAGEM_CONFLITO_DE_VERSAO,
+    ],
+    ['409 de transição', resp(409, 'Transição de Aberto para Resolvido não permitida'), 'conflito', true, 'Transição de Aberto para Resolvido não permitida'],
+    ['428', resp(428, 'Informe a versão do chamado'), 'versao-ausente', true, MENSAGEM_VERSAO_AUSENTE],
     ['422', resp(422, 'solucao_obrigatoria'), 'invalido', false, 'solucao_obrigatoria'],
     ['503', resp(503, 'Abertura de chamados para a Qualidade não está disponível neste ambiente'), 'qualidade-indisponivel', false, MENSAGEM_QUALIDADE_INDISPONIVEL],
     ['500', resp(500, 'Erro interno'), 'outro', false, 'Erro interno'],

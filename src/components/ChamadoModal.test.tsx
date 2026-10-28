@@ -300,6 +300,7 @@ describe('ChamadoModal — atendimento da Qualidade', () => {
     id: 4,
     setor_destino: 'QUALIDADE',
     tecnico_responsavel_id: 7,
+    versao: 3,
   } as unknown as Chamado;
 
   const USUARIO = {
@@ -396,7 +397,7 @@ describe('ChamadoModal — atendimento da Qualidade', () => {
       botao!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
 
-    expect(atender.mock.calls).toStrictEqual([[4, { status: StatusEnum.AGUARDANDO }]]);
+    expect(atender.mock.calls).toStrictEqual([[4, { status: StatusEnum.AGUARDANDO, versao_esperada: 3 }]]);
     expect(atualizar).not.toHaveBeenCalled();
     expect(quadro).toEqual([{ id: 4, status: StatusEnum.AGUARDANDO }]);
   });

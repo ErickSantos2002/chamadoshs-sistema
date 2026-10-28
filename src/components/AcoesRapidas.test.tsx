@@ -12,6 +12,11 @@ import {
   MENSAGEM_ROTA_INDISPONIVEL,
   MENSAGEM_SEM_RESPOSTA,
 } from '../lib/atendimento';
+import {
+  MENSAGEM_CONFLITO_DE_VERSAO,
+  MENSAGEM_SEM_VERSAO,
+  MENSAGEM_VERSAO_AUSENTE,
+} from '../lib/versao';
 import AcoesRapidas from './AcoesRapidas';
 
 /**
@@ -220,11 +225,13 @@ describe('equipe — o PUT', () => {
  * Qualidade usa os mesmos botões, pelo PATCH.
  */
 describe('Qualidade — atendimento pela rota restrita', () => {
+  // `versao` 3: o chamado veio de uma API-4. É ela que vai em `versao_esperada`.
   const daQualidade = (extra: Partial<Chamado> = {}) =>
     chamadoCom({
       setor_destino: SetorDestinoEnum.QUALIDADE,
       tecnico_responsavel_id: 7,
       solicitante_id: 9,
+      versao: 3,
       ...extra,
     } as Partial<Chamado>);
 
@@ -338,7 +345,9 @@ describe('Qualidade — atendimento pela rota restrita', () => {
     it('mudar status: só o status, pela rota, e nunca pelo PUT', async () => {
       await montarQ(USUARIO, daQualidade());
       await clicar('Aguardando retorno');
-      expect(atender.mock.calls).toStrictEqual([[50, { status: StatusEnum.AGUARDANDO }]]);
+      expect(atender.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.AGUARDANDO, versao_esperada: 3 }],
+      ]);
       expect(atualizar).not.toHaveBeenCalled();
       expect(aoMudar).toHaveBeenCalledWith(
         expect.objectContaining({ status: StatusEnum.AGUARDANDO })
@@ -351,7 +360,9 @@ describe('Qualidade — atendimento pela rota restrita', () => {
         daQualidade({ status: StatusEnum.RESOLVIDO, solucao: 'Solução antiga do chamado.' })
       );
       await clicar('Reabrir');
-      expect(atender.mock.calls).toStrictEqual([[50, { status: StatusEnum.EM_ANDAMENTO }]]);
+      expect(atender.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.EM_ANDAMENTO, versao_esperada: 3 }],
+      ]);
     });
 
     it('resolver: status e solução, sem espaço nas pontas', async () => {
@@ -360,7 +371,7 @@ describe('Qualidade — atendimento pela rota restrita', () => {
       await digitarSolucao('  ' + SOLUCAO_OK + '  ');
       await clicar('Resolver');
       expect(atender.mock.calls).toStrictEqual([
-        [50, { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK }],
+        [50, { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 3 }],
       ]);
     });
 
@@ -404,7 +415,9 @@ describe('Qualidade — atendimento pela rota restrita', () => {
       atualizar.mockResolvedValue(daQualidade());
       await montarQ(ADMIN, daQualidade());
       await clicar('Aguardando retorno');
-      expect(atualizar.mock.calls).toStrictEqual([[50, { status: StatusEnum.AGUARDANDO }]]);
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.AGUARDANDO, versao_esperada: 3 }],
+      ]);
       expect(atender).not.toHaveBeenCalled();
     });
   });
@@ -530,6 +543,150 @@ describe('Qualidade — atendimento pela rota restrita', () => {
       await clicar('Aguardando retorno');
       expect(vi.mocked(toast.error)).not.toHaveBeenCalled();
       expect(recarregar).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * FE-4: a versão do chamado na tela vai junto, e um 409 de versão não
+   * sobrescreve nada nem é repetido. O re-render com outro `chamado` é o que
+   * a página faz depois de reler: o estado do componente fica (de propósito).
+   */
+  describe('a versão (FE-4)', () => {
+    const conflito = (versaoAtual = 8) => ({
+      response: {
+        status: 409,
+        data: {
+          detail: 'Este chamado foi alterado por outra pessoa. Atualize e tente de novo.',
+          codigo: 'versao_desatualizada',
+          versao_atual: versaoAtual,
+        },
+      },
+    });
+    const botao = (texto: string) =>
+      Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === texto);
+
+    it('sem versão válida: nada sai, avisa, e a solução digitada fica', async () => {
+      await montarQ(USUARIO, daQualidade({ versao: undefined }));
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      expect(atender).not.toHaveBeenCalled();
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
+      expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+    });
+
+    it.each([0, '3', 1.5])('versão %s não é versão: nada sai', async (v) => {
+      await montarQ(USUARIO, daQualidade({ versao: v as never }));
+      await clicar('Aguardando retorno');
+      expect(atender).not.toHaveBeenCalled();
+    });
+
+    it('409 de versão ao resolver: avisa, relê, não repete; a solução volta no próximo resolver', async () => {
+      atender.mockRejectedValueOnce(conflito(8));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(atender).toHaveBeenCalledTimes(1);
+      // Enquanto a tela não tem a versão nova, nenhum botão do estado velho vale.
+      expect(host.querySelector('[role="status"]')?.textContent).toContain('Este chamado mudou');
+      expect(botao('Marcar como resolvido')?.disabled).toBe(true);
+      await clicar('Aguardando retorno');
+      expect(atender).toHaveBeenCalledTimes(1);
+
+      // A página releu: a versão 8, ainda em andamento. Os botões voltam.
+      await montarQ(USUARIO, daQualidade({ versao: 8 }));
+      expect(host.querySelector('[role="status"]')).toBeNull();
+      expect(botao('Marcar como resolvido')?.disabled).toBe(false);
+      await clicar('Marcar como resolvido');
+      expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+
+      // A segunda tentativa é um clique novo, com a versão nova.
+      await clicar('Resolver');
+      expect(atender.mock.calls[1]).toStrictEqual([
+        50,
+        { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 8 },
+      ]);
+    });
+
+    it('409 de versão e o chamado relido já resolvido: os botões são os do status novo', async () => {
+      atender.mockRejectedValueOnce(conflito(4));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      await montarQ(USUARIO, daQualidade({ versao: 4, status: StatusEnum.RESOLVIDO }));
+      expect(botoes()).toEqual(['Reabrir']);
+      expect(atender).toHaveBeenCalledTimes(1);
+    });
+
+    it('409 de versão sem versao_atual: espera a versão seguinte à usada', async () => {
+      atender.mockRejectedValueOnce({ response: { status: 409, data: { codigo: 'versao_desatualizada' } } });
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(botao('Aguardando retorno')?.disabled).toBe(true);
+      await montarQ(USUARIO, daQualidade({ versao: 4 }));
+      expect(botao('Aguardando retorno')?.disabled).toBe(false);
+    });
+
+    it('409 de estado continua com o motivo da API, sem a mensagem de versão', async () => {
+      atender.mockRejectedValueOnce({
+        response: { status: 409, data: { detail: 'Chamado cancelado não pode ser atendido' } },
+      });
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith('Chamado cancelado não pode ser atendido');
+      expect(vi.mocked(toast.error)).not.toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(botao('Aguardando retorno')?.disabled).toBe(false);
+    });
+
+    it('428: avisa, relê, não repete sem versão, e a solução fica guardada', async () => {
+      atender.mockRejectedValueOnce({ response: { status: 428, data: { detail: 'Informe a versão do chamado' } } });
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_VERSAO_AUSENTE);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(atender).toHaveBeenCalledTimes(1);
+      await clicar('Marcar como resolvido');
+      expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+    });
+
+    // M-1: o administrador clica numa ação com a tela velha. A API recusa, e
+    // o status gravado pelo responsável fica.
+    it('administrador pelo PUT: leva a versão; no 409 relê e não repete', async () => {
+      atualizar.mockRejectedValueOnce(conflito(5));
+      await montarQ(ADMIN, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 3 }],
+      ]);
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+
+      await montarQ(ADMIN, daQualidade({ versao: 5, status: StatusEnum.AGUARDANDO }));
+      expect(botoes()).toEqual(['Retomar atendimento', 'Marcar como resolvido']);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+      expect(atender).not.toHaveBeenCalled();
+    });
+
+    it('administrador sem versão na Qualidade: nem o PUT sai', async () => {
+      await montarQ(ADMIN, daQualidade({ versao: undefined }));
+      await clicar('Aguardando retorno');
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
+    });
+
+    it('TI com versão no chamado: o PUT de antes, sem versao_esperada', async () => {
+      atualizar.mockResolvedValue(chamadoCom({ status: StatusEnum.AGUARDANDO }));
+      await montarQ(ADMIN, chamadoCom({ setor_destino: SetorDestinoEnum.TI, versao: 6 } as Partial<Chamado>));
+      await clicar('Aguardando retorno');
+      expect(atualizar.mock.calls).toStrictEqual([[50, { status: StatusEnum.AGUARDANDO }]]);
     });
   });
 });

@@ -7,6 +7,12 @@ import {
   StatusEnum,
 } from '../types/api';
 import { setorDoChamado } from './setor';
+import {
+  MENSAGEM_CONFLITO_DE_VERSAO,
+  MENSAGEM_VERSAO_AUSENTE,
+  ehConflitoDeVersao,
+  ehVersaoAusente,
+} from './versao';
 
 /**
  * O atendimento restrito da Qualidade, fora dos componentes.
@@ -155,14 +161,17 @@ export function podeAtenderPelaRota(
 
 /**
  * O corpo do PATCH. A solução vai só ao resolver: a API recusa a PRESENÇA
- * dela nas outras transições, até como `null`.
+ * dela nas outras transições, até como `null`. A versão vai quando há uma
+ * (API-4b, obrigatória) — sem ela o campo não aparece, nem como `undefined`.
  */
 export function montarCorpoAtendimento(
   status: StatusDoAtendimento,
-  solucao?: string
+  solucao?: string,
+  versaoEsperada?: number
 ): ChamadoAtendimento {
-  if (status === StatusEnum.RESOLVIDO) return { status, solucao: (solucao ?? '').trim() };
-  return { status };
+  const versao = versaoEsperada === undefined ? {} : { versao_esperada: versaoEsperada };
+  if (status === StatusEnum.RESOLVIDO) return { status, solucao: (solucao ?? '').trim(), ...versao };
+  return { status, ...versao };
 }
 
 export const MENSAGEM_ROTA_INDISPONIVEL =
@@ -182,7 +191,11 @@ export type ErroDoAtendimento =
   | 'sem-permissao'
   /** 404 com outro texto: o chamado não existe mais. */
   | 'chamado-inexistente'
-  /** 409: cancelado, arquivado ou transição que já não vale. */
+  /** 409 de versão: outra pessoa gravou antes. A tela relê, e nada se repete. */
+  | 'versao-desatualizada'
+  /** 428: a API pediu a versão e ela não foi. */
+  | 'versao-ausente'
+  /** 409 de estado: cancelado, arquivado ou transição que já não vale. */
   | 'conflito'
   /** 422: a API recusou o corpo. */
   | 'invalido'
@@ -229,6 +242,13 @@ export function interpretarErroDoAtendimento(erro: unknown): {
       mensagem: detail ?? 'Chamado não encontrado.',
       recarregar: true,
     };
+  }
+  // O de versão antes do 409 genérico: só o `codigo` os separa.
+  if (ehConflitoDeVersao(erro)) {
+    return { tipo: 'versao-desatualizada', mensagem: MENSAGEM_CONFLITO_DE_VERSAO, recarregar: true };
+  }
+  if (ehVersaoAusente(erro)) {
+    return { tipo: 'versao-ausente', mensagem: MENSAGEM_VERSAO_AUSENTE, recarregar: true };
   }
   if (status === 409) return { tipo: 'conflito', mensagem: detail ?? MENSAGEM_GENERICA, recarregar: true };
   if (status === 422) return { tipo: 'invalido', mensagem: detail ?? MENSAGEM_GENERICA, recarregar: false };

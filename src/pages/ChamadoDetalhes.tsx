@@ -22,6 +22,13 @@ import {
   fotografar,
 } from '../lib/edicaoQualidade';
 import { setorDoChamado } from '../lib/setor';
+import {
+  MENSAGEM_SEM_VERSAO,
+  MENSAGEM_VERSAO_AUSENTE,
+  ehConflitoDeVersao,
+  ehVersaoAusente,
+  precondicaoDaEscrita,
+} from '../lib/versao';
 import AcoesRapidas from '../components/AcoesRapidas';
 import { categoriasService, chamadosService } from '../services/chamadoshsapi';
 import { useTheme } from '../context/ThemeContext';
@@ -111,6 +118,9 @@ const ChamadoDetalhes: React.FC = () => {
   // não a toca, senão o "mudou desde que você abriu" deixaria de ver mudança.
   const referenciaDaEdicao = useRef<FotoDaEdicao | null>(null);
   const [conflitoNaEdicao, setConflitoNaEdicao] = useState<CampoEditavel[] | null>(null);
+  // O conflito veio do 409 de versão (FE-4), e não da comparação antes do PUT:
+  // outra escrita entrou entre a releitura e o salvamento.
+  const [conflitoDeVersaoNaEdicao, setConflitoDeVersaoNaEdicao] = useState(false);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // Estados para modal de resolução
@@ -274,6 +284,7 @@ const ChamadoDetalhes: React.FC = () => {
       aplicarChamado(atual);
       preencherEdicao(atual);
       setConflitoNaEdicao(null);
+      setConflitoDeVersaoNaEdicao(false);
       setModoEdicao(true);
     } catch {
       toast.error('Não foi possível abrir a edição. Tente de novo.');
@@ -285,13 +296,34 @@ const ChamadoDetalhes: React.FC = () => {
   const cancelarEdicao = () => {
     referenciaDaEdicao.current = null;
     setConflitoNaEdicao(null);
+    setConflitoDeVersaoNaEdicao(false);
     setModoEdicao(false);
+  };
+
+  /**
+   * A edição passa a valer contra `servidor`: ele vira a referência, a página
+   * o mostra, e os campos que a pessoa NÃO editou passam ao valor de agora. Os
+   * que ela editou ficam com o que ela digitou.
+   */
+  const rebasearEdicao = (servidor: Chamado, diferenca: ChamadoUpdate) => {
+    referenciaDaEdicao.current = fotografar(servidor);
+    setChamado(servidor);
+    aplicarChamado(servidor);
+    const naoEditados = (Object.keys(ROTULOS_DOS_CAMPOS) as CampoEditavel[]).filter(
+      (c) => !(c in diferenca)
+    );
+    preencherEdicao(servidor, naoEditados);
   };
 
   /**
    * Salvar na Qualidade: só o que mudou, e só se nada do que a pessoa editou
    * mudou no servidor desde a referência. Num conflito nada é salvo, o que ela
    * digitou fica nos campos, e o resto passa a mostrar o valor de agora.
+   *
+   * O PUT leva a versão da RELEITURA logo antes dele, e não a da abertura da
+   * edição: mudança alheia em campo não editado continua convivendo com a
+   * edição (FE-3). O que entrar entre a releitura e o PUT a API recusa com
+   * 409 (API-4b) — e a resposta é a mesma do conflito acima, sem repetir.
    */
   const salvarEdicaoDaQualidade = async (referencia: FotoDaEdicao) => {
     if (!chamado) return;
@@ -323,23 +355,33 @@ const ChamadoDetalhes: React.FC = () => {
 
       const conflitos = camposEmConflito(referencia, fotografar(servidor), diferenca);
       if (conflitos.length > 0) {
-        referenciaDaEdicao.current = fotografar(servidor);
-        setChamado(servidor);
-        aplicarChamado(servidor);
-        const naoEditados = (Object.keys(ROTULOS_DOS_CAMPOS) as CampoEditavel[]).filter(
-          (c) => !(c in diferenca)
-        );
-        preencherEdicao(servidor, naoEditados);
+        rebasearEdicao(servidor, diferenca);
         setConflitoNaEdicao(conflitos);
+        setConflitoDeVersaoNaEdicao(false);
+        return;
+      }
+
+      // A versão é a do `servidor`, relido agora — do mesmo chamado.
+      const precondicao = precondicaoDaEscrita(servidor);
+      if (precondicao === null) {
+        toast.error(MENSAGEM_SEM_VERSAO);
         return;
       }
 
       try {
-        const atualizado = await chamadosService.atualizar(chamado.id, diferenca);
+        const atualizado = await chamadosService.atualizar(chamado.id, { ...diferenca, ...precondicao });
         aplicarChamado(atualizado);
       } catch (err) {
         // A edição fica aberta, com o que foi digitado: o erro aparece em
         // aviso, e não no lugar da página inteira.
+        if (ehConflitoDeVersao(err)) {
+          await tratarConflitoDeVersaoNaEdicao(referencia, diferenca);
+          return;
+        }
+        if (ehVersaoAusente(err)) {
+          toast.error(MENSAGEM_VERSAO_AUSENTE);
+          return;
+        }
         const { mensagem, recarregarAtendentes, indisponivel } = interpretarErroDaReatribuicao(err);
         if (mensagem) toast.error(mensagem);
         if (indisponivel) marcarQualidadeIndisponivel();
@@ -352,6 +394,28 @@ const ChamadoDetalhes: React.FC = () => {
     } finally {
       setSalvandoEdicao(false);
     }
+  };
+
+  /**
+   * 409 no PUT da edição: outra pessoa salvou entre a releitura e o PUT. Nada
+   * foi gravado. Relê, mostra o que mudou nos campos editados (pode ser
+   * nada: a mudança foi em outro campo) e deixa a decisão com a pessoa — um
+   * novo "Salvar" refaz toda a conferência, contra a referência nova.
+   */
+  const tratarConflitoDeVersaoNaEdicao = async (referencia: FotoDaEdicao, diferenca: ChamadoUpdate) => {
+    if (!chamado) return;
+    let servidor: Chamado;
+    try {
+      servidor = await chamadosService.buscar(chamado.id);
+    } catch {
+      toast.error(
+        'Este chamado foi alterado por outra pessoa, e não foi possível recarregá-lo. Nada foi salvo; o que você editou foi mantido.'
+      );
+      return;
+    }
+    rebasearEdicao(servidor, diferenca);
+    setConflitoNaEdicao(camposEmConflito(referencia, fotografar(servidor), diferenca));
+    setConflitoDeVersaoNaEdicao(true);
   };
 
   const handleSalvarEdicao = async () => {
@@ -965,13 +1029,20 @@ const ChamadoDetalhes: React.FC = () => {
 
         {/* Conflito na edição da Qualidade: nada foi salvo. Fica dentro da
             página, e não no lugar dela — o que foi digitado está logo abaixo. */}
-        {modoEdicao && conflitoNaEdicao && (
+        {modoEdicao && conflitoNaEdicao && (conflitoNaEdicao.length > 0 || conflitoDeVersaoNaEdicao) && (
           <Aviso variante="alerta" titulo="Este chamado mudou enquanto você editava">
-            Mudou desde que você abriu a edição:{' '}
-            {conflitoNaEdicao
-              .map((campo) => `${ROTULOS_DOS_CAMPOS[campo]} (agora: ${valorAtualDoCampo(campo)})`)
-              .join(', ')}
-            . Nada foi salvo. O que você editou continua nos campos: confira e salve de novo.
+            {conflitoNaEdicao.length > 0 ? (
+              <>
+                Mudou desde que você abriu a edição:{' '}
+                {conflitoNaEdicao
+                  .map((campo) => `${ROTULOS_DOS_CAMPOS[campo]} (agora: ${valorAtualDoCampo(campo)})`)
+                  .join(', ')}
+                .
+              </>
+            ) : (
+              <>Outra pessoa salvou este chamado enquanto você salvava, em campos que você não editou.</>
+            )}{' '}
+            Nada foi salvo. O que você editou continua nos campos: confira e salve de novo.
           </Aviso>
         )}
 

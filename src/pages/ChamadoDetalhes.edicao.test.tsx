@@ -223,6 +223,26 @@ describe('TI — o PUT da edição', () => {
     ]);
   });
 
+  // FE-4: a TI não muda. Com uma API-4, o chamado da TI também traz versão,
+  // e mesmo assim o PUT sai com os quatro campos de sempre, sem pré-condição.
+  it('API-4: o chamado da TI tem versão, e o PUT continua sem versao_esperada', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar({ versao: 6, setor_destino: 'TI' } as Partial<Chamado>);
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    await clicar(botao('Salvar'), 'Salvar');
+
+    expect(atualizar.mock.calls[0]).toStrictEqual([
+      1,
+      {
+        categoria_id: null,
+        status: StatusEnum.EM_ANDAMENTO,
+        prioridade: 'Alta',
+        tecnico_responsavel_id: 1,
+      },
+    ]);
+  });
+
   it('"Sem atribuição" manda null, não some do corpo', async () => {
     const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
     await montar();
