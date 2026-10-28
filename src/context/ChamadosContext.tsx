@@ -1,6 +1,13 @@
-import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { podeSerResponsavel } from '../utils/roleMapper';
+import {
+  EstadoDoSuporte,
+  ehAtribuidoNaQualidade,
+  sondarSuporte,
+  unirChamados,
+} from '../lib/atendimento';
+import { DisponibilidadeQualidade, consultarQualidade } from '../lib/qualidade';
 import {
   chamadosService,
   comentariosService,
@@ -9,6 +16,7 @@ import {
   usuariosService,
 } from '../services/chamadoshsapi';
 import {
+  AtendenteQualidade,
   Chamado,
   Comentario,
   Historico,
@@ -18,7 +26,24 @@ import {
   ChamadoCreateQualidade,
   ChamadoUpdate,
   ComentarioCreate,
+  SetorDestinoEnum,
 } from '../types/api';
+
+/**
+ * O que a tela precisa saber da Qualidade para atender: se a API tem a rota
+ * de atendimento (`lib/atendimento`) e quem a atende (`lib/qualidade`).
+ */
+export interface EstadoDaQualidade {
+  suporte: EstadoDoSuporte;
+  disponibilidade: DisponibilidadeQualidade;
+  atendentes: AtendenteQualidade[];
+}
+
+const QUALIDADE_INICIAL: EstadoDaQualidade = {
+  suporte: 'verificando',
+  disponibilidade: 'verificando',
+  atendentes: [],
+};
 
 type ChamadosContextType = {
   // Estado
@@ -50,6 +75,14 @@ type ChamadosContextType = {
   carregarTecnicos: () => Promise<void>;
   carregarUsuarios: () => Promise<void>;
   limparErro: () => void;
+
+  // Qualidade — ver `useQualidade`, que é quem pede a verificação
+  qualidade: EstadoDaQualidade;
+  verificarQualidade: () => Promise<void>;
+  /** A rota de atendimento respondeu como API sem ela: esconde as ações. */
+  marcarAtendimentoIndisponivel: () => void;
+  /** A API disse 503: a Qualidade foi desligada neste ambiente. */
+  marcarQualidadeIndisponivel: () => void;
 };
 
 export const ChamadosContext = createContext<ChamadosContextType>({} as ChamadosContextType);
@@ -87,14 +120,35 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
       // silêncio. Juntos, faziam um chamado sumir sem deixar rastro na tela.
       const params: any = { incluir_arquivados: true, incluir_cancelados: true };
 
-      // Usuários comuns só veem seus próprios chamados
+      let data: Chamado[];
+
+      // Usuários comuns veem os que abriram e os da Qualidade que atendem.
+      // A segunda listagem é conferida aqui, chamado a chamado: a API anterior
+      // à API-1 ignora `setor_destino` e devolveria também os da TI. Se ela
+      // falhar, o quadro fica com os próprios — que é o quadro de antes.
       if (user.role === 'Usuario') {
-        params.solicitante_id = user.id;
+        const [proprios, atribuidos] = await Promise.all([
+          chamadosService.listarTodos({ ...params, solicitante_id: user.id }),
+          chamadosService
+            .listarTodos({
+              ...params,
+              tecnico_id: user.id,
+              setor_destino: SetorDestinoEnum.QUALIDADE,
+            })
+            .catch((err) => {
+              console.warn('[atendimento] não deu para listar os chamados atribuídos:', err?.response?.status ?? 'sem resposta');
+              return [] as Chamado[];
+            }),
+        ]);
+        data = unirChamados(
+          proprios,
+          atribuidos.filter((c) => ehAtribuidoNaQualidade(c, user.id))
+        );
+      } else {
+        // Técnicos e Admins veem todos os chamados (sem filtro)
+        data = await chamadosService.listarTodos(params);
       }
 
-      // Técnicos e Admins veem todos os chamados (sem filtro)
-
-      const data = await chamadosService.listarTodos(params);
       setChamados(data);
       setChamadosCarregados(true);
     } catch (err: any) {
@@ -326,6 +380,82 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, carregarCategorias, carregarTecnicos]);
 
+  // ── Qualidade ────────────────────────────────────────────────────────
+  //
+  // Um estado só para o modal, a página e as ações, para não sondar a API uma
+  // vez por componente. Três travas:
+  //
+  // - `emCurso`: quem pede enquanto uma verificação anda recebe a mesma
+  //   promessa, e não abre outra.
+  // - `geracao`: troca de usuário (e logout) zera tudo; a resposta que
+  //   chegar depois, da sessão anterior, é descartada.
+  // - `suporteDecidido`: a versão da API não muda no meio da sessão, então
+  //   `suportado` e `nao-suportado` valem até a troca de usuário. `falhou` não
+  //   vale: é sondado de novo na próxima vez que alguém pedir — nunca num laço.
+  //
+  // Os atendentes, ao contrário, são consultados a cada pedido: quem é
+  // elegível muda, e é isso que decide quem vê as ações.
+  const [qualidade, setQualidade] = useState<EstadoDaQualidade>(QUALIDADE_INICIAL);
+  const geracao = useRef(0);
+  const emCurso = useRef<Promise<void> | null>(null);
+  const suporteDecidido = useRef<EstadoDoSuporte | null>(null);
+  const dono = useRef<number | undefined>(undefined);
+
+  // Idempotente, e chamada dos dois lados — pelo efeito abaixo e no começo
+  // de cada verificação. Os efeitos dos filhos rodam ANTES dos do provider:
+  // se só o efeito zerasse, a verificação que o `useQualidade` acabou de
+  // pedir seria descartada por ele, e o estado ficaria em "verificando".
+  const assumirDono = useCallback((id: number | undefined) => {
+    if (dono.current === id) return;
+    dono.current = id;
+    geracao.current += 1;
+    emCurso.current = null;
+    suporteDecidido.current = null;
+    setQualidade(QUALIDADE_INICIAL);
+  }, []);
+
+  useEffect(() => {
+    assumirDono(user?.id);
+  }, [user?.id, assumirDono]);
+
+  const verificarQualidade = useCallback((): Promise<void> => {
+    assumirDono(user?.id);
+    if (!user) return Promise.resolve();
+    if (emCurso.current) return emCurso.current;
+
+    const minha = geracao.current;
+    const jaDecidido = suporteDecidido.current;
+
+    const tarefa: Promise<void> = Promise.all([
+      jaDecidido ? Promise.resolve(jaDecidido) : sondarSuporte(),
+      consultarQualidade(),
+    ])
+      .then(([suporte, consulta]) => {
+        if (minha !== geracao.current) return;
+        if (suporte !== 'falhou') suporteDecidido.current = suporte;
+        setQualidade({
+          suporte,
+          disponibilidade: consulta.estado,
+          atendentes: consulta.atendentes,
+        });
+      })
+      .finally(() => {
+        if (emCurso.current === tarefa) emCurso.current = null;
+      });
+
+    emCurso.current = tarefa;
+    return tarefa;
+  }, [user, assumirDono]);
+
+  const marcarAtendimentoIndisponivel = useCallback(() => {
+    suporteDecidido.current = 'nao-suportado';
+    setQualidade((q) => ({ ...q, suporte: 'nao-suportado' }));
+  }, []);
+
+  const marcarQualidadeIndisponivel = useCallback(() => {
+    setQualidade((q) => ({ ...q, disponibilidade: 'indisponivel', atendentes: [] }));
+  }, []);
+
   return (
     <ChamadosContext.Provider
       value={{
@@ -348,6 +478,10 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         carregarTecnicos,
         carregarUsuarios,
         limparErro,
+        qualidade,
+        verificarQualidade,
+        marcarAtendimentoIndisponivel,
+        marcarQualidadeIndisponivel,
       }}
     >
       {children}

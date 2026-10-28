@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { AuthContext } from '../context/AuthContext';
@@ -12,6 +12,8 @@ import {
   usuariosService,
 } from '../services/chamadoshsapi';
 import { Chamado, StatusEnum, Usuario } from '../types/api';
+import toast from 'react-hot-toast';
+import { MENSAGEM_QUALIDADE_INDISPONIVEL } from '../lib/atendimento';
 import ChamadoModal from './ChamadoModal';
 
 /**
@@ -65,6 +67,13 @@ let root: Root;
 
 beforeEach(async () => {
   vi.spyOn(chamadosService, 'listarTodos').mockResolvedValue([CHAMADO]);
+  // Chamado da Qualidade faz o front sondar o atendimento (FE-3). Sem mock,
+  // a sonda iria ao VITE_API_URL do `.env` — que é a produção.
+  vi.spyOn(chamadosService, 'sondarAtendimento').mockResolvedValue({
+    status: 404,
+    dados: { detail: 'Not Found' },
+  });
+  vi.spyOn(chamadosService, 'listarAtendentesQualidade').mockResolvedValue([]);
   // O modal monta antes de a lista carregar; o cache-miss cai em `buscar`.
   vi.spyOn(chamadosService, 'buscar').mockResolvedValue(CHAMADO);
   vi.spyOn(comentariosService, 'listarPorChamado').mockResolvedValue([]);
@@ -172,6 +181,46 @@ describe('ChamadoModal e o quadro', () => {
 
     expect(atualizar).toHaveBeenCalledWith(1, { tecnico_responsavel_id: 1 });
   });
+
+  /** Na TI, tirar o responsável é escolha válida, e viaja como `null`. */
+  it('"Sem atribuição" manda null', async () => {
+    vi.spyOn(chamadosService, 'buscar').mockResolvedValue({
+      ...CHAMADO,
+      id: 3,
+      tecnico_responsavel_id: 1,
+    } as Chamado);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={SESSAO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <ChamadoModal chamadoId={3} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+
+    const seletor = Array.from(document.querySelectorAll('[role="combobox"]')).find((b) =>
+      (b.getAttribute('aria-labelledby') ?? '')
+        .split(/\s+/)
+        .some((i) => document.getElementById(i)?.textContent?.includes('Responsável'))
+    ) as HTMLElement | undefined;
+    expect(seletor, 'seletor de responsável não apareceu').toBeTruthy();
+    await act(async () => {
+      seletor!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const opcao = Array.from(document.querySelectorAll('[role="option"]')).find(
+      (o) => o.textContent?.trim() === 'Sem atribuição'
+    );
+    expect(opcao, 'opção "Sem atribuição" não apareceu').toBeTruthy();
+    await act(async () => {
+      opcao!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(atualizar.mock.calls).toStrictEqual([[3, { tecnico_responsavel_id: null }]]);
+  });
 });
 
 describe('ChamadoModal — o setor de destino', () => {
@@ -238,5 +287,252 @@ describe('ChamadoModal — o setor de destino', () => {
     expect(selo, 'selo de setor não apareceu').toBeTruthy();
     expect(selo!.parentElement!.textContent).toContain('Em Andamento');
     expect(selo!.parentElement!.textContent).toContain('Média');
+  });
+});
+
+/**
+ * FE-3: quem atende a Qualidade usa a janela como a equipe usa — o PATCH
+ * restrito, e o card do quadro anda junto.
+ */
+describe('ChamadoModal — atendimento da Qualidade', () => {
+  const QUAL = {
+    ...CHAMADO,
+    id: 4,
+    setor_destino: 'QUALIDADE',
+    tecnico_responsavel_id: 7,
+  } as unknown as Chamado;
+
+  const USUARIO = {
+    ...SESSAO,
+    user: { id: 7, username: 'ana', role: 'Usuario' },
+  } as React.ContextType<typeof AuthContext>;
+
+  /**
+   * Recusa por algo que a janela não sabia (aqui, 409 de arquivado): ela relê
+   * o chamado pela API, sem o cache do contexto, e as ações somem.
+   */
+  it('recusa com conflito: a janela relê o chamado e esconde as ações', async () => {
+    act(() => root.unmount());
+    root = createRoot(host);
+    vi.mocked(chamadosService.listarTodos).mockResolvedValue([]);
+    vi.mocked(chamadosService.buscar).mockResolvedValue(QUAL);
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 405,
+      dados: { detail: 'Method Not Allowed' },
+    });
+    vi.mocked(chamadosService.listarAtendentesQualidade).mockResolvedValue([{ id: 7, nome: 'Ana' }]);
+    vi.spyOn(chamadosService, 'atender').mockRejectedValue({
+      response: { status: 409, data: { detail: 'Chamado arquivado não pode ser atendido' } },
+    });
+    vi.spyOn(toast, 'error').mockImplementation(() => '');
+
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={USUARIO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <ChamadoModal chamadoId={4} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+    // Outra pessoa arquivou depois que a janela abriu.
+    vi.mocked(chamadosService.buscar).mockResolvedValue({ ...QUAL, arquivado: true } as Chamado);
+    const leituras = vi.mocked(chamadosService.buscar).mock.calls.length;
+    const botao = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Aguardando retorno'
+    );
+    expect(botao, 'ação do atendimento não apareceu').toBeTruthy();
+    await act(async () => {
+      botao!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(vi.mocked(chamadosService.buscar).mock.calls.length).toBe(leituras + 1);
+    expect(document.body.textContent).toContain('Arquivado');
+    expect(
+      Array.from(document.querySelectorAll('button')).some(
+        (b) => b.textContent?.trim() === 'Aguardando retorno'
+      )
+    ).toBe(false);
+  });
+
+  it('o usuário responsável atende pela janela, e o quadro acompanha', async () => {
+    act(() => root.unmount());
+    root = createRoot(host);
+    vi.mocked(chamadosService.listarTodos).mockResolvedValue([QUAL]);
+    vi.mocked(chamadosService.buscar).mockResolvedValue(QUAL);
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 405,
+      dados: { detail: 'Method Not Allowed' },
+    });
+    vi.mocked(chamadosService.listarAtendentesQualidade).mockResolvedValue([{ id: 7, nome: 'Ana' }]);
+    const atender = vi
+      .spyOn(chamadosService, 'atender')
+      .mockResolvedValue({ ...QUAL, status: StatusEnum.AGUARDANDO } as Chamado);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar');
+
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={USUARIO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <Sonda />
+              <ChamadoModal chamadoId={4} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+    await act(async () => {
+      await (Sonda as unknown as { carregar: () => Promise<void> }).carregar();
+    });
+
+    const botao = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Aguardando retorno'
+    );
+    expect(botao, 'ação do atendimento não apareceu').toBeTruthy();
+    await act(async () => {
+      botao!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(atender.mock.calls).toStrictEqual([[4, { status: StatusEnum.AGUARDANDO }]]);
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(quadro).toEqual([{ id: 4, status: StatusEnum.AGUARDANDO }]);
+  });
+});
+
+/**
+ * FE-3: na Qualidade o seletor de responsável é o dos atendentes. Sem
+ * "Sem atribuição", sem null, e o responsável atual fora da lista continua
+ * como escolha até alguém trocar.
+ */
+describe('ChamadoModal — reatribuição na Qualidade', () => {
+  const QUAL = {
+    ...CHAMADO,
+    id: 5,
+    setor_destino: 'QUALIDADE',
+    tecnico_responsavel_id: 7,
+  } as unknown as Chamado;
+
+  const abrir = async (extra: Partial<Chamado> = {}) => {
+    vi.mocked(chamadosService.buscar).mockResolvedValue({ ...QUAL, ...extra } as Chamado);
+    act(() => root.unmount());
+    root = createRoot(host);
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={SESSAO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <ChamadoModal chamadoId={5} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+  };
+
+  const seletorDoResponsavel = () =>
+    Array.from(document.querySelectorAll('[role="combobox"]')).find((b) =>
+      (b.getAttribute('aria-labelledby') ?? '')
+        .split(/\s+/)
+        .some((i) => document.getElementById(i)?.textContent?.includes('Responsável'))
+    ) as HTMLElement | undefined;
+
+  const abrirOpcoes = async () => {
+    const s = seletorDoResponsavel();
+    expect(s, 'seletor de responsável não apareceu').toBeTruthy();
+    await act(async () => {
+      s!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    return Array.from(document.querySelectorAll('[role="option"]'));
+  };
+
+  const escolherOpcao = async (texto: string) => {
+    const alvo = (await abrirOpcoes()).find((o) => o.textContent?.trim() === texto);
+    expect(alvo, `opção "${texto}" não apareceu`).toBeTruthy();
+    await act(async () => {
+      alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  };
+
+  let atualizar: MockInstance<typeof chamadosService.atualizar>;
+  let erro: MockInstance<typeof toast.error>;
+
+  beforeEach(() => {
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 405,
+      dados: { detail: 'Method Not Allowed' },
+    });
+    vi.mocked(chamadosService.listarAtendentesQualidade).mockResolvedValue([
+      { id: 7, nome: 'Ana' },
+      { id: 3, nome: 'Bia' },
+    ]);
+    atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(async (_id, d) => ({ ...QUAL, ...d }) as Chamado);
+    erro = vi.spyOn(toast, 'error').mockImplementation(() => '');
+  });
+
+  it('as opções são os atendentes, sem "Sem atribuição"', async () => {
+    await abrir();
+    const opcoes = (await abrirOpcoes()).map((o) => o.textContent?.trim());
+    expect(opcoes).toEqual(['Ana', 'Bia']);
+  });
+
+  it('trocar manda só o novo responsável', async () => {
+    await abrir();
+    await escolherOpcao('Bia');
+    expect(atualizar.mock.calls).toStrictEqual([[5, { tecnico_responsavel_id: 3 }]]);
+  });
+
+  it('escolher quem já está não faz requisição', async () => {
+    await abrir();
+    await escolherOpcao('Ana');
+    expect(atualizar).not.toHaveBeenCalled();
+  });
+
+  it('responsável fora dos atendentes: continua marcado, sem troca automática', async () => {
+    await abrir({ tecnico_responsavel_id: 12 });
+    expect(seletorDoResponsavel()?.textContent).toContain('Usuário #12 (fora dos atendentes)');
+    const opcoes = (await abrirOpcoes()).map((o) => o.textContent?.trim());
+    expect(opcoes).toEqual(['Usuário #12 (fora dos atendentes)', 'Ana', 'Bia']);
+    expect(atualizar).not.toHaveBeenCalled();
+  });
+
+  it('400: mostra o motivo e recarrega os atendentes', async () => {
+    atualizar.mockRejectedValue({
+      response: { status: 400, data: { detail: 'Atendente não é elegível para a Qualidade' } },
+    });
+    await abrir();
+    const antes = vi.mocked(chamadosService.listarAtendentesQualidade).mock.calls.length;
+    await escolherOpcao('Bia');
+    expect(erro).toHaveBeenCalledWith('Atendente não é elegível para a Qualidade');
+    expect(vi.mocked(chamadosService.listarAtendentesQualidade).mock.calls.length).toBe(antes + 1);
+  });
+
+  it('503: avisa e o campo vira só leitura', async () => {
+    atualizar.mockRejectedValue({ response: { status: 503, data: { detail: 'x' } } });
+    await abrir();
+    await escolherOpcao('Bia');
+    expect(erro).toHaveBeenCalledWith(MENSAGEM_QUALIDADE_INDISPONIVEL);
+    expect(seletorDoResponsavel()).toBeUndefined();
+  });
+
+  it('API sem a rota: só leitura, sem seletor', async () => {
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 404,
+      dados: { detail: 'Not Found' },
+    });
+    await abrir();
+    expect(document.body.textContent).toContain('Setor de destino: Qualidade');
+    expect(seletorDoResponsavel()).toBeUndefined();
+  });
+
+  it('chamado da TI: o seletor de sempre, com "Sem atribuição"', async () => {
+    await abrir({ setor_destino: 'TI' } as Partial<Chamado>);
+    const opcoes = (await abrirOpcoes()).map((o) => o.textContent?.trim());
+    expect(opcoes[0]).toBe('Sem atribuição');
+    expect(chamadosService.sondarAtendimento).not.toHaveBeenCalled();
   });
 });

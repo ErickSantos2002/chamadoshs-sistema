@@ -1,3 +1,4 @@
+import axios from 'axios';
 import api from './api';
 import {
   LoginRequest,
@@ -9,6 +10,7 @@ import {
   AtendenteQualidade,
   ChamadoCreate,
   ChamadoCreateQualidade,
+  ChamadoAtendimento,
   ChamadoUpdate,
   ChamadosQueryParams,
   Comentario,
@@ -29,6 +31,13 @@ import {
   RealizarTarefaRequest,
   EventoDeAuditoria,
 } from '../types/api';
+
+// A sonda do atendimento vai pelo axios puro (ver `sondarAtendimento`), então
+// monta a URL por conta própria, da mesma variável que a instância `api` usa.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+/** Quanto a sonda espera. O mesmo da sonda de saúde: não é uma consulta. */
+export const TIMEOUT_DA_SONDA_MS = 5_000;
 
 // ============================================
 // SERVIÇO DE AUTENTICAÇÃO
@@ -174,6 +183,33 @@ export const chamadosService = {
    */
   async listarAtendentesQualidade(): Promise<AtendenteQualidade[]> {
     const response = await api.get<AtendenteQualidade[]>('/chamados/atendentes-qualidade');
+    return response.data;
+  },
+
+  /**
+   * Pergunta se a API tem o atendimento da Qualidade, sem escrever nada.
+   * O que a resposta quer dizer está em `lib/atendimento`.
+   *
+   * Pelo axios puro, como a sonda de `lib/saude`, e pelo mesmo motivo: a
+   * instância `api` põe o token, pode parar para renová-lo e espera 30s, e
+   * os interceptors dela tratam 401 e 403 como sessão — nenhum deles tem o
+   * que fazer numa pergunta sobre a versão. Sem barra final: com ela a API
+   * redireciona, e o 307 não diz nada.
+   */
+  async sondarAtendimento(): Promise<{ status: number; dados: unknown }> {
+    const response = await axios.get(`${API_BASE_URL}/api/v1/chamados/0/atendimento`, {
+      timeout: TIMEOUT_DA_SONDA_MS,
+      validateStatus: () => true,
+    });
+    return { status: response.status, dados: response.data };
+  },
+
+  /**
+   * Atende um chamado da Qualidade pela rota restrita: só o status e, ao
+   * resolver, a solução. Quem pode usar está em `lib/atendimento`.
+   */
+  async atender(id: number, dados: ChamadoAtendimento): Promise<Chamado> {
+    const response = await api.patch<Chamado>(`/chamados/${id}/atendimento`, dados);
     return response.data;
   },
 

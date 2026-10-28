@@ -291,6 +291,21 @@ export interface AnexoCreate {
 }
 
 // Filtros e Queries
+/** Os status que a rota de atendimento da Qualidade aceita. */
+export type StatusDoAtendimento =
+  | StatusEnum.EM_ANDAMENTO
+  | StatusEnum.AGUARDANDO
+  | StatusEnum.RESOLVIDO;
+
+/**
+ * O corpo de `PATCH /chamados/{id}/atendimento` (API-3). A API recusa campo
+ * a mais, e recusa `solucao` fora da resolução — até como `null`.
+ */
+export interface ChamadoAtendimento {
+  status: StatusDoAtendimento;
+  solucao?: string;
+}
+
 export interface ChamadosQueryParams {
   skip?: number;
   limit?: number;
@@ -299,6 +314,8 @@ export interface ChamadosQueryParams {
   tecnico_id?: number;
   incluir_cancelados?: boolean;
   incluir_arquivados?: boolean;
+  /** A partir da API-1. A anterior ignora: quem filtra confere no front. */
+  setor_destino?: SetorDestinoEnum;
 }
 
 export interface UsuariosQueryParams {

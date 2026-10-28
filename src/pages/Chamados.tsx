@@ -18,6 +18,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import { ehDaPessoa, responsaveisDosChamados } from '../lib/pessoas';
+import { ehAtribuidoNaQualidade } from '../lib/atendimento';
 import { agruparPorColuna, estaNoFluxo } from '../lib/quadro';
 import {
   OPCOES_DE_SETOR,
@@ -76,6 +77,13 @@ const Chamados: React.FC = () => {
   const [filtroSetor, setFiltroSetor] = useState<FiltroDeSetor>('');
 
   /**
+   * "Atribuídos a mim": os chamados da Qualidade que a pessoa atende. Só para
+   * quem não é da equipe — a equipe já tem o filtro por responsável — e só
+   * quando há algum (ver `mostrarFiltroAtribuidos`).
+   */
+  const [filtroAtribuidos, setFiltroAtribuidos] = useState(false);
+
+  /**
    * Arquivado e cancelado não são etapas do atendimento e não podem disputar
    * espaço com o trabalho do dia: ficam atrás de um interruptor, desligado por
    * padrão. Um só, e não dois — são a mesma pergunta ("cadê o que saiu do
@@ -92,7 +100,7 @@ const Chamados: React.FC = () => {
   const [chamadoAberto, setChamadoAberto] = useState<number | null>(null);
 
   const temFiltro = Boolean(
-    filtroPrioridade || filtroCategoria || filtroPessoa || filtroSetor || busca
+    filtroPrioridade || filtroCategoria || filtroPessoa || filtroSetor || filtroAtribuidos || busca
   );
 
   const limparFiltros = () => {
@@ -100,6 +108,7 @@ const Chamados: React.FC = () => {
     setFiltroCategoria('');
     setFiltroPessoa('');
     setFiltroSetor('');
+    setFiltroAtribuidos(false);
     setBusca('');
   };
 
@@ -221,6 +230,14 @@ const Chamados: React.FC = () => {
   const setoresMisturados = useMemo(() => temSetoresMisturados(chamados), [chamados]);
   const mostrarFiltroSetor = filtroSetor !== '' || setoresMisturados;
 
+  // Como o de setor: medido em `chamados`, e o filtro ligado segura o botão
+  // na tela — senão um quadro esvaziado esconderia o controle que o esvaziou.
+  const temAtribuidos = useMemo(
+    () => chamados.some((c) => ehAtribuidoNaQualidade(c, user?.id)),
+    [chamados, user?.id]
+  );
+  const mostrarFiltroAtribuidos = !podeFiltrarPorPessoa && (filtroAtribuidos || temAtribuidos);
+
   // Filtra os chamados localmente. A busca cobre título e protocolo: quem
   // lembra do assunto raramente lembra do número.
   const chamadosFiltrados = chamadosNoEscopo.filter((chamado) => {
@@ -228,6 +245,7 @@ const Chamados: React.FC = () => {
     if (filtroCategoria && chamado.categoria_id !== filtroCategoria) return false;
     if (!ehDaPessoa(chamado, filtroPessoa)) return false;
     if (!casaComFiltroDeSetor(chamado, filtroSetor)) return false;
+    if (filtroAtribuidos && !ehAtribuidoNaQualidade(chamado, user?.id)) return false;
 
     if (busca) {
       const termo = busca.toLowerCase();
@@ -394,6 +412,17 @@ const Chamados: React.FC = () => {
               ]}
               className="w-48"
             />
+          )}
+
+          {mostrarFiltroAtribuidos && (
+            <Button
+              variante={filtroAtribuidos ? 'secundario' : 'fantasma'}
+              tamanho="sm"
+              aria-pressed={filtroAtribuidos}
+              onClick={() => setFiltroAtribuidos((antes) => !antes)}
+            >
+              Atribuídos a mim
+            </Button>
           )}
 
           {/* Não entra em `temFiltro` nem em "Limpar": não é recorte da

@@ -3,9 +3,16 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
+import { useQualidade } from '../hooks/useQualidade';
 import { chamadosService } from '../services/chamadoshsapi';
 import { podeSerResponsavel } from '../utils/roleMapper';
-import { Chamado, Comentario } from '../types/api';
+import {
+  interpretarErroDaReatribuicao,
+  opcoesDeResponsavelDaQualidade,
+  podeReatribuirNaQualidade,
+} from '../lib/atendimento';
+import { setorDoChamado } from '../lib/setor';
+import { Chamado, Comentario, SetorDestinoEnum } from '../types/api';
 import {
   Avatar,
   Aviso,
@@ -116,8 +123,14 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   aoFechar,
   aoAbrirEmPagina,
 }) => {
-  const { buscarChamado, carregarComentarios, criarComentario, aplicarChamado } =
-    useChamados();
+  const {
+    buscarChamado,
+    carregarComentarios,
+    criarComentario,
+    aplicarChamado,
+    verificarQualidade,
+    marcarQualidadeIndisponivel,
+  } = useChamados();
   const usuarios = useUsuariosPorId();
   const { user } = useAuth();
 
@@ -138,6 +151,14 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     (user?.role === 'Administrador' || user?.role === 'Tecnico') &&
     !chamado?.cancelado &&
     !chamado?.arquivado;
+
+  // Na Qualidade o seletor é outro: os atendentes, sem "Sem atribuição", e só
+  // quando a API sabe validar a troca. Fora disso o campo fica só leitura.
+  const ehDaQualidade = chamado
+    ? setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE
+    : false;
+  const qualidade = useQualidade(ehDaQualidade);
+  const reatribuiNaQualidade = podeAtribuir && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
 
   useEffect(() => {
     if (chamadoId === null) return;
@@ -210,6 +231,19 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   };
 
   /**
+   * O atendimento da Qualidade foi recusado por algo que a tela não sabia —
+   * permissão, conflito, chamado que sumiu. Relê da API, sem passar pelo
+   * cache do contexto, que é justamente o que pode estar velho.
+   */
+  const recarregar = () => {
+    if (!chamado) return;
+    chamadosService
+      .buscar(chamado.id)
+      .then(registrarMudanca)
+      .catch(() => setErro('Erro ao carregar o chamado.'));
+  };
+
+  /**
    * Quem pode aparecer no seletor de responsável.
    *
    * `podeSerResponsavel` é a mesma régua do formulário de edição: equipe, e
@@ -241,6 +275,29 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
           err?.response?.data?.detail || 'Não foi possível atribuir o responsável.'
         );
       }
+    } finally {
+      setAtribuindo(false);
+    }
+  };
+
+  /**
+   * Troca o responsável de um chamado da Qualidade. Escolher quem já está não
+   * sai: não há mudança, e a API não precisa ser consultada para isso.
+   */
+  const atribuirNaQualidade = async (valor: string) => {
+    if (!chamado || !valor || Number(valor) === chamado.tecnico_responsavel_id) return;
+
+    try {
+      setAtribuindo(true);
+      const atualizado = await chamadosService.atualizar(chamado.id, {
+        tecnico_responsavel_id: Number(valor),
+      });
+      registrarMudanca(atualizado);
+    } catch (err) {
+      const { mensagem, recarregarAtendentes, indisponivel } = interpretarErroDaReatribuicao(err);
+      if (mensagem) toast.error(mensagem);
+      if (indisponivel) marcarQualidadeIndisponivel();
+      if (recarregarAtendentes) void verificarQualidade();
     } finally {
       setAtribuindo(false);
     }
@@ -366,7 +423,11 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 quase sempre quer fazer algo com ele, não conferir a data de
                 abertura. O componente some sozinho para quem não pode agir e
                 para chamado cancelado ou arquivado. */}
-            <AcoesRapidas chamado={chamado} aoMudar={registrarMudanca} />
+            <AcoesRapidas
+              chamado={chamado}
+              aoMudar={registrarMudanca}
+              aoPrecisarRecarregar={recarregar}
+            />
 
             <dl className="space-y-3 border-t border-borda pt-4 text-sm">
               <Campo rotulo="Solicitante">
@@ -377,7 +438,23 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
               </Campo>
 
               <Campo rotulo="Responsável">
-                {podeAtribuir ? (
+                {reatribuiNaQualidade ? (
+                  <Seletor
+                    rotulo="Responsável"
+                    disabled={atribuindo}
+                    valor={
+                      chamado.tecnico_responsavel_id
+                        ? String(chamado.tecnico_responsavel_id)
+                        : ''
+                    }
+                    aoMudar={atribuirNaQualidade}
+                    opcoes={opcoesDeResponsavelDaQualidade(
+                      qualidade.atendentes,
+                      chamado.tecnico_responsavel_id,
+                      nome(chamado.tecnico_responsavel_id)
+                    )}
+                  />
+                ) : podeAtribuir && !ehDaQualidade ? (
                   // Para a equipe o campo É o seletor, sem modo de edição à
                   // parte: escolher salva na hora, como as ações de status. O
                   // valor volta do servidor — o que aparece é o que ficou.

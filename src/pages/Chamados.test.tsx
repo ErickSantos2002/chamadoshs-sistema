@@ -144,6 +144,13 @@ beforeEach(() => {
   _esquecerAvisos();
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   listarTodos = vi.spyOn(chamadosService, 'listarTodos');
+  // Chamado da Qualidade faz o front sondar o atendimento (FE-3). Sem mock,
+  // a sonda iria ao VITE_API_URL do `.env` — que é a produção.
+  vi.spyOn(chamadosService, 'sondarAtendimento').mockResolvedValue({
+    status: 404,
+    dados: { detail: 'Not Found' },
+  });
+  vi.spyOn(chamadosService, 'listarAtendentesQualidade').mockResolvedValue([]);
   vi.spyOn(categoriasService, 'listar').mockResolvedValue([
     { id: 1, nome: 'Hardware', ativo: true },
     { id: 2, nome: 'Rede', ativo: true },
@@ -370,11 +377,23 @@ describe('erro de carga', () => {
 });
 
 describe('perfil Usuario', () => {
-  it('continua pedindo só os próprios chamados, e o setor filtra por cima', async () => {
+  /**
+   * A listagem dos próprios é a de antes; desde o FE-3 vem junto a dos
+   * atribuídos na Qualidade, e só ela leva `setor_destino`.
+   */
+  it('pede os próprios como antes, mais os atribuídos, e o setor filtra por cima', async () => {
     await montar(MISTURADO, 'Usuario');
-    for (const [params] of listarTodos.mock.calls) {
-      expect(params).toMatchObject({ solicitante_id: 1 });
+    const proprios = listarTodos.mock.calls.filter(([p]) => p?.solicitante_id === 1);
+    const atribuidos = listarTodos.mock.calls.filter(([p]) => p?.tecnico_id === 1);
+    expect(proprios.length).toBeGreaterThan(0);
+    expect(proprios.length + atribuidos.length).toBe(listarTodos.mock.calls.length);
+    for (const [params] of proprios) {
       expect(params).not.toHaveProperty('setor_destino');
+      expect(params).not.toHaveProperty('tecnico_id');
+    }
+    for (const [params] of atribuidos) {
+      expect(params).toMatchObject({ setor_destino: 'QUALIDADE' });
+      expect(params).not.toHaveProperty('solicitante_id');
     }
     await escolher('Filtrar por setor', 'Qualidade');
     expect(naTela()).toEqual(['Auditoria ISO', 'Calibração']);
@@ -383,5 +402,110 @@ describe('perfil Usuario', () => {
   it('não ganha o filtro por responsável', async () => {
     await montar(MISTURADO, 'Usuario');
     expect(seletor('Filtrar por responsável')).toBeUndefined();
+  });
+});
+
+/**
+ * D-8: "Atribuídos a mim", para quem não é da equipe e atende a Qualidade.
+ * Aparece só com atribuídos, fica enquanto ligado, entra no "Limpar" e
+ * combina com os outros filtros.
+ */
+describe('Atribuídos a mim', () => {
+  const proprioTi = { ...base, id: 21, protocolo: 'P-21', titulo: 'Meu da TI', prioridade: PrioridadeEnum.ALTA, categoria_id: 1, setor_destino: 'TI' };
+  const proprioQual = { ...base, id: 22, protocolo: 'P-22', titulo: 'Meu da Qualidade', prioridade: PrioridadeEnum.BAIXA, categoria_id: 2, setor_destino: 'QUALIDADE', tecnico_responsavel_id: 3 };
+  const atribAlta = { ...base, id: 23, protocolo: 'P-23', titulo: 'Atendo alta', solicitante_id: 9, prioridade: PrioridadeEnum.ALTA, categoria_id: 1, setor_destino: 'QUALIDADE', tecnico_responsavel_id: 1 };
+  const atribBaixa = { ...base, id: 24, protocolo: 'P-24', titulo: 'Atendo baixa', solicitante_id: 9, prioridade: PrioridadeEnum.BAIXA, categoria_id: 2, setor_destino: 'QUALIDADE', tecnico_responsavel_id: 1 };
+
+  const titulos = () =>
+    Array.from(document.querySelectorAll('article h4'))
+      // O h4 começa com "Abrir chamado P-23: " para quem ouve; fica o título.
+      .map((h) => (h.textContent ?? '').replace(/^Abrir chamado [^:]*: /, '').trim())
+      .sort();
+
+  const botaoAtribuidos = () =>
+    Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Atribuídos a mim'
+    );
+
+  const montarUsuario = async (proprios: unknown[], atribuidos: unknown[]) => {
+    listarTodos.mockImplementation(async (p) =>
+      (p?.tecnico_id !== undefined ? atribuidos : proprios) as Chamado[]
+    );
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={sessao('Usuario')}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <MemoryRouter>
+                <Sonda />
+                <Chamados />
+              </MemoryRouter>
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+  };
+
+  it('sem atribuídos: o botão não aparece e o quadro é o de antes', async () => {
+    await montarUsuario([proprioTi, proprioQual], []);
+    expect(botaoAtribuidos()).toBeUndefined();
+    expect(titulos()).toEqual(['Meu da Qualidade', 'Meu da TI']);
+  });
+
+  it('com atribuídos: o quadro mostra os dois, e o botão aparece desligado', async () => {
+    await montarUsuario([proprioTi, proprioQual], [atribAlta, atribBaixa]);
+    expect(titulos()).toEqual(['Atendo alta', 'Atendo baixa', 'Meu da Qualidade', 'Meu da TI']);
+    expect(botaoAtribuidos()?.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('ligado: só os atribuídos, e o "Limpar" aparece', async () => {
+    await montarUsuario([proprioTi, proprioQual], [atribAlta, atribBaixa]);
+    await clicar('Atribuídos a mim');
+    expect(botaoAtribuidos()?.getAttribute('aria-pressed')).toBe('true');
+    expect(titulos()).toEqual(['Atendo alta', 'Atendo baixa']);
+    expect(document.body.textContent).toContain('Limpar');
+  });
+
+  it('combina com prioridade', async () => {
+    await montarUsuario([proprioTi, proprioQual], [atribAlta, atribBaixa]);
+    await clicar('Atribuídos a mim');
+    await escolher('Filtrar por prioridade', 'Alta');
+    expect(titulos()).toEqual(['Atendo alta']);
+  });
+
+  it('"Limpar" desliga o botão junto com os outros filtros', async () => {
+    await montarUsuario([proprioTi, proprioQual], [atribAlta, atribBaixa]);
+    await clicar('Atribuídos a mim');
+    await escolher('Filtrar por prioridade', 'Alta');
+    await clicar('Limpar');
+    expect(botaoAtribuidos()?.getAttribute('aria-pressed')).toBe('false');
+    expect(titulos()).toHaveLength(4);
+  });
+
+  it('desligar o botão preserva os outros filtros', async () => {
+    await montarUsuario([proprioTi, proprioQual], [atribAlta, atribBaixa]);
+    await escolher('Filtrar por prioridade', 'Alta');
+    await clicar('Atribuídos a mim');
+    await clicar('Atribuídos a mim');
+    expect(titulos()).toEqual(['Atendo alta', 'Meu da TI']);
+  });
+
+  it('ligado, fica na tela mesmo se os atribuídos somem numa recarga', async () => {
+    await montarUsuario([proprioTi], [atribAlta]);
+    await clicar('Atribuídos a mim');
+    listarTodos.mockImplementation(async (p) =>
+      (p?.tecnico_id !== undefined ? [] : [proprioTi]) as unknown as Chamado[]
+    );
+    await act(async () => {
+      await recarregar();
+    });
+    expect(titulos()).toEqual([]);
+    expect(botaoAtribuidos()?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('a equipe não ganha o botão: tem o filtro por responsável', async () => {
+    await montar([atribAlta, proprioTi] as unknown as Chamado[], 'Tecnico');
+    expect(botaoAtribuidos()).toBeUndefined();
   });
 });
