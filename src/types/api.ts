@@ -185,6 +185,15 @@ export interface Chamado {
    * valor passa por `lerSetor`, que não confia nele.
    */
   setor_destino?: SetorDestinoEnum;
+  /**
+   * A versão gravada (API-4a): inteiro ≥ 1 que sobe a cada mudança. Volta em
+   * `versao_esperada` na escrita seguinte de um chamado da Qualidade.
+   *
+   * Opcional porque uma API anterior à 4 não a manda, e ausente NÃO é zero:
+   * quem lê passa por `lerVersao`, que devolve `null` para ausente ou
+   * inválido — e sem versão a Qualidade não escreve (ver `lib/versao`).
+   */
+  versao?: number;
 }
 
 export interface ChamadoCreate {
@@ -236,6 +245,8 @@ export interface ChamadoUpdate {
   solucao?: string;
   observacoes?: string;
   avaliacao?: number;
+  /** Pré-condição da Qualidade (API-4b). Nunca vai na TI. Ver `lib/versao`. */
+  versao_esperada?: number;
 }
 
 // Comentários
@@ -304,6 +315,11 @@ export type StatusDoAtendimento =
 export interface ChamadoAtendimento {
   status: StatusDoAtendimento;
   solucao?: string;
+  /**
+   * Obrigatória na API-4b. Uma API-3 recusa o campo com 422 — por isso ele só
+   * vai com uma versão lida do próprio chamado, e uma API-3 não devolve uma.
+   */
+  versao_esperada?: number;
 }
 
 export interface ChamadosQueryParams {

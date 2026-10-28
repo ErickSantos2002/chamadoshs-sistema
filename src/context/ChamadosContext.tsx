@@ -8,6 +8,7 @@ import {
   unirChamados,
 } from '../lib/atendimento';
 import { DisponibilidadeQualidade, consultarQualidade } from '../lib/qualidade';
+import { maisRecente } from '../lib/versao';
 import {
   chamadosService,
   comentariosService,
@@ -228,9 +229,12 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
    *
    * Só mexe em quem já está na lista. Chamado que não está nela não é deste
    * quadro (filtro por perfil), e inserir aqui furaria esse filtro.
+   *
+   * Uma resposta atrasada, de versão menor que a já na lista, não a desfaz
+   * (`maisRecente`): a versão do card é a que a próxima escrita vai mandar.
    */
   const aplicarChamado = useCallback((chamado: Chamado) => {
-    setChamados((prev) => prev.map((c) => (c.id === chamado.id ? chamado : c)));
+    setChamados((prev) => prev.map((c) => (c.id === chamado.id ? maisRecente(c, chamado) : c)));
   }, []);
 
   // Atualizar chamado
@@ -243,7 +247,9 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         const chamadoAtualizado = await chamadosService.atualizar(id, dados);
 
         // Atualiza o cache
-        setChamados((prev) => prev.map((c) => (c.id === id ? chamadoAtualizado : c)));
+        setChamados((prev) =>
+          prev.map((c) => (c.id === id ? maisRecente(c, chamadoAtualizado) : c))
+        );
 
         return chamadoAtualizado;
       } catch (err: any) {

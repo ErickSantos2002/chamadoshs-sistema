@@ -1,5 +1,6 @@
 import axios from 'axios';
 import api from './api';
+import { versaoValida } from '../lib/versao';
 import {
   LoginRequest,
   TokenResponse,
@@ -121,6 +122,28 @@ export const authService = {
 // SERVIÇO DE CHAMADOS
 // ============================================
 
+/**
+ * PATCH de marca, com ou sem a versão. Versão que não é inteiro ≥ 1 não sai
+ * daqui: uma pré-condição falsa é pior que nenhuma.
+ */
+async function marcar(
+  id: number,
+  marca: 'cancelar' | 'arquivar' | 'desarquivar',
+  versaoEsperada?: number
+): Promise<Chamado> {
+  const url = `/chamados/${id}/${marca}`;
+  if (versaoEsperada === undefined) return (await api.patch<Chamado>(url)).data;
+  if (!versaoValida(versaoEsperada)) throw new Error(`versão inválida para ${marca}`);
+  return (await api.patch<Chamado>(url, { versao_esperada: versaoEsperada })).data;
+}
+
+/** A mesma trava para o corpo do PUT e do atendimento. */
+function conferirCorpo(dados: { versao_esperada?: unknown }): void {
+  if ('versao_esperada' in dados && !versaoValida(dados.versao_esperada)) {
+    throw new Error('versão inválida no corpo');
+  }
+}
+
 export const chamadosService = {
   /**
    * Lista todos os chamados com filtros opcionais
@@ -209,6 +232,7 @@ export const chamadosService = {
    * resolver, a solução. Quem pode usar está em `lib/atendimento`.
    */
   async atender(id: number, dados: ChamadoAtendimento): Promise<Chamado> {
+    conferirCorpo(dados);
     const response = await api.patch<Chamado>(`/chamados/${id}/atendimento`, dados);
     return response.data;
   },
@@ -217,6 +241,7 @@ export const chamadosService = {
    * Atualiza um chamado existente
    */
   async atualizar(id: number, dados: ChamadoUpdate): Promise<Chamado> {
+    conferirCorpo(dados);
     const response = await api.put<Chamado>(`/chamados/${id}`, dados);
     return response.data;
   },
@@ -229,27 +254,22 @@ export const chamadosService = {
   },
 
   /**
-   * Cancela um chamado
+   * Cancela um chamado. As três marcas aceitam, na API-4b, um corpo opcional
+   * `{versao_esperada}` — obrigatório na Qualidade. Sem versão, a requisição
+   * sai sem corpo, exatamente como antes (TI e API anterior).
    */
-  async cancelar(id: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/cancelar`);
-    return response.data;
+  async cancelar(id: number, versaoEsperada?: number): Promise<Chamado> {
+    return marcar(id, 'cancelar', versaoEsperada);
   },
 
-  /**
-   * Arquiva um chamado
-   */
-  async arquivar(id: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/arquivar`);
-    return response.data;
+  /** Arquiva um chamado. Corpo como em `cancelar`. */
+  async arquivar(id: number, versaoEsperada?: number): Promise<Chamado> {
+    return marcar(id, 'arquivar', versaoEsperada);
   },
 
-  /**
-   * Desarquiva um chamado
-   */
-  async desarquivar(id: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/desarquivar`);
-    return response.data;
+  /** Desarquiva um chamado. Corpo como em `cancelar`. */
+  async desarquivar(id: number, versaoEsperada?: number): Promise<Chamado> {
+    return marcar(id, 'desarquivar', versaoEsperada);
   },
 
   /**
