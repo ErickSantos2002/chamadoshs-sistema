@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { MemoryRouter, Route, Routes, useNavigationType } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate, useNavigationType } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -166,8 +166,8 @@ beforeEach(() => {
   });
   vi.spyOn(chamadosService, 'listarTodos').mockResolvedValue([
     { ...CHAMADO },
-    { ...CHAMADO, id: 2, titulo: 'Outro chamado', protocolo: 'CHAM-2026-0102' },
-    { ...CHAMADO, id: 3, titulo: 'Mais um', protocolo: 'CHAM-2026-0103' },
+    { ...CHAMADO, id: 2, titulo: 'Outro chamado', protocolo: 'CHAM-2026-0102', descricao: 'Descrição do 2.' },
+    { ...CHAMADO, id: 3, titulo: 'Mais um', protocolo: 'CHAM-2026-0103', descricao: 'Descrição do 3.' },
   ] as Chamado[]);
   vi.spyOn(chamadosService, 'buscar').mockImplementation(async () => {
     if (!acessivel) throw NAO_ENCONTRADO;
@@ -378,6 +378,141 @@ describe('página — perda de acesso', () => {
     await clicar('Aguardando retorno');
     expect(host.textContent).not.toContain(MENSAGEM_SEM_ACESSO);
     expect(ids).toEqual([1, 2, 3]);
+  });
+});
+
+// ── Página: estado obsoleto depois da perda ────────────────────────────
+
+/**
+ * A tela de encerramento é desenhada antes de tudo, então ela sozinha não
+ * prova que os dados do chamado saíram da memória da página. O caminho em
+ * que isso se vê: a página NÃO desmonta quando o `id` da rota muda — o
+ * Voltar do navegador de `/chamados/1` para `/chamados/2` reaproveita a
+ * mesma instância. Se o chamado 1 ficasse no estado, ele apareceria
+ * enquanto o 2 carrega. O mesmo vale para uma resposta atrasada que o
+ * repusesse depois da perda.
+ */
+describe('página — dados obsoletos não voltam depois da perda de acesso', () => {
+  let voltar: () => void;
+  const Navegador: React.FC = () => {
+    const navigate = useNavigate();
+    voltar = () => navigate(-1);
+    return null;
+  };
+
+  /** Os comentários do chamado 2 ficam pendentes até `soltar2`. */
+  let soltar2: (c: Comentario[]) => void;
+
+  const montarComHistorico = async () => {
+    vi.mocked(comentariosService.listarPorChamado).mockImplementation(async (id: number) => {
+      if (id === 2) return new Promise<Comentario[]>((r) => (soltar2 = r));
+      if (!acessivel) throw NAO_ENCONTRADO;
+      return [COMENTARIO_PROTEGIDO];
+    });
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={USUARIO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <Quadro />
+              <MemoryRouter initialEntries={['/chamados/2', '/chamados/1']} initialIndex={1}>
+                <Navegador />
+                <Routes>
+                  <Route path="/chamados/:id" element={<ChamadoDetalhes />} />
+                </Routes>
+              </MemoryRouter>
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+    await act(async () => {
+      await contexto.carregarChamados();
+    });
+    expect(host.textContent).toContain(CHAMADO.titulo);
+  };
+
+  const perderAcesso = async () => {
+    atender.mockImplementation(async () => {
+      acessivel = false;
+      throw NAO_ENCONTRADO;
+    });
+    await clicar('Aguardando retorno');
+    expect(host.textContent).toContain(MENSAGEM_SEM_ACESSO);
+  };
+
+  it('Voltar para outro chamado: o anterior não aparece enquanto o novo carrega', async () => {
+    await montarComHistorico();
+    await perderAcesso();
+
+    await act(async () => voltar());
+    // O 2 ainda carregando: nada do 1 na tela, nem ação dele.
+    semDadosDoChamado();
+    expect(textos()).not.toContain('Aguardando retorno');
+    expect(textos()).not.toContain('Marcar como resolvido');
+
+    await act(async () => soltar2([]));
+    expect(host.textContent).toContain('Outro chamado');
+    semDadosDoChamado();
+  });
+
+  it('resposta atrasada de antes da perda não repõe o chamado', async () => {
+    await montarComHistorico();
+    // A releitura em voo foi respondida pelo servidor ANTES da perda: os
+    // comentários dela chegam com dados, e não com 404.
+    vi.mocked(comentariosService.listarPorChamado).mockImplementation(async (id: number) => {
+      if (id === 2) return new Promise<Comentario[]>((r) => (soltar2 = r));
+      return [COMENTARIO_PROTEGIDO];
+    });
+
+    // Um comentário enviado: a releitura forçada fica pendente.
+    let soltarReleitura!: (r: { data: Chamado }) => void;
+    vi.mocked(api.get).mockImplementationOnce(
+      () => new Promise((r) => (soltarReleitura = r as typeof soltarReleitura))
+    );
+    criarComentario.mockResolvedValueOnce({ ...COMENTARIO_PROTEGIDO, id: 91 });
+    await digitar(campoDoComentario(), 'Enviado antes da perda');
+    await clicar('Enviar Comentário');
+
+    // Enquanto ela anda, a pessoa perde o acesso por outra ação.
+    await perderAcesso();
+
+    // A releitura antiga chega, com os dados de antes.
+    await act(async () => soltarReleitura({ data: { ...CHAMADO } }));
+    expect(host.textContent).toContain(MENSAGEM_SEM_ACESSO);
+    semDadosDoChamado();
+
+    // E não vaza no caminho de volta.
+    await act(async () => voltar());
+    semDadosDoChamado();
+    await act(async () => soltar2([]));
+    expect(host.textContent).toContain('Outro chamado');
+  });
+
+  it('perda no meio da releitura (chamado já lido, comentários pendentes): nada é reposto', async () => {
+    await montarComHistorico();
+    let soltar1!: (c: Comentario[]) => void;
+    vi.mocked(comentariosService.listarPorChamado).mockImplementation(async (id: number) => {
+      if (id === 2) return new Promise<Comentario[]>((r) => (soltar2 = r));
+      return new Promise<Comentario[]>((r) => (soltar1 = r));
+    });
+    criarComentario.mockResolvedValueOnce({ ...COMENTARIO_PROTEGIDO, id: 92 });
+    await digitar(campoDoComentario(), 'Enviado antes da perda');
+    await clicar('Enviar Comentário');
+
+    // O GET da releitura já respondeu; os comentários dela, não.
+    vi.mocked(comentariosService.listarPorChamado).mockImplementation(async (id: number) => {
+      if (id === 2) return new Promise<Comentario[]>((r) => (soltar2 = r));
+      throw NAO_ENCONTRADO;
+    });
+    await perderAcesso();
+    await act(async () => soltar1([COMENTARIO_PROTEGIDO]));
+    expect(host.textContent).toContain(MENSAGEM_SEM_ACESSO);
+
+    await act(async () => voltar());
+    semDadosDoChamado();
+    await act(async () => soltar2([]));
+    expect(host.textContent).toContain('Outro chamado');
   });
 });
 
