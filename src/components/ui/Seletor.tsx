@@ -318,7 +318,11 @@ export const Seletor: React.FC<SeletorProps> = ({
                   'flex items-center gap-2.5 px-3 py-2 text-sm transition-colors',
                   opcao.desabilitada ? 'cursor-not-allowed italic' : 'cursor-pointer',
                   ehDestacada ? 'bg-sinal/15 text-conteudo' : 'text-conteudo-suave',
-                  ehEscolhida && 'font-medium text-sinal'
+                  // A escolhida em `text-conteudo`, não `text-sinal`: sobre o
+                  // destaque `bg-sinal/15` do tema claro o sinal media 4,31:1,
+                  // abaixo dos 4,5 de texto (homologação FE-5). O sinal fica
+                  // no ícone, e o peso diz o resto — não só a cor.
+                  ehEscolhida && 'font-medium text-conteudo'
                 )}
               >
                 {/* O ponto ocupa lugar mesmo sem cor, senão os rótulos das
@@ -329,7 +333,7 @@ export const Seletor: React.FC<SeletorProps> = ({
                   style={opcao.cor ? { backgroundColor: opcao.cor } : undefined}
                 />
                 <span className="flex-1">{opcao.rotulo}</span>
-                {ehEscolhida && <IconeConfere className="h-3.5 w-3.5 shrink-0" />}
+                {ehEscolhida && <IconeConfere className="h-3.5 w-3.5 shrink-0 text-sinal" />}
               </div>
             );
           })}

@@ -424,3 +424,18 @@ describe('Seletor — valor fora das opções e opção desabilitada (FE-5)', ()
     expect(aoMudar).not.toHaveBeenCalled();
   });
 });
+
+// Homologação FE-5: no tema claro, `text-sinal` sobre o destaque `bg-sinal/15`
+// media 4,31:1 — texto abaixo de 4,5. A cor é medida no navegador; aqui fica
+// travado o que a corrigiu: a escolhida no texto do conteúdo, o sinal no ícone.
+describe('Seletor — a opção escolhida', () => {
+  it('fica no texto do conteúdo, com o sinal só no ícone', () => {
+    montar({ valor: '1' });
+    abrir();
+    const escolhida = document.querySelector('[role="option"][aria-selected="true"]')!;
+    expect(escolhida.textContent).toContain('Lidisay');
+    expect(escolhida.className).toContain('text-conteudo');
+    expect(escolhida.className).not.toMatch(/(^|\s)text-sinal(\s|$)/);
+    expect(escolhida.querySelector('svg')?.getAttribute('class')).toContain('text-sinal');
+  });
+});

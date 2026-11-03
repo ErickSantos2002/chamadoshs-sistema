@@ -166,6 +166,17 @@ describe('equipe — os botões de cada status', () => {
     await montar(USUARIO, chamadoCom());
     expect(host.innerHTML).toBe('');
   });
+  // Homologação FE-5: em `sm` (30 px) as ações eram os menores alvos do modal,
+  // ao lado de controles de 38 px. Agora no tamanho padrão do `Button`.
+  it('as ações saem no tamanho padrão, não no pequeno', async () => {
+    await montar(ADMIN, chamadoCom({ status: StatusEnum.EM_ANDAMENTO }));
+    const acoes = Array.from(host.querySelectorAll('button'));
+    expect(acoes.length).toBe(2);
+    for (const b of acoes) {
+      expect(b.className).toContain('text-sm');
+      expect(b.className).not.toContain('text-xs');
+    }
+  });
 });
 
 describe('equipe — o PUT', () => {

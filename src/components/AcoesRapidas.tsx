@@ -327,7 +327,6 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
 
         <div className="flex gap-2">
           <Button
-            tamanho="sm"
             onClick={confirmarResolucao}
             carregando={salvando}
             disabled={desatualizado}
@@ -338,7 +337,6 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
           </Button>
           <Button
             variante="secundario"
-            tamanho="sm"
             onClick={() => setResolvendo(false)}
             disabled={salvando}
           >
@@ -367,11 +365,12 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
           </p>
         )
       )}
+      {/* No tamanho padrão, como os outros controles do modal e da página:
+          em `sm` as ações eram os menores alvos da tela (homologação FE-5). */}
       {disponiveis.map(({ para, texto, Icone }) => (
         <Button
           key={para}
           variante={para === StatusEnum.RESOLVIDO ? 'sucesso' : 'secundario'}
-          tamanho="sm"
           disabled={salvando || desatualizado}
           onClick={() =>
             para === StatusEnum.RESOLVIDO
