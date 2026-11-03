@@ -17,8 +17,9 @@ informação se perde entre quem escreve o código e quem sobe.
 
 Por Rickelme David. Branches `feat/setor-destino-fe-1` (FE-1, exibição e
 filtro), `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade),
-`feat/setor-destino-fe-3` (FE-3, atendimento da Qualidade) e
-`feat/setor-destino-fe-4` (FE-4, controle de concorrência na Qualidade), da
+`feat/setor-destino-fe-3` (FE-3, atendimento da Qualidade),
+`feat/setor-destino-fe-4` (FE-4, controle de concorrência na Qualidade) e
+`feat/setor-destino-fe-5` (FE-5, permissões da equipe da TI e API-9), da
 funcionalidade Setor de Destino. Sobe como **1.8.0** quando for publicada; a
 versão não subiu aqui porque o `package.json` acende o aviso de novidades, e o
 aviso só faz sentido quando a Qualidade estiver ligada na API.
@@ -54,6 +55,15 @@ versão —, o FE-4 não escreve: mostra "O servidor não informou a versão des
 chamado…" e guarda o que foi digitado. É a falha segura, sem cair para o `PUT`
 nem para a TI; e é por isso que a ordem importa. **`SETOR_QUALIDADE_ID` segue
 desligado** até a homologação integrada da API-4 com o FE-4.
+
+O FE-5 **tem ordem: `SETORES_TI_IDS` configurada, depois a API com as etapas
+5 a 9 (`chamadoshs-api`, `feat/setor-destino-api-9`, `0ac2571`), depois o
+front.** É a API-7 que manda `integra_equipe_ti` no `/auth/me`, e a API-9 que
+responde a lista de responsáveis da TI. Contra API anterior, a falha é segura:
+sem `integra_equipe_ti` só o Administrador administra; contra a API-8 a lista
+responde 422 e a troca de responsável da TI fica travada, sem cair para outra
+lista. O rollback é coordenado: ver `docs/fe-5-permissoes-e-api9.md`, §11 e
+§12. **`SETOR_QUALIDADE_ID` segue desligado.**
 
 ### Added
 
@@ -99,6 +109,19 @@ desligado** até a homologação integrada da API-4 com o FE-4.
   cancelado ou arquivado. Se a API não tiver o atendimento, aparece "O
   atendimento da Qualidade não está disponível nesta versão do sistema." e as
   ações somem; o pedido nunca é refeito por outro caminho.
+- **Comentário interno (FE-5).** Administrador e técnico da equipe da TI veem
+  a opção "Comentário interno" ao comentar, na janela e na página, sempre
+  desmarcada. Na lista, o interno traz o selo "Interno", em texto, e uma marca
+  na borda. Se a API recusar o interno (a permissão mudou), nada é salvo, o
+  texto fica e o envio trava até a pessoa escolher "Tornar público" — o
+  comentário nunca vira público sozinho.
+- **Chamado que deixou de ser seu (FE-5).** Quem perde o acesso a um chamado
+  que estava vendo — saiu do setor, foi tirado da atribuição ou passou o
+  chamado a outra pessoa — vê "Este chamado não está mais disponível para
+  você." no lugar do chamado, na página e na janela. Ao trocar o responsável e
+  perder o acesso por isso, a mensagem diz que a atribuição foi salva. O que a
+  pessoa tinha digitado fica para copiar, nada é reenviado, e o card sai do
+  quadro sem recarregá-lo.
 
 ### Changed
 
@@ -107,6 +130,19 @@ desligado** até a homologação integrada da API-4 com o FE-4.
   atribuição". Quem já está no chamado sem estar na lista continua marcado
   "(fora dos atendentes)" até alguém trocar de propósito. Sem o API-3 o campo
   fica só leitura. Na TI nada muda.
+- **Gestão só para quem administra (FE-5).** Cadastros, Tarefas Recorrentes e
+  Auditoria aparecem para o Administrador e para o técnico da equipe da TI. A
+  aba Usuários continua só do Administrador. Os outros perfis não veem os
+  menus, e a URL digitada mostra o bloqueio, sem 403. Enquanto as permissões
+  são confirmadas — ao abrir o sistema e a cada renovação de sessão —, nada
+  administrativo aparece. O lembrete de tarefas do dia, no quadro, só é pedido
+  por quem administra.
+- **Responsável da TI vem da lista da API (FE-5).** O seletor oferece só quem
+  a API aceita como novo responsável — sem inativos, sem gente de fora da
+  equipe da TI, sem conta de serviço. Quem já está no chamado sem estar na
+  lista aparece "(fora da equipe)", sem poder ser escolhido de novo. Sem a
+  lista, o seletor trava e diz o motivo, com "Tentar de novo". Trocar o
+  responsável da TI passa a ser do Administrador e da equipe da TI.
 
 ### Fixed
 
@@ -143,6 +179,14 @@ desligado** até a homologação integrada da API-4 com o FE-4.
   A versão não é inventada nem tirada de outro chamado.
 - **Uma resposta atrasada não desfaz mais uma mais nova** no quadro: entre
   duas leituras do mesmo chamado, fica a de versão maior.
+- **As ações não ficam mais em "Atualizando os dados…" para sempre (FE-5).**
+  Se a releitura depois de um conflito falha, as ações ficam travadas com o
+  motivo e "Tentar de novo", em vez de esperar uma versão que não vem.
+- **Comentário recusado não troca mais a janela por um erro (FE-5).** O texto
+  fica, o aviso é um só (o do sistema, no 403), e nada é reenviado.
+- **Permissão administrativa não vem mais do navegador (FE-5).** Ela é
+  confirmada no servidor a cada abertura e renovação de sessão; uma resposta
+  atrasada de outra sessão é descartada.
 
 ### Pendências conhecidas
 
@@ -190,6 +234,13 @@ desligado** até a homologação integrada da API-4 com o FE-4.
 - **Ações da equipe em cancelado e arquivado na página do chamado** continuam
   como estavam (D-12): o atendimento novo não aparece nesses chamados, mas os
   botões de sempre da equipe sim.
+- **FE-5 validado só por testes automatizados**, contra os contratos das APIs
+  5 a 9. Faltam a homologação integrada e a revisão visual; registrados sem
+  correção: o contraste da opção escolhida no seletor e o tamanho dos botões
+  das ações rápidas. Riscos residuais em `docs/fe-5-permissoes-e-api9.md`, §9.
+- **O comentário digitado na janela some quando o quadro muda** (anterior ao
+  FE-5): mudar o status pela janela relê os comentários e limpa o campo.
+  Encontrado no FE-5, fora do escopo dele.
 
 ---
 
