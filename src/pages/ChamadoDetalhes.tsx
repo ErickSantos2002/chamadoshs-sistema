@@ -12,6 +12,8 @@ import { useResponsaveisTI } from '../hooks/useResponsaveisTI';
 import { ehRecusaDoResponsavel, mensagemDaRecusaDoResponsavel } from '../lib/responsaveis';
 import SeletorDeResponsavelDaTI from '../components/SeletorDeResponsavelDaTI';
 import AcessoEncerrado from '../components/AcessoEncerrado';
+import OpcaoDeComentarioInterno, { SeloInterno } from '../components/OpcaoDeComentarioInterno';
+import { ehRecusaDoInterno, ordenarComentarios } from '../lib/comentarios';
 import {
   MENSAGEM_ATRIBUICAO_SALVA_SEM_ACESSO,
   MENSAGEM_SEM_ACESSO,
@@ -83,7 +85,7 @@ import {
 const ChamadoDetalhes: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, revalidarIdentidade } = useAuth();
   const { darkMode } = useTheme();
   const {
     buscarChamado,
@@ -111,6 +113,10 @@ const ChamadoDetalhes: React.FC = () => {
   const [modoEdicao, setModoEdicao] = useState(false);
   const [novoComentario, setNovoComentario] = useState('');
   const [enviandoComentario, setEnviandoComentario] = useState(false);
+  // Comentário interno (`lib/comentarios`): público por padrão, e a recusa
+  // da API trava o envio até a pessoa escolher publicar.
+  const [comentarioInterno, setComentarioInterno] = useState(false);
+  const [internoRecusado, setInternoRecusado] = useState(false);
 
   // Dados de edição. A descrição não está entre eles: é imutável de propósito,
   // preserva o relato original do solicitante.
@@ -206,6 +212,10 @@ const ChamadoDetalhes: React.FC = () => {
   // Cada entrada na edição é uma abertura nova do seletor: pede a lista de novo.
   const [entradaNaEdicao, setEntradaNaEdicao] = useState(0);
   const responsaveisTI = useResponsaveisTI(reatribuiNaTI, entradaNaEdicao);
+
+  // Interno marcado sem permissão — recusado pela API, ou a permissão saiu
+  // depois de marcar: não sai, e não vira público sozinho.
+  const internoBloqueado = comentarioInterno && (internoRecusado || !podeAdministrar);
 
   // O que a pessoa digitou, sempre o do último desenho: quem encerra o acesso
   // pode vir de um manipulador antigo, e a cópia dele estaria velha (ou com
@@ -322,7 +332,7 @@ const ChamadoDetalhes: React.FC = () => {
 
       jaTeveAcesso.current = true;
       setChamado(chamadoData);
-      setComentarios(comentariosData);
+      setComentarios(ordenarComentarios(comentariosData));
       setHistorico(historicoData);
 
       // Buscar nome da categoria se existir
@@ -623,7 +633,9 @@ const ChamadoDetalhes: React.FC = () => {
   };
 
   const handleEnviarComentario = async () => {
-    if (!novoComentario.trim() || !chamado || !user) return;
+    if (!novoComentario.trim() || !chamado || !user || internoBloqueado) return;
+    // Sempre explícito: `true` só com a opção marcada por quem pode.
+    const interno = comentarioInterno && podeAdministrar;
 
     try {
       setEnviandoComentario(true);
@@ -631,13 +643,23 @@ const ChamadoDetalhes: React.FC = () => {
       await criarComentario({
         chamado_id: chamado.id,
         comentario: novoComentario,
-        is_interno: false,
+        is_interno: interno,
       });
 
       setNovoComentario('');
+      setComentarioInterno(false);
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
       if (perdeuAcesso(err)) return;
+      // 403 num interno: a permissão mudou. O texto fica, o envio trava até
+      // a pessoa escolher publicar, e a identidade é relida — sem repetir a
+      // escrita. O toast do 403 é do interceptor.
+      if (interno && ehRecusaDoInterno(err)) {
+        setInternoRecusado(true);
+        void revalidarIdentidade();
+        return;
+      }
+      if (err?.response?.status === 403) return;
       console.error('Erro ao enviar comentário:', err);
       toast.error(err?.response?.data?.detail || 'Erro ao enviar comentário.');
     } finally {
@@ -1812,12 +1834,26 @@ const ChamadoDetalhes: React.FC = () => {
                 placeholder="Adicione um comentário..."
               />
 
+              <div className="mt-2">
+                <OpcaoDeComentarioInterno
+                  pode={podeAdministrar}
+                  interno={comentarioInterno}
+                  bloqueado={internoBloqueado}
+                  aoMudar={setComentarioInterno}
+                  aoTornarPublico={() => {
+                    setComentarioInterno(false);
+                    setInternoRecusado(false);
+                  }}
+                  desabilitado={enviandoComentario}
+                />
+              </div>
+
               <Button
                 variante="primario"
                 className="mt-2"
                 onClick={handleEnviarComentario}
                 carregando={enviandoComentario}
-                disabled={!novoComentario.trim()}
+                disabled={!novoComentario.trim() || internoBloqueado}
               >
                 Enviar Comentário
               </Button>
@@ -1846,7 +1882,13 @@ const ChamadoDetalhes: React.FC = () => {
                   return (
                     <div
                       key={comentario.id}
-                      className="rounded-xl border border-borda bg-superficie-elevada p-4"
+                      // O interno ganha a marca na borda E o selo com texto:
+                      // a cor sozinha não diz nada a quem não a distingue.
+                      className={`rounded-xl border bg-superficie-elevada p-4 ${
+                        comentario.is_interno
+                          ? 'border-alerta/30 border-l-4 border-l-alerta'
+                          : 'border-borda'
+                      }`}
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -1855,6 +1897,7 @@ const ChamadoDetalhes: React.FC = () => {
                           </span>
 
                           {usuario && <PapelBadge roleId={usuario.role_id} />}
+                          {comentario.is_interno && <SeloInterno />}
                         </div>
 
                         <span className="whitespace-nowrap text-xs text-conteudo-tenue">

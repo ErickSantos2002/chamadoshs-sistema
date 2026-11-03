@@ -38,6 +38,8 @@ import AcoesRapidas from './AcoesRapidas';
 import { IconeEnviar, IconeLinkExterno } from './ui/icones';
 import { SeletorDeResponsavelDaTI } from './SeletorDeResponsavelDaTI';
 import AcessoEncerrado from './AcessoEncerrado';
+import OpcaoDeComentarioInterno, { SeloInterno } from './OpcaoDeComentarioInterno';
+import { ehRecusaDoInterno, ordenarComentarios } from '../lib/comentarios';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -144,7 +146,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     marcarQualidadeIndisponivel,
   } = useChamados();
   const usuarios = useUsuariosPorId();
-  const { user } = useAuth();
+  const { user, revalidarIdentidade } = useAuth();
   const { podeAdministrar } = usePermissoes();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
@@ -154,6 +156,11 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
 
   const [novoComentario, setNovoComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
+  // Comentário interno (`lib/comentarios`): público por padrão, e a recusa
+  // da API trava o envio até a pessoa escolher publicar.
+  const [comentarioInterno, setComentarioInterno] = useState(false);
+  const [internoRecusado, setInternoRecusado] = useState(false);
+  const internoBloqueado = comentarioInterno && (internoRecusado || !podeAdministrar);
   const [atribuindo, setAtribuindo] = useState(false);
 
   // O chamado saiu do alcance de quem o via (FE-5, `lib/acesso`). O id fica
@@ -191,6 +198,9 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   const [abertura, setAbertura] = useState(0);
   useEffect(() => {
     if (chamadoId !== null) setAbertura((n) => n + 1);
+    // Outro chamado começa público, sem recusa herdada.
+    setComentarioInterno(false);
+    setInternoRecusado(false);
     // Outro chamado (ou a janela fechada): a perda de acesso era do anterior.
     if (encerradoPara.current !== chamadoId) {
       encerradoPara.current = null;
@@ -223,7 +233,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
           return;
         }
         setChamado(dados);
-        setComentarios(lista);
+        setComentarios(ordenarComentarios(lista));
       })
       .catch(() => {
         if (!cancelado) setErro('Erro ao carregar o chamado.');
@@ -239,23 +249,35 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   }, [chamadoId, buscarChamado, carregarComentarios]);
 
   const comentar = async () => {
-    if (!chamado || !novoComentario.trim()) return;
+    if (!chamado || !novoComentario.trim() || internoBloqueado) return;
+    // Sempre explícito: `true` só com a opção marcada por quem pode.
+    const interno = comentarioInterno && podeAdministrar;
 
     try {
       setEnviando(true);
       await criarComentario({
         chamado_id: chamado.id,
         comentario: novoComentario.trim(),
-        is_interno: false,
+        is_interno: interno,
       });
       setNovoComentario('');
-      setComentarios(await carregarComentarios(chamado.id));
-    } catch (err) {
+      setComentarioInterno(false);
+      setComentarios(ordenarComentarios(await carregarComentarios(chamado.id)));
+    } catch (err: any) {
       if (ehPerdaDeAcesso(err)) {
         encerrarAcesso(chamado.id);
         return;
       }
-      setErro('Erro ao enviar o comentário.');
+      // 403 num interno: o texto fica, o envio trava até a pessoa escolher
+      // publicar, e a identidade é relida. Nada se repete. O toast do 403 é
+      // do interceptor; a janela continua mostrando o chamado.
+      if (interno && ehRecusaDoInterno(err)) {
+        setInternoRecusado(true);
+        void revalidarIdentidade();
+        return;
+      }
+      if (err?.response?.status === 403) return;
+      toast.error(err?.response?.data?.detail || 'Erro ao enviar o comentário.');
     } finally {
       setEnviando(false);
     }
@@ -466,10 +488,16 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                   {comentarios.map((c) => (
                     <li key={c.id} className="flex gap-2">
                       <Avatar nome={nome(c.usuario_id)} className="mt-0.5" />
-                      <div className="min-w-0 flex-1 rounded-lg border border-borda bg-superficie px-3 py-2">
+                      <div
+                        // Marca na borda E selo com texto: cor sozinha não basta.
+                        className={`min-w-0 flex-1 rounded-lg border bg-superficie px-3 py-2 ${
+                          c.is_interno ? 'border-alerta/30 border-l-4 border-l-alerta' : 'border-borda'
+                        }`}
+                      >
                         <div className="flex items-baseline justify-between gap-2">
-                          <span className="text-sm font-medium text-conteudo">
+                          <span className="flex items-center gap-1.5 text-sm font-medium text-conteudo">
                             {nome(c.usuario_id)}
+                            {c.is_interno && <SeloInterno />}
                           </span>
                           <span className="shrink-0 text-xs text-conteudo-tenue">
                             {dataHora(c.created_at)}
@@ -492,12 +520,23 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                   placeholder="Escrever um comentário…"
                   aria-label="Novo comentário"
                 />
+                <OpcaoDeComentarioInterno
+                  pode={podeAdministrar}
+                  interno={comentarioInterno}
+                  bloqueado={internoBloqueado}
+                  aoMudar={setComentarioInterno}
+                  aoTornarPublico={() => {
+                    setComentarioInterno(false);
+                    setInternoRecusado(false);
+                  }}
+                  desabilitado={enviando}
+                />
                 <div className="flex justify-end">
                   <Button
                     tamanho="sm"
                     onClick={comentar}
                     carregando={enviando}
-                    disabled={!novoComentario.trim()}
+                    disabled={!novoComentario.trim() || internoBloqueado}
                   >
                     <IconeEnviar className="h-3.5 w-3.5" aria-hidden="true" />
                     Comentar
