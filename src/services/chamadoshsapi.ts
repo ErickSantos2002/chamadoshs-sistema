@@ -2,6 +2,11 @@ import axios from 'axios';
 import api, { identidadeGuardadaAposRenovar } from './api';
 import { versaoValida } from '../lib/versao';
 import {
+  ListaDeResponsaveisInvalida,
+  ResponsavelTI,
+  validarResponsaveisTI,
+} from '../lib/responsaveis';
+import {
   LoginRequest,
   TokenResponse,
   UsuarioCreate,
@@ -207,6 +212,20 @@ export const chamadosService = {
   async listarAtendentesQualidade(): Promise<AtendenteQualidade[]> {
     const response = await api.get<AtendenteQualidade[]>('/chamados/atendentes-qualidade');
     return response.data;
+  },
+
+  /**
+   * Quem pode ser NOVO responsável de um chamado da TI (API-9). A única fonte
+   * do seletor da TI — ver `lib/responsaveis`. Só administrador e equipe da
+   * TI podem pedir; quem chama confere antes (`usePermissoes`).
+   *
+   * Resposta fora do contrato `[{id, nome}]` é erro, e não lista vazia.
+   */
+  async listarResponsaveisTI(): Promise<ResponsavelTI[]> {
+    const response = await api.get<unknown>('/chamados/responsaveis-ti');
+    const lista = validarResponsaveisTI(response.data);
+    if (lista === null) throw new ListaDeResponsaveisInvalida();
+    return lista;
   },
 
   /**

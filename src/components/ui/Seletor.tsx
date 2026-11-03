@@ -50,6 +50,13 @@ export interface OpcaoDoSeletor {
   rotulo: string;
   /** Ponto colorido à esquerda. Para status e prioridade, que já têm cor. */
   cor?: string;
+  /**
+   * Aparece, e não se escolhe. Para o valor atual que deixou de ser escolha
+   * válida — o responsável "(fora da equipe)" da TI (FE-5): ele precisa
+   * continuar visível como o que está gravado, sem virar opção de nova
+   * atribuição.
+   */
+  desabilitada?: boolean;
 }
 
 export interface SeletorProps {
@@ -107,11 +114,12 @@ export const Seletor: React.FC<SeletorProps> = ({
   const listaRef = useRef<HTMLDivElement>(null);
   const buscaRef = useRef({ texto: '', em: 0 });
 
-  const indiceAtual = Math.max(
-    0,
-    opcoes.findIndex((o) => o.valor === valor)
-  );
-  const escolhida = opcoes[indiceAtual];
+  // Valor que não está nas opções não vira a primeira opção (FE-5). Antes,
+  // `Math.max(0, -1)` mostrava "Sem atribuição" para um responsável que só
+  // não estava na lista — a tela dizia que o chamado não tinha ninguém.
+  const indiceDoValor = opcoes.findIndex((o) => o.valor === valor);
+  const indiceAtual = Math.max(0, indiceDoValor);
+  const escolhida = indiceDoValor >= 0 ? opcoes[indiceDoValor] : undefined;
 
   const fechar = useCallback((devolverFoco: boolean) => {
     setAberto(false);
@@ -181,7 +189,8 @@ export const Seletor: React.FC<SeletorProps> = ({
     };
   }, [aberto]);
 
-  const escolher = (opcao: OpcaoDoSeletor) => {
+  const escolher = (opcao: OpcaoDoSeletor | undefined) => {
+    if (!opcao || opcao.desabilitada) return;
     aoMudar(opcao.valor);
     fechar(true);
   };
@@ -302,10 +311,12 @@ export const Seletor: React.FC<SeletorProps> = ({
                 id={`${id}-${indice}`}
                 role="option"
                 aria-selected={ehEscolhida}
+                aria-disabled={opcao.desabilitada || undefined}
                 onClick={() => escolher(opcao)}
                 onMouseMove={() => setDestacado(indice)}
                 className={cn(
-                  'flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm transition-colors',
+                  'flex items-center gap-2.5 px-3 py-2 text-sm transition-colors',
+                  opcao.desabilitada ? 'cursor-not-allowed italic' : 'cursor-pointer',
                   ehDestacada ? 'bg-sinal/15 text-conteudo' : 'text-conteudo-suave',
                   ehEscolhida && 'font-medium text-sinal'
                 )}

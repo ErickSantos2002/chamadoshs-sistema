@@ -4,8 +4,10 @@ import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { useQualidade } from '../hooks/useQualidade';
+import { usePermissoes } from '../hooks/usePermissoes';
+import { useResponsaveisTI } from '../hooks/useResponsaveisTI';
 import { chamadosService } from '../services/chamadoshsapi';
-import { podeSerResponsavel } from '../utils/roleMapper';
+import { ehRecusaDoResponsavel, mensagemDaRecusaDoResponsavel } from '../lib/responsaveis';
 import {
   interpretarErroDaReatribuicao,
   opcoesDeResponsavelDaQualidade,
@@ -28,6 +30,7 @@ import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
 import { IconeEnviar, IconeLinkExterno } from './ui/icones';
+import { SeletorDeResponsavelDaTI } from './SeletorDeResponsavelDaTI';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -134,6 +137,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   } = useChamados();
   const usuarios = useUsuariosPorId();
   const { user } = useAuth();
+  const { podeAdministrar } = usePermissoes();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
@@ -160,6 +164,19 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     : false;
   const qualidade = useQualidade(ehDaQualidade);
   const reatribuiNaQualidade = podeAtribuir && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
+
+  // Na TI, reatribuir é de quem administra (API-6: `require_equipe_ti` no
+  // PUT da TI). Ser técnico não basta: o da Qualidade vê o chamado da TI só
+  // para ler. A lista é da API-9, pedida a cada abertura (FE-5).
+  const reatribuiNaTI =
+    Boolean(chamado) && !ehDaQualidade && podeAdministrar && !chamado?.cancelado && !chamado?.arquivado;
+  // Uma abertura por chamado escolhido no quadro — e não a cada releitura,
+  // que tira o chamado da tela por um instante e o devolve.
+  const [abertura, setAbertura] = useState(0);
+  useEffect(() => {
+    if (chamadoId !== null) setAbertura((n) => n + 1);
+  }, [chamadoId]);
+  const responsaveisTI = useResponsaveisTI(reatribuiNaTI, abertura);
 
   useEffect(() => {
     if (chamadoId === null) return;
@@ -245,19 +262,13 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   };
 
   /**
-   * Quem pode aparecer no seletor de responsável.
-   *
-   * `podeSerResponsavel` é a mesma régua do formulário de edição: equipe, e
-   * não conta de serviço — atribuir um chamado ao painel da TV não diz quem
-   * resolve. Contas desativadas também ficam de fora: são de quem saiu, e
-   * atribuir a elas é jogar o chamado num buraco.
+   * Troca o responsável de um chamado da TI. Quem aparece no seletor é a
+   * lista da API-9 (`lib/responsaveis`), e só ela — o filtro de perfil que
+   * morava aqui oferecia quem o PUT recusava. Escolher quem já está não sai.
    */
-  const atribuiveis = Object.values(usuarios)
-    .filter((u) => u.ativo && podeSerResponsavel(u))
-    .sort((a, b) => a.nome.localeCompare(b.nome));
-
   const atribuir = async (valor: string) => {
     if (!chamado) return;
+    if ((valor ? Number(valor) : null) === (chamado.tecnico_responsavel_id ?? null)) return;
 
     try {
       setAtribuindo(true);
@@ -269,6 +280,14 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       });
       registrarMudanca(atualizado);
     } catch (err: any) {
+      // 400 do responsável (inativo, fora da TI, conta de serviço): a lista
+      // na tela estava velha. Diz o motivo do backend, relê a lista, e a
+      // nova escolha é um clique novo — o PUT não se repete.
+      if (ehRecusaDoResponsavel(err)) {
+        toast.error(mensagemDaRecusaDoResponsavel(err));
+        void responsaveisTI.recarregar();
+        return;
+      }
       // O 403 já é anunciado pelo interceptor; repetir mostraria duas
       // mensagens para o mesmo erro.
       if (err?.response?.status !== 403) {
@@ -468,26 +487,23 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                       nome(chamado.tecnico_responsavel_id)
                     )}
                   />
-                ) : podeAtribuir && !ehDaQualidade ? (
-                  // Para a equipe o campo É o seletor, sem modo de edição à
-                  // parte: escolher salva na hora, como as ações de status. O
-                  // valor volta do servidor — o que aparece é o que ficou.
-                  <Seletor
+                ) : reatribuiNaTI ? (
+                  // Para quem administra o campo É o seletor, sem modo de
+                  // edição à parte: escolher salva na hora, como as ações de
+                  // status. O valor volta do servidor — o que aparece é o que
+                  // ficou. Sem a lista da API-9, nada para escolher: o atual
+                  // continua à vista, e o seletor fica travado.
+                  <SeletorDeResponsavelDaTI
                     rotulo="Responsável"
-                    disabled={atribuindo}
-                    valor={
+                    lista={responsaveisTI}
+                    atualId={chamado.tecnico_responsavel_id}
+                    nomeDoAtual={
                       chamado.tecnico_responsavel_id
-                        ? String(chamado.tecnico_responsavel_id)
-                        : ''
+                        ? usuarios[chamado.tecnico_responsavel_id]?.nome
+                        : null
                     }
+                    ocupado={atribuindo}
                     aoMudar={atribuir}
-                    opcoes={[
-                      { valor: '', rotulo: 'Sem atribuição' },
-                      ...atribuiveis.map((u) => ({
-                        valor: String(u.id),
-                        rotulo: u.nome,
-                      })),
-                    ]}
                   />
                 ) : (
                   <span className="flex items-center gap-1.5">

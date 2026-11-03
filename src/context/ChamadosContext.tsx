@@ -1,6 +1,5 @@
 import { createContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { podeSerResponsavel } from '../utils/roleMapper';
 import {
   EstadoDoSuporte,
   ehAtribuidoNaQualidade,
@@ -50,7 +49,6 @@ type ChamadosContextType = {
   // Estado
   chamados: Chamado[];
   categorias: Categoria[];
-  tecnicos: Usuario[];
   usuarios: Usuario[];
   loading: boolean;
   error: string | null;
@@ -73,7 +71,6 @@ type ChamadosContextType = {
 
   // Funções auxiliares
   carregarCategorias: () => Promise<void>;
-  carregarTecnicos: () => Promise<void>;
   carregarUsuarios: () => Promise<void>;
   limparErro: () => void;
 
@@ -93,7 +90,6 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
 
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [tecnicos, setTecnicos] = useState<Usuario[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +97,6 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
   // Cache para evitar requisições duplicadas
   const [chamadosCarregados, setChamadosCarregados] = useState(false);
   const [categoriasCarregadas, setCategoriasCarregadas] = useState(false);
-  const [tecnicosCarregados, setTecnicosCarregados] = useState(false);
   const [usuariosCarregados, setUsuariosCarregados] = useState(false);
 
   // Carregar chamados baseado na role do usuário
@@ -331,23 +326,11 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [categoriasCarregadas]);
 
-  // Carregar técnicos
-  const carregarTecnicos = useCallback(async () => {
-    if (tecnicosCarregados) return;
-
-    try {
-      // O endpoint filtra por um role_id só, e precisamos de dois: quem atende
-      // chamado é técnico ou administrador. Fora isso, contas de serviço não
-      // entram (ver podeSerResponsavel). Traz os ativos numa listagem e separa
-      // em memória.
-      const ativos = await usuariosService.listarTodos({ ativo: true });
-
-      setTecnicos(ativos.filter(podeSerResponsavel));
-      setTecnicosCarregados(true);
-    } catch (err: any) {
-      console.error('Erro ao carregar técnicos:', err);
-    }
-  }, [tecnicosCarregados]);
+  // A lista de técnicos que morava aqui — `GET /usuarios/` dos ativos,
+  // filtrada por perfil — saiu na FE-5. Ela alimentava o seletor de
+  // responsável da TI e oferecia quem a API recusa; a fonte agora é
+  // `GET /chamados/responsaveis-ti`, pedida a cada abertura do seletor por
+  // `useResponsaveisTI`, e só por quem pode reatribuir.
 
   // Carregar usuários (todos os usuários ativos)
   const carregarUsuarios = useCallback(async () => {
@@ -374,17 +357,12 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, chamadosCarregados, carregarChamados]);
 
-  // Carregar categorias e técnicos automaticamente
+  // Carregar categorias automaticamente
   useEffect(() => {
     if (user) {
       carregarCategorias();
-
-      // Apenas Admin e Técnico precisam da lista de técnicos
-      if (user.role === 'Administrador' || user.role === 'Tecnico') {
-        carregarTecnicos();
-      }
     }
-  }, [user, carregarCategorias, carregarTecnicos]);
+  }, [user, carregarCategorias]);
 
   // ── Qualidade ────────────────────────────────────────────────────────
   //
@@ -467,7 +445,6 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
       value={{
         chamados,
         categorias,
-        tecnicos,
         usuarios,
         loading,
         error,
@@ -481,7 +458,6 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         criarComentario,
         carregarHistorico,
         carregarCategorias,
-        carregarTecnicos,
         carregarUsuarios,
         limparErro,
         qualidade,

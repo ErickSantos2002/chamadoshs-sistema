@@ -7,6 +7,10 @@ import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { useQualidade } from '../hooks/useQualidade';
+import { usePermissoes } from '../hooks/usePermissoes';
+import { useResponsaveisTI } from '../hooks/useResponsaveisTI';
+import { ehRecusaDoResponsavel, mensagemDaRecusaDoResponsavel } from '../lib/responsaveis';
+import SeletorDeResponsavelDaTI from '../components/SeletorDeResponsavelDaTI';
 import {
   interpretarErroDaReatribuicao,
   opcoesDeResponsavelDaQualidade,
@@ -74,13 +78,11 @@ const ChamadoDetalhes: React.FC = () => {
   const { user } = useAuth();
   const { darkMode } = useTheme();
   const {
-    tecnicos,
     buscarChamado,
     atualizarChamado,
     carregarComentarios,
     criarComentario,
     carregarHistorico,
-    carregarTecnicos,
     deletarChamado,
     aplicarChamado,
     verificarQualidade,
@@ -174,6 +176,15 @@ const ChamadoDetalhes: React.FC = () => {
   // ela, o campo fica só leitura na edição e o PUT leva o responsável de antes.
   const reatribuiNaQualidade = podeEditar && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
 
+  // Na TI, trocar o responsável é de quem administra (o PUT da TI é
+  // `require_equipe_ti`), e a lista é a da API-9, pedida a cada entrada na
+  // edição — nunca o `GET /usuarios/` filtrado que morava no contexto (FE-5).
+  const { podeAdministrar } = usePermissoes();
+  const reatribuiNaTI = podeAdministrar && !ehDaQualidade && modoEdicao;
+  // Cada entrada na edição é uma abertura nova do seletor: pede a lista de novo.
+  const [entradaNaEdicao, setEntradaNaEdicao] = useState(0);
+  const responsaveisTI = useResponsaveisTI(reatribuiNaTI, entradaNaEdicao);
+
   useEffect(() => {
     if (id) {
       carregarDados();
@@ -243,13 +254,10 @@ const ChamadoDetalhes: React.FC = () => {
         setSolucaoEditada(chamadoData.solucao || '');
       }
 
-      // Carregar técnicos e categorias se for admin ou técnico
+      // Categorias para a edição, se for admin ou técnico. Os responsáveis
+      // da TI não vêm daqui: ver `useResponsaveisTI`.
       if (podeEditar) {
-        const [, categoriasData] = await Promise.all([
-          carregarTecnicos(),
-          categoriasService.listar(true), // apenas categorias ativas
-        ]);
-        setCategorias(categoriasData);
+        setCategorias(await categoriasService.listar(true)); // apenas categorias ativas
       }
 
       // Os nomes de solicitante, técnico, autores de comentário e de histórico
@@ -280,6 +288,7 @@ const ChamadoDetalhes: React.FC = () => {
   const iniciarEdicao = async () => {
     if (!chamado) return;
     if (!ehDaQualidade) {
+      setEntradaNaEdicao((n) => n + 1);
       setModoEdicao(true);
       return;
     }
@@ -461,6 +470,15 @@ const ChamadoDetalhes: React.FC = () => {
       setModoEdicao(false);
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
+      // 400 do responsável (API-9: inativo; API-6: fora da TI, conta de
+      // serviço). Nada foi gravado. A edição fica aberta com tudo o que foi
+      // digitado, o motivo é o `detail` do backend, a lista é relida — e o
+      // novo "Salvar" é decisão da pessoa, nunca automático.
+      if (ehRecusaDoResponsavel(err)) {
+        toast.error(mensagemDaRecusaDoResponsavel(err));
+        void responsaveisTI.recarregar();
+        return;
+      }
       console.error('Erro ao atualizar chamado:', err);
       setError('Erro ao atualizar chamado.');
     } finally {
@@ -1427,32 +1445,42 @@ const ChamadoDetalhes: React.FC = () => {
                         </p>
                       </div>
                     )
-                  ) : modoEdicao ? (
-                    <Seletor
-                      rotulo="Técnico responsável"
-                      valor={tecnicoEditado ? String(tecnicoEditado) : ''}
+                  ) : modoEdicao && reatribuiNaTI ? (
+                    <SeletorDeResponsavelDaTI
+                      lista={responsaveisTI}
+                      atualId={chamado.tecnico_responsavel_id}
+                      nomeDoAtual={
+                        chamado.tecnico_responsavel_id
+                          ? usuarios[chamado.tecnico_responsavel_id]?.nome
+                          : null
+                      }
+                      valor={tecnicoEditado ?? null}
                       aoMudar={(v) => setTecnicoEditado(v ? Number(v) : undefined)}
-                      opcoes={[
-                        { valor: '', rotulo: 'Sem atribuição' },
-                        ...tecnicos.map((tecnico) => ({
-                          valor: String(tecnico.id),
-                          rotulo: tecnico.nome,
-                        })),
-                      ]}
                     />
+                  ) : modoEdicao ? (
+                    // Edita o resto, mas o responsável da TI só quem
+                    // administra troca. O PUT leva o de agora, que a API aceita.
+                    <div>
+                      <p className="text-sm font-medium text-conteudo">
+                        {chamado.tecnico_responsavel_id
+                          ? usuarios[chamado.tecnico_responsavel_id]?.nome ||
+                            `Usuário #${chamado.tecnico_responsavel_id}`
+                          : 'Sem atribuição'}
+                      </p>
+                      <p className="mt-0.5 text-xs text-conteudo-tenue">
+                        A troca do responsável da TI é de administradores e da equipe da TI.
+                      </p>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-2 flex-wrap">
                       {chamado.tecnico_responsavel_id ? (
                         <>
                           <p className="text-sm font-medium text-conteudo">
-                            {/* `tecnicos` só carrega para a equipe; quem
-                                atende a Qualidade sem ser dela acharia o
-                                próprio nome em `usuarios`. */}
-                            {tecnicos.find(
-                              (t) => t.id === chamado.tecnico_responsavel_id,
-                            )?.nome ||
-                              usuarios[chamado.tecnico_responsavel_id]?.nome ||
-                              'Não encontrado'}
+                            {/* `usuarios` inclui os inativos: o responsável
+                                que saiu continua com nome. Sem nome, o id —
+                                nunca um nome inventado. */}
+                            {usuarios[chamado.tecnico_responsavel_id]?.nome ||
+                              `Usuário #${chamado.tecnico_responsavel_id}`}
                           </p>
 
                           {usuarios[chamado.tecnico_responsavel_id] && (

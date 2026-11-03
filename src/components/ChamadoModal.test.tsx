@@ -82,6 +82,8 @@ beforeEach(async () => {
   vi.spyOn(chamadosService, 'buscar').mockResolvedValue(CHAMADO);
   vi.spyOn(comentariosService, 'listarPorChamado').mockResolvedValue([]);
   vi.spyOn(categoriasService, 'listar').mockResolvedValue([]);
+  // A lista do seletor da TI vem da API-9 (FE-5), não mais de `GET /usuarios/`.
+  vi.spyOn(chamadosService, 'listarResponsaveisTI').mockResolvedValue([{ id: 1, nome: 'rickelme' }]);
   vi.spyOn(usuariosService, 'listarTodos').mockResolvedValue([
     { id: 1, nome: 'rickelme', role_id: 1, ativo: true } as Usuario,
   ]);

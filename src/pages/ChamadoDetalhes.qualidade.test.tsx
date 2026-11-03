@@ -135,6 +135,8 @@ beforeEach(() => {
   vi.spyOn(comentariosService, 'listarPorChamado').mockResolvedValue([]);
   vi.spyOn(historicoService, 'listarPorChamado').mockResolvedValue([]);
   vi.spyOn(categoriasService, 'listar').mockResolvedValue([]);
+  // A lista do seletor da TI vem da API-9 (FE-5), não mais de `GET /usuarios/`.
+  vi.spyOn(chamadosService, 'listarResponsaveisTI').mockResolvedValue([{ id: 1, nome: 'rickelme' }]);
   vi.spyOn(usuariosService, 'listar').mockResolvedValue([]);
   vi.spyOn(usuariosService, 'listarTodos').mockResolvedValue([
     { id: 1, nome: 'rickelme', role_id: 1, ativo: true } as Usuario,
@@ -303,7 +305,16 @@ describe('Qualidade — o responsável na edição', () => {
     ]);
     await editar({ setor_destino: SetorDestinoEnum.TI } as Partial<Chamado>);
     const opcoes = (await opcoesDoTecnico()).map((o) => o.textContent?.trim());
-    expect(opcoes).toEqual(['Sem atribuição', 'rickelme']);
+    // FE-5: a lista é a da API-9, e o responsável atual (7) que não está
+    // nela aparece como ele mesmo, "(fora da equipe)" e desabilitado. Até a
+    // FE-4 esta expectativa era só ['Sem atribuição', 'rickelme'] — e o
+    // seletor mostrava "Sem atribuição" como valor de um chamado que tinha
+    // responsável. O nome de 7 não está no índice deste caso: vira o id.
+    expect(opcoes).toEqual(['Sem atribuição', 'Usuário #7 (fora da equipe)', 'rickelme']);
+    const fora = Array.from(document.querySelectorAll('[role="option"]')).find((o) =>
+      o.textContent?.includes('fora da equipe')
+    );
+    expect(fora?.getAttribute('aria-disabled')).toBe('true');
   });
 });
 
