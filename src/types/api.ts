@@ -68,6 +68,24 @@ export interface UsuarioLogado {
   setor_id?: number;
   role_id: number;
   ativo: boolean;
+  /**
+   * Se a conta é da equipe da TI (API-7), calculado pelo backend a cada
+   * `GET /auth/me`. Opcional: a API anterior à 7 não manda, e aí ninguém é
+   * reconhecido como TI. Diz a equipe, não o poder — o administrador fora da
+   * TI recebe `false` e administra pelo perfil (ver `lib/permissoes`).
+   */
+  integra_equipe_ti?: boolean;
+}
+
+/** A identidade que o `AuthContext` mantém para a tela. */
+export interface UsuarioAutenticado {
+  id: number;
+  username: string;
+  role: string;
+  role_id?: number;
+  setor_id?: number;
+  /** Só vem do `/auth/me` desta sessão, nunca do `localStorage`. */
+  integra_equipe_ti?: boolean;
 }
 
 // Setores

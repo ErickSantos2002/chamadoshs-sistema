@@ -88,6 +88,9 @@ const AUTH_DE_MENTIRA = {
   loading: false,
   login: async () => {},
   logout: () => {},
+  identidadeConfirmada: true,
+  falhaAoConfirmar: false,
+  revalidarIdentidade: async () => {},
   error: null,
 };
 

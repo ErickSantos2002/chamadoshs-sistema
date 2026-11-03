@@ -49,6 +49,9 @@ const sessao = (role: string) =>
     error: null,
     login: async () => {},
     logout: () => {},
+    identidadeConfirmada: true,
+    falhaAoConfirmar: false,
+    revalidarIdentidade: async () => {},
   }) as React.ContextType<typeof AuthContext>;
 
 let host: HTMLDivElement;

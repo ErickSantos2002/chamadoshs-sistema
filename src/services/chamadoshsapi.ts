@@ -1,5 +1,5 @@
 import axios from 'axios';
-import api from './api';
+import api, { identidadeGuardadaAposRenovar } from './api';
 import { versaoValida } from '../lib/versao';
 import {
   LoginRequest,
@@ -85,11 +85,11 @@ export const authService = {
    */
   async refresh(): Promise<TokenResponse> {
     const response = await api.post<TokenResponse>('/auth/refresh');
-    const { access_token, user_id, nome, role } = response.data;
 
-    // Atualizar token
-    localStorage.setItem('token', access_token);
-    localStorage.setItem('user', JSON.stringify({ id: user_id, nome, role }));
+    // Atualizar token. A identidade guardada da mesma conta continua, sem
+    // permissão da TI — ver `identidadeGuardadaAposRenovar`.
+    localStorage.setItem('token', response.data.access_token);
+    localStorage.setItem('user', JSON.stringify(identidadeGuardadaAposRenovar(response.data)));
 
     return response.data;
   },

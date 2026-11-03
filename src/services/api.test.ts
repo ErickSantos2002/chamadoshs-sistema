@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import api from './api';
+import api, { identidadeGuardadaAposRenovar } from './api';
 
 vi.mock('react-hot-toast', () => ({
   default: { error: vi.fn(), success: vi.fn() },
@@ -304,6 +304,38 @@ describe('interceptor de resposta', () => {
       await expect(aoFalhar(erro)).rejects.toBeDefined();
 
       expect('detail' in erro.response.data).toBe(false);
+    });
+  });
+});
+
+describe('identidade guardada depois da renovação (FE-5)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('mantém os campos da mesma conta e atualiza os que vieram', () => {
+    localStorage.setItem('user', JSON.stringify({ id: 10, nome: 'velho', role: 'Tecnico', setor_id: 1, role_id: 2 }));
+    expect(identidadeGuardadaAposRenovar({ user_id: 10, nome: 'novo', role: 'Tecnico' })).toEqual({
+      id: 10, nome: 'novo', role: 'Tecnico', setor_id: 1, role_id: 2,
+    });
+  });
+
+  it('outra conta: nada do anterior é aproveitado', () => {
+    localStorage.setItem('user', JSON.stringify({ id: 10, nome: 'velho', role: 'Administrador', setor_id: 1 }));
+    expect(identidadeGuardadaAposRenovar({ user_id: 30, nome: 'outra', role: 'Usuario' })).toEqual({
+      id: 30, nome: 'outra', role: 'Usuario',
+    });
+  });
+
+  it('nunca guarda integra_equipe_ti, mesmo que estivesse lá', () => {
+    localStorage.setItem('user', JSON.stringify({ id: 10, nome: 'x', role: 'Tecnico', integra_equipe_ti: true }));
+    expect(identidadeGuardadaAposRenovar({ user_id: 10, nome: 'x', role: 'Tecnico' })).not.toHaveProperty(
+      'integra_equipe_ti'
+    );
+  });
+
+  it('guardado ilegível: fica só o que a renovação trouxe', () => {
+    localStorage.setItem('user', '{quebrado');
+    expect(identidadeGuardadaAposRenovar({ user_id: 10, nome: 'x', role: 'Tecnico' })).toEqual({
+      id: 10, nome: 'x', role: 'Tecnico',
     });
   });
 });

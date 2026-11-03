@@ -1,11 +1,26 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { authService } from '../services/chamadoshsapi';
+import { aoRenovarToken } from '../services/api';
 import { getRoleName, nomeCanonicoDaRole } from '../utils/roleMapper';
+import type { UsuarioAutenticado, UsuarioLogado } from '../types/api';
 
 type AuthContextType = {
-  user: { id: number; username: string; role: string; setor_id?: number } | null;
+  user: UsuarioAutenticado | null;
   token: string | null;
   loading: boolean;
+  /**
+   * O `/auth/me` desta sessão já respondeu, e `user` é o que ele disse.
+   *
+   * Até lá, `user` pode ser só o que estava no `localStorage` — bom para o
+   * nome no topo, não para permissão. Nenhum controle de administração
+   * aparece, e nenhuma tela de gestão pede nada à API, antes disto ser
+   * `true` (ver `lib/permissoes`).
+   */
+  identidadeConfirmada: boolean;
+  /** O `/auth/me` falhou sem resposta útil (rede, 5xx). Não se repete sozinho. */
+  falhaAoConfirmar: boolean;
+  /** Pede o `/auth/me` de novo. Uma resposta velha nunca sobrescreve uma nova. */
+  revalidarIdentidade: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   error: string | null;
@@ -15,18 +30,94 @@ export const AuthContext = createContext<AuthContextType>(
   {} as AuthContextType,
 );
 
+/** A identidade da tela a partir do `/auth/me`. Só o booleano `true` é TI. */
+export function identidadeDoMe(me: UsuarioLogado): UsuarioAutenticado {
+  return {
+    id: me.id,
+    username: me.nome,
+    role: getRoleName(me.role_id),
+    role_id: me.role_id,
+    setor_id: me.setor_id ?? undefined,
+    integra_equipe_ti: me.integra_equipe_ti === true,
+  };
+}
+
+/**
+ * O que vai para o `localStorage`: o que serve para desenhar a tela depois de
+ * um F5, e NÃO a permissão da TI — essa só vale confirmada de novo.
+ */
+function guardarIdentidade(identidade: UsuarioAutenticado) {
+  localStorage.setItem(
+    'user',
+    JSON.stringify({
+      id: identidade.id,
+      nome: identidade.username,
+      role: identidade.role,
+      role_id: identidade.role_id,
+      setor_id: identidade.setor_id,
+    })
+  );
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<{
-    id: number;
-    username: string;
-    role: string;
-    setor_id?: number;
-  } | null>(null);
+  const [user, setUser] = useState<UsuarioAutenticado | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [identidadeConfirmada, setIdentidadeConfirmada] = useState(false);
+  const [falhaAoConfirmar, setFalhaAoConfirmar] = useState(false);
 
-  // Carrega dados do localStorage na primeira renderização
+  // ── Respostas atrasadas ──────────────────────────────────────────────
+  //
+  // `sessao` muda a cada login e logout; `pedido`, a cada `/auth/me`. Uma
+  // resposta só vale se as duas ainda forem as de quando ela saiu. Sem isto,
+  // o `/auth/me` de antes do logout chegaria depois e devolveria a
+  // administração a uma tela já sem sessão — ou poria a identidade da conta
+  // anterior por cima do login de outra pessoa. E, de dois `/auth/me` da
+  // mesma sessão, o mais antigo não desfaz o que o mais novo disse.
+  const sessao = useRef(0);
+  const pedido = useRef(0);
+
+  const aplicarMe = useCallback((me: UsuarioLogado) => {
+    const identidade = identidadeDoMe(me);
+    setUser(identidade);
+    guardarIdentidade(identidade);
+    setIdentidadeConfirmada(true);
+    setFalhaAoConfirmar(false);
+  }, []);
+
+  const revalidarIdentidade = useCallback(async () => {
+    if (!localStorage.getItem('token')) return;
+
+    const minhaSessao = sessao.current;
+    const meuPedido = ++pedido.current;
+    const valeAinda = () =>
+      minhaSessao === sessao.current &&
+      meuPedido === pedido.current &&
+      localStorage.getItem('token') !== null;
+
+    try {
+      const me = await authService.me();
+      if (!valeAinda()) return;
+      aplicarMe(me);
+    } catch (err: any) {
+      if (!valeAinda()) return;
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        // Sessão que não vale mais, ou conta desativada: a permissão cai
+        // aqui mesmo. O 401 o interceptor já leva ao login.
+        setIdentidadeConfirmada(false);
+        if (status === 401) setUser(null);
+        return;
+      }
+      // Rede ou servidor: o que já estava confirmado nesta sessão fica — não
+      // é dado antigo, é desta conta, deste login. O que não estava continua
+      // sem confirmar, e a tela de gestão diz isso em vez de liberar.
+      setFalhaAoConfirmar(true);
+    }
+  }, [aplicarMe]);
+
+  // Restaura a sessão do `localStorage` e a confirma pelo `/auth/me`.
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -44,25 +135,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const role =
           nomeCanonicoDaRole(userData.role) ?? getRoleName(userData.role_id || 3);
 
+        // Sem `integra_equipe_ti`, de propósito: até o `/auth/me` responder,
+        // ninguém é da TI — nem quem era na última vez.
         setUser({
           id: userData.id,
           username: userData.nome,
           role: role,
+          role_id: typeof userData.role_id === 'number' ? userData.role_id : undefined,
           setor_id: userData.setor_id,
         });
         setToken(savedToken);
+        void revalidarIdentidade();
       } catch (err) {
         console.error('Erro ao carregar dados do usuário:', err);
         authService.logout();
       }
     }
     setLoading(false);
-  }, []);
+  }, [revalidarIdentidade]);
+
+  // Token renovado: a conta pode ter mudado de setor, de perfil ou de
+  // equipe desde o login. Relê, sem tirar nada da tela enquanto isso — o
+  // que estava confirmado nesta sessão continua até a resposta nova chegar,
+  // e o que ela disser vale, para mais ou para menos.
+  //
+  // Uma renovação por vez (`api.ts`), e o token novo está longe de vencer:
+  // o `/auth/me` daqui não dispara outra renovação, e não há laço.
+  useEffect(
+    () =>
+      aoRenovarToken(() => {
+        void revalidarIdentidade();
+      }),
+    [revalidarIdentidade]
+  );
 
   // Função de login
   const login = async (username: string, password: string) => {
+    const minhaSessao = ++sessao.current;
+    pedido.current += 1;
+    const valeAinda = () => minhaSessao === sessao.current;
+
     setLoading(true);
     setError(null);
+    setIdentidadeConfirmada(false);
+    setFalhaAoConfirmar(false);
 
     try {
       // Faz login usando o authService (já salva token automaticamente)
@@ -70,24 +186,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         nome: username,
         senha: password
       });
+      if (!valeAinda()) return;
 
-      const { access_token, user_id, nome } = loginData;
-      setToken(access_token);
+      setToken(loginData.access_token);
 
-      // Busca dados completos do usuário logado
+      // Busca dados completos do usuário logado — é daqui que sai a
+      // identidade e a permissão.
       const userData = await authService.me();
+      if (!valeAinda()) return;
 
-      // Converte role_id para nome da role
-      const roleName = getRoleName(userData.role_id);
-
-      // Atualiza state com dados do usuário
-      setUser({
-        id: user_id,
-        username: nome,
-        role: roleName,
-        setor_id: userData.setor_id,
-      });
+      aplicarMe(userData);
     } catch (err: any) {
+      if (!valeAinda()) return;
       // Tratamento de erros HTTP
       if (err.response) {
         if (err.response.status === 401) {
@@ -108,21 +218,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setError('Erro ao realizar login. Tente novamente.');
       }
     } finally {
-      setLoading(false);
+      if (valeAinda()) setLoading(false);
     }
   };
 
   // Função de logout
   const logout = () => {
+    sessao.current += 1;
+    pedido.current += 1;
     authService.logout();
     setUser(null);
     setToken(null);
     setError(null);
+    setIdentidadeConfirmada(false);
+    setFalhaAoConfirmar(false);
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, logout, error }}
+      value={{
+        user,
+        token,
+        loading,
+        identidadeConfirmada,
+        falhaAoConfirmar,
+        revalidarIdentidade,
+        login,
+        logout,
+        error,
+      }}
     >
       {children}
     </AuthContext.Provider>
