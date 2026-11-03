@@ -148,7 +148,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   } = useChamados();
   const usuarios = useUsuariosPorId();
   const { user, revalidarIdentidade } = useAuth();
-  const { podeAdministrar } = usePermissoes();
+  const { podeAdministrar, semConfirmacao } = usePermissoes();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
@@ -562,6 +562,8 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                   interno={comentarioInterno}
                   bloqueado={internoBloqueado}
                   aoMudar={setComentarioInterno}
+                  semConfirmacao={semConfirmacao && !internoRecusado}
+                  aoConfirmarDeNovo={() => void revalidarIdentidade()}
                   aoTornarPublico={() => {
                     setComentarioInterno(false);
                     setInternoRecusado(false);

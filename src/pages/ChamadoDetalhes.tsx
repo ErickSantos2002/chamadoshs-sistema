@@ -207,7 +207,7 @@ const ChamadoDetalhes: React.FC = () => {
   // Na TI, trocar o responsável é de quem administra (o PUT da TI é
   // `require_equipe_ti`), e a lista é a da API-9, pedida a cada entrada na
   // edição — nunca o `GET /usuarios/` filtrado que morava no contexto (FE-5).
-  const { podeAdministrar } = usePermissoes();
+  const { podeAdministrar, semConfirmacao } = usePermissoes();
   const reatribuiNaTI = podeAdministrar && !ehDaQualidade && modoEdicao;
   // Cada entrada na edição é uma abertura nova do seletor: pede a lista de novo.
   const [entradaNaEdicao, setEntradaNaEdicao] = useState(0);
@@ -578,7 +578,11 @@ const ChamadoDetalhes: React.FC = () => {
         categoria_id: categoriaEditada ?? null,
         status: statusEditado,
         prioridade: prioridadeEditada,
-        tecnico_responsavel_id: tecnicoEditado ?? null,
+        // A troca do responsável é de quem administra. Sem a permissão vigente
+        // (perdida ou não confirmada depois de escolher), vai o de antes.
+        tecnico_responsavel_id: podeAdministrar
+          ? (tecnicoEditado ?? null)
+          : (chamado.tecnico_responsavel_id ?? null),
       };
 
       // A solução só vai quando muda de fato. Reenviar o valor carregado faria
@@ -1840,6 +1844,8 @@ const ChamadoDetalhes: React.FC = () => {
                   interno={comentarioInterno}
                   bloqueado={internoBloqueado}
                   aoMudar={setComentarioInterno}
+                  semConfirmacao={semConfirmacao && !internoRecusado}
+                  aoConfirmarDeNovo={() => void revalidarIdentidade()}
                   aoTornarPublico={() => {
                     setComentarioInterno(false);
                     setInternoRecusado(false);

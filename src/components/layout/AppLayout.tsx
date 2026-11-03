@@ -2,6 +2,48 @@ import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { usePermissoes } from '../../hooks/usePermissoes';
+import { useAuth } from '../../hooks/useAuth';
+import { ehAdministrador, integraEquipeTI } from '../../lib/permissoes';
+import { Aviso, Button } from '../ui';
+
+/**
+ * A revalidação das permissões falhou (rede, servidor): diz que as funções
+ * de administração estão suspensas e oferece a nova tentativa — um clique,
+ * nunca um laço. Só para quem administraria: a quem não administra, a falha
+ * não tira nada.
+ */
+const AvisoDePermissoesSuspensas: React.FC = () => {
+  const { user, revalidarIdentidade } = useAuth();
+  const { semConfirmacao } = usePermissoes();
+  const [tentando, setTentando] = useState(false);
+  if (!semConfirmacao || !(ehAdministrador(user) || integraEquipeTI(user))) return null;
+  return (
+    <div className="mb-4">
+      <Aviso variante="alerta">
+        <span className="block">
+          Não foi possível confirmar suas permissões. As funções de administração ficam
+          suspensas até a confirmação.
+        </span>
+        <Button
+          variante="secundario"
+          tamanho="sm"
+          className="mt-2"
+          carregando={tentando}
+          onClick={async () => {
+            setTentando(true);
+            try {
+              await revalidarIdentidade();
+            } finally {
+              setTentando(false);
+            }
+          }}
+        >
+          Confirmar de novo
+        </Button>
+      </Aviso>
+    </div>
+  );
+};
 
 interface AppLayoutProps {
   /** A página atual. */
@@ -163,6 +205,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           id="conteudo-principal"
           className="flex-1 overflow-y-auto bg-superficie-base p-4 md:p-6"
         >
+          <AvisoDePermissoesSuspensas />
           {children}
         </main>
       </div>

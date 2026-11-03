@@ -18,6 +18,9 @@ import type { Comentario } from '../types/api';
 export const MENSAGEM_INTERNO_RECUSADO =
   'O comentário interno não foi enviado: você não tem mais permissão para comentários internos. O texto foi mantido.';
 
+export const MENSAGEM_INTERNO_SEM_CONFIRMACAO =
+  'Não foi possível confirmar sua permissão para comentários internos agora. O texto foi mantido e não foi enviado.';
+
 export const DICA_DO_INTERNO = 'Visível só para administradores e para a equipe da TI.';
 
 /** O comentário interno foi recusado por permissão. */

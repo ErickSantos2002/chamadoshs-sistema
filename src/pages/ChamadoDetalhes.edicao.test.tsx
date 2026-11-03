@@ -353,3 +353,43 @@ describe('quem não é da equipe', () => {
     expect(host.textContent).not.toContain('Ações Rápidas');
   });
 });
+
+describe('TI — a permissão cai no meio da edição', () => {
+  // Escolheu outro responsável, e a revalidação falhou antes do "Salvar": a
+  // troca é de quem administra, e sem a permissão vigente o PUT leva o
+  // responsável de antes — os outros campos seguem como editados.
+  it('revalidação falhou: o PUT leva o responsável de antes', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar();
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await escolher('Técnico responsável', 'tecnica');
+    await escolher('Prioridade', 'Alta');
+
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={{ ...sessao('Administrador'), falhaAoConfirmar: true }}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <MemoryRouter initialEntries={['/chamados/1']}>
+                <Routes>
+                  <Route path="/chamados/:id" element={<ChamadoDetalhes />} />
+                </Routes>
+              </MemoryRouter>
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+    await clicar(botao('Salvar'), 'Salvar');
+
+    expect(atualizar.mock.calls[0]).toStrictEqual([
+      1,
+      {
+        categoria_id: null,
+        status: StatusEnum.EM_ANDAMENTO,
+        prioridade: 'Alta',
+        tecnico_responsavel_id: 1,
+      },
+    ]);
+  });
+});

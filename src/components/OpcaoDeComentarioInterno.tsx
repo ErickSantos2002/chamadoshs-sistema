@@ -1,6 +1,10 @@
 import React from 'react';
 import { Aviso, Badge, Button, Checkbox } from './ui';
-import { DICA_DO_INTERNO, MENSAGEM_INTERNO_RECUSADO } from '../lib/comentarios';
+import {
+  DICA_DO_INTERNO,
+  MENSAGEM_INTERNO_RECUSADO,
+  MENSAGEM_INTERNO_SEM_CONFIRMACAO,
+} from '../lib/comentarios';
 
 interface OpcaoDeComentarioInternoProps {
   /** Quem pode criar interno agora (`podeAdministrar`). */
@@ -11,6 +15,12 @@ interface OpcaoDeComentarioInternoProps {
    * ambos, o envio fica travado até a pessoa escolher publicar.
    */
   bloqueado: boolean;
+  /**
+   * A permissão não pôde ser confirmada (revalidação falhou): o bloqueio diz
+   * isso, e oferece confirmar de novo além de publicar.
+   */
+  semConfirmacao?: boolean;
+  aoConfirmarDeNovo?: () => void;
   aoMudar: (interno: boolean) => void;
   /** A escolha explícita de mandar o mesmo texto como público. */
   aoTornarPublico: () => void;
@@ -26,6 +36,8 @@ export const OpcaoDeComentarioInterno: React.FC<OpcaoDeComentarioInternoProps> =
   pode,
   interno,
   bloqueado,
+  semConfirmacao = false,
+  aoConfirmarDeNovo,
   aoMudar,
   aoTornarPublico,
   desabilitado = false,
@@ -33,10 +45,19 @@ export const OpcaoDeComentarioInterno: React.FC<OpcaoDeComentarioInternoProps> =
   if (bloqueado) {
     return (
       <Aviso variante="alerta">
-        <span className="block">{MENSAGEM_INTERNO_RECUSADO}</span>
-        <Button variante="secundario" tamanho="sm" className="mt-2" onClick={aoTornarPublico}>
-          Tornar público
-        </Button>
+        <span className="block">
+          {semConfirmacao ? MENSAGEM_INTERNO_SEM_CONFIRMACAO : MENSAGEM_INTERNO_RECUSADO}
+        </span>
+        <span className="mt-2 flex flex-wrap gap-2">
+          {semConfirmacao && aoConfirmarDeNovo && (
+            <Button variante="secundario" tamanho="sm" onClick={aoConfirmarDeNovo}>
+              Confirmar de novo
+            </Button>
+          )}
+          <Button variante="secundario" tamanho="sm" onClick={aoTornarPublico}>
+            Tornar público
+          </Button>
+        </span>
       </Aviso>
     );
   }

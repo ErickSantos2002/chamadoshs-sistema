@@ -110,9 +110,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (status === 401) setUser(null);
         return;
       }
-      // Rede ou servidor: o que já estava confirmado nesta sessão fica — não
-      // é dado antigo, é desta conta, deste login. O que não estava continua
-      // sem confirmar, e a tela de gestão diz isso em vez de liberar.
+      // Rede ou servidor: a sessão continua (5xx não é logout), mas a
+      // falha fica marcada, e enquanto ela vale `usePermissoes` suspende as
+      // funções de administração — a permissão pode ter sido revogada
+      // justamente agora. Não se repete sozinho: a próxima tentativa é um
+      // clique, ou a próxima renovação do token.
       setFalhaAoConfirmar(true);
     }
   }, [aplicarMe]);
