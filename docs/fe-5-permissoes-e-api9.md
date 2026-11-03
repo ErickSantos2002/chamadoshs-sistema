@@ -76,6 +76,37 @@ podeAdministrarUsuarios = confirmada && Administrador
   outros perfis não recebem 403, toast nem chamada periódica.
 - A API é quem decide. O front só deixa de oferecer o que a API recusaria.
 
+### Revalidação que falha (fechamento técnico)
+
+Uma confirmação vale enquanto a última revalidação do `/auth/me` não falhou:
+
+```
+vigente        = identidadeConfirmada && !falhaAoConfirmar
+podeAdministrar = podeAdministrar(user, vigente)
+semConfirmacao  = user && falhaAoConfirmar        (antes: só sem confirmação anterior)
+```
+
+| Resposta da revalidação | Sessão | Funções de administração |
+|---|---|---|
+| 200 | segue | conforme o `/auth/me` novo (revogada → saem) |
+| rede ou 5xx | **segue, sem logout** | **suspensas** até uma revalidação dar certo |
+| 401 | encerrada | — |
+| 403 | segue | nenhuma (`identidadeConfirmada = false`) |
+
+- Suspensas: Gestão, troca do responsável da TI e comentário interno. O resto
+  (comentário público, ações de atendimento, leitura) continua.
+- Aviso na casca, para quem administraria — administrador, integrante
+  confirmado, e técnico cuja equipe ainda não foi confirmada (no F5 o
+  `integra_equipe_ti` não vem do armazenamento) — com "Confirmar de novo".
+  Um clique por tentativa; nada se repete sozinho.
+- Interno já marcado quando a confirmação caiu: não sai e não vira público. O
+  bloqueio diz por quê (`MENSAGEM_INTERNO_SEM_CONFIRMACAO`) e oferece
+  "Confirmar de novo" e "Tornar público".
+- Responsável escolhido e permissão caída antes do "Salvar": o PUT da edição
+  leva o responsável de antes; os outros campos seguem.
+- Resposta antiga não desfaz a mais nova; logout e troca de conta descartam a
+  revalidação em voo (testes do `AuthContext`).
+
 ## 4. Responsáveis da TI
 
 - `chamadosService.listarResponsaveisTI()` valida o formato `[{id, nome}]`:
@@ -184,12 +215,8 @@ que já estava na tela é perda de acesso.
 
 ## 9. Riscos residuais
 
-1. **Rascunho do modal some quando o quadro muda** (anterior ao FE-5, não
-   corrigido). O efeito de carga do `ChamadoModal` depende de `buscarChamado`,
-   que muda a cada mudança da lista do contexto. Cada `aplicarChamado` (mudar
-   o status, por exemplo) refaz o efeito: limpa o comentário digitado e relê
-   os comentários. Fora do escopo. Pede um efeito que dependa só do
-   `chamadoId`.
+1. ~~Rascunho do modal some quando o quadro muda~~ — **corrigido no
+   fechamento técnico** (ver seção 13).
 2. **Toast "Chamado não encontrado" junto da tela de perda de acesso** no
    atendimento da Qualidade. Vem de `interpretarErroDoAtendimento` e foi
    mantido para não mudar o comportamento testado do FE-3.
@@ -198,17 +225,15 @@ que já estava na tela é perda de acesso.
 4. **Falha não-404 na releitura da página** troca a página pela tela de erro,
    como antes. O estado "Não foi possível atualizar…" das ações aparece no
    modal.
-5. **A limpeza do estado na perda de acesso não é observável pelo DOM.** A
-   tela de encerramento é desenhada antes de tudo. Por isso a mutação "não
-   limpa comentários" sobreviveu aos testes; a limpeza é defesa em
-   profundidade.
-6. **Revisão visual e de acessibilidade não feita** (sem navegador isolado).
-   Ficam registrados, sem correção nesta etapa:
-   - o contraste da opção escolhida no `Seletor`
-     (`font-medium text-sinal` sobre `bg-sinal/15`);
-   - os botões pequenos (`tamanho="sm"`) do `AcoesRapidas`.
-7. **Sem teste integrado** com as duas pontas no ar (API-9 e FE-5). Tudo foi
-   validado por testes automatizados contra os contratos das APIs 5–9.
+5. **A limpeza só dos comentários na perda de acesso continua não
+   observável.** A mutação que sobreviveu ("não limpa comentários") passou a
+   ser pega (seção 13). A que tira só o `setComentarios([])` sobrevive: os
+   comentários só aparecem com o chamado, e os dois são trocados no mesmo
+   lote. Fica como defesa em profundidade.
+6. ~~Revisão visual não feita~~ — **feita no navegador e os dois pontos
+   corrigidos** (seção 13).
+7. ~~Sem teste integrado~~ — **homologação local FE-5 × API-9 feita**
+   (seção 13), com PostgreSQL descartável e dados fictícios.
 8. **O front esconde, a API decide.** `podeAdministrar` é UX. A garantia é o
    `require_equipe_ti`, o `require_admin` e o `pode_acessar_comentario_interno`
    da API.
@@ -253,3 +278,196 @@ Esta ordem segue a condição ativa do plano de segurança: API antes do front.
   fora da TI, no backend. Não é seguro, qualquer que seja o front.
 - **API para a API-6 ou anterior:** sem `integra_equipe_ti`, o FE-5 só deixa o
   Administrador administrar. É conservador, mas tira da TI as telas de gestão.
+
+## 13. Fechamento técnico e homologação local FE-5 × API-9
+
+Feita em 03/11/2026, toda local. Sem push, PR, merge, deploy ou acesso a
+produção; versão segue **1.7.8**. Nenhuma credencial neste documento.
+
+### 13.1 Defeitos corrigidos (commits locais)
+
+| Commit | O quê |
+|---|---|
+| `889d9db` fix(chamados): preserva rascunhos durante atualizacoes | O efeito de carga do `ChamadoModal` dependia da identidade de `buscarChamado`; cada mudança do quadro limpava o comentário e relia os comentários. Agora depende só do `chamadoId` e incorpora a versão nova do mesmo chamado vinda do quadro. Rascunho some só ao enviar, trocar de chamado, fechar, ou fica só-leitura na perda de acesso. Nada em `localStorage`/`sessionStorage`. |
+| `bd82530` test(chamados): cobre perda de acesso e estado obsoleto | Torna observável a mutação que sobrevivia (ver 13.2). |
+| `9dd592f` fix(auth): suspende privilegios sem revalidacao | Critério da seção 3, "Revalidação que falha". |
+| `8e64da7` fix(auth): avisa o tecnico restaurado sem confirmacao | **Achado no navegador:** no F5 com o `/auth/me` caído, o técnico da TI perdia a Gestão sem aviso e sem nova tentativa. |
+| `e2737b8` fix(ui): ajusta controles de atendimento | Contraste da opção escolhida do `Seletor` (4,31:1 → 14,56:1 claro, 11,31:1 escuro) e ações rápidas no tamanho padrão (30 → 38 px). |
+
+### 13.2 Testes e mutação
+
+- Vitest: **1.418** aprovados em 88 arquivos (base 1.384 no `12aac63`;
+  +34). `tsc -b`, `validar:paleta` e `npm run build` limpos — sempre com
+  `VITE_API_URL=http://127.0.0.1:9`.
+- Novos: `ChamadoModal.rascunhos.test.tsx` (12), três em
+  `perdaDeAcesso.test.tsx` (página: Voltar do navegador, GET forçado
+  atrasado, perda no meio da releitura), `context/revalidacao.test.tsx` (16,
+  com `AuthProvider`, casca e modal reais), um em
+  `ChamadoDetalhes.edicao.test.tsx`, um em `Seletor.test.tsx`, um em
+  `AcoesRapidas.test.tsx`.
+- **Mutação sobrevivente da FE-5** ("página não limpa chamado e
+  comentários"): agora **3 testes falham**. Variações: só o chamado, 3;
+  releitura atrasada escreve depois da perda, 1; só os comentários,
+  **sobrevive** (risco 5).
+- Mutações de cada correção, todas pegas: efeito com as dependências antigas
+  (6), sem incorporar o quadro (1), troca sem limpar rascunho (1); confirmação
+  antiga vale apesar da falha (5), `semConfirmacao` só antes de confirmar (5),
+  sem o aviso (5), bloqueio do interno sem o motivo (2), falha de rede não
+  marcada (7), PUT com o responsável escolhido sem permissão (1); aviso só
+  para admin/integrante (1), para técnico confirmado fora (1), para qualquer
+  sessão (2); `text-sinal` de volta (1), `sm` de volta (1). Número de
+  mutações não substitui a suíte.
+
+### 13.3 Ambiente e isolamento
+
+- **Banco:** PostgreSQL 15.19 portátil, cluster novo (`initdb -A trust`) em
+  `127.0.0.1:54339`, banco `hml_fe5_api9`, `schema_chamados.sql` da API-9 e
+  seed fictício. O PostgreSQL 18 do sistema (5432) não foi tocado.
+- **API:** `0ac2571` exportada por `git archive` para uma pasta temporária (o
+  checkout da API não foi usado nem alterado), `uvicorn` em
+  `127.0.0.1:8095`, ambiente montado com `env -i`: `SETORES_TI_IDS=1`,
+  `SETOR_QUALIDADE_ID=5` (**só neste banco descartável**), webhook vazio,
+  chave aleatória local, `PROXY_HOPS_CONFIAVEIS=0`. Não há agendador na API.
+- **Front:** `vite --host 127.0.0.1 --port 5295 --strictPort` com
+  `VITE_API_URL=http://127.0.0.1:8095` no processo. Conferido no módulo
+  servido: `import.meta.env.VITE_API_URL` = a API local. O `.env` (produção)
+  não foi alterado.
+- **Saída de rede bloqueada nos processos:** API e Vite subiram com um guarda
+  que recusa `connect` fora de loopback (conferido: `1.1.1.1:443` recusado,
+  `127.0.0.1` aceito). Nenhuma recusa registrada durante a homologação.
+- **Navegador:** só as origens `127.0.0.1:5295` e `127.0.0.1:8095` aparecem
+  nos recursos da página. URLs fixas no código: o fallback
+  `http://localhost:8000` e o link da Central (só ao clicar, não clicado).
+  Fontes auto-hospedadas; sem service worker, WebSocket ou EventSource.
+
+### 13.4 Personas (fictícias)
+
+`hml_admin` (administrador, ADM), `hml_ti` (técnico TI), `hml_qual`
+(técnico Qualidade), `hml_outro` (técnico Laboratório), `hml_semsetor`,
+`hml_comum` (usuário), `hml_ti_ativo`, `hml_ti_inativo`, `hml_servico`
+(conta de serviço na TI), `hml_solicitante`, `hml_resp_atual`,
+`hml_ex_resp` (saiu da TI), e `hml_admin_ti` (administrador na TI). Senha
+única descartável, só no banco temporário.
+
+### 13.5 B — HTTP real contra a API-9 (sem o front)
+
+Script em loopback, sem registrar token nem senha: **167/167**.
+
+- Autenticação: login das personas (inativo recusado), `/auth/me` com
+  `integra_equipe_ti` esperado por persona, token guardado vale num pedido
+  novo, `refresh` devolve token que vale, token inválido 401. Não há rota de
+  logout na API (é do front). Mudança de setor de `hml_outro` para a TI e de
+  volta: o mesmo token revalidado passa `integra_equipe_ti` a `true` e a
+  `false`, e `responsaveis-ti` acompanha (200/403).
+- Administração: admin e admin da TI 200 em tudo; técnico TI 200 em setores,
+  categorias, SLA, tarefas e eventos de setor, **403** em eventos de conta;
+  Qualidade, outro setor, sem setor e comum 403 em tarefas e eventos.
+  Técnico TI cria setor e **não** exclui (403); admin exclui.
+- Responsáveis: admin, admin TI e técnico TI recebem exatamente
+  `{hml_ti, hml_ti_ativo, hml_resp_atual, hml_admin_ti}`, só `id` e `nome`;
+  os demais 403. PUT com inativo, conta de serviço, outro setor, Qualidade,
+  admin fora da TI e sem setor: 400 e nada gravado. Responsável antigo
+  inelegível se mantém ao salvar outro campo.
+- Interno: admin e TI criam e veem; solicitante e Qualidade não recebem,
+  tentam e levam 403 sem gravação, comentam em público; o interno não sai por
+  `GET /comentarios/{id}`, histórico nem chamado.
+- Concorrência: Qualidade 428 sem versão, 409 com versão velha, 200 com a
+  atual (versão sobe); atendimento idem; TI sem versão 200; sonda D-6 405
+  "Method Not Allowed".
+- Perda de acesso: A (responsável fora da TI) lê; B reatribui; A recebe 404
+  na leitura, nos comentários e ao comentar, e o chamado sai da listagem.
+  Autorreatribuição: PUT 200 e releitura **200** — quem reatribui na TI lê
+  pelo perfil, então o 404 não se aplica pelas regras da API-9.
+
+### 13.6 C — navegador real, front local + API local
+
+Chrome, uma aba numa origem local, personas trocadas pelo formulário de login.
+
+- `hml_ti`: Gestão; chamado com interno marcado "Interno"; opção de interno;
+  seletor da TI com exatamente os quatro elegíveis. Escolha que ficou inválida
+  (inativado no banco depois da lista carregada): PUT **400**, nada salvo,
+  formulário mantido, lista relida sem ele. Escolha válida: 200. Responsável
+  antigo inelegível aparece "(fora da equipe)", desabilitado, e é mantido ao
+  salvar a prioridade. Interno enviado pelo navegador gravado como interno.
+- `hml_qual`: sem Gestão; `/cadastros`, `/tarefas-recorrentes`, `/auditoria`
+  por URL mostram o bloqueio, sem toast; **nenhuma** requisição a
+  `responsaveis-ti`, tarefas, eventos ou setores, e nenhum 403 no log da API;
+  chamado da Qualidade sem o interno e sem a opção; comentário público 201.
+- `hml_outro`, `hml_semsetor`, `hml_comum`: sem Gestão, bloqueio por URL,
+  abertura de chamado disponível, nenhum 4xx.
+- `hml_admin` e `hml_ti`: as três telas de gestão abrem; a Auditoria da TI
+  fica em Setores com o aviso de eventos de conta, e só pede `alvo=setor`.
+  Exclusão de setor não é oferecida a ninguém (só desativar).
+- Perda de acesso com dois usuários (A no navegador, B por HTTP): na página e
+  no modal do Kanban, o comentário de A leva **um** 404, sem repetição; os
+  dados do chamado somem, ações somem, o rascunho fica só-leitura para
+  copiar, a mensagem aparece, e o cartão sai do quadro sem recarregar e não
+  volta.
+- Revalidação: com a API parada e F5, a sessão segue, a Gestão sai e o aviso
+  com "Confirmar de novo" aparece (depois da correção `8e64da7`); com a API de
+  volta, um clique devolve a Gestão.
+
+### 13.7 Visual e acessibilidade (navegador)
+
+360 e 1440 px, claro e escuro, por iframe da mesma origem com largura fixa
+(a janela não redimensiona): Kanban, modal, página do chamado, seletor de
+responsável aberto, Cadastros. Medido por script: transbordo horizontal
+**nenhum**; controles sem rótulo **nenhum**; contraste de todo texto visível
+≥ 4,5 (≥ 3 grande), exceto a opção escolhida do `Seletor` no tema claro
+(corrigida); modal cabe em 360 px; foco visível (contorno de 2 px e anel de
+4 px). Login, estados de erro e carregamento foram vistos nas passagens, não
+medidos à parte.
+
+### 13.8 Falhas reproduzidas e não corrigidas aqui
+
+- **Classe 2 — técnico de fora do setor vê ações de equipe.** No chamado da
+  TI que lê só por ser o responsável, `hml_outro` vê Editar, Iniciar
+  atendimento, Arquivar e Cancelar. A API recusa (403 "Este chamado não é da
+  sua equipe", nada gravado). `podeEditar = isAdmin || isTecnico` é anterior
+  ao FE-5; espelhar o `pode_alterar_como_equipe` da API-6 pede uma regra de
+  alcance que o front só conhece pela metade.
+- **Classe 2 — erro de escrita troca a página pela tela de erro.** Na página,
+  uma recusa que não é perda de acesso nem conflito de versão (o 403 acima,
+  um 5xx) faz `setError`, e a página inteira vira "Erro ao atualizar status."
+  com só "Voltar", perdendo o rascunho — com o chamado ainda legível.
+  Anterior ao FE-5 (`c47954c`).
+- **Classe 3 — conta de serviço da TI age como equipe (API).** Reprodução:
+  `hml_servico` (técnico, setor da TI, `conta_de_servico = true`) faz login
+  (200); `/auth/me` → `integra_equipe_ti: true`; `GET /tarefas-recorrentes/`
+  200, `GET /eventos/?alvo=setor` 200, `GET /chamados/responsaveis-ti` 200, e
+  `POST /comentarios/` com `is_interno: true` **201**. Esperado: a conta de
+  serviço, que a API-9 já recusa como responsável, não ganhar as funções da
+  equipe. Impacto: quem tiver a senha de uma conta de serviço da TI administra
+  como técnico e lê/escreve interno; no front, ganha a Gestão. Correção mínima
+  proposta: `integra_equipe_ti` (em `leitura_service`) exigir
+  `not usuario.conta_de_servico` — ou o login recusar conta de serviço, se ela
+  nunca deve entrar pela tela. **API não alterada.**
+- Registrado, não é defeito: `GET /usuarios/` e `GET /sla-configs/` só pedem
+  login (nomes e prazos para todo perfil), desenho anterior à API-9.
+
+### 13.9 Limitações e riscos residuais
+
+- 403 na revalidação deixa as rotas administrativas em "Confirmando suas
+  permissões…" (não confirmada e sem falha). Seguro, mas sem saída além do
+  logout. Não alterado.
+- Capturas de tela do navegador falharam por tempo em parte das tentativas;
+  a evidência visual é a medição por script e uma captura do aviso de
+  revalidação.
+- Um `npm run build` foi rodado uma vez **sem** o `VITE_API_URL` local e
+  embutiu a URL de produção no `dist/` local (ignorado pelo Git, nada
+  servido, nenhuma requisição). Refeito com a URL local na sequência; o
+  `dist/` atual não tem a URL de produção.
+- Leitura por tecnologia assistiva: só por nomes acessíveis e papéis ARIA;
+  sem leitor de tela.
+
+### 13.10 Pendências e próximos critérios de aceite
+
+1. Decidir a classe 3 (conta de serviço) na API antes de ligar a FE-5.
+2. Regra de ações de equipe no front (classe 2) e erro de escrita sem
+   derrubar a página — numa etapa própria.
+3. Saída para o 403 na revalidação.
+4. Para publicar: a ordem da seção 11, `SETORES_TI_IDS` validada por pessoa,
+   e a homologação repetida no ambiente que for receber a imagem.
+
+Nada foi publicado: sem push, PR, merge ou deploy; a Qualidade não foi ligada
+fora do banco descartável.

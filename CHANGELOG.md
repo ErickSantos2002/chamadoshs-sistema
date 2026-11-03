@@ -184,6 +184,16 @@ lista. O rollback é coordenado: ver `docs/fe-5-permissoes-e-api9.md`, §11 e
   motivo e "Tentar de novo", em vez de esperar uma versão que não vem.
 - **Comentário recusado não troca mais a janela por um erro (FE-5).** O texto
   fica, o aviso é um só (o do sistema, no 403), e nada é reenviado.
+- **Rascunho do modal não some mais quando o quadro muda (FE-5).** Mudar o
+  status, recarregar o quadro ou outro cartão mudar não apaga mais o
+  comentário digitado nem relê os comentários.
+- **Revalidação que falha suspende a administração (FE-5).** Se a confirmação
+  das permissões cai por rede ou servidor, a Gestão, a troca do responsável da
+  TI e o comentário interno saem até a próxima confirmação, pedida em
+  "Confirmar de novo"; a sessão continua. Vale também no F5 do técnico.
+- **Seletor e ações rápidas mais legíveis (FE-5).** A opção escolhida passa a
+  ter contraste de texto adequado no tema claro, e as ações rápidas ficam do
+  tamanho dos outros botões.
 - **Permissão administrativa não vem mais do navegador (FE-5).** Ela é
   confirmada no servidor a cada abertura e renovação de sessão; uma resposta
   atrasada de outra sessão é descartada.
