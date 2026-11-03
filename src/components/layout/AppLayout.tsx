@@ -11,12 +11,22 @@ import { Aviso, Button } from '../ui';
  * de administração estão suspensas e oferece a nova tentativa — um clique,
  * nunca um laço. Só para quem administraria: a quem não administra, a falha
  * não tira nada.
+ *
+ * Na restauração (F5) o `integra_equipe_ti` não vem do armazenamento — de
+ * propósito, ver `AuthContext` —, então o técnico ainda não sabe se é da TI.
+ * Esse também vê o aviso: para o técnico da TI, sem ele a Gestão sumia sem
+ * explicação e sem a nova tentativa. O técnico já confirmado fora da TI
+ * (`false`) não vê.
  */
 const AvisoDePermissoesSuspensas: React.FC = () => {
   const { user, revalidarIdentidade } = useAuth();
   const { semConfirmacao } = usePermissoes();
   const [tentando, setTentando] = useState(false);
-  if (!semConfirmacao || !(ehAdministrador(user) || integraEquipeTI(user))) return null;
+  const tecnicoAindaSemEquipe =
+    (user?.role === 'Tecnico' || user?.role_id === 2) && user?.integra_equipe_ti === undefined;
+  if (!semConfirmacao || !(ehAdministrador(user) || integraEquipeTI(user) || tecnicoAindaSemEquipe)) {
+    return null;
+  }
   return (
     <div className="mb-4">
       <Aviso variante="alerta">

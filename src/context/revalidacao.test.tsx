@@ -256,6 +256,38 @@ describe('revalidação que falha por rede ou servidor', () => {
     expect(criar.mock.calls[0][0]).toMatchObject({ is_interno: true, comentario: 'Interno pela metade' });
   });
 
+  // Achado da homologação no navegador: o técnico restaurado não tem
+  // `integra_equipe_ti` guardado, e o aviso sumia junto com a Gestão.
+  it('F5 de técnico com o /auth/me caído: aviso e nova tentativa, que devolve a Gestão', async () => {
+    pedirMe.mockRejectedValueOnce(REDE);
+    await montar();
+    expect(visto.user?.id).toBe(10);
+    expect(veGestao()).toBe(false);
+    expect(texto()).toContain('Não foi possível confirmar suas permissões');
+
+    pedirMe.mockResolvedValueOnce(me());
+    await clicar('Confirmar de novo');
+    expect(veGestao()).toBe(true);
+    expect(texto()).not.toContain('Não foi possível confirmar suas permissões');
+  });
+
+  it('F5 de usuário comum com o /auth/me caído: nenhum aviso', async () => {
+    localStorage.setItem('user', JSON.stringify({ id: 6, nome: 'comum.ficticio', role: 'Usuario' }));
+    pedirMe.mockRejectedValueOnce(REDE);
+    await montar();
+    expect(visto.user?.id).toBe(6);
+    expect(texto()).not.toContain('Não foi possível confirmar suas permissões');
+  });
+
+  it('técnico já confirmado fora da TI: a falha seguinte não mostra aviso', async () => {
+    pedirMe.mockResolvedValueOnce(me({ integra_equipe_ti: false, setor_id: 5 }));
+    await montar();
+    pedirMe.mockRejectedValueOnce(REDE);
+    await revalidar();
+    expect(visto.falhaAoConfirmar).toBe(true);
+    expect(texto()).not.toContain('Não foi possível confirmar suas permissões');
+  });
+
   it('na restauração (F5) com o /auth/me caído, nada de administração', async () => {
     pedirMe.mockRejectedValueOnce(REDE);
     localStorage.setItem('user', JSON.stringify({ id: 1, nome: 'admin.ficticio', role: 'Administrador' }));
