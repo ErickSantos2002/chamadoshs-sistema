@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
@@ -8,6 +8,12 @@ import { usePermissoes } from '../hooks/usePermissoes';
 import { useResponsaveisTI } from '../hooks/useResponsaveisTI';
 import { chamadosService } from '../services/chamadoshsapi';
 import { ehRecusaDoResponsavel, mensagemDaRecusaDoResponsavel } from '../lib/responsaveis';
+import {
+  MENSAGEM_SEM_ACESSO,
+  RascunhoPreservado,
+  ehPerdaDeAcesso,
+  rascunhosComConteudo,
+} from '../lib/acesso';
 import {
   interpretarErroDaReatribuicao,
   opcoesDeResponsavelDaQualidade,
@@ -31,6 +37,7 @@ import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
 import { IconeEnviar, IconeLinkExterno } from './ui/icones';
 import { SeletorDeResponsavelDaTI } from './SeletorDeResponsavelDaTI';
+import AcessoEncerrado from './AcessoEncerrado';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -132,6 +139,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     carregarComentarios,
     criarComentario,
     aplicarChamado,
+    removerChamado,
     verificarQualidade,
     marcarQualidadeIndisponivel,
   } = useChamados();
@@ -147,6 +155,14 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   const [novoComentario, setNovoComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [atribuindo, setAtribuindo] = useState(false);
+
+  // O chamado saiu do alcance de quem o via (FE-5, `lib/acesso`). O id fica
+  // num ref para as respostas atrasadas — e a releitura que a remoção do card
+  // provoca no efeito de carga — não o trazerem de volta à janela.
+  const [acessoEncerrado, setAcessoEncerrado] = useState<RascunhoPreservado[] | null>(null);
+  const encerradoPara = useRef<number | null>(null);
+  // A solução que ficou no passo de resolução do `AcoesRapidas`.
+  const rascunhoDoAtendimento = useRef('');
 
   // Mesma regra das ações de status: atribuir é da equipe, e a API recusa
   // para o solicitante — mostrar o seletor a ele seria oferecer um 403.
@@ -175,11 +191,19 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   const [abertura, setAbertura] = useState(0);
   useEffect(() => {
     if (chamadoId !== null) setAbertura((n) => n + 1);
+    // Outro chamado (ou a janela fechada): a perda de acesso era do anterior.
+    if (encerradoPara.current !== chamadoId) {
+      encerradoPara.current = null;
+      setAcessoEncerrado(null);
+    }
   }, [chamadoId]);
   const responsaveisTI = useResponsaveisTI(reatribuiNaTI, abertura);
 
   useEffect(() => {
     if (chamadoId === null) return;
+    // Encerrado, fica encerrado: tirar o card do quadro muda a lista do
+    // contexto, e este efeito rodaria de novo, pedindo o chamado à API.
+    if (encerradoPara.current === chamadoId) return;
 
     let cancelado = false;
 
@@ -226,7 +250,11 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       });
       setNovoComentario('');
       setComentarios(await carregarComentarios(chamado.id));
-    } catch {
+    } catch (err) {
+      if (ehPerdaDeAcesso(err)) {
+        encerrarAcesso(chamado.id);
+        return;
+      }
       setErro('Erro ao enviar o comentário.');
     } finally {
       setEnviando(false);
@@ -244,21 +272,50 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
    * mudança: o card resolvido ficava parado na coluna antiga até um F5.
    */
   const registrarMudanca = (atualizado: Chamado) => {
+    // Resposta de uma escrita que saiu antes da perda de acesso.
+    if (encerradoPara.current === atualizado.id) return;
     setChamado(atualizado);
     aplicarChamado(atualizado);
   };
 
   /**
-   * O atendimento da Qualidade foi recusado por algo que a tela não sabia —
-   * permissão, conflito, chamado que sumiu. Relê da API, sem passar pelo
-   * cache do contexto, que é justamente o que pode estar velho.
+   * A pessoa deixou de poder ver este chamado (`lib/acesso`). A janela para
+   * de mostrá-lo — dados, comentários, ações — e tira o card do quadro. Fica
+   * só o comentário que ela tinha digitado, para copiar. Nada é reenviado.
    */
-  const recarregar = () => {
-    if (!chamado) return;
-    chamadosService
-      .buscar(chamado.id)
-      .then(registrarMudanca)
-      .catch(() => setErro('Erro ao carregar o chamado.'));
+  const encerrarAcesso = (id: number) => {
+    encerradoPara.current = id;
+    setAcessoEncerrado(
+      rascunhosComConteudo([
+        { rotulo: 'Seu comentário', texto: novoComentario },
+        { rotulo: 'A solução do atendimento', texto: rascunhoDoAtendimento.current },
+      ])
+    );
+    setChamado(null);
+    setComentarios([]);
+    setNovoComentario('');
+    setErro(null);
+    removerChamado(id);
+  };
+
+  /**
+   * O atendimento foi recusado por algo que a tela não sabia — permissão,
+   * conflito, chamado que sumiu. Relê da API, sem passar pelo cache do
+   * contexto, que é justamente o que pode estar velho. Diz às ações se deu:
+   * sem o chamado relido, elas não voltam.
+   */
+  const recarregar = async (): Promise<boolean> => {
+    if (!chamado) return false;
+    const id = chamado.id;
+    try {
+      registrarMudanca(await chamadosService.buscar(id));
+      return encerradoPara.current !== id;
+    } catch (err) {
+      if (encerradoPara.current === id) return false;
+      if (ehPerdaDeAcesso(err)) encerrarAcesso(id);
+      else setErro('Erro ao carregar o chamado.');
+      return false;
+    }
   };
 
   /**
@@ -280,6 +337,10 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       });
       registrarMudanca(atualizado);
     } catch (err: any) {
+      if (ehPerdaDeAcesso(err)) {
+        encerrarAcesso(chamado.id);
+        return;
+      }
       // 400 do responsável (inativo, fora da TI, conta de serviço): a lista
       // na tela estava velha. Diz o motivo do backend, relê a lista, e a
       // nova escolha é um clique novo — o PUT não se repete.
@@ -325,12 +386,16 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       });
       registrarMudanca(atualizado);
     } catch (err) {
+      if (ehPerdaDeAcesso(err)) {
+        encerrarAcesso(chamado.id);
+        return;
+      }
       const { mensagem, recarregarAtendentes, indisponivel, recarregarChamado } =
         interpretarErroDaReatribuicao(err);
       if (mensagem) toast.error(mensagem);
       if (indisponivel) marcarQualidadeIndisponivel();
       if (recarregarAtendentes) void verificarQualidade();
-      if (recarregarChamado) recarregar();
+      if (recarregarChamado) void recarregar();
     } finally {
       setAtribuindo(false);
     }
@@ -341,10 +406,14 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       aberto={chamadoId !== null}
       aoFechar={aoFechar}
       largura="xl"
-      titulo={chamado ? chamado.titulo : 'Carregando…'}
-      descricao={chamado?.protocolo}
+      titulo={acessoEncerrado ? 'Chamado indisponível' : chamado ? chamado.titulo : 'Carregando…'}
+      descricao={acessoEncerrado ? undefined : chamado?.protocolo}
       rodape={
-        chamado ? (
+        acessoEncerrado ? (
+          <Button variante="secundario" onClick={aoFechar}>
+            Fechar
+          </Button>
+        ) : chamado ? (
           <Button variante="secundario" onClick={() => aoAbrirEmPagina(chamado.id)}>
             <IconeLinkExterno className="h-4 w-4" aria-hidden="true" />
             Abrir em página para editar
@@ -352,17 +421,21 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
         ) : undefined
       }
     >
-      {carregando && (
+      {acessoEncerrado && (
+        <AcessoEncerrado mensagem={MENSAGEM_SEM_ACESSO} rascunhos={acessoEncerrado} />
+      )}
+
+      {carregando && !acessoEncerrado && (
         // Também era silencioso, e este é o pior dos três: é o modal do
         // chamado, a tela mais usada do sistema.
         <BlocoCarregando className="py-12" />
       )}
 
-      {erro && !carregando && (
+      {erro && !carregando && !acessoEncerrado && (
         <Aviso variante="perigo">{erro}</Aviso>
       )}
 
-      {chamado && !carregando && (
+      {chamado && !carregando && !acessoEncerrado && (
         // Duas colunas em tela larga: a conversa à esquerda, a ficha à direita.
         // Numa coluna só, a descrição estica por todo o modal e a leitura fica
         // ruim, enquanto sobra vazio ao lado.
@@ -460,6 +533,9 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
               chamado={chamado}
               aoMudar={registrarMudanca}
               aoPrecisarRecarregar={recarregar}
+              aoGuardarRascunho={(texto) => {
+                rascunhoDoAtendimento.current = texto;
+              }}
             />
 
             <dl className="space-y-3 border-t border-borda pt-4 text-sm">

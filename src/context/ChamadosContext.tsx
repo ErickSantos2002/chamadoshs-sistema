@@ -61,6 +61,12 @@ type ChamadosContextType = {
   deletarChamado: (id: number) => Promise<void>;
   /** Funde na lista um chamado que outro caminho já salvou. Não faz requisição. */
   aplicarChamado: (chamado: Chamado) => void;
+  /**
+   * Tira da lista um chamado que a pessoa deixou de poder ver (FE-5). Só ele:
+   * não recarrega o quadro. Uma listagem ou busca que já estava em voo não o
+   * traz de volta.
+   */
+  removerChamado: (id: number) => void;
 
   // Funções de comentários
   carregarComentarios: (chamadoId: number) => Promise<Comentario[]>;
@@ -99,9 +105,23 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
   const [categoriasCarregadas, setCategoriasCarregadas] = useState(false);
   const [usuariosCarregados, setUsuariosCarregados] = useState(false);
 
+  // Os chamados que saíram da lista por perda de acesso, com a marca de
+  // QUANDO saíram. Uma listagem (ou busca) guarda a marca do seu início: o
+  // que foi removido depois dela começar é descartado da resposta — ela foi
+  // montada pela API antes da perda e traria o card de volta. A que começar
+  // depois da remoção é a verdade de agora, e vale.
+  const removidos = useRef(new Map<number, number>());
+  const marcaDeRemocao = useRef(0);
+  const removidoDesde = (id: number, inicio: number) => (removidos.current.get(id) ?? 0) > inicio;
+
+  useEffect(() => {
+    removidos.current.clear();
+  }, [user?.id]);
+
   // Carregar chamados baseado na role do usuário
   const carregarChamados = useCallback(async () => {
     if (!user) return;
+    const inicio = marcaDeRemocao.current;
 
     try {
       setLoading(true);
@@ -145,7 +165,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         data = await chamadosService.listarTodos(params);
       }
 
-      setChamados(data);
+      setChamados(data.filter((c) => !removidoDesde(c.id, inicio)));
       setChamadosCarregados(true);
     } catch (err: any) {
       console.error('Erro ao carregar chamados:', err);
@@ -166,9 +186,14 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         }
 
         // Se não estiver no cache, busca na API
+        const inicio = marcaDeRemocao.current;
         setLoading(true);
         setError(null);
         const data = await chamadosService.buscar(id);
+
+        // Saiu por perda de acesso enquanto esta busca andava: a resposta é
+        // de antes, e não volta nem para a lista nem para quem pediu.
+        if (removidoDesde(id, inicio)) return null;
 
         // Atualiza o cache
         setChamados((prev) => {
@@ -230,6 +255,12 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
    */
   const aplicarChamado = useCallback((chamado: Chamado) => {
     setChamados((prev) => prev.map((c) => (c.id === chamado.id ? maisRecente(c, chamado) : c)));
+  }, []);
+
+  const removerChamado = useCallback((id: number) => {
+    marcaDeRemocao.current += 1;
+    removidos.current.set(id, marcaDeRemocao.current);
+    setChamados((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
   // Atualizar chamado
@@ -454,6 +485,7 @@ export const ChamadosProvider = ({ children }: { children: ReactNode }) => {
         atualizarChamado,
         deletarChamado,
         aplicarChamado,
+        removerChamado,
         carregarComentarios,
         criarComentario,
         carregarHistorico,

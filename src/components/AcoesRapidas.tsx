@@ -33,9 +33,20 @@ interface AcoesRapidasProps {
   aoMudar: (atualizado: Chamado) => void;
   /**
    * O chamado na tela pode estar velho — a API recusou por permissão, por
-   * conflito ou porque ele não existe mais. Só no atendimento da Qualidade.
+   * conflito ou porque ele não existe mais.
+   *
+   * Quem devolve uma promessa diz como a releitura terminou: `true`, o
+   * chamado novo está na tela (e os botões voltam a partir dele); `false` ou
+   * falha, não está — os botões ficam travados, com o motivo, até um clique
+   * em "Tentar de novo". Sem promessa, os botões esperam a versão nova chegar.
    */
-  aoPrecisarRecarregar?: () => void;
+  aoPrecisarRecarregar?: () => void | Promise<boolean | void>;
+  /**
+   * A solução digitada no passo de resolução, quando a escrita foi recusada
+   * e a tela vai reler — e `''` quando ela foi gravada. Se a releitura disser
+   * que a pessoa perdeu o acesso, quem mostra o chamado a deixa para copiar.
+   */
+  aoGuardarRascunho?: (texto: string) => void;
 }
 
 /**
@@ -109,6 +120,7 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
   chamado,
   aoMudar,
   aoPrecisarRecarregar,
+  aoGuardarRascunho,
 }) => {
   const { user } = useAuth();
   const { verificarQualidade, marcarAtendimentoIndisponivel, marcarQualidadeIndisponivel } =
@@ -125,13 +137,44 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
   const [esperandoVersao, setEsperandoVersao] = useState<number | null>(null);
   const rascunhoDaSolucao = useRef<string | null>(null);
   const versaoNaTela = lerVersao(chamado);
-  const desatualizado = esperandoVersao !== null && (versaoNaTela ?? 0) < esperandoVersao;
+  // A releitura pedida depois de uma recusa não trouxe o chamado: as ações do
+  // estado velho não voltam, e nada é tentado de novo sozinho (FE-5).
+  const [falhaAoAtualizar, setFalhaAoAtualizar] = useState(false);
+  const desatualizado =
+    falhaAoAtualizar || (esperandoVersao !== null && (versaoNaTela ?? 0) < esperandoVersao);
 
   useEffect(() => {
     if (esperandoVersao !== null && versaoNaTela !== null && versaoNaTela >= esperandoVersao) {
       setEsperandoVersao(null);
     }
   }, [esperandoVersao, versaoNaTela]);
+
+  // Chamado novo na tela é a verdade de agora: a falha anterior não vale mais.
+  useEffect(() => {
+    setFalhaAoAtualizar(false);
+  }, [chamado]);
+
+  /**
+   * Pede a releitura e espera ela terminar, quando quem pediu diz como.
+   * A espera pela versão SEMPRE acaba: ou com o chamado relido, ou com a
+   * falha à vista — nunca com o aviso "Atualizando…" para sempre.
+   */
+  const pedirRecarga = () => {
+    if (solucao.trim()) aoGuardarRascunho?.(solucao);
+    const resultado = aoPrecisarRecarregar?.();
+    if (!resultado || typeof (resultado as Promise<unknown>).then !== 'function') return;
+    (resultado as Promise<boolean | void>).then(
+      (ok) => {
+        if (ok === undefined) return;
+        setEsperandoVersao(null);
+        setFalhaAoAtualizar(ok === false);
+      },
+      () => {
+        setEsperandoVersao(null);
+        setFalhaAoAtualizar(true);
+      }
+    );
+  };
 
   const pelaRota = podeAtenderPelaRota(chamado, user?.id, qualidade);
 
@@ -167,7 +210,7 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
       setEsperandoVersao(versaoAtualDoConflito(err) ?? (versaoUsada ?? 0) + 1);
     }
     setResolvendo(false);
-    aoPrecisarRecarregar?.();
+    pedirRecarga();
     return true;
   };
 
@@ -190,7 +233,7 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
 
     if (recarregar) {
       setResolvendo(false);
-      aoPrecisarRecarregar?.();
+      pedirRecarga();
     }
   };
 
@@ -227,11 +270,17 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
       setResolvendo(false);
       setSolucao('');
       rascunhoDaSolucao.current = null;
+      aoGuardarRascunho?.('');
     } catch (err: any) {
       if (viaRota) {
         tratarErroDoAtendimento(err, precondicao.versao_esperada);
       } else if (tratarErroDeVersao(err, precondicao.versao_esperada)) {
         // Já avisado, e a tela relê.
+      } else if (err?.response?.status === 404) {
+        // O chamado saiu do alcance de quem clicou (FE-5). Quem mostra o
+        // chamado relê, e é ela quem diz que ele não está mais disponível.
+        setResolvendo(false);
+        pedirRecarga();
       } else if (err?.response?.status !== 403) {
         // O 403 já é anunciado pelo interceptor; repetir mostraria duas
         // mensagens para o mesmo erro.
@@ -302,10 +351,21 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
 
   return (
     <div className="flex flex-col gap-2">
-      {desatualizado && (
-        <p role="status" className="text-sm text-conteudo-suave">
-          Este chamado mudou. Atualizando os dados antes de liberar as ações…
-        </p>
+      {falhaAoAtualizar ? (
+        <div role="status" className="space-y-1.5">
+          <p className="text-sm text-conteudo-suave">
+            Não foi possível atualizar este chamado. As ações ficam travadas até ele ser relido.
+          </p>
+          <Button variante="secundario" tamanho="sm" onClick={pedirRecarga}>
+            Tentar de novo
+          </Button>
+        </div>
+      ) : (
+        desatualizado && (
+          <p role="status" className="text-sm text-conteudo-suave">
+            Este chamado mudou. Atualizando os dados antes de liberar as ações…
+          </p>
+        )
       )}
       {disponiveis.map(({ para, texto, Icone }) => (
         <Button

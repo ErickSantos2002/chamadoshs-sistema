@@ -11,6 +11,14 @@ import { usePermissoes } from '../hooks/usePermissoes';
 import { useResponsaveisTI } from '../hooks/useResponsaveisTI';
 import { ehRecusaDoResponsavel, mensagemDaRecusaDoResponsavel } from '../lib/responsaveis';
 import SeletorDeResponsavelDaTI from '../components/SeletorDeResponsavelDaTI';
+import AcessoEncerrado from '../components/AcessoEncerrado';
+import {
+  MENSAGEM_ATRIBUICAO_SALVA_SEM_ACESSO,
+  MENSAGEM_SEM_ACESSO,
+  RascunhoPreservado,
+  ehPerdaDeAcesso,
+  rascunhosComConteudo,
+} from '../lib/acesso';
 import {
   interpretarErroDaReatribuicao,
   opcoesDeResponsavelDaQualidade,
@@ -85,6 +93,7 @@ const ChamadoDetalhes: React.FC = () => {
     carregarHistorico,
     deletarChamado,
     aplicarChamado,
+    removerChamado,
     verificarQualidade,
     marcarQualidadeIndisponivel,
   } = useChamados();
@@ -151,6 +160,19 @@ const ChamadoDetalhes: React.FC = () => {
   const [mostrarModalExcluir, setMostrarModalExcluir] = useState(false);
   const [confirmacaoProtocolo, setConfirmacaoProtocolo] = useState('');
 
+  // Perda de acesso (FE-5, `lib/acesso`). `jaTeveAcesso`: o 404 só quer dizer
+  // "deixou de poder ver" se a página já mostrou o chamado — na primeira
+  // carga ele é só "não encontrado". `encerrado`: depois da perda, nenhuma
+  // resposta atrasada escreve na página.
+  const [acessoEncerrado, setAcessoEncerrado] = useState<{
+    mensagem: string;
+    rascunhos: RascunhoPreservado[];
+  } | null>(null);
+  const jaTeveAcesso = useRef(false);
+  const encerrado = useRef(false);
+  // A solução que ficou no passo de resolução do `AcoesRapidas`.
+  const rascunhoDoAtendimento = useRef('');
+
   // A trava do botão de excluir. A comparação mora em `utils/exclusao`, com
   // teste: escrita aqui, ela dava verdadeiro com chamado nulo.
   const protocoloConfere = confirmacaoConfere(
@@ -185,13 +207,89 @@ const ChamadoDetalhes: React.FC = () => {
   const [entradaNaEdicao, setEntradaNaEdicao] = useState(0);
   const responsaveisTI = useResponsaveisTI(reatribuiNaTI, entradaNaEdicao);
 
+  // O que a pessoa digitou, sempre o do último desenho: quem encerra o acesso
+  // pode vir de um manipulador antigo, e a cópia dele estaria velha (ou com
+  // o comentário que acabou de ser enviado).
+  const rascunhosAtuais = useRef<Array<{ rotulo: string; texto: string | null }>>([]);
+  rascunhosAtuais.current = [
+    { rotulo: 'Seu comentário', texto: novoComentario },
+    {
+      rotulo: 'A solução que você digitou',
+      texto: mostrarModalResolucao ? solucaoModal : rascunhoDaResolucao.current,
+    },
+    {
+      rotulo: 'A solução em edição',
+      texto: modoEdicao && solucaoEditada !== (chamado?.solucao ?? '') ? solucaoEditada : null,
+    },
+    { rotulo: 'O motivo do cancelamento', texto: motivoCancelamento },
+  ];
+
   useEffect(() => {
     if (id) {
+      encerrado.current = false;
+      jaTeveAcesso.current = false;
+      setAcessoEncerrado(null);
       carregarDados();
     }
   }, [id]);
 
-  const carregarDados = async (forcarAPI = false) => {
+  /**
+   * A pessoa deixou de poder ver este chamado. A página para: os dados saem
+   * da tela e da memória dela, os modais fecham, o card sai do quadro — sem
+   * recarregá-lo. Ficam só os rascunhos, para copiar. Nada é reenviado, e a
+   * saída é para a lista, sem volta pelo histórico.
+   *
+   * `atribuicaoSalva`: a perda veio logo depois de a própria pessoa trocar o
+   * responsável — a troca valeu, e é isso que tirou o chamado dela.
+   */
+  const encerrarAcesso = ({ atribuicaoSalva = false }: { atribuicaoSalva?: boolean } = {}) => {
+    if (encerrado.current) return;
+    encerrado.current = true;
+    setAcessoEncerrado({
+      mensagem: atribuicaoSalva ? MENSAGEM_ATRIBUICAO_SALVA_SEM_ACESSO : MENSAGEM_SEM_ACESSO,
+      rascunhos: rascunhosComConteudo([
+        ...rascunhosAtuais.current,
+        // Lido do ref na hora: chega por callback, sem desenho no meio.
+        { rotulo: 'A solução do atendimento', texto: rascunhoDoAtendimento.current },
+      ]),
+    });
+    setChamado(null);
+    setComentarios([]);
+    setHistorico([]);
+    setCategoriaNome('');
+    referenciaDaEdicao.current = null;
+    rascunhoDaResolucao.current = null;
+    setModoEdicao(false);
+    setConflitoNaEdicao(null);
+    setConflitoDeVersaoNaEdicao(false);
+    setMostrarModalResolucao(false);
+    setMostrarModalCancelar(false);
+    setMostrarModalArquivar(false);
+    setMostrarModalExcluir(false);
+    setNovoComentario('');
+    setSolucaoModal('');
+    setSolucaoEditada('');
+    setMotivoCancelamento('');
+    setError(null);
+    removerChamado(parseInt(id!));
+  };
+
+  /** Um 404 de escrita ou releitura deste chamado: encerra e diz que tratou. */
+  const perdeuAcesso = (err: unknown, opcoes?: { atribuicaoSalva?: boolean }): boolean => {
+    if (!ehPerdaDeAcesso(err)) return false;
+    encerrarAcesso(opcoes);
+    return true;
+  };
+
+  /**
+   * Carrega a página. Diz se o chamado está na tela ao final: as ações da
+   * Qualidade só voltam com ele relido.
+   */
+  const carregarDados = async (
+    forcarAPI = false,
+    opcoes: { atribuicaoSalva?: boolean } = {}
+  ): Promise<boolean> => {
+    if (encerrado.current) return false;
     try {
       setLoading(true);
       setError(null);
@@ -208,10 +306,11 @@ const ChamadoDetalhes: React.FC = () => {
         chamadoData = await buscarChamado(chamadoId);
       }
 
+      if (encerrado.current) return false;
       if (!chamadoData) {
         setError('Chamado não encontrado');
         setLoading(false);
-        return;
+        return false;
       }
 
       // Carregar comentários e histórico em paralelo
@@ -219,7 +318,9 @@ const ChamadoDetalhes: React.FC = () => {
         carregarComentarios(chamadoId),
         carregarHistorico(chamadoId),
       ]);
+      if (encerrado.current) return false;
 
+      jaTeveAcesso.current = true;
       setChamado(chamadoData);
       setComentarios(comentariosData);
       setHistorico(historicoData);
@@ -257,14 +358,21 @@ const ChamadoDetalhes: React.FC = () => {
       // Categorias para a edição, se for admin ou técnico. Os responsáveis
       // da TI não vêm daqui: ver `useResponsaveisTI`.
       if (podeEditar) {
-        setCategorias(await categoriasService.listar(true)); // apenas categorias ativas
+        const ativas = await categoriasService.listar(true); // apenas categorias ativas
+        if (encerrado.current) return false;
+        setCategorias(ativas);
       }
 
       // Os nomes de solicitante, técnico, autores de comentário e de histórico
       // vêm do índice montado por useUsuariosPorId, numa listagem só.
+      return true;
     } catch (err: any) {
+      if (encerrado.current) return false;
+      // Chamado que estava na tela e agora dá 404: perda de acesso, não erro.
+      if (jaTeveAcesso.current && perdeuAcesso(err, opcoes)) return false;
       console.error('Erro ao carregar dados:', err);
       setError('Erro ao carregar dados do chamado.');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -303,7 +411,8 @@ const ChamadoDetalhes: React.FC = () => {
       setConflitoNaEdicao(null);
       setConflitoDeVersaoNaEdicao(false);
       setModoEdicao(true);
-    } catch {
+    } catch (err) {
+      if (perdeuAcesso(err)) return;
       toast.error('Não foi possível abrir a edição. Tente de novo.');
     } finally {
       setSalvandoEdicao(false);
@@ -363,7 +472,8 @@ const ChamadoDetalhes: React.FC = () => {
       let servidor: Chamado;
       try {
         servidor = await chamadosService.buscar(chamado.id);
-      } catch {
+      } catch (err) {
+        if (perdeuAcesso(err)) return;
         toast.error(
           'Não foi possível conferir o chamado antes de salvar. O que você editou foi mantido.'
         );
@@ -389,6 +499,7 @@ const ChamadoDetalhes: React.FC = () => {
         const atualizado = await chamadosService.atualizar(chamado.id, { ...diferenca, ...precondicao });
         aplicarChamado(atualizado);
       } catch (err) {
+        if (perdeuAcesso(err)) return;
         // A edição fica aberta, com o que foi digitado: o erro aparece em
         // aviso, e não no lugar da página inteira.
         if (ehConflitoDeVersao(err)) {
@@ -407,7 +518,9 @@ const ChamadoDetalhes: React.FC = () => {
       }
 
       cancelarEdicao();
-      await carregarDados(true);
+      // Trocar o responsável pode tirar o chamado de quem trocou (API-5): se
+      // a releitura der 404, a troca valeu, e a mensagem diz isso.
+      await carregarDados(true, { atribuicaoSalva: 'tecnico_responsavel_id' in diferenca });
     } finally {
       setSalvandoEdicao(false);
     }
@@ -424,7 +537,8 @@ const ChamadoDetalhes: React.FC = () => {
     let servidor: Chamado;
     try {
       servidor = await chamadosService.buscar(chamado.id);
-    } catch {
+    } catch (err) {
+      if (perdeuAcesso(err)) return;
       toast.error(
         'Este chamado foi alterado por outra pessoa, e não foi possível recarregá-lo. Nada foi salvo; o que você editou foi mantido.'
       );
@@ -468,8 +582,12 @@ const ChamadoDetalhes: React.FC = () => {
       await atualizarChamado(chamado.id, dadosAtualizacao);
 
       setModoEdicao(false);
-      await carregarDados(true); // Forçar busca da API
+      await carregarDados(true, {
+        atribuicaoSalva:
+          (dadosAtualizacao.tecnico_responsavel_id ?? null) !== (chamado.tecnico_responsavel_id ?? null),
+      }); // Forçar busca da API
     } catch (err: any) {
+      if (perdeuAcesso(err)) return;
       // 400 do responsável (API-9: inativo; API-6: fora da TI, conta de
       // serviço). Nada foi gravado. A edição fica aberta com tudo o que foi
       // digitado, o motivo é o `detail` do backend, a lista é relida — e o
@@ -492,6 +610,7 @@ const ChamadoDetalhes: React.FC = () => {
    * tudo acenderia o carregamento da página inteira por uma mudança de status.
    */
   const aplicarAtendimento = (atualizado: Chamado) => {
+    if (encerrado.current) return;
     setChamado(atualizado);
     aplicarChamado(atualizado);
     setStatusEditado(atualizado.status);
@@ -518,6 +637,7 @@ const ChamadoDetalhes: React.FC = () => {
       setNovoComentario('');
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
+      if (perdeuAcesso(err)) return;
       console.error('Erro ao enviar comentário:', err);
       toast.error(err?.response?.data?.detail || 'Erro ao enviar comentário.');
     } finally {
@@ -579,6 +699,7 @@ const ChamadoDetalhes: React.FC = () => {
       await atualizarChamado(chamado.id, dadosAtualizacao);
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
+      if (perdeuAcesso(err)) return;
       if (await recarregarAposRecusaDeVersao(err)) return;
       console.error('Erro ao atualizar status:', err);
       setError('Erro ao atualizar status.');
@@ -620,6 +741,7 @@ const ChamadoDetalhes: React.FC = () => {
       rascunhoDaResolucao.current = null;
       await carregarDados(true); // Forçar busca da API
     } catch (err: any) {
+      if (perdeuAcesso(err)) return;
       // Recusa por versão: o modal fecha (o status pode já não ser o que ele
       // pressupunha) e a solução fica guardada para o próximo "resolver".
       if (ehConflitoDeVersao(err) || ehVersaoAusente(err)) {
@@ -673,6 +795,7 @@ const ChamadoDetalhes: React.FC = () => {
       // Redireciona para a página de chamados
       navigate('/chamados', { replace: true });
     } catch (err: any) {
+      if (perdeuAcesso(err)) return;
       console.error('Erro ao cancelar chamado:', err);
       toast.error(err?.response?.data?.detail || 'Erro ao cancelar chamado.');
     } finally {
@@ -698,6 +821,7 @@ const ChamadoDetalhes: React.FC = () => {
         try {
           cancelado = await chamadosService.cancelar(alvo.id, precondicao.versao_esperada);
         } catch (err: any) {
+          if (perdeuAcesso(err)) return;
           if (await recarregarAposRecusaDeVersao(err)) return;
           toast.error(err?.response?.data?.detail || 'Erro ao cancelar chamado.');
           return;
@@ -716,6 +840,7 @@ const ChamadoDetalhes: React.FC = () => {
       try {
         await atualizarChamado(alvo.id, { solucao: motivoCancelamento, ...precondicaoDoMotivo });
       } catch (err: any) {
+        if (perdeuAcesso(err)) return;
         toast.error(MOTIVO_NAO_REGISTRADO);
         if (ehConflitoDeVersao(err) || ehVersaoAusente(err)) {
           setAtualizandoAposConflito(true);
@@ -764,6 +889,7 @@ const ChamadoDetalhes: React.FC = () => {
       // Redireciona para a página de chamados
       navigate('/chamados', { replace: true });
     } catch (err: any) {
+      if (perdeuAcesso(err)) return;
       if (ehConflitoDeVersao(err) || ehVersaoAusente(err)) {
         setMostrarModalArquivar(false);
         await recarregarAposRecusaDeVersao(err);
@@ -975,6 +1101,20 @@ const ChamadoDetalhes: React.FC = () => {
   // dos outros mapas. A nota de lá conta o que o `switch` estava fazendo: 5%
   // de alfa separando Administrador de Técnico, e um `default` com duas cores
   // de texto na mesma string.
+
+  // Antes de tudo: depois da perda de acesso, nada do chamado aparece — nem
+  // o que uma resposta atrasada tenha posto no estado.
+  if (acessoEncerrado) {
+    return (
+      <AcessoEncerrado mensagem={acessoEncerrado.mensagem} rascunhos={acessoEncerrado.rascunhos}>
+        {/* `replace`: o Voltar do navegador não traz de volta uma página que
+            a pessoa não pode mais abrir. */}
+        <Button variante="primario" onClick={() => navigate('/chamados', { replace: true })}>
+          Voltar para Chamados
+        </Button>
+      </AcessoEncerrado>
+    );
+  }
 
   if (loading && !chamado) {
     return (
@@ -1210,6 +1350,9 @@ const ChamadoDetalhes: React.FC = () => {
                   chamado={chamado}
                   aoMudar={aplicarAtendimento}
                   aoPrecisarRecarregar={() => carregarDados(true)}
+                  aoGuardarRascunho={(texto) => {
+                    rascunhoDoAtendimento.current = texto;
+                  }}
                 />
               ) : atualizandoAposConflito ? (
                 <p role="status" className="text-sm text-conteudo-suave">
