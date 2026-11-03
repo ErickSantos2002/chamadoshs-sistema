@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { usePermissoes } from '../hooks/usePermissoes';
 import { CadastrosProvider } from '../context/CadastrosContext';
 import CategoriasTab from '../components/cadastros/CategoriasTab';
 import SetoresTab from '../components/cadastros/SetoresTab';
@@ -14,7 +14,6 @@ import { IconeEtiqueta, IconeRelogio, IconeSetor, IconeUsuarios } from '../compo
 // ========================================
 
 const CadastrosBasicos: React.FC = () => {
-  const { user } = useAuth();
   const [abaAtiva, setAbaAtiva] = useState<TipoAba>('categorias');
 
   // ========================================
@@ -28,12 +27,13 @@ const CadastrosBasicos: React.FC = () => {
   // perfis viram um só. Setores, categorias e prazos de SLA são catálogo de
   // trabalho; conta de gente é controle de acesso.
   //
-  // A aba APARECE para o técnico e explica, em vez de sumir — mesma decisão do
-  // menu lateral. Quem não vê a aba não sabe que ela existe, e não pede acesso
-  // ao que não sabe que há. A proteção continua sendo a API recusar.
+  // A aba APARECE para o técnico da TI e explica, em vez de sumir. Quem não
+  // vê a aba não sabe que ela existe, e não pede acesso ao que não sabe que
+  // há. A proteção continua sendo a API recusar (`require_admin`).
   //
-  // Quem não é da equipe nem chega aqui: a guarda está na rota.
-  const ehAdministrador = user?.role === 'Administrador';
+  // Quem não administra nem chega aqui: a guarda está na rota (F5-3). A regra
+  // é a de `lib/permissoes`, com a identidade confirmada.
+  const { podeAdministrarUsuarios: ehAdministrador } = usePermissoes();
 
   // ========================================
   // CONFIGURAÇÃO DAS ABAS

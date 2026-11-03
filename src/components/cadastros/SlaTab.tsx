@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { slaConfigsService } from '../../services/chamadoshsapi';
+import { usePermissoes } from '../../hooks/usePermissoes';
 import { PrioridadeEnum, SLAConfig } from '../../types/api';
 import { EXPEDIENTE, MINUTOS_POR_DIA_UTIL, formatarPrazo } from '../../lib/prazo';
 import { cn } from '../../lib/utils';
@@ -63,6 +64,9 @@ const CampoDePrazo: React.FC<{
 );
 
 const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
+  // O botão Editar não tinha guarda nenhuma (auditoria FE-5). Ler os prazos é
+  // de todos; mudar é de quem administra — o `PUT` é `require_equipe_ti`.
+  const { podeAdministrar } = usePermissoes();
   const [configs, setConfigs] = useState<SLAConfig[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -106,6 +110,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
   );
 
   const abrirEdicao = (config: SLAConfig) => {
+    if (!podeAdministrar) return;
     setEditando(config);
     setRascunho({ ...config });
   };
@@ -116,7 +121,7 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
   };
 
   const salvar = async () => {
-    if (!rascunho) return;
+    if (!rascunho || !podeAdministrar) return;
 
     if (rascunho.minutos_resposta < 1 || rascunho.minutos_resolucao < 1) {
       setErro('Os prazos precisam ser de pelo menos 1 minuto.');
@@ -225,15 +230,17 @@ const SlaTab: React.FC<SlaTabProps> = ({ ativo }) => {
                   </div>
                 </div>
 
-                <Button
-                  variante="secundario"
-                  tamanho="sm"
-                  onClick={() => abrirEdicao(config)}
-                  aria-label={`Editar prazos de ${config.prioridade}`}
-                >
-                  <IconeEditar className="h-4 w-4" aria-hidden="true" />
-                  Editar
-                </Button>
+                {podeAdministrar && (
+                  <Button
+                    variante="secundario"
+                    tamanho="sm"
+                    onClick={() => abrirEdicao(config)}
+                    aria-label={`Editar prazos de ${config.prioridade}`}
+                  >
+                    <IconeEditar className="h-4 w-4" aria-hidden="true" />
+                    Editar
+                  </Button>
+                )}
               </div>
             ))}
           </div>

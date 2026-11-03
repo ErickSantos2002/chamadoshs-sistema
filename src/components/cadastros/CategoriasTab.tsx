@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useCadastros } from '../../context/CadastrosContext';
-import { useAuth } from '../../hooks/useAuth';
+import { usePermissoes } from '../../hooks/usePermissoes';
 import {
   Aviso,
   Badge,
@@ -31,7 +31,9 @@ import type {
 
 const CategoriasTab: React.FC = () => {
   const { categorias, deleteCategoria, refreshData, loading, error } = useCadastros();
-  const { user } = useAuth();
+  // Administrador e equipe da TI (F5-3), pela regra única de `lib/permissoes`.
+  // A API é a mesma régua: `require_equipe_ti` em criar, editar e desativar.
+  const { podeAdministrar } = usePermissoes();
 
   // ========================================
   // ESTADOS LOCAIS
@@ -50,8 +52,8 @@ const CategoriasTab: React.FC = () => {
   // VERIFICAÇÃO DE PERMISSÕES
   // ========================================
 
-  const podeEditar = ['Administrador', 'Tecnico'].includes(user?.role || '');
-  const podeExcluir = ['Administrador', 'Tecnico'].includes(user?.role || '');
+  const podeEditar = podeAdministrar;
+  const podeExcluir = podeAdministrar;
 
   // ========================================
   // FILTRAGEM E ORDENAÇÃO

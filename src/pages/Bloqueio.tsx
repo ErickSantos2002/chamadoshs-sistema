@@ -14,12 +14,13 @@ interface BloqueioProps {
 /**
  * O que a pessoa vê quando abre uma área que o perfil dela não alcança.
  *
- * ── Por que ela chega aqui, em vez de o menu esconder ─────────────────
+ * ── Quem ainda chega aqui ─────────────────────────────────────────────
  *
- * Decisão do Rickelme, e ela tem lógica: escondendo, a pessoa não sabe que a
- * área existe, e não tem como pedir acesso ao que não sabe que há. Mostrando,
- * o sistema revela a própria forma — e quem precisa de Cadastros descobre que
- * Cadastros existe e a quem pedir.
+ * Até a FE-4 o menu mostrava todas as áreas, e esta tela era o que explicava
+ * a porta fechada. Desde a F5-3 (FE-5) o menu esconde a Gestão de quem não
+ * administra, e quem chega aqui digitou a URL ou seguiu um link antigo — ou
+ * abriu a aba de Usuários sem ser administrador. A explicação continua valendo
+ * para esses casos: qual área, quem tem acesso, a quem pedir.
  *
  * ── Por que o tom mudou ───────────────────────────────────────────────
  *

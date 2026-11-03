@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { usePermissoes } from '../hooks/usePermissoes';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
 import { PrioridadeEnum, TarefaRecorrente } from '../types/api';
@@ -121,6 +122,10 @@ const Chamados: React.FC = () => {
   // Permissões baseadas em role
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
+  // As tarefas recorrentes são `require_equipe_ti` (FE-5). O lembrete e a
+  // consulta dele são de quem administra; o técnico da Qualidade levava um
+  // 403 — com toast — ao abrir a lista e a cada dez minutos.
+  const { podeAdministrar } = usePermissoes();
 
   /**
    * Quem enxerga o filtro por pessoa. É pergunta de quem distribui e atende
@@ -147,7 +152,11 @@ const Chamados: React.FC = () => {
    * vez de manter as tarefas de ontem na tela até alguém recarregar no F5.
    */
   const carregarTarefasDoDia = useCallback(() => {
-    if (!(isAdmin || isTecnico)) return;
+    // Sem permissão, nada sai: nem agora, nem no auto-refresh.
+    if (!podeAdministrar) {
+      setTarefasDoDia([]);
+      return;
+    }
     const hoje = hojeYMD();
     tarefasRecorrentesService
       .listar({ ativo: true })
@@ -161,7 +170,7 @@ const Chamados: React.FC = () => {
         )
       )
       .catch(() => setTarefasDoDia([]));
-  }, [isAdmin, isTecnico]);
+  }, [podeAdministrar]);
 
   useEffect(() => {
     carregarTarefasDoDia();
@@ -464,8 +473,8 @@ const Chamados: React.FC = () => {
         </div>
       </div>
 
-      {/* Lembrete de tarefas recorrentes (só técnico/admin) */}
-      {(isAdmin || isTecnico) && (
+      {/* Lembrete de tarefas recorrentes (só quem administra) */}
+      {podeAdministrar && (
         <div className="shrink-0 rounded-xl border border-borda bg-superficie p-5">
           <div className="mb-3 flex items-center gap-2">
             <IconeAgenda className="h-4 w-4 text-on-tint-info" />

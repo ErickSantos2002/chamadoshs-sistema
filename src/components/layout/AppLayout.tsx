@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { usePermissoes } from '../../hooks/usePermissoes';
 
 interface AppLayoutProps {
   /** A página atual. */
@@ -93,6 +94,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
    * que é justamente o que a TV precisa.
    */
   const [recolhida, setRecolhida] = useState(recolhidaInicial);
+  // A Gestão no menu só para quem administra, e só depois do `/auth/me` (F5-3).
+  const { podeAdministrar } = usePermissoes();
   const [gavetaAberta, setGavetaAberta] = useState(gavetaAbertaInicial);
 
   return (
@@ -141,6 +144,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         aoAbrirNovidades={aoAbrirNovidades}
         temNovidade={temNovidade}
         versao={versao}
+        mostrarGestao={podeAdministrar}
       />
 
       {/* `min-w-0` para a coluna poder encolher: sem isso, uma tabela larga

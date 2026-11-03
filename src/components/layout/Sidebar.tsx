@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { GRUPOS_DO_MENU } from '../../lib/navegacao';
+import { GRUPOS_DO_MENU, visivelNoMenu } from '../../lib/navegacao';
 import { cn } from '../../lib/utils';
 import logo from '../../assets/logo.png';
 import icone from '../../assets/HS2.ico';
@@ -15,6 +15,11 @@ interface SidebarProps {
   /** Mostra o ponto ao lado da versão quando há versão não vista. */
   temNovidade: boolean;
   versao: string;
+  /**
+   * Mostra o grupo Gestão (F5-3). Chega decidido por `usePermissoes`: a barra
+   * não compara perfil — ver `lib/navegacao`. Omitido, a Gestão não aparece.
+   */
+  mostrarGestao?: boolean;
 }
 
 /**
@@ -51,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   aoAbrirNovidades,
   temNovidade,
   versao,
+  mostrarGestao = false,
 }) => (
   <>
     {/* Fundo escuro da gaveta. Só existe no celular, e só com ela aberta.
@@ -142,7 +148,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         aria-label="Navegação principal"
         className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-2 py-3"
       >
-        {GRUPOS_DO_MENU.map(({ grupo, itens }) => (
+        {GRUPOS_DO_MENU.map(({ grupo, itens: todos }) => {
+          // Grupo sem item visível não vira título solto (F5-3).
+          const itens = todos.filter((item) => visivelNoMenu(item, mostrarGestao));
+          if (itens.length === 0) return null;
+          return (
           <div key={grupo}>
             {/* Título do grupo aberto; recolhida, vira um traço curto — o
                 nome não caberia em 72px e um rótulo truncado não informa.
@@ -230,7 +240,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Rodapé. A versão é o botão que abre o aviso de novidades — era um

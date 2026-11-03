@@ -63,7 +63,7 @@ vi.mock('../../context/CadastrosContext', () => ({
   useCadastros: () => contexto,
 }));
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { id: 1, username: 'admin', role: papel } }),
+  useAuth: () => ({ user: { id: 1, username: 'admin', role: papel }, identidadeConfirmada: true }),
 }));
 vi.mock('react-hot-toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
