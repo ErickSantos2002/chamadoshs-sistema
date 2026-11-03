@@ -20,7 +20,7 @@ import {
   podeReatribuirNaQualidade,
 } from '../lib/atendimento';
 import { setorDoChamado } from '../lib/setor';
-import { MENSAGEM_SEM_VERSAO, precondicaoDaEscrita } from '../lib/versao';
+import { MENSAGEM_SEM_VERSAO, maisRecente, precondicaoDaEscrita } from '../lib/versao';
 import { Chamado, Comentario, SetorDestinoEnum } from '../types/api';
 import {
   Avatar,
@@ -137,6 +137,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   aoAbrirEmPagina,
 }) => {
   const {
+    chamados,
     buscarChamado,
     carregarComentarios,
     criarComentario,
@@ -209,10 +210,34 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   }, [chamadoId]);
   const responsaveisTI = useResponsaveisTI(reatribuiNaTI, abertura);
 
+  // As funções do contexto mudam de identidade a cada mudança da lista
+  // (`buscarChamado` depende dela). O efeito de carga as lê daqui, para
+  // depender só do chamado escolhido — ver a nota abaixo.
+  const buscarRef = useRef(buscarChamado);
+  buscarRef.current = buscarChamado;
+  const comentariosRef = useRef(carregarComentarios);
+  comentariosRef.current = carregarComentarios;
+
+  /**
+   * Carrega o chamado escolhido — uma vez por abertura.
+   *
+   * ── Por que só `chamadoId` ────────────────────────────────────────────
+   *
+   * O efeito dependia de `buscarChamado`, que muda a cada mudança da lista
+   * do quadro. Qualquer `aplicarChamado` — mudar o status aqui mesmo, outro
+   * card salvo, a lista relida — refazia a carga: o chamado saía da tela por
+   * um instante, o comentário digitado era apagado, e o passo de resolução
+   * do `AcoesRapidas` era desmontado com a solução dentro (FE-5).
+   *
+   * Política de rascunhos: o que foi digitado vale para ESTA abertura deste
+   * chamado. Fica enquanto o mesmo chamado é atualizado; sai quando o
+   * comentário é enviado, quando outro chamado é aberto e quando a janela é
+   * fechada. Nada é guardado no navegador nem no servidor. A versão nova que
+   * chegar ao quadro entra pelo efeito seguinte, sem tocar nos rascunhos.
+   */
   useEffect(() => {
     if (chamadoId === null) return;
-    // Encerrado, fica encerrado: tirar o card do quadro muda a lista do
-    // contexto, e este efeito rodaria de novo, pedindo o chamado à API.
+    // Encerrado, fica encerrado: nenhuma releitura depois da perda de acesso.
     if (encerradoPara.current === chamadoId) return;
 
     let cancelado = false;
@@ -225,7 +250,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     setErro(null);
     setCarregando(true);
 
-    Promise.all([buscarChamado(chamadoId), carregarComentarios(chamadoId)])
+    Promise.all([buscarRef.current(chamadoId), comentariosRef.current(chamadoId)])
       .then(([dados, lista]) => {
         if (cancelado) return;
         if (!dados) {
@@ -242,11 +267,23 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
         if (!cancelado) setCarregando(false);
       });
 
-    // Fechar o modal no meio da busca não deve escrever num componente morto.
+    // Fechar o modal (ou abrir outro) no meio da busca: a resposta é descartada.
     return () => {
       cancelado = true;
     };
-  }, [chamadoId, buscarChamado, carregarComentarios]);
+  }, [chamadoId]);
+
+  // O mesmo chamado, mais novo, na lista do quadro (relida, ou salva por
+  // outro caminho): a janela passa a mostrá-lo, e os rascunhos ficam. Uma
+  // versão menor não desfaz a da janela (`maisRecente`). Outros cards não
+  // mudam a identidade deste, e não chegam aqui.
+  const doQuadro = chamadoId === null ? undefined : chamados.find((c) => c.id === chamadoId);
+  useEffect(() => {
+    if (!doQuadro || encerradoPara.current === doQuadro.id) return;
+    setChamado((atual) =>
+      atual && atual.id === doQuadro.id && atual !== doQuadro ? maisRecente(atual, doQuadro) : atual
+    );
+  }, [doQuadro]);
 
   const comentar = async () => {
     if (!chamado || !novoComentario.trim() || internoBloqueado) return;
