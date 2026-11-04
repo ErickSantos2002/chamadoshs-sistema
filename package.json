@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run validar:paleta && tsc --noEmit && vite build",
+    "build:homologacao": "npm run validar:paleta && tsc --noEmit && node scripts/build-homologacao.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
