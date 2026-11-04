@@ -1,6 +1,7 @@
 import axios from 'axios';
 import api, { identidadeGuardadaAposRenovar } from './api';
 import { versaoValida } from '../lib/versao';
+import { LembretesInvalidos, lerLembretes } from '../lib/lembretes';
 import {
   ListaDeResponsaveisInvalida,
   ResponsavelTI,
@@ -35,6 +36,7 @@ import {
   TarefaRecorrenteCreate,
   TarefaRecorrenteUpdate,
   RealizarTarefaRequest,
+  LembretesDoDia,
   EventoDeAuditoria,
 } from '../types/api';
 
@@ -679,6 +681,28 @@ export const slaConfigsService = {
 // ============================================
 
 export const tarefasRecorrentesService = {
+  /**
+   * O lembrete "tarefas do dia" do quadro (API-11, S1).
+   *
+   * Rota própria, de leitura mínima: lê quem a API deixa — a equipe e a
+   * conta do painel de parede listada em `PAINEL_CONTAS_IDS`. NÃO é a
+   * listagem administrativa: não há fallback para `GET /tarefas-recorrentes/`,
+   * e o sucesso daqui não diz nada sobre poder administrar tarefas.
+   *
+   * O 403 é a resposta esperada de quem não lê o lembrete, e por isso sai
+   * sem o toast global (`silenciarRecusa`): o quadro só esconde o bloco.
+   *
+   * Lança `LembretesInvalidos` se o corpo não for o contrato.
+   */
+  async lembretesDoDia(): Promise<LembretesDoDia> {
+    const response = await api.get<unknown>('/tarefas-recorrentes/lembretes-do-dia', {
+      silenciarRecusa: true,
+    });
+    const lido = lerLembretes(response.data);
+    if (!lido) throw new LembretesInvalidos();
+    return lido;
+  },
+
   /**
    * Lista tarefas recorrentes (ordenadas pela próxima data)
    */

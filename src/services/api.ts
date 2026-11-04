@@ -6,6 +6,17 @@ import { normalizarDetalhe } from '../lib/erroApi';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Criar instância do Axios
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * O 403 desta requisição é resposta esperada, não erro a anunciar: o
+     * interceptor não mostra o toast de "Sem permissão". Quem chama trata.
+     * Usado pelo lembrete do quadro, que é pedido por quem talvez não o leia.
+     */
+    silenciarRecusa?: boolean;
+  }
+}
+
 const api: AxiosInstance = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   timeout: 30000,
@@ -208,7 +219,7 @@ api.interceptors.response.use(
     // aviso na tela a ação simplesmente não acontece — o usuário clica e nada
     // muda. O id fixo evita empilhar um toast por requisição quando uma tela
     // dispara várias chamadas negadas de uma vez.
-    if (error.response?.status === 403) {
+    if (error.response?.status === 403 && error.config?.silenciarRecusa !== true) {
       const detalhe = (error.response.data as { detail?: string } | undefined)?.detail;
 
       toast.error(

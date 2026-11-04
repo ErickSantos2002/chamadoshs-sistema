@@ -426,6 +426,27 @@ export interface RealizarTarefaRequest {
   observacao?: string | null;
 }
 
+/**
+ * O lembrete "tarefas do dia" do quadro (API-11, S1:
+ * `GET /tarefas-recorrentes/lembretes-do-dia`). Só id, título, próxima data e
+ * situação — a classificação é da API, no dia de Brasília dela. Não existe
+ * "pendente" neste contrato.
+ */
+export type SituacaoDoLembrete = 'atrasada' | 'hoje' | 'realizada_hoje';
+
+export interface LembreteDoDia {
+  id: number;
+  titulo: string;
+  proxima_data: string; // YYYY-MM-DD
+  situacao: SituacaoDoLembrete;
+}
+
+export interface LembretesDoDia {
+  /** O dia (Brasília) em que a API montou a lista. É ele, não o relógio do navegador. */
+  data: string; // YYYY-MM-DD
+  tarefas: LembreteDoDia[];
+}
+
 // ============================================
 // TRILHA DE AUDITORIA
 // ============================================

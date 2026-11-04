@@ -207,63 +207,40 @@ describe('menu de Gestão (F5-3)', () => {
   });
 });
 
-describe('Chamados: o lembrete de tarefas só para quem administra', () => {
-  const montarChamados = async (perfil: Perfil, confirmada = true) => {
-    vi.spyOn(chamadosService, 'listarTodos').mockResolvedValue([]);
-    vi.spyOn(chamadosService, 'sondarAtendimento').mockResolvedValue({
-      status: 404,
-      dados: { detail: 'Not Found' },
-    });
-    vi.spyOn(chamadosService, 'listarAtendentesQualidade').mockResolvedValue([]);
-    vi.spyOn(categoriasService, 'listar').mockResolvedValue([]);
-    vi.spyOn(usuariosService, 'listarTodos').mockResolvedValue([]);
-    vi.spyOn(usuariosService, 'listar').mockResolvedValue([]);
-    const listar = vi.spyOn(tarefasRecorrentesService, 'listar').mockResolvedValue([]);
-    await render(
-      comSessao(
-        sessao(perfil, { confirmada }),
-        <ChamadosProvider>
-          <MemoryRouter>
-            <Chamados />
-          </MemoryRouter>
-        </ChamadosProvider>
-      )
-    );
-    return listar;
-  };
-
+// O lembrete do quadro deixou de ser "só de quem administra" (API-11, S1):
+// quem lê é quem a API deixa, pela rota própria. A matriz por conta está em
+// `lembretesDaTV.test.tsx`; aqui fica só a garantia de gestão — o quadro não
+// pede a listagem administrativa de tarefas, para perfil nenhum.
+describe('Chamados: o quadro não pede a listagem administrativa de tarefas', () => {
   for (const [nome, perfil] of Object.entries(PERFIS)) {
-    const consulta = ADMINISTRAM.includes(nome);
-    it(`${nome}: ${consulta ? 'consulta' : 'não consulta'} as tarefas do dia`, async () => {
-      const listar = await montarChamados(perfil);
-      expect(listar).toHaveBeenCalledTimes(consulta ? 1 : 0);
-      expect(host.textContent?.includes('Tarefas recorrentes do dia')).toBe(consulta);
+    it(`${nome}: nem na abertura, nem no auto-refresh`, async () => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+      vi.spyOn(chamadosService, 'listarTodos').mockResolvedValue([]);
+      vi.spyOn(chamadosService, 'listarAtendentesQualidade').mockResolvedValue([]);
+      vi.spyOn(categoriasService, 'listar').mockResolvedValue([]);
+      vi.spyOn(usuariosService, 'listarTodos').mockResolvedValue([]);
+      vi.spyOn(usuariosService, 'listar').mockResolvedValue([]);
+      vi.spyOn(tarefasRecorrentesService, 'lembretesDoDia').mockRejectedValue({
+        response: { status: 403 },
+      });
+      const listar = vi.spyOn(tarefasRecorrentesService, 'listar').mockResolvedValue([]);
+      await render(
+        comSessao(
+          sessao(perfil),
+          <ChamadosProvider>
+            <MemoryRouter>
+              <Chamados />
+            </MemoryRouter>
+          </ChamadosProvider>
+        )
+      );
+      await act(async () => {
+        vi.advanceTimersByTime(600_000 * 2);
+      });
+      expect(listar).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalled();
     });
   }
-
-  it('técnico da Qualidade: nem no auto-refresh de dez minutos, e nenhum toast', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-    const listar = await montarChamados(PERFIS.tecnicoDaQualidade);
-    await act(async () => {
-      vi.advanceTimersByTime(600_000 * 3);
-    });
-    expect(listar).not.toHaveBeenCalled();
-    expect(toast.error).not.toHaveBeenCalled();
-  });
-
-  it('técnico da TI: o auto-refresh continua consultando', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-    const listar = await montarChamados(PERFIS.tecnicoDaTI);
-    await act(async () => {
-      vi.advanceTimersByTime(600_000);
-    });
-    expect(listar).toHaveBeenCalledTimes(2);
-  });
-
-  it('identidade pendente: nenhuma consulta administrativa', async () => {
-    const listar = await montarChamados(PERFIS.administrador, false);
-    expect(listar).not.toHaveBeenCalled();
-  });
 });
 
 describe('Tarefas Recorrentes montada sem permissão', () => {

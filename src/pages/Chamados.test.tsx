@@ -165,6 +165,11 @@ beforeEach(() => {
   ]);
   vi.spyOn(usuariosService, 'listar').mockResolvedValue([]);
   vi.spyOn(tarefasRecorrentesService, 'listar').mockResolvedValue([]);
+  // O lembrete do dia tem a suíte própria (lembretesDaTV.test.tsx). Aqui
+  // ele é só recusado, sem rede.
+  vi.spyOn(tarefasRecorrentesService, 'lembretesDoDia').mockRejectedValue({
+    response: { status: 403 },
+  });
 
   host = document.createElement('div');
   document.body.appendChild(host);
