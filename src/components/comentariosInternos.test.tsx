@@ -70,6 +70,8 @@ const sessao = (id: number, role: string, integra = false, revalidar = vi.fn(asy
     logout: () => {},
     identidadeConfirmada: true,
     falhaAoConfirmar: false,
+    confirmacaoRecusada: false,
+    revalidando: false,
     revalidarIdentidade: revalidar,
   }) as Sessao;
 

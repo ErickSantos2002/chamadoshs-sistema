@@ -19,11 +19,19 @@ type AuthContextType = {
    */
   identidadeConfirmada: boolean;
   /**
-   * A última confirmação não terminou bem — rede, 5xx, ou a marca de conta de
-   * serviço que não pôde ser lida. Enquanto valer, nada de administração
-   * (`usePermissoes`). Não se repete sozinho.
+   * A última confirmação não terminou bem — rede, 5xx, 403 do `/auth/me`, ou
+   * a marca de conta de serviço que não pôde ser lida. Enquanto valer, nada
+   * de administração (`usePermissoes`). Não se repete sozinho.
    */
   falhaAoConfirmar: boolean;
+  /**
+   * Dentro de `falhaAoConfirmar`: a API RESPONDEU 403 ao `/auth/me` — conta
+   * desativada ou sem acesso agora. A sessão fica (403 não é logout), e a
+   * tela diz isso em vez de "verifique a conexão".
+   */
+  confirmacaoRecusada: boolean;
+  /** Há um `/auth/me` desta tela em andamento. Para o botão não empilhar outro. */
+  revalidando: boolean;
   /** Pede o `/auth/me` de novo. Uma resposta velha nunca sobrescreve uma nova. */
   revalidarIdentidade: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
@@ -92,6 +100,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [identidadeConfirmada, setIdentidadeConfirmada] = useState(false);
   const [falhaAoConfirmar, setFalhaAoConfirmar] = useState(false);
+  const [confirmacaoRecusada, setConfirmacaoRecusada] = useState(false);
+  const [revalidando, setRevalidando] = useState(false);
 
   // ── Respostas atrasadas ──────────────────────────────────────────────
   //
@@ -109,6 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     guardarIdentidade(identidade);
     setIdentidadeConfirmada(true);
     setFalhaAoConfirmar(false);
+    setConfirmacaoRecusada(false);
   }, []);
 
   /**
@@ -145,6 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       meuPedido === pedido.current &&
       localStorage.getItem('token') !== null;
 
+    setRevalidando(true);
     try {
       const me = await authService.me();
       if (!valeAinda()) return;
@@ -152,19 +164,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err: any) {
       if (!valeAinda()) return;
       const status = err?.response?.status;
-      if (status === 401 || status === 403) {
-        // Sessão que não vale mais, ou conta desativada: a permissão cai
-        // aqui mesmo. O 401 o interceptor já leva ao login.
-        setIdentidadeConfirmada(false);
-        if (status === 401) setUser(null);
+      setIdentidadeConfirmada(false);
+      if (status === 401) {
+        // Sessão que não vale mais: a permissão cai aqui mesmo, e o
+        // interceptor leva ao login.
+        setUser(null);
         return;
       }
+      // 403: a API respondeu, e disse não — conta desativada ou sem acesso
+      // agora. Até aqui só caía a confirmação, sem marcar falha, e a tela
+      // ficava em "Confirmando suas permissões..." para sempre: `confirmando`
+      // é "tem usuário, não confirmou, não falhou". Agora termina: falha
+      // marcada, recusa dita, sessão mantida (403 não é logout) e uma nova
+      // tentativa por clique.
+      //
       // Rede ou servidor: a sessão continua (5xx não é logout), mas a
       // falha fica marcada, e enquanto ela vale `usePermissoes` suspende as
       // funções de administração — a permissão pode ter sido revogada
       // justamente agora. Não se repete sozinho: a próxima tentativa é um
       // clique, ou a próxima renovação do token.
       setFalhaAoConfirmar(true);
+      setConfirmacaoRecusada(status === 403);
+    } finally {
+      // Só o pedido mais novo desliga o indicador: um velho que termina
+      // depois não apaga o "verificando" de quem ainda está em andamento.
+      if (meuPedido === pedido.current) setRevalidando(false);
     }
   }, [aplicarMe]);
 
@@ -230,6 +254,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     setIdentidadeConfirmada(false);
     setFalhaAoConfirmar(false);
+    setConfirmacaoRecusada(false);
+    setRevalidando(false);
 
     try {
       // Faz login usando o authService (já salva token automaticamente)
@@ -283,6 +309,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     setIdentidadeConfirmada(false);
     setFalhaAoConfirmar(false);
+    setConfirmacaoRecusada(false);
+    setRevalidando(false);
   };
 
   return (
@@ -293,6 +321,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         identidadeConfirmada,
         falhaAoConfirmar,
+        confirmacaoRecusada,
+        revalidando,
         revalidarIdentidade,
         login,
         logout,

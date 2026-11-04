@@ -32,7 +32,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   quemTem,
 }) => {
   const { user, loading, revalidarIdentidade } = useAuth();
-  const { podeAdministrar, confirmando, semConfirmacao } = usePermissoes();
+  const { podeAdministrar, confirmando, semConfirmacao, confirmacaoRecusada, revalidando } =
+    usePermissoes();
 
   if (loading) {
     return (
@@ -79,9 +80,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return (
         <div className="flex min-h-full flex-col items-center justify-center gap-3 px-4 py-10">
           <Aviso variante="alerta">
-            Não foi possível confirmar suas permissões agora. Verifique a conexão e tente de novo.
+            {confirmacaoRecusada
+              ? 'A API recusou a confirmação da sua conta agora — ela pode ter sido desativada ou perdido o acesso. Fale com o administrador do sistema, ou tente de novo.'
+              : 'Não foi possível confirmar suas permissões agora. Verifique a conexão e tente de novo.'}
           </Aviso>
-          <Button variante="secundario" onClick={() => void revalidarIdentidade()}>
+          <Button
+            variante="secundario"
+            carregando={revalidando}
+            disabled={revalidando}
+            onClick={() => void revalidarIdentidade()}
+          >
             Tentar de novo
           </Button>
         </div>

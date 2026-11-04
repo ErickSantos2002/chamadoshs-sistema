@@ -3,7 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { usePermissoes } from '../../hooks/usePermissoes';
 import { useAuth } from '../../hooks/useAuth';
-import { ehAdministrador, integraEquipeTI } from '../../lib/permissoes';
+import { ehAdministrador, ehTecnico, integraEquipeTI } from '../../lib/permissoes';
 import { Aviso, Button } from '../ui';
 
 /**
@@ -15,30 +15,36 @@ import { Aviso, Button } from '../ui';
  * Na restauração (F5) o `integra_equipe_ti` não vem do armazenamento — de
  * propósito, ver `AuthContext` —, então o técnico ainda não sabe se é da TI.
  * Esse também vê o aviso: para o técnico da TI, sem ele a Gestão sumia sem
- * explicação e sem a nova tentativa. O técnico já confirmado fora da TI
- * (`false`) não vê.
+ * explicação e sem a nova tentativa.
+ *
+ * Desde o fechamento da FE-5 (C2/C4) todo técnico vê: a escrita de equipe
+ * num chamado também fica suspensa enquanto a confirmação falha, e o técnico
+ * da Qualidade — fora da TI — perdia os botões sem saber por quê. Quem é só
+ * solicitante não vê: a falha não lhe tira nada.
+ *
+ * Um 403 do `/auth/me` não é rede: a mensagem diz que a API recusou.
  */
 const AvisoDePermissoesSuspensas: React.FC = () => {
   const { user, revalidarIdentidade } = useAuth();
-  const { semConfirmacao } = usePermissoes();
+  const { semConfirmacao, confirmacaoRecusada, revalidando } = usePermissoes();
   const [tentando, setTentando] = useState(false);
-  const tecnicoAindaSemEquipe =
-    (user?.role === 'Tecnico' || user?.role_id === 2) && user?.integra_equipe_ti === undefined;
-  if (!semConfirmacao || !(ehAdministrador(user) || integraEquipeTI(user) || tecnicoAindaSemEquipe)) {
+  if (!semConfirmacao || !(ehAdministrador(user) || integraEquipeTI(user) || ehTecnico(user))) {
     return null;
   }
   return (
     <div className="mb-4">
       <Aviso variante="alerta">
         <span className="block">
-          Não foi possível confirmar suas permissões. As funções de administração ficam
-          suspensas até a confirmação.
+          {confirmacaoRecusada
+            ? 'A API recusou a confirmação da sua conta. As funções de administração e de equipe ficam suspensas; se persistir, fale com o administrador do sistema.'
+            : 'Não foi possível confirmar suas permissões. As funções de administração ficam suspensas até a confirmação.'}
         </span>
         <Button
           variante="secundario"
           tamanho="sm"
           className="mt-2"
-          carregando={tentando}
+          carregando={tentando || revalidando}
+          disabled={tentando || revalidando}
           onClick={async () => {
             setTentando(true);
             try {

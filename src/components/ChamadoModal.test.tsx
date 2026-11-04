@@ -52,6 +52,8 @@ const SESSAO = {
   logout: () => {},
   identidadeConfirmada: true,
   falhaAoConfirmar: false,
+  confirmacaoRecusada: false,
+  revalidando: false,
   revalidarIdentidade: async () => {},
 } as React.ContextType<typeof AuthContext>;
 

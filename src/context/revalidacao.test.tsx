@@ -279,13 +279,16 @@ describe('revalidação que falha por rede ou servidor', () => {
     expect(texto()).not.toContain('Não foi possível confirmar suas permissões');
   });
 
-  it('técnico já confirmado fora da TI: a falha seguinte não mostra aviso', async () => {
+  // Até o fechamento da FE-5 este técnico não via o aviso: a falha não lhe
+  // tirava nada. Desde o C2 a escrita de equipe no chamado da Qualidade
+  // também fica suspensa, e ele perderia os botões sem explicação.
+  it('técnico já confirmado fora da TI: a falha seguinte mostra o aviso (C2/C4)', async () => {
     pedirMe.mockResolvedValueOnce(me({ integra_equipe_ti: false, setor_id: 5 }));
     await montar();
     pedirMe.mockRejectedValueOnce(REDE);
     await revalidar();
     expect(visto.falhaAoConfirmar).toBe(true);
-    expect(texto()).not.toContain('Não foi possível confirmar suas permissões');
+    expect(texto()).toContain('Não foi possível confirmar suas permissões');
   });
 
   it('na restauração (F5) com o /auth/me caído, nada de administração', async () => {

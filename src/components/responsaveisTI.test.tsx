@@ -74,6 +74,8 @@ const sessao = (perfil: Perfil, id = 1, confirmada = true) =>
     logout: () => {},
     identidadeConfirmada: confirmada,
     falhaAoConfirmar: false,
+    confirmacaoRecusada: false,
+    revalidando: false,
     revalidarIdentidade: async () => {},
   }) as React.ContextType<typeof AuthContext>;
 

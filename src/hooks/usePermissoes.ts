@@ -26,7 +26,8 @@ import {
  * comentar em público — não depende da confirmação, e segue.
  */
 export function usePermissoes() {
-  const { user, identidadeConfirmada, falhaAoConfirmar } = useAuth();
+  const { user, identidadeConfirmada, falhaAoConfirmar, confirmacaoRecusada, revalidando } =
+    useAuth();
   const confirmada = identidadeConfirmada === true;
   const vigente = confirmada && falhaAoConfirmar !== true;
 
@@ -52,5 +53,9 @@ export function usePermissoes() {
      * suspensas até uma revalidação dar certo.
      */
     semConfirmacao: Boolean(user) && falhaAoConfirmar === true,
+    /** Dentro de `semConfirmacao`: foi um 403 do `/auth/me`, não rede. */
+    confirmacaoRecusada: Boolean(user) && falhaAoConfirmar === true && confirmacaoRecusada === true,
+    /** Uma nova confirmação está em andamento. */
+    revalidando: revalidando === true,
   };
 }
