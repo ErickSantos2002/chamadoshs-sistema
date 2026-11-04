@@ -91,7 +91,7 @@ import {
 const ChamadoDetalhes: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, revalidarIdentidade } = useAuth();
+  const { user, revalidarIdentidade, identidadeConfirmada } = useAuth();
   const { darkMode } = useTheme();
   const {
     buscarChamado,
@@ -282,6 +282,18 @@ const ChamadoDetalhes: React.FC = () => {
       carregarDados();
     }
   }, [id]);
+
+  // A primeira leitura falhou com a conta sem confirmação (desativada, por
+  // exemplo, numa restauração), e depois a confirmação deu certo por um
+  // clique: a página relê, em vez de ficar no aviso da conta de antes. Só
+  // na volta de "não confirmada" para "confirmada", e só sem chamado na tela.
+  const confirmadaAntes = useRef(identidadeConfirmada);
+  useEffect(() => {
+    const voltou = identidadeConfirmada === true && confirmadaAntes.current !== true;
+    confirmadaAntes.current = identidadeConfirmada;
+    if (voltou && id && !chamado && error && !encerrado.current) carregarDados();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identidadeConfirmada]);
 
   // As categorias da edição, assim que a escrita de equipe passa a valer. Na
   // primeira carga o chamado ainda não chegou — e sem ele não se sabe se a

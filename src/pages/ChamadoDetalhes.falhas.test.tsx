@@ -450,3 +450,40 @@ describe('C3 — onde o erro acontece, e o que é preservado', () => {
     expect(texto()).not.toContain(MENSAGEM_INCERTA);
   });
 });
+
+describe('C4 na página — a primeira leitura recusada e a confirmação que volta', () => {
+  // Achado da homologação real (API-11 local): conta desativada restaurada,
+  // GET do chamado 403, aviso no lugar da página; a conta é reativada, a
+  // confirmação dá certo por um clique, e a página ficava no aviso velho.
+  const semConfirmacao = () =>
+    ({
+      ...sessao(),
+      identidadeConfirmada: false,
+      falhaAoConfirmar: true,
+      confirmacaoRecusada: true,
+    }) as unknown as React.ContextType<typeof AuthContext>;
+
+  it('21. depois da confirmação que volta, a página relê o chamado uma vez', async () => {
+    const buscar = vi.mocked(chamadosService.buscar);
+    buscar.mockRejectedValueOnce(erro(403, 'Usuário inativo'));
+    await montar(semConfirmacao());
+    expect(texto()).not.toContain('Chamado fictício das falhas');
+    const antes = buscar.mock.calls.length;
+    await montar(sessao());
+    paginaDePe();
+    expect(buscar.mock.calls.length).toBe(antes + 1);
+    // Outra confirmação, já com o chamado na tela, não relê por conta própria.
+    await montar(sessao());
+    expect(buscar.mock.calls.length).toBe(antes + 1);
+  });
+
+  it('22. sem a confirmação voltar, nada é relido sozinho', async () => {
+    const buscar = vi.mocked(chamadosService.buscar);
+    buscar.mockRejectedValueOnce(erro(403, 'Usuário inativo'));
+    await montar(semConfirmacao());
+    const antes = buscar.mock.calls.length;
+    await montar(semConfirmacao());
+    expect(buscar.mock.calls.length).toBe(antes);
+    expect(texto()).not.toContain('Chamado fictício das falhas');
+  });
+});
