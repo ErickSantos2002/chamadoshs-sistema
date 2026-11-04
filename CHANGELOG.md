@@ -65,6 +65,18 @@ responde 422 e a troca de responsável da TI fica travada, sem cair para outra
 lista. O rollback é coordenado: ver `docs/fe-5-permissoes-e-api9.md`, §11 e
 §12. **`SETOR_QUALIDADE_ID` segue desligado.**
 
+O fechamento complementar do FE-5 **tem ordem: a API-11 (`chamadoshs-api`,
+`feat/setor-destino-api-11`, `5547893`) sobe antes do front.** É ela que
+recusa a conta de serviço como equipe e como administração, e que responde
+`GET /tarefas-recorrentes/lembretes-do-dia`. Antes de subir a API-11, contar
+os administradores humanos ativos em produção: com zero, a administração
+trava. O lembrete da TV só volta com `PAINEL_CONTAS_IDS` preenchida com o id
+real da conta do painel — que ainda depende do inventário das contas; vazia,
+a TV mostra o quadro sem o lembrete, sem aviso e sem erro. Contra API
+anterior à API-11 o front falha seguro: a rota do lembrete não existe, o
+bloco não aparece, e o quadro segue. Detalhes em
+`docs/fe-5-permissoes-e-api9.md`, §14.
+
 ### Added
 
 - **Setor de destino do chamado — TI ou Qualidade — na janela e na página do
@@ -125,6 +137,22 @@ lista. O rollback é coordenado: ver `docs/fe-5-permissoes-e-api9.md`, §11 e
 
 ### Changed
 
+- **Ações de equipe pela regra da API-11 (FE-5).** Editar, arquivar,
+  desarquivar, mudar status e prioridade, resolver, atribuir e comentar como
+  interno aparecem só para quem a API deixa alterar o chamado como equipe: o
+  Administrador humano em qualquer chamado; o técnico da equipe da TI nos da
+  TI e da Qualidade; o técnico da Qualidade nos da Qualidade, se for
+  atendente. Ser o responsável ou o solicitante não dá essas ações — o
+  solicitante segue cancelando o que abriu e avaliando. Conta de serviço não
+  recebe nenhuma, nem a Gestão, mesmo com perfil de Administrador. Excluir
+  fica com o Administrador humano.
+- **Lembrete das tarefas do dia pela rota nova da API-11 (FE-5).** O quadro
+  lê `GET /tarefas-recorrentes/lembretes-do-dia`: a data e a situação
+  (atrasada, hoje, realizada hoje) vêm da API, e não do relógio do
+  navegador. Quem a API não deixa ler (403) não vê o bloco, sem aviso e sem
+  nova tentativa; uma atualização que falha mantém a lista anterior e diz
+  que ela ficou velha. Uma atualização a cada 10 minutos, junto com a do
+  quadro. O título só leva às Tarefas Recorrentes para quem administra.
 - **Trocar o responsável de um chamado da Qualidade (FE-3).** Na janela e na
   edição da página, a lista é a dos atendentes da Qualidade, sem "Sem
   atribuição". Quem já está no chamado sem estar na lista continua marcado
@@ -136,7 +164,8 @@ lista. O rollback é coordenado: ver `docs/fe-5-permissoes-e-api9.md`, §11 e
   menus, e a URL digitada mostra o bloqueio, sem 403. Enquanto as permissões
   são confirmadas — ao abrir o sistema e a cada renovação de sessão —, nada
   administrativo aparece. O lembrete de tarefas do dia, no quadro, só é pedido
-  por quem administra.
+  por quem administra. *Fechamento complementar: o lembrete passou à rota da
+  API-11, ver acima.*
 - **Responsável da TI vem da lista da API (FE-5).** O seletor oferece só quem
   a API aceita como novo responsável — sem inativos, sem gente de fora da
   equipe da TI, sem conta de serviço. Quem já está no chamado sem estar na
@@ -194,6 +223,20 @@ lista. O rollback é coordenado: ver `docs/fe-5-permissoes-e-api9.md`, §11 e
 - **Seletor e ações rápidas mais legíveis (FE-5).** A opção escolhida passa a
   ter contraste de texto adequado no tema claro, e as ações rápidas ficam do
   tamanho dos outros botões.
+- **Erro ao salvar não derruba mais a página do chamado (FE-5).** Antes, uma
+  escrita recusada trocava a página inteira por um erro, e o que a pessoa
+  tinha digitado se perdia. Agora a página, o formulário e o rascunho ficam:
+  erro de validação mostra a mensagem da API junto do formulário; recusa
+  (403) desliga a operação, confere as permissões de novo e deixa o texto
+  para copiar; servidor fora ou sem resposta diz que o resultado não foi
+  confirmado, não reenvia nada e oferece "Conferir o chamado". Só o "Chamado
+  não encontrado" da API conta como perda de acesso.
+- **A confirmação recusada não trava mais em "Confirmando suas
+  permissões…" (FE-5).** Um 403 do servidor ao confirmar a conta termina
+  dizendo que a API recusou, mantém a sessão e oferece nova tentativa; o
+  botão fica desligado enquanto a confirmação anda, e uma resposta antiga
+  não restaura permissão. Se a confirmação volta a dar certo, a página do
+  chamado que não tinha carregado é relida.
 - **Permissão administrativa não vem mais do navegador (FE-5).** Ela é
   confirmada no servidor a cada abertura e renovação de sessão; uma resposta
   atrasada de outra sessão é descartada.
@@ -251,6 +294,12 @@ lista. O rollback é coordenado: ver `docs/fe-5-permissoes-e-api9.md`, §11 e
 - **O comentário digitado na janela some quando o quadro muda** (anterior ao
   FE-5): mudar o status pela janela relê os comentários e limpa o campo.
   Encontrado no FE-5, fora do escopo dele.
+- **Fechamento complementar do FE-5 homologado só localmente**, contra a
+  API-11 (`5547893`) num PostgreSQL 15 descartável, com contas e ids
+  fictícios. Para publicar faltam: o inventário das contas reais (quem é
+  conta de serviço, qual é a TV), `PAINEL_CONTAS_IDS` e `SETORES_TI_IDS` com
+  ids reais, ao menos um Administrador humano ativo, e a ordem API-11 antes
+  do front. Riscos residuais em `docs/fe-5-permissoes-e-api9.md`, §14.
 
 ---
 

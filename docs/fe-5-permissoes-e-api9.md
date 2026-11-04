@@ -12,6 +12,8 @@ Contrapartes na API (`chamadoshs-api`, todas locais, sem push):
 | API-7 | `feat/setor-destino-api-7` | `f78a5f4` | `require_equipe_ti` e `integra_equipe_ti` no `/auth/me` |
 | API-8 | `feat/setor-destino-api-8` | `69902ae` | comentário interno só para admin e TI |
 | API-9 | `feat/setor-destino-api-9` | `0ac2571` | `GET /chamados/responsaveis-ti` e recusa do inativo |
+| API-10 | `feat/setor-destino-api-10` | `f3bec69` | conta de serviço fora de `integra_equipe_ti` |
+| API-11 | `feat/setor-destino-api-11` | `5547893` | conta de serviço sem escrita de equipe nem administração; `lembretes-do-dia` (§14) |
 
 ---
 
@@ -471,3 +473,202 @@ medidos à parte.
 
 Nada foi publicado: sem push, PR, merge ou deploy; a Qualidade não foi ligada
 fora do banco descartável.
+
+---
+
+## 14. Fechamento complementar C2/C3/C4, TV e homologação com a API-11
+
+Mesma branch, a partir de `cc6e592`. Local, sem push, PR, merge ou deploy.
+Versão mantida em **1.7.8**. Contraparte: API-11 em `5547893`, não alterada
+(rodada de um `git archive` numa pasta temporária). O histórico das seções
+1 a 13 fica como estava; o que mudou de lá para cá está aqui. Em particular,
+o primeiro item de §13.9 (403 na revalidação preso em "Confirmando…") e os
+itens 2 e 3 de §13.10 estão resolvidos abaixo.
+
+### 14.1 Commits locais
+
+| Commit | O que faz |
+|---|---|
+| `bc960e6` `build(front): isola homologacao da api de producao` | `npm run build:homologacao`: exige `VITE_API_URL` loopback com porta 8000–8999 no processo, ignora os `.env`, gera `dist-homologacao/` e recusa o artefato com o host da API de produção, hosts dos `.env` ou padrões de segredo |
+| `436514d` `fix(chamados): alinha acoes as permissoes da api11` | C2 e a marca de conta de serviço |
+| `2452945` `fix(chamados): preserva formularios em erros recuperaveis` | C3 |
+| `3936fe3` `fix(auth): encerra revalidacao negada sem travamento` | C4 |
+| `21f3335` `feat(painel): integra leitura segura dos lembretes` | TV |
+| `801c9e2` `fix(chamados): rele o chamado quando a confirmacao volta` | achado classe A da homologação real (§14.8) |
+
+A marca de conta de serviço foi junto do C2, e não num commit próprio, porque
+a regra de equipe depende dela; a ordem difere da sugerida só nisso.
+
+### 14.2 C2 — ações de equipe pela regra da API-11
+
+`podeAlterarComoEquipe` (`lib/permissoes`) espelha `pode_alterar_como_equipe`
+da API: conta de serviço nunca; Administrador humano sempre; técnico pelo
+setor do chamado — o da equipe da TI (`integra_equipe_ti`) em TI e Qualidade,
+o da Qualidade só na Qualidade e só se for atendente; vínculo (responsável,
+solicitante) não conta. Sem identidade confirmada e vigente, nada. Editar,
+arquivar, desarquivar, status, prioridade, solução, atribuição e interno
+usam a regra; cancelar é de equipe ou do solicitante; avaliar é do
+solicitante; excluir é do Administrador humano.
+
+**Leitura × administração.** `/auth/me` não diz se a conta é de serviço. Para
+Administrador, o front lê `GET /usuarios/{id}` e guarda `conta_de_servico` só
+na memória (nunca no `localStorage`); se a leitura falha, a conta é tratada
+como serviço e a confirmação conta como falha (falha fechada). Conta de
+serviço não recebe Gestão, Usuários, interno nem ações de equipe.
+
+### 14.3 C3 — erro recuperável de escrita
+
+`lib/escrita` classifica; `AvisoDeFalhaDeEscrita` mostra junto da operação.
+400/422: mensagem da API + "Nada foi salvo."; 409/428: fluxo de versão do
+FE-4; 403: operação desligada até trocar de chamado, `/auth/me` de novo,
+texto à vista; 404: só com `detail` "Chamado não encontrado" (ou sem corpo) é
+perda de acesso (`ehPerdaDeAcesso`); 5xx/rede/tempo: "Resultado não
+confirmado", nada reenviado, "Conferir o chamado". A releitura que falha
+depois de o chamado já estar na tela avisa e mantém a última leitura.
+
+### 14.4 C4 — revalidação negada
+
+`revalidarIdentidade` sempre termina: 401 encerra a sessão; 403 marca falha
+com `confirmacaoRecusada` (mensagem própria, sessão mantida); rede/5xx marca
+falha. `revalidando` desliga o botão; só o pedido mais novo o desliga, e
+resposta antiga não restaura permissão. O aviso aparece também para o
+técnico fora da equipe.
+
+### 14.5 TV — lembretes do dia
+
+`lembretesDoDia()` (`services/chamadoshsapi`) lê a rota nova com
+`silenciarRecusa` (sem o aviso global de 403). `lerLembretes` recusa o corpo
+inteiro fora do contrato (`data` AAAA-MM-DD; situação `atrasada | hoje |
+realizada_hoje`), sem cálculo de reserva no navegador e sem cair para
+`GET /tarefas-recorrentes/`. 403 para de pedir até a conta mudar; outra falha
+mantém a lista anterior com a nota de desatualizada. Um intervalo de 10 min
+para quadro e lembrete, sem pedido sobreposto. O título só é link para quem
+administra.
+
+### 14.6 Testes (camada A)
+
+- `VITE_API_URL=http://127.0.0.1:9 npx vitest run`: **95 arquivos, 1.632
+  testes, todos passando**; `tsc --noEmit` limpo; paleta validada;
+  `build:homologacao` com `http://127.0.0.1:8011` aprovado (artefato com 2
+  ocorrências da URL local e 0 do host de produção).
+- Cada commit foi conferido isolado (índice exportado, `tsc` e testes): os 3
+  testes que leem o `.env` (`captura`, `identidade`) falham só na cópia
+  exportada, que não tem `.env`, e passam na árvore.
+- Arquivos novos: `ChamadoDetalhes.permissoes` (67, matriz C2 de 13 contas),
+  `ChamadoDetalhes.falhas` (22, C3 e a releitura), `context/confirmacao`
+  (22, C4), `lembretesDaTV` (30, matriz de 10 contas), `lib/lembretes`,
+  `lib/escrita`, `scripts/build-homologacao` (27).
+- Mutação (falhas/total no recorte; todas revertidas): C2 regra por perfil
+  34/139; Administrador sem marca 8/157; C4 403 sem falha 3/19; C4 resposta
+  velha 2/20; C3 `setError` na edição 9/11; C3 todo 404 = perda 4/29; C3
+  `disabled` do Salvar 1/19; TV sem `silenciarRecusa` 1/29; TV 403 sem parar
+  1/29; TV pedido sobreposto 1/29; TV relógio do navegador 1/29; releitura
+  na volta da confirmação 1/22. **Sobreviveram**, por redundância: a trava do
+  manipulador do Salvar (o botão já está desligado) e o `!chamado` da
+  releitura (`error` só existe sem chamado na tela).
+
+### 14.7 Homologação real (camadas B a E)
+
+**Ambiente.** PostgreSQL 15.19 portátil em 127.0.0.1:54341, banco
+`hml_fe5_api11` recriado do `schema_chamados.sql` da API-11; API de
+`git archive 5547893`, `env -i` com variáveis só no processo
+(`SETORES_TI_IDS=1`, `SETOR_QUALIDADE_ID=5`, `PAINEL_CONTAS_IDS=9`, webhook
+vazio, chave local aleatória), uvicorn em 127.0.0.1:8011 com guarda que
+recusa conexão fora de loopback; front = `dist-homologacao/` servido por
+`vite preview` em 127.0.0.1:5191, com a guarda de rede do Node.
+**Isolamento provado antes de começar:** o bundle servido tem a URL local e
+nenhuma referência ao host de produção; o CORS da API local responde à
+origem 5191; os recursos carregados no navegador foram só de
+`127.0.0.1:5191` e `127.0.0.1:8011`; as guardas registraram zero tentativas
+de saída. Nada de produção, dado real ou credencial real.
+
+**Personas (todas fictícias, ids 1–14):** Administrador humano (único), técnico
+TI, técnico Qualidade, técnico de outro setor, técnico sem setor, usuário
+comum, conta técnica TI (serviço), conta de serviço Administradora, conta do
+painel (serviço, id em `PAINEL_CONTAS_IDS`), conta de serviço não autorizada,
+solicitante, responsável atual (técnico de outro setor), ex-responsável,
+técnico TI inativo. Tarefas: uma atrasada, uma de hoje, uma realizada hoje,
+uma futura e uma desativada.
+
+**B — HTTP direto à API local: 78/78.** Lembretes: painel 200 com a data de
+Brasília da API, `[(1, atrasada), (2, hoje), (3, realizada_hoje)]`, só os 4
+campos, sem descrição nem instruções; Administrador e técnico TI 200; as
+outras 10 contas 403; sem token 401. Painel sem `/tarefas-recorrentes/`,
+auditoria, responsáveis-TI nem realizar tarefa, e lendo o quadro. Conta
+técnica TI: PUT, arquivar e cancelar 403; conta de serviço Administradora:
+PUT, criar e promover usuário, excluir chamado e auditoria 403. Último
+Administrador humano: desativar, rebaixar e virar serviço recusados, e o
+banco confirma. Interno: só admin e TI criam e veem. Responsáveis TI: lista
+só com o técnico humano ativo; inativo, conta de serviço e outro setor
+recusados. Qualidade: 428 sem versão, 409 `versao_desatualizada`, 200 com a
+versão certa. C2: responsável de outro setor lê (200), PUT/arquivar/cancelar
+403, comenta em público 201; técnico sem vínculo 404.
+
+**C/D — front real no navegador, contra a API local.**
+- TV: o painel vê "Tarefas recorrentes do dia" com "Atrasada desde
+  02/11/2026", "Hoje", "Realizada · Próxima: 11/11/2026", título sem link,
+  menu só Dashboard e Chamados, nenhum pedido a `GET /tarefas-recorrentes/`.
+  Conta não autorizada: um pedido, 403, sem bloco e sem aviso; o quadro
+  funciona; voltar ao quadro pede de novo, uma vez por montagem.
+- C2: o responsável de outro setor vê o chamado com só "Enviar Comentário";
+  o comentário público sai sem 403.
+- C3: 403 real (técnico tirado da TI no meio da edição) → aviso "Operação
+  recusada", rascunho da solução no campo, Salvar desligado, `/auth/me`
+  pedido de novo. 404 real (perdeu o vínculo e o setor) ao comentar → "Este
+  chamado não está mais disponível para você." e só o comentário digitado
+  para copiar. API parada → "Resultado não confirmado", um único pedido e
+  nenhum outro em 15 s; com a API de volta, "Conferir o chamado" relê e o
+  aviso some. Qualidade com a versão mudada por fora num campo não editado:
+  releitura e mescla por campo, 200, a mudança alheia preservada (o 409 em
+  si ficou nas camadas A e B). O 400/422 pela tela não foi provocado no
+  navegador (camadas A e B).
+- C4: conta desativada + recarga → "A API recusou a confirmação…", sem
+  "Confirmando…", menus só Dashboard e Chamados; reativada, "Confirmar de
+  novo" restaura as ações — e, depois do `801c9e2`, a página do chamado é
+  relida.
+
+**E — visual e acessibilidade (por script, iframe da mesma origem).** Quadro
+e páginas de um chamado da TI e de um da Qualidade, a 360 e 1440 px, claro e
+escuro: sem rolagem horizontal da página em nenhum dos 12 casos (a 360 px as
+colunas do quadro rolam dentro do próprio contêiner, como antes). Contraste
+do bloco de lembretes de 6,2:1 a 17,9:1 nos dois temas (texto de 12–14 px),
+e a situação vem escrita, não só por cor. Uma captura do aviso de recusa do
+C3 foi salva; o resto é medição. Leitor de tela, foco visível e teclado não
+foram percorridos nesta rodada.
+
+### 14.8 Achados
+
+- **A (corrigido, `801c9e2`):** conta desativada que restaura a sessão vê o
+  aviso no lugar do chamado (o GET deu 403); reativada e confirmada de novo,
+  a página ficava no aviso até recarregar. Agora relê uma vez quando a
+  confirmação volta.
+- **B (backend):** nenhum. Nada na API-11 contrariou o contrato nesta rodada.
+- **C (registrado, não feito):** o seletor de solicitante do formulário novo
+  aparece para técnico e para conta de serviço Administradora, e a API só o
+  honra para Administrador humano; o parser de `SETORES_TI_IDS` com mais de
+  4.300 dígitos derruba a subida da API; `GET /usuarios/` e `GET /setores/`
+  seguem abertos a todo login (desenho anterior); na TI a edição não manda
+  versão, e salvar sobrescreve em silêncio a prioridade que outra pessoa
+  mudou depois de a página carregar (desenho do FE-4: versão só na
+  Qualidade); Auditoria e `UsuariosTab` ainda decidem por perfil, protegidas
+  pela rota.
+
+### 14.9 Riscos residuais e dependências para publicar
+
+1. **Ordem:** API-11 antes do front. Contra API anterior, o lembrete some sem
+   erro e as ações seguem a regra nova (mais restritiva), sem 403 evitável.
+2. **Administrador humano ativo** em produção antes da API-11 — com zero, a
+   administração trava.
+3. **Inventário das contas reais:** quais são de serviço, qual é a TV. Sem
+   isso, `PAINEL_CONTAS_IDS` fica vazia e a TV não mostra o lembrete.
+4. **`SETORES_TI_IDS` real**, validada por pessoa, como na §11.
+5. A conta de serviço Administradora perde a Gestão no front: quem usa uma
+   conta compartilhada precisa de conta humana antes.
+6. O lembrete é pedido uma vez a cada montagem do quadro, também por quem
+   recebe 403 (barato, sem aviso).
+7. Navegador: medição por script; sem leitor de tela e sem passagem completa
+   por teclado. O intervalo de 10 minutos foi provado na camada A (relógio
+   falso), não no navegador.
+8. `SETOR_QUALIDADE_ID` segue desligado fora do banco descartável.
+
+Nada foi publicado. Sem push, PR, merge ou deploy; nenhum commit no backend.
