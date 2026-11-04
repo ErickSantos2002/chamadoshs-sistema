@@ -70,6 +70,12 @@ import {
   VARIANTE_DE_STATUS,
 } from '../components/SelosDeChamado';
 import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
+import {
+  classificarFalhaDeEscrita,
+  type FalhaDeEscrita,
+  type OperacaoDeEscrita,
+} from '../lib/escrita';
+import AvisoDeFalhaDeEscrita from '../components/AvisoDeFalhaDeEscrita';
 import { IconeApagar, IconeArquivar, IconeConfereCirculo, IconeDesarquivar, IconeDesfazer, IconeEditar, IconeFechar, IconeIniciar, IconeProibido, IconeRelogio, IconeSalvar, IconeUsuario, IconeVoltar } from '../components/ui/icones';
 import {
   Chamado,
@@ -106,6 +112,16 @@ const ChamadoDetalhes: React.FC = () => {
   const usuarios = useUsuariosPorId();
   const [categoriaNome, setCategoriaNome] = useState<string>('');
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  // A última escrita que falhou sem encerrar a página (C3, `lib/escrita`), e
+  // as operações que a API recusou com 403 — travadas até a pessoa conferir
+  // o chamado ou reabrir a edição. Nada disto vai para o armazenamento.
+  const [falhaDeEscrita, setFalhaDeEscrita] = useState<{
+    operacao: OperacaoDeEscrita;
+    falha: FalhaDeEscrita;
+  } | null>(null);
+  const [operacoesRecusadas, setOperacoesRecusadas] = useState<ReadonlySet<OperacaoDeEscrita>>(
+    () => new Set()
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -260,6 +276,9 @@ const ChamadoDetalhes: React.FC = () => {
       encerrado.current = false;
       jaTeveAcesso.current = false;
       setAcessoEncerrado(null);
+      // Outro chamado: a falha e as recusas eram do anterior.
+      setFalhaDeEscrita(null);
+      setOperacoesRecusadas(new Set());
       carregarDados();
     }
   }, [id]);
@@ -420,6 +439,13 @@ const ChamadoDetalhes: React.FC = () => {
       // Chamado que estava na tela e agora dá 404: perda de acesso, não erro.
       if (jaTeveAcesso.current && perdeuAcesso(err, opcoes)) return false;
       console.error('Erro ao carregar dados:', err);
+      // Releitura de um chamado que já está na tela: a página fica, com o que
+      // foi lido por último e o que a pessoa digitou (C3). Só a primeira
+      // carga, sem nada para mostrar, vira o aviso no lugar da página.
+      if (jaTeveAcesso.current) {
+        toast.error('Não foi possível atualizar o chamado agora. A tela mostra a última leitura.');
+        return false;
+      }
       setError('Erro ao carregar dados do chamado.');
       return false;
     } finally {
@@ -444,6 +470,7 @@ const ChamadoDetalhes: React.FC = () => {
    */
   const iniciarEdicao = async () => {
     if (!chamado) return;
+    limparFalha('edicao');
     if (!ehDaQualidade) {
       setEntradaNaEdicao((n) => n + 1);
       setModoEdicao(true);
@@ -470,6 +497,7 @@ const ChamadoDetalhes: React.FC = () => {
 
   const cancelarEdicao = () => {
     referenciaDaEdicao.current = null;
+    if (falhaDeEscrita?.operacao === 'edicao') setFalhaDeEscrita(null);
     setConflitoNaEdicao(null);
     setConflitoDeVersaoNaEdicao(false);
     setModoEdicao(false);
@@ -598,8 +626,46 @@ const ChamadoDetalhes: React.FC = () => {
     setConflitoDeVersaoNaEdicao(true);
   };
 
+  /**
+   * Uma escrita falhou sem perda de acesso nem conflito de versão (C3): a
+   * página fica, a mensagem vai para junto da operação, e o 403 trava a
+   * operação e relê a identidade. Nunca reenvia.
+   */
+  const registrarFalha = (operacao: OperacaoDeEscrita, err: unknown) => {
+    const falha = classificarFalhaDeEscrita(err);
+    setFalhaDeEscrita({ operacao, falha });
+    if (falha.tipo === 'recusa') {
+      setOperacoesRecusadas((atual) => new Set(atual).add(operacao));
+      void revalidarIdentidade();
+    }
+  };
+
+  /** Nova tentativa da pessoa: a mensagem anterior sai, e a recusa também. */
+  const limparFalha = (operacao: OperacaoDeEscrita) => {
+    setFalhaDeEscrita((atual) => (atual?.operacao === operacao ? null : atual));
+    setOperacoesRecusadas((atual) => {
+      if (!atual.has(operacao)) return atual;
+      const proximo = new Set(atual);
+      proximo.delete(operacao);
+      return proximo;
+    });
+  };
+
+  /**
+   * "Conferir o chamado": relê da API, depois de uma falha incerta ou de uma
+   * recusa. É o que mostra se a escrita entrou antes de a pessoa repetir.
+   * Fora da edição — lá, reler apagaria os campos editados.
+   */
+  const conferirChamado = async () => {
+    const operacao = falhaDeEscrita?.operacao;
+    const ok = await carregarDados(true);
+    if (ok && operacao) limparFalha(operacao);
+  };
+
   const handleSalvarEdicao = async () => {
     if (!chamado || !user) return;
+    if (operacoesRecusadas.has('edicao')) return;
+    setFalhaDeEscrita(null);
 
     if (ehDaQualidade && referenciaDaEdicao.current) {
       await salvarEdicaoDaQualidade(referenciaDaEdicao.current);
@@ -650,8 +716,10 @@ const ChamadoDetalhes: React.FC = () => {
         void responsaveisTI.recarregar();
         return;
       }
+      // Qualquer outra recusa: a edição fica aberta, com tudo o que foi
+      // digitado, e a mensagem junto dela (C3).
       console.error('Erro ao atualizar chamado:', err);
-      setError('Erro ao atualizar chamado.');
+      registrarFalha('edicao', err);
     } finally {
       setLoading(false);
     }
@@ -744,6 +812,8 @@ const ChamadoDetalhes: React.FC = () => {
 
     // Para outros status, fazer mudança direta
     if (!chamado || !user) return;
+    if (operacoesRecusadas.has('status')) return;
+    setFalhaDeEscrita(null);
 
     // Na Qualidade, a versão do chamado desta página (M-1): se outra pessoa
     // mudou o status depois que ela carregou, a API recusa em vez de desfazer.
@@ -767,7 +837,7 @@ const ChamadoDetalhes: React.FC = () => {
       if (perdeuAcesso(err)) return;
       if (await recarregarAposRecusaDeVersao(err)) return;
       console.error('Erro ao atualizar status:', err);
-      setError('Erro ao atualizar status.');
+      registrarFalha('status', err);
     } finally {
       setLoading(false);
     }
@@ -784,6 +854,8 @@ const ChamadoDetalhes: React.FC = () => {
     }
 
     if (!chamado || !user) return;
+    if (operacoesRecusadas.has('resolucao')) return;
+    setFalhaDeEscrita(null);
 
     const precondicao = precondicaoDaEscrita(chamado);
     if (precondicao === null) {
@@ -815,8 +887,11 @@ const ChamadoDetalhes: React.FC = () => {
         await recarregarAposRecusaDeVersao(err);
         return;
       }
+      // O modal fica aberto, com a solução digitada e a mensagem dentro dele
+      // (C3). A solução também fica guardada para o próximo "resolver".
       console.error('Erro ao atualizar chamado:', err);
-      setError('Erro ao atualizar chamado.');
+      rascunhoDaResolucao.current = solucaoModal;
+      registrarFalha('resolucao', err);
     } finally {
       setLoading(false);
     }
@@ -1380,6 +1455,7 @@ const ChamadoDetalhes: React.FC = () => {
                       {/* Botão Salvar */}
                       <Button variante="sucesso"
                         onClick={handleSalvarEdicao}
+                        disabled={operacoesRecusadas.has('edicao')}
                         carregando={salvandoEdicao}>
                         <IconeSalvar className="h-4 w-4" />
                         Salvar
@@ -1411,6 +1487,17 @@ const ChamadoDetalhes: React.FC = () => {
           </Aviso>
         )}
 
+        {/* Falha de escrita que não encerra a página (C3): junto da edição, ou
+            junto das ações rápidas. A da resolução fica dentro do modal. */}
+        {falhaDeEscrita &&
+          ((falhaDeEscrita.operacao === 'edicao' && modoEdicao) ||
+            (falhaDeEscrita.operacao === 'status' && !modoEdicao)) && (
+            <AvisoDeFalhaDeEscrita
+              falha={falhaDeEscrita.falha}
+              aoConferir={falhaDeEscrita.operacao === 'status' ? conferirChamado : undefined}
+            />
+          )}
+
         {/* Botões de Ação Rápida */}
         {(alteraComoEquipe || atendePelaRota) && !modoEdicao && (
           <div className="rounded-xl border border-borda bg-superficie p-5">
@@ -1435,7 +1522,14 @@ const ChamadoDetalhes: React.FC = () => {
                   Este chamado mudou. Atualizando os dados antes de liberar as ações…
                 </p>
               ) : (
-                getBotoesAcao()
+                // Recusadas com 403 (C3): os botões ficam à vista, travados.
+                <fieldset
+                  disabled={operacoesRecusadas.has('status')}
+                  className="contents"
+                  aria-label="Mudança de status"
+                >
+                  {getBotoesAcao()}
+                </fieldset>
               )}
             </div>
           </div>
@@ -2052,7 +2146,10 @@ const ChamadoDetalhes: React.FC = () => {
 
               <Button variante="sucesso"
                 onClick={handleConfirmarResolucao}
-                disabled={validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null}>
+                disabled={
+                  validarMinimo(solucaoModal, MINIMO_SOLUCAO, 'Solução') !== null ||
+                  operacoesRecusadas.has('resolucao')
+                }>
                 <IconeConfereCirculo className="h-4 w-4" />
                 {statusAlvo === StatusEnum.RESOLVIDO
                   ? "Marcar como Resolvido"
@@ -2085,6 +2182,14 @@ const ChamadoDetalhes: React.FC = () => {
           </Campo>
 
           <ContadorMinimo valor={solucaoModal} minimo={MINIMO_SOLUCAO} />
+
+          {falhaDeEscrita?.operacao === 'resolucao' && (
+            <AvisoDeFalhaDeEscrita
+              falha={falhaDeEscrita.falha}
+              aoConferir={conferirChamado}
+              className="mt-3"
+            />
+          )}
         </Modal>
       )}
 

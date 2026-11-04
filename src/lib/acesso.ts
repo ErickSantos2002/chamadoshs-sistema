@@ -22,11 +22,30 @@ export const MENSAGEM_SEM_ACESSO = 'Este chamado não está mais disponível par
 export const MENSAGEM_ATRIBUICAO_SALVA_SEM_ACESSO =
   'A atribuição foi salva, mas este chamado não está mais disponível para você.';
 
-/** O 404 de um chamado que estava na tela. */
+/** O `detail` do 404 do chamado na API (`CHAMADO_NAO_ENCONTRADO`, D6). */
+export const DETALHE_CHAMADO_NAO_ENCONTRADO = 'Chamado não encontrado';
+
+/**
+ * O 404 de um chamado que estava na tela.
+ *
+ * Nem todo 404 é esse (FE-5, C3). A API devolve, para o chamado que não
+ * existe e para o que a pessoa não lê, o MESMO corpo — `Chamado não
+ * encontrado` —, e é ele a evidência. Outro `detail` diz que faltou outra
+ * coisa: "Not Found" é a rota que não existe (API antiga), "Comentário não
+ * encontrado" é o comentário. Esses não encerram a página. Sem corpo nenhum
+ * (um proxy no meio, por exemplo) o 404 continua contando como perda: na
+ * dúvida, os dados do chamado saem da tela.
+ */
 export function ehPerdaDeAcesso(erro: unknown): boolean {
   if (!erro || typeof erro !== 'object') return false;
-  const resposta = (erro as { response?: { status?: unknown } }).response;
-  return resposta?.status === 404;
+  const resposta = (erro as { response?: { status?: unknown; data?: unknown } }).response;
+  if (resposta?.status !== 404) return false;
+  const corpo = resposta.data;
+  const detalhe =
+    corpo !== null && typeof corpo === 'object' && !Array.isArray(corpo)
+      ? (corpo as { detail?: unknown }).detail
+      : undefined;
+  return detalhe === undefined || detalhe === DETALHE_CHAMADO_NAO_ENCONTRADO;
 }
 
 /** Um texto que a pessoa digitou e que fica à vista depois da perda de acesso. */
