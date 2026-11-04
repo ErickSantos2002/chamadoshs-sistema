@@ -86,6 +86,12 @@ export interface UsuarioAutenticado {
   setor_id?: number;
   /** Só vem do `/auth/me` desta sessão, nunca do `localStorage`. */
   integra_equipe_ti?: boolean;
+  /**
+   * Só vem do `GET /usuarios/{id}` desta sessão, lido quando o perfil é de
+   * administrador; nunca do `localStorage`. Ausente é "não se sabe", e não
+   * administra (`lib/permissoes`).
+   */
+  conta_de_servico?: boolean;
 }
 
 // Setores

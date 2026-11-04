@@ -56,7 +56,7 @@ const sessao = (
   estado: { confirmada?: boolean; falhou?: boolean; revalidar?: () => Promise<void> } = {}
 ) =>
   ({
-    user: { id: 1, username: 'pessoa', ...perfil },
+    user: { id: 1, username: 'pessoa', ...perfil, conta_de_servico: false },
     token: 'token-de-teste',
     loading: false,
     error: null,

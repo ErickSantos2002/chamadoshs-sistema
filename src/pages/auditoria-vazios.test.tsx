@@ -41,7 +41,7 @@ vi.mock('../services/chamadoshsapi', () => ({
   auditoriaService: { listar: (...a: unknown[]) => listar(...a) },
 }));
 vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { id: 1, username: 'admin', role: papel }, identidadeConfirmada: true }),
+  useAuth: () => ({ user: { id: 1, username: 'admin', role: papel, conta_de_servico: false }, identidadeConfirmada: true }),
 }));
 vi.mock('../hooks/useUsuariosPorId', () => ({
   useUsuariosPorId: () => ({}),

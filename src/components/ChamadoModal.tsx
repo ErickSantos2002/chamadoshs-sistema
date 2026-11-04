@@ -147,8 +147,8 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     marcarQualidadeIndisponivel,
   } = useChamados();
   const usuarios = useUsuariosPorId();
-  const { user, revalidarIdentidade } = useAuth();
-  const { podeAdministrar, semConfirmacao } = usePermissoes();
+  const { revalidarIdentidade } = useAuth();
+  const { podeAdministrar, podeAlterarComoEquipe, semConfirmacao } = usePermissoes();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
@@ -172,21 +172,22 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   // A solução que ficou no passo de resolução do `AcoesRapidas`.
   const rascunhoDoAtendimento = useRef('');
 
-  // Mesma regra das ações de status: atribuir é da equipe, e a API recusa
-  // para o solicitante — mostrar o seletor a ele seria oferecer um 403.
-  // Cancelado e arquivado ficam de fora pelo mesmo motivo das ações: mexer
-  // neles é decisão da página inteira, junto do motivo e do histórico.
-  const podeAtribuir =
-    (user?.role === 'Administrador' || user?.role === 'Tecnico') &&
-    !chamado?.cancelado &&
-    !chamado?.arquivado;
-
   // Na Qualidade o seletor é outro: os atendentes, sem "Sem atribuição", e só
   // quando a API sabe validar a troca. Fora disso o campo fica só leitura.
   const ehDaQualidade = chamado
     ? setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE
     : false;
   const qualidade = useQualidade(ehDaQualidade);
+
+  // Mesma regra das ações de status: atribuir é da equipe — a regra
+  // `pode_alterar_como_equipe` da API, e não o perfil (C2). O solicitante, o
+  // técnico que lê só pelo vínculo e a conta de serviço levariam um 403.
+  // Cancelado e arquivado ficam de fora pelo mesmo motivo das ações: mexer
+  // neles é decisão da página inteira, junto do motivo e do histórico.
+  const podeAtribuir =
+    podeAlterarComoEquipe(chamado, ehDaQualidade ? qualidade.atendentes : null) &&
+    !chamado?.cancelado &&
+    !chamado?.arquivado;
   const reatribuiNaQualidade = podeAtribuir && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
 
   // Na TI, reatribuir é de quem administra (API-6: `require_equipe_ti` no

@@ -35,7 +35,7 @@ import AcoesRapidas from './AcoesRapidas';
 
 const sessao = (id: number, role: string) =>
   ({
-    user: { id, username: 'quem-atende', role },
+    user: { id, username: 'quem-atende', role, conta_de_servico: false },
     token: 'token-de-teste',
     loading: false,
     error: null,
@@ -47,7 +47,13 @@ const sessao = (id: number, role: string) =>
   }) as React.ContextType<typeof AuthContext>;
 
 const ADMIN = sessao(1, 'Administrador');
-const TECNICO = sessao(3, 'Tecnico');
+// O técnico da equipe da TI: é a equipe, e não o perfil, que muda status
+// pelo PUT (C2). O que só lê pelo vínculo é `TECNICO_DE_FORA`.
+const TECNICO = (() => {
+  const s = sessao(3, 'Tecnico');
+  return { ...s, user: { ...s.user!, integra_equipe_ti: true } };
+})();
+const TECNICO_DE_FORA = sessao(3, 'Tecnico');
 const USUARIO = sessao(7, 'Usuario');
 
 const chamadoCom = (extra: Partial<Chamado> = {}): Chamado =>
@@ -164,6 +170,17 @@ describe('equipe — os botões de cada status', () => {
 
   it('quem não é da equipe não vê botão', async () => {
     await montar(USUARIO, chamadoCom());
+    expect(host.innerHTML).toBe('');
+  });
+
+  it('técnico de outro setor que é o responsável: lê, mas não muda status (C2)', async () => {
+    await montar(TECNICO_DE_FORA, chamadoCom({ status: StatusEnum.ABERTO }));
+    expect(host.innerHTML).toBe('');
+  });
+
+  it('administradora de serviço: nenhum botão (API-11, S2)', async () => {
+    const servico = sessao(1, 'Administrador');
+    await montar({ ...servico, user: { ...servico.user!, conta_de_servico: true } }, chamadoCom());
     expect(host.innerHTML).toBe('');
   });
   // Homologação FE-5: em `sm` (30 px) as ações eram os menores alvos do modal,

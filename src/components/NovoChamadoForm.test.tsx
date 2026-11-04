@@ -44,7 +44,7 @@ import NovoChamadoForm from './NovoChamadoForm';
 
 const sessao = (id: number, role: string) =>
   ({
-    user: { id, username: 'quem-abre', role },
+    user: { id, username: 'quem-abre', role, conta_de_servico: false },
     token: 'token-de-teste',
     loading: false,
     error: null,

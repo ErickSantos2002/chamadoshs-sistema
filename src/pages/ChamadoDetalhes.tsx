@@ -186,11 +186,6 @@ const ChamadoDetalhes: React.FC = () => {
     chamado?.protocolo
   );
 
-  // Permissões
-  const isAdmin = user?.role === 'Administrador';
-  const isTecnico = user?.role === 'Tecnico';
-  const podeEditar = isAdmin || isTecnico;
-
   // O atendimento da Qualidade. Quando ele vale para quem está vendo, as ações
   // rápidas desta página dão lugar às do `AcoesRapidas`, pela rota restrita —
   // as condições moram em `podeAtenderPelaRota`. Chamado da TI não consulta
@@ -200,14 +195,40 @@ const ChamadoDetalhes: React.FC = () => {
     : false;
   const qualidade = useQualidade(ehDaQualidade);
   const atendePelaRota = chamado ? podeAtenderPelaRota(chamado, user?.id, qualidade) : false;
+
+  // ── Permissões (C2) ───────────────────────────────────────────────────
+  //
+  // Ver o chamado não é poder alterá-lo. O técnico que o lê só pelo vínculo
+  // — é o responsável, ou o abriu — recebia "Editar", "Arquivar" e as ações
+  // rápidas por ter o perfil Técnico, e cada clique era um 403. Agora:
+  //
+  // - `alteraComoEquipe`: a regra `pode_alterar_como_equipe` da API —
+  //   editar, transições de status, arquivar, desarquivar e cancelar alheio;
+  // - `ehSolicitante`: o que é do solicitante — cancelar o que abriu (a
+  //   avaliação mora no `Avaliacao`, com a mesma regra);
+  // - `podeAdministrarUsuarios`: administrador humano — excluir;
+  // - `podeAdministrar`: interno e responsável da TI.
+  //
+  // Conta de serviço não altera como equipe, qualquer que seja o perfil.
+  const {
+    podeAdministrar,
+    podeAdministrarUsuarios,
+    podeAlterarComoEquipe,
+    semConfirmacao,
+  } = usePermissoes();
+  const alteraComoEquipe = podeAlterarComoEquipe(
+    chamado,
+    ehDaQualidade ? qualidade.atendentes : null
+  );
+  const ehSolicitante = Boolean(chamado && user && chamado.solicitante_id === user.id);
   // Trocar o responsável da Qualidade é só com a API que valida a troca; sem
   // ela, o campo fica só leitura na edição e o PUT leva o responsável de antes.
-  const reatribuiNaQualidade = podeEditar && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
+  const reatribuiNaQualidade =
+    alteraComoEquipe && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
 
   // Na TI, trocar o responsável é de quem administra (o PUT da TI é
   // `require_equipe_ti`), e a lista é a da API-9, pedida a cada entrada na
   // edição — nunca o `GET /usuarios/` filtrado que morava no contexto (FE-5).
-  const { podeAdministrar, semConfirmacao } = usePermissoes();
   const reatribuiNaTI = podeAdministrar && !ehDaQualidade && modoEdicao;
   // Cada entrada na edição é uma abertura nova do seletor: pede a lista de novo.
   const [entradaNaEdicao, setEntradaNaEdicao] = useState(0);
@@ -242,6 +263,24 @@ const ChamadoDetalhes: React.FC = () => {
       carregarDados();
     }
   }, [id]);
+
+  // As categorias da edição, assim que a escrita de equipe passa a valer. Na
+  // primeira carga o chamado ainda não chegou — e sem ele não se sabe se a
+  // conta altera como equipe —, então `carregarDados` não as pede; daqui em
+  // diante, cada recarga as relê ali.
+  useEffect(() => {
+    if (!alteraComoEquipe || categorias.length > 0) return;
+    let vale = true;
+    categoriasService
+      .listar(true)
+      .then((ativas) => {
+        if (vale && !encerrado.current) setCategorias(ativas);
+      })
+      .catch(() => {});
+    return () => {
+      vale = false;
+    };
+  }, [alteraComoEquipe]);
 
   /**
    * A pessoa deixou de poder ver este chamado. A página para: os dados saem
@@ -365,9 +404,9 @@ const ChamadoDetalhes: React.FC = () => {
         setSolucaoEditada(chamadoData.solucao || '');
       }
 
-      // Categorias para a edição, se for admin ou técnico. Os responsáveis
+      // Categorias para a edição, se pode editar como equipe. Os responsáveis
       // da TI não vêm daqui: ver `useResponsaveisTI`.
-      if (podeEditar) {
+      if (alteraComoEquipe) {
         const ativas = await categoriasService.listar(true); // apenas categorias ativas
         if (encerrado.current) return false;
         setCategorias(ativas);
@@ -965,7 +1004,7 @@ const ChamadoDetalhes: React.FC = () => {
 
   // Função para obter os botões de ação baseados no status atual
   const getBotoesAcao = () => {
-    if (!podeEditar || !chamado) return null;
+    if (!alteraComoEquipe || !chamado) return null;
 
     const botoesComuns = [];
 
@@ -1225,8 +1264,12 @@ const ChamadoDetalhes: React.FC = () => {
                 )}
               </div>
 
-              {/* Botões de ação (editar / salvar / cancelar / arquivar) */}
-              {podeEditar && (
+              {/* Botões de ação (editar / salvar / cancelar / arquivar).
+
+                  Em edição, os botões de salvar e cancelar ficam mesmo se a
+                  permissão cair no meio: o que foi digitado não some, e quem
+                  decide o PUT é a API (C3). */}
+              {(alteraComoEquipe || ehSolicitante || modoEdicao) && (
                 <div className="flex flex-wrap items-center gap-2">
                   {!modoEdicao ? (
                     <>
@@ -1251,7 +1294,9 @@ const ChamadoDetalhes: React.FC = () => {
                           gatilho. É a exceção registrada, e a nota dele
                           explica: é a única ação da página que apaga o
                           chamado, e ela não pode parecer irmã de "Arquivar".) */}
-                      {!chamado?.cancelado && (
+                      {/* Cancelar é da equipe e do solicitante — o deste é
+                          ação própria, e não some com a escrita de equipe. */}
+                      {!chamado?.cancelado && (alteraComoEquipe || ehSolicitante) && (
                         <Button
                           variante="secundario"
                           onClick={() => setMostrarModalCancelar(true)}
@@ -1272,6 +1317,7 @@ const ChamadoDetalhes: React.FC = () => {
                           `secundario` pela mesma regra que os tres "Desativar":
                           a acao e reversivel -- `arquivar` e `desarquivar` sao
                           um par na API --, e o rotulo ja carrega o sentido. */}
+                      {alteraComoEquipe && (
                       <Button
                         variante="secundario"
                         onClick={() => setMostrarModalArquivar(true)}
@@ -1288,6 +1334,7 @@ const ChamadoDetalhes: React.FC = () => {
                           </>
                         )}
                       </Button>
+                      )}
 
                       {/* Botão Excluir.
                           Último da fileira e o único em vermelho cheio: é a
@@ -1296,8 +1343,9 @@ const ChamadoDetalhes: React.FC = () => {
 
                           Quem pode chegar aqui está em `utils/exclusao`, com
                           teste — administrador, e só em chamado que já saiu do
-                          fluxo. */}
-                      {chamado && podeExcluir(chamado, user?.role) && (
+                          fluxo. Administrador HUMANO e confirmado: a API-11
+                          tira o `require_admin` da conta de serviço. */}
+                      {chamado && podeAdministrarUsuarios && podeExcluir(chamado, user?.role) && (
                         <Button variante="perigo"
                           onClick={() => setMostrarModalExcluir(true)}>
                           <IconeApagar className="h-4 w-4" />
@@ -1306,14 +1354,16 @@ const ChamadoDetalhes: React.FC = () => {
                       )}
 
                       {/* Botão Editar */}
-                      <Button
-                        variante="secundario"
-                        onClick={iniciarEdicao}
-                        carregando={salvandoEdicao}
-                      >
-                        <IconeEditar className="h-4 w-4" />
-                        Editar Detalhes
-                      </Button>
+                      {alteraComoEquipe && (
+                        <Button
+                          variante="secundario"
+                          onClick={iniciarEdicao}
+                          carregando={salvandoEdicao}
+                        >
+                          <IconeEditar className="h-4 w-4" />
+                          Editar Detalhes
+                        </Button>
+                      )}
                     </>
                   ) : (
                     <>
@@ -1362,7 +1412,7 @@ const ChamadoDetalhes: React.FC = () => {
         )}
 
         {/* Botões de Ação Rápida */}
-        {(podeEditar || atendePelaRota) && !modoEdicao && (
+        {(alteraComoEquipe || atendePelaRota) && !modoEdicao && (
           <div className="rounded-xl border border-borda bg-superficie p-5">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-semibold text-conteudo">

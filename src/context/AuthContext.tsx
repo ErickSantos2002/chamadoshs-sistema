@@ -1,7 +1,8 @@
 import { createContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { authService } from '../services/chamadoshsapi';
+import { authService, usuariosService } from '../services/chamadoshsapi';
 import { aoRenovarToken } from '../services/api';
 import { getRoleName, nomeCanonicoDaRole } from '../utils/roleMapper';
+import { ehAdministrador } from '../lib/permissoes';
 import type { UsuarioAutenticado, UsuarioLogado } from '../types/api';
 
 type AuthContextType = {
@@ -17,7 +18,11 @@ type AuthContextType = {
    * `true` (ver `lib/permissoes`).
    */
   identidadeConfirmada: boolean;
-  /** O `/auth/me` falhou sem resposta útil (rede, 5xx). Não se repete sozinho. */
+  /**
+   * A última confirmação não terminou bem — rede, 5xx, ou a marca de conta de
+   * serviço que não pôde ser lida. Enquanto valer, nada de administração
+   * (`usePermissoes`). Não se repete sozinho.
+   */
   falhaAoConfirmar: boolean;
   /** Pede o `/auth/me` de novo. Uma resposta velha nunca sobrescreve uma nova. */
   revalidarIdentidade: () => Promise<void>;
@@ -40,6 +45,27 @@ export function identidadeDoMe(me: UsuarioLogado): UsuarioAutenticado {
     setor_id: me.setor_id ?? undefined,
     integra_equipe_ti: me.integra_equipe_ti === true,
   };
+}
+
+/**
+ * A identidade do `/auth/me` com a marca de conta de serviço, quando ela
+ * importa.
+ *
+ * O `/auth/me` não traz `conta_de_servico`, e a API-11 tira administração de
+ * toda conta de serviço — a administradora compartilhada inclusive. O perfil
+ * sozinho não basta, então o administrador é relido em `GET /usuarios/{id}`
+ * (rota de qualquer autenticado). O técnico não precisa: o que ele pode vem
+ * de `integra_equipe_ti` e da lista de atendentes da Qualidade, e a API já
+ * tira a conta de serviço dos dois.
+ *
+ * Lança se a leitura falhar: quem chama decide o que a falha suspende.
+ */
+async function comMarcaDeServico(me: UsuarioLogado): Promise<UsuarioAutenticado> {
+  const identidade = identidadeDoMe(me);
+  if (!ehAdministrador(identidade)) return identidade;
+  const conta = await usuariosService.buscar(me.id);
+  // Só `false` é pessoa, como na API: qualquer outra coisa é serviço.
+  return { ...identidade, conta_de_servico: conta?.conta_de_servico === false ? false : true };
 }
 
 /**
@@ -78,13 +104,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const sessao = useRef(0);
   const pedido = useRef(0);
 
-  const aplicarMe = useCallback((me: UsuarioLogado) => {
-    const identidade = identidadeDoMe(me);
+  const aplicarIdentidade = useCallback((identidade: UsuarioAutenticado) => {
     setUser(identidade);
     guardarIdentidade(identidade);
     setIdentidadeConfirmada(true);
     setFalhaAoConfirmar(false);
   }, []);
+
+  /**
+   * O `/auth/me` respondeu: aplica, com a marca de serviço se for o caso.
+   *
+   * Se a marca não puder ser lida, a identidade vale (nome, setor, perfil)
+   * mas a confirmação fica como falha: o administrador não administra até
+   * a próxima tentativa dar certo. Sem saber se é pessoa, não é.
+   */
+  const aplicarMe = useCallback(
+    async (me: UsuarioLogado, valeAinda: () => boolean) => {
+      let identidade: UsuarioAutenticado;
+      try {
+        identidade = await comMarcaDeServico(me);
+      } catch {
+        if (!valeAinda()) return;
+        aplicarIdentidade(identidadeDoMe(me));
+        setFalhaAoConfirmar(true);
+        return;
+      }
+      if (!valeAinda()) return;
+      aplicarIdentidade(identidade);
+    },
+    [aplicarIdentidade]
+  );
 
   const revalidarIdentidade = useCallback(async () => {
     if (!localStorage.getItem('token')) return;
@@ -99,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const me = await authService.me();
       if (!valeAinda()) return;
-      aplicarMe(me);
+      await aplicarMe(me, valeAinda);
     } catch (err: any) {
       if (!valeAinda()) return;
       const status = err?.response?.status;
@@ -197,7 +246,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userData = await authService.me();
       if (!valeAinda()) return;
 
-      aplicarMe(userData);
+      await aplicarMe(userData, valeAinda);
     } catch (err: any) {
       if (!valeAinda()) return;
       // Tratamento de erros HTTP

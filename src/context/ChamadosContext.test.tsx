@@ -39,7 +39,7 @@ const Sonda: React.FC = () => {
 };
 
 const SESSAO = {
-  user: { id: 1, username: 'rickelme', role: 'Administrador' },
+  user: { id: 1, username: 'rickelme', role: 'Administrador', conta_de_servico: false },
   token: 'token-de-teste',
   loading: false,
   error: null,

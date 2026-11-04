@@ -48,7 +48,7 @@ const CHAMADO = {
 
 const sessao = (role: string) =>
   ({
-    user: { id: 1, username: 'rickelme', role },
+    user: { id: 1, username: 'rickelme', role, conta_de_servico: false },
     token: 'token-de-teste',
     loading: false,
     error: null,

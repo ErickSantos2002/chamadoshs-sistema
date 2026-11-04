@@ -3,10 +3,10 @@ import { act, useContext } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import axios from 'axios';
 import api from '../services/api';
-import { authService } from '../services/chamadoshsapi';
+import { authService, usuariosService } from '../services/chamadoshsapi';
 import { AuthContext, AuthProvider } from './AuthContext';
 import { podeAdministrar } from '../lib/permissoes';
-import type { UsuarioLogado } from '../types/api';
+import type { Usuario, UsuarioLogado } from '../types/api';
 
 vi.mock('react-hot-toast', () => ({
   default: { error: vi.fn(), success: vi.fn() },
@@ -114,6 +114,11 @@ describe('integra_equipe_ti vindo do /auth/me', () => {
     vi.spyOn(authService, 'me').mockResolvedValue(
       me({ id: 1, nome: 'admin', role_id: 1, setor_id: 9, integra_equipe_ti: false })
     );
+    // A marca de pessoa (API-11): o administrador é relido em /usuarios/{id}.
+    vi.spyOn(usuariosService, 'buscar').mockResolvedValue({
+      id: 1,
+      conta_de_servico: false,
+    } as Usuario);
 
     await montar();
 

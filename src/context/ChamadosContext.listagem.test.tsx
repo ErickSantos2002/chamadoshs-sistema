@@ -21,7 +21,7 @@ import { Chamado, StatusEnum } from '../types/api';
 
 const sessao = (id: number, role: string) =>
   ({
-    user: { id, username: 'quem-lista', role },
+    user: { id, username: 'quem-lista', role, conta_de_servico: false },
     token: 'token-de-teste',
     loading: false,
     error: null,

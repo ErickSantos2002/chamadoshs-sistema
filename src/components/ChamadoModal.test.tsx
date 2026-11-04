@@ -44,7 +44,7 @@ const CHAMADO = {
 } as unknown as Chamado;
 
 const SESSAO = {
-  user: { id: 1, username: 'rickelme', role: 'Administrador' },
+  user: { id: 1, username: 'rickelme', role: 'Administrador', conta_de_servico: false },
   token: 'token-de-teste',
   loading: false,
   error: null,
@@ -311,7 +311,7 @@ describe('ChamadoModal — atendimento da Qualidade', () => {
 
   const USUARIO = {
     ...SESSAO,
-    user: { id: 7, username: 'ana', role: 'Usuario' },
+    user: { id: 7, username: 'ana', role: 'Usuario', conta_de_servico: false },
   } as React.ContextType<typeof AuthContext>;
 
   /**

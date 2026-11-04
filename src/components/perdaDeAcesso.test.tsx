@@ -63,7 +63,7 @@ const COMENTARIO_PROTEGIDO = {
 
 const sessao = (id: number, role: string) =>
   ({
-    user: { id, username: `u${id}`, role },
+    user: { id, username: `u${id}`, role, conta_de_servico: false },
     token: 'token-de-teste',
     loading: false,
     error: null,

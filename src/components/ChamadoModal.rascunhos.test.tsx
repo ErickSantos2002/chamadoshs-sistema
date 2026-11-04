@@ -48,7 +48,7 @@ const UM = { ...base, id: 1, titulo: 'Impressora do RH', protocolo: 'CHAM-2026-0
 const DOIS = { ...base, id: 2, titulo: 'Rede do almoxarifado', protocolo: 'CHAM-2026-0302', status: StatusEnum.ABERTO } as unknown as Chamado;
 
 const ADMIN = {
-  user: { id: 1, username: 'admin.ficticio', role: 'Administrador' },
+  user: { id: 1, username: 'admin.ficticio', role: 'Administrador', conta_de_servico: false },
   token: 'token-de-teste',
   loading: false,
   error: null,

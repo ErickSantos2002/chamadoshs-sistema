@@ -79,6 +79,7 @@ const PESSOA_DE_MENTIRA = {
   id: 0,
   username: 'Galeria DEV',
   role: 'Administrador',
+  conta_de_servico: false,
 };
 
 /** Só o que a `Topbar` consome. O resto do contrato é preenchido inerte. */

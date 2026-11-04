@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
+import { usePermissoes } from '../hooks/usePermissoes';
 import { useChamados } from '../hooks/useChamados';
 import { useQualidade } from '../hooks/useQualidade';
 import { chamadosService } from '../services/chamadoshsapi';
@@ -176,11 +177,18 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
     );
   };
 
+  const { podeAlterarComoEquipe } = usePermissoes();
   const pelaRota = podeAtenderPelaRota(chamado, user?.id, qualidade);
 
-  // Mudar status pelo PUT é da equipe. A API recusa para o solicitante, e
-  // mostrar o botão a ele seria oferecer um 403.
-  const podeAgir = pelaRota || user?.role === 'Administrador' || user?.role === 'Tecnico';
+  // Mudar status pelo PUT é da equipe — `pode_alterar_como_equipe` da API,
+  // e não o perfil (C2). O técnico que lê o chamado só pelo vínculo, a conta
+  // de serviço e o solicitante levariam um 403.
+  const podeAgir =
+    pelaRota ||
+    podeAlterarComoEquipe(
+      chamado,
+      setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE ? qualidade.atendentes : null
+    );
 
   // Cancelado e arquivado saem do fluxo normal: reabrir um deles é decisão que
   // vive na página inteira, junto do motivo e do histórico.

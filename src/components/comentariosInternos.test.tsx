@@ -62,7 +62,7 @@ const comentario = (id: number, texto: string, criado: string, interno = false) 
 type Sessao = React.ContextType<typeof AuthContext>;
 const sessao = (id: number, role: string, integra = false, revalidar = vi.fn(async () => {})): Sessao =>
   ({
-    user: { id, username: `u${id}`, role, integra_equipe_ti: integra },
+    user: { id, username: `u${id}`, role, integra_equipe_ti: integra, conta_de_servico: false },
     token: 'token-de-teste',
     loading: false,
     error: null,

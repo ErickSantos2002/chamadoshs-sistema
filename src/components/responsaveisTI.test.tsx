@@ -66,7 +66,7 @@ const USUARIO: Perfil = { role: 'Usuario', role_id: 3, integra_equipe_ti: false 
 
 const sessao = (perfil: Perfil, id = 1, confirmada = true) =>
   ({
-    user: { id, username: `u${id}`, ...perfil },
+    user: { id, username: `u${id}`, ...perfil, conta_de_servico: false },
     token: 'token-de-teste',
     loading: false,
     error: null,
@@ -455,11 +455,16 @@ describe('a página do chamado', () => {
     expect(host.textContent).not.toContain('Erro ao atualizar chamado.');
   });
 
-  it('técnico da Qualidade editando chamado da TI: responsável só leitura, sem pedir a lista', async () => {
+  // Até o fechamento da FE-5 (C2) o técnico da Qualidade entrava na edição
+  // de chamado da TI — e o PUT era 403: a API não deixa alterar como equipe
+  // fora do alcance do setor. Agora a edição nem é oferecida.
+  it('técnico da Qualidade num chamado da TI: sem "Editar Detalhes", sem pedir a lista', async () => {
     await montarPagina(QUALIDADE);
-    await clicar('Editar Detalhes');
+    const editar = Array.from(host.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Editar Detalhes'
+    );
+    expect(editar).toBeUndefined();
     expect(listarResponsaveis).not.toHaveBeenCalled();
-    expect(host.textContent).toContain('A troca do responsável da TI é de administradores');
   });
 });
 

@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   ehAdministrador,
   integraEquipeTI,
+  ehAdministradorHumano,
   podeAdministrar,
   podeAdministrarUsuarios,
+  podeAlterarComoEquipe,
 } from './permissoes';
 
 /**
@@ -13,8 +15,13 @@ import {
  */
 
 const PERFIS = {
-  administrador: { role: 'Administrador', role_id: 1, integra_equipe_ti: true },
-  administradorForaDaTI: { role: 'Administrador', role_id: 1, integra_equipe_ti: false },
+  administrador: { role: 'Administrador', role_id: 1, integra_equipe_ti: true, conta_de_servico: false },
+  administradorForaDaTI: {
+    role: 'Administrador',
+    role_id: 1,
+    integra_equipe_ti: false,
+    conta_de_servico: false,
+  },
   tecnicoDaTI: { role: 'Tecnico', role_id: 2, integra_equipe_ti: true },
   tecnicoDaQualidade: { role: 'Tecnico', role_id: 2, integra_equipe_ti: false },
   tecnicoDeOutroSetor: { role: 'Tecnico', role_id: 2, integra_equipe_ti: false },
@@ -41,10 +48,21 @@ describe('podeAdministrar, com a identidade confirmada', () => {
     });
   }
 
-  it('o administrador administra pelo perfil, mesmo com o campo falso ou ausente', () => {
-    expect(podeAdministrar({ role: 'Administrador' }, true)).toBe(true);
-    expect(podeAdministrar({ role_id: 1 }, true)).toBe(true);
-    expect(podeAdministrar({ role: 'Administrador', integra_equipe_ti: null }, true)).toBe(true);
+  it('o administrador humano administra pelo perfil, mesmo com integra_equipe_ti falso ou ausente', () => {
+    expect(podeAdministrar({ role: 'Administrador', conta_de_servico: false }, true)).toBe(true);
+    expect(podeAdministrar({ role_id: 1, conta_de_servico: false }, true)).toBe(true);
+    expect(
+      podeAdministrar({ role: 'Administrador', integra_equipe_ti: null, conta_de_servico: false }, true)
+    ).toBe(true);
+  });
+
+  it('o perfil sozinho não basta: sem conta_de_servico === false, não administra (API-11)', () => {
+    for (const marca of [undefined, null, true, 'false', 0, 1]) {
+      const conta = { role: 'Administrador', role_id: 1, conta_de_servico: marca };
+      expect(podeAdministrar(conta, true)).toBe(false);
+      expect(podeAdministrarUsuarios(conta, true)).toBe(false);
+      expect(ehAdministradorHumano(conta)).toBe(false);
+    }
   });
 
   it('ser Técnico não basta: sem o campo verdadeiro, não administra', () => {
@@ -112,5 +130,71 @@ describe('a aba de Usuários continua só do administrador', () => {
     expect(ehAdministrador({ role_id: 1 })).toBe(true);
     expect(ehAdministrador({ role: 'administrador' })).toBe(false);
     expect(ehAdministrador(null)).toBe(false);
+  });
+});
+
+describe('podeAlterarComoEquipe: a regra pode_alterar_como_equipe da API (C2)', () => {
+  const TI = { setor_destino: 'TI' };
+  const QUALIDADE = { setor_destino: 'QUALIDADE' };
+  const SEM_SETOR = {};
+  const ESTRANHO = { setor_destino: 'RH' };
+  const atendentes = [{ id: 21 }, { id: 22 }];
+
+  const contas = {
+    adminHumano: { id: 1, role: 'Administrador', role_id: 1, conta_de_servico: false },
+    adminDeServico: { id: 2, role: 'Administrador', role_id: 1, conta_de_servico: true },
+    adminSemMarca: { id: 3, role: 'Administrador', role_id: 1 },
+    tecnicoDaTI: { id: 10, role: 'Tecnico', role_id: 2, integra_equipe_ti: true },
+    tecnicoDaQualidade: { id: 21, role: 'Tecnico', role_id: 2, integra_equipe_ti: false },
+    tecnicoQualidadeForaDaLista: { id: 23, role: 'Tecnico', role_id: 2, integra_equipe_ti: false },
+    tecnicoDeOutroSetor: { id: 30, role: 'Tecnico', role_id: 2, integra_equipe_ti: false },
+    tecnicoDeServico: { id: 31, role: 'Tecnico', role_id: 2, integra_equipe_ti: false, conta_de_servico: true },
+    usuarioNaListaDaQualidade: { id: 22, role: 'Usuario', role_id: 3, integra_equipe_ti: false },
+    usuarioComum: { id: 40, role: 'Usuario', role_id: 3 },
+  } as const;
+
+  // [TI, QUALIDADE, sem setor, setor estranho]
+  const esperado: Record<keyof typeof contas, [boolean, boolean, boolean, boolean]> = {
+    adminHumano: [true, true, true, true],
+    adminDeServico: [false, false, false, false],
+    adminSemMarca: [false, false, false, false],
+    tecnicoDaTI: [true, true, true, false],
+    tecnicoDaQualidade: [false, true, false, false],
+    tecnicoQualidadeForaDaLista: [false, false, false, false],
+    tecnicoDeOutroSetor: [false, false, false, false],
+    tecnicoDeServico: [false, false, false, false],
+    usuarioNaListaDaQualidade: [false, false, false, false],
+    usuarioComum: [false, false, false, false],
+  };
+
+  for (const [nome, conta] of Object.entries(contas)) {
+    it(`${nome}: ${esperado[nome as keyof typeof contas].join(', ')}`, () => {
+      const r = [TI, QUALIDADE, SEM_SETOR, ESTRANHO].map((c) =>
+        podeAlterarComoEquipe(conta, true, c, atendentes)
+      );
+      expect(r).toEqual(esperado[nome as keyof typeof contas]);
+    });
+  }
+
+  it('sem a identidade confirmada (ou com a confirmação suspensa), ninguém', () => {
+    for (const conta of Object.values(contas)) {
+      expect(podeAlterarComoEquipe(conta, false, TI, atendentes)).toBe(false);
+      expect(podeAlterarComoEquipe(conta, false, QUALIDADE, atendentes)).toBe(false);
+    }
+  });
+
+  it('lista da Qualidade ainda não lida: o técnico da Qualidade não altera', () => {
+    expect(podeAlterarComoEquipe(contas.tecnicoDaQualidade, true, QUALIDADE, null)).toBe(false);
+    expect(podeAlterarComoEquipe(contas.tecnicoDaQualidade, true, QUALIDADE, [])).toBe(false);
+  });
+
+  it('o vínculo não entra: ser o responsável ou o solicitante não dá edição', () => {
+    const chamado = { setor_destino: 'TI', tecnico_responsavel_id: 21, solicitante_id: 21 };
+    expect(podeAlterarComoEquipe(contas.tecnicoDaQualidade, true, chamado, atendentes)).toBe(false);
+  });
+
+  it('sem chamado ou sem usuário, não', () => {
+    expect(podeAlterarComoEquipe(contas.adminHumano, true, null, atendentes)).toBe(false);
+    expect(podeAlterarComoEquipe(null, true, TI, atendentes)).toBe(false);
   });
 });
