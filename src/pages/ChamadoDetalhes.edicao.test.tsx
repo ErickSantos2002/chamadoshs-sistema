@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { ChamadosProvider } from '../context/ChamadosContext';
@@ -27,7 +28,8 @@ import ChamadoDetalhes from './ChamadoDetalhes';
  * Até o T-1 (fechamento da FE-5) a edição mandava os quatro campos sempre,
  * e desfazia em silêncio o que outra pessoa gravasse num campo que a pessoa
  * nem tocou. Agora vai só a diferença, conferida contra uma releitura, com a
- * versão relida — ver "T-1" abaixo. As ações rápidas não mudaram.
+ * versão relida — ver "T-1" abaixo. Desde a API-12 as ações, as marcas e o
+ * cancelamento da TI levam a versão do chamado da página.
  */
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -280,48 +282,177 @@ describe('TI — as ações rápidas da página', () => {
   });
 });
 
-describe('TI — cancelar e arquivar sem versão (FE-4)', () => {
+describe('TI — cancelar, arquivar e status com versão (API-12)', () => {
   /** O último botão com este texto: o do modal, quando a página tem um igual. */
   const ultimo = (texto: string) =>
     Array.from(host.querySelectorAll('button'))
       .filter((b) => b.textContent?.trim() === texto)
       .pop();
 
-  // Com uma API-4 o chamado da TI traz versão; a TI continua sem pré-condição.
+  // Com a API-12 a TI com versão trava a linha: a escrita leva a do chamado
+  // que a página mostra — nunca uma relida só para mandar.
   const COM_VERSAO = { versao: 6, setor_destino: 'TI' } as Partial<Chamado>;
+  const CONFLITO = {
+    response: { status: 409, data: { detail: 'versão', codigo: 'versao_desatualizada', versao_atual: 7 } },
+  };
+  const SEM_RESPOSTA = { code: 'ECONNABORTED', request: {}, message: 'timeout of 30000ms exceeded' };
 
-  it('cancelar: o PATCH sai sem versão e o motivo vai pelo PUT de sempre', async () => {
-    const cancelar = vi.spyOn(chamadosService, 'cancelar').mockResolvedValue(CHAMADO);
+  const digitarMotivo = async (texto: string) => {
+    const campo = host.querySelector<HTMLTextAreaElement>('#motivo-cancelamento');
+    expect(campo, 'campo do motivo').toBeTruthy();
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(campo, texto);
+      campo!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  };
+  const motivoNoCampo = () => host.querySelector<HTMLTextAreaElement>('#motivo-cancelamento')?.value;
+  const avisos = () => vi.mocked(toast.error).mock.calls.map((c) => String(c[0]));
+
+  beforeEach(() => {
+    vi.spyOn(toast, 'error').mockImplementation(() => '');
+  });
+
+  it('cancelar: o PATCH leva a versão da página e o motivo, a que o cancelamento devolveu', async () => {
+    const cancelar = vi
+      .spyOn(chamadosService, 'cancelar')
+      .mockResolvedValue({ ...CHAMADO, ...COM_VERSAO, versao: 7, cancelado: true } as Chamado);
     const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
     await montar(COM_VERSAO);
     await clicar(botao('Cancelar Chamado'), 'Cancelar Chamado');
-    const campo = host.querySelector<HTMLTextAreaElement>('#motivo-cancelamento');
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
-    await act(async () => {
-      setter.call(campo, 'Duplicado.');
-      campo!.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+    await digitarMotivo('Duplicado do CHAM-2026-0002.');
     await clicar(ultimo('Sim, cancelar'), 'Sim, cancelar');
 
-    expect(cancelar.mock.calls).toStrictEqual([[1]]);
-    expect(atualizar.mock.calls).toStrictEqual([[1, { solucao: 'Duplicado.' }]]);
+    expect(cancelar.mock.calls).toStrictEqual([[1, 6]]);
+    expect(atualizar.mock.calls).toStrictEqual([
+      [1, { solucao: 'Duplicado do CHAM-2026-0002.', versao_esperada: 7 }],
+    ]);
   });
 
-  it('arquivar: o PATCH sai sem versão', async () => {
+  it('cancelar com 409: nada se repete, o motivo fica, e o novo clique leva a versão relida', async () => {
+    const cancelar = vi.spyOn(chamadosService, 'cancelar').mockRejectedValueOnce(CONFLITO);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(COM_VERSAO);
+    await clicar(botao('Cancelar Chamado'), 'Cancelar Chamado');
+    await digitarMotivo('Duplicado do CHAM-2026-0002.');
+    // Outra pessoa mudou outra coisa: o servidor está na 7, ainda aberto.
+    noServidor = { ...noServidor, versao: 7, prioridade: 'Alta' } as Chamado;
+    await clicar(ultimo('Sim, cancelar'), 'Sim, cancelar');
+
+    expect(cancelar.mock.calls).toStrictEqual([[1, 6]]);
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(avisos().some((a) => a.includes('alterado por outra pessoa'))).toBe(true);
+    if (!motivoNoCampo()) await clicar(botao('Cancelar Chamado'), 'Cancelar Chamado');
+    expect(motivoNoCampo()).toBe('Duplicado do CHAM-2026-0002.');
+
+    // A nova tentativa é um clique da pessoa, já sobre o chamado relido.
+    cancelar.mockResolvedValueOnce({ ...noServidor, versao: 8, cancelado: true } as Chamado);
+    await clicar(ultimo('Sim, cancelar'), 'Sim, cancelar');
+    expect(cancelar.mock.calls).toStrictEqual([[1, 6], [1, 7]]);
+    expect(atualizar.mock.calls).toStrictEqual([
+      [1, { solucao: 'Duplicado do CHAM-2026-0002.', versao_esperada: 8 }],
+    ]);
+  });
+
+  it('cancelado por outra pessoa enquanto o motivo era digitado: o motivo não vai por cima', async () => {
+    const cancelar = vi.spyOn(chamadosService, 'cancelar').mockRejectedValueOnce(CONFLITO);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(COM_VERSAO);
+    await clicar(botao('Cancelar Chamado'), 'Cancelar Chamado');
+    await digitarMotivo('Duplicado do CHAM-2026-0002.');
+    noServidor = { ...noServidor, versao: 7, cancelado: true, solucao: 'Cancelado pela outra pessoa.' } as Chamado;
+    await clicar(ultimo('Sim, cancelar'), 'Sim, cancelar');
+    const sim = ultimo('Sim, cancelar');
+    if (sim) await clicar(sim, 'Sim, cancelar');
+
+    expect(cancelar.mock.calls).toStrictEqual([[1, 6]]);
+    expect(atualizar).not.toHaveBeenCalled();
+  });
+
+  it('cancelar sem resposta (timeout): "não confirmado", sem reenviar nem gravar o motivo', async () => {
+    const cancelar = vi.spyOn(chamadosService, 'cancelar').mockRejectedValue(SEM_RESPOSTA);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(COM_VERSAO);
+    await clicar(botao('Cancelar Chamado'), 'Cancelar Chamado');
+    await digitarMotivo('Duplicado do CHAM-2026-0002.');
+    await clicar(ultimo('Sim, cancelar'), 'Sim, cancelar');
+
+    expect(cancelar).toHaveBeenCalledTimes(1);
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(avisos().some((a) => a.includes('Não foi possível confirmar'))).toBe(true);
+    expect(motivoNoCampo()).toBe('Duplicado do CHAM-2026-0002.');
+  });
+
+  it('arquivar: o PATCH leva a versão da página', async () => {
     const arquivar = vi.spyOn(chamadosService, 'arquivar').mockResolvedValue(CHAMADO);
     await montar(COM_VERSAO);
     await clicar(botao('Arquivar'), 'Arquivar');
     await clicar(ultimo('Sim, arquivar'), 'Sim, arquivar');
 
-    expect(arquivar.mock.calls).toStrictEqual([[1, undefined]]);
+    expect(arquivar.mock.calls).toStrictEqual([[1, 6]]);
   });
 
-  it('a mudança de status também sai sem versão', async () => {
+  it('arquivar com dois cliques no mesmo quadro: uma marca só', async () => {
+    let soltar: (c: Chamado) => void = () => {};
+    const arquivar = vi
+      .spyOn(chamadosService, 'arquivar')
+      .mockImplementation(() => new Promise<Chamado>((r) => (soltar = r)));
+    await montar(COM_VERSAO);
+    await clicar(botao('Arquivar'), 'Arquivar');
+    const sim = ultimo('Sim, arquivar');
+    await act(async () => {
+      sim!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      sim!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => soltar(CHAMADO));
+
+    expect(arquivar).toHaveBeenCalledTimes(1);
+  });
+
+  it('arquivar com 409: nada se repete, e a página relê', async () => {
+    const arquivar = vi.spyOn(chamadosService, 'arquivar').mockRejectedValue(CONFLITO);
+    await montar(COM_VERSAO);
+    // A releitura forçada da página vai por `api.get` (ver o `beforeEach`).
+    const leituras = () => vi.mocked(api.get).mock.calls.filter((c) => c[0] === '/chamados/1').length;
+    const leiturasAntes = leituras();
+    await clicar(botao('Arquivar'), 'Arquivar');
+    await clicar(ultimo('Sim, arquivar'), 'Sim, arquivar');
+
+    expect(arquivar).toHaveBeenCalledTimes(1);
+    expect(avisos().some((a) => a.includes('alterado por outra pessoa'))).toBe(true);
+    expect(leituras()).toBeGreaterThan(leiturasAntes);
+  });
+
+  it('desarquivar: o PATCH leva a versão da página', async () => {
+    const desarquivar = vi.spyOn(chamadosService, 'desarquivar').mockResolvedValue(CHAMADO);
+    await montar({ ...COM_VERSAO, arquivado: true });
+    await clicar(botao('Desarquivar'), 'Desarquivar');
+    await clicar(ultimo('Sim, desarquivar'), 'Sim, desarquivar');
+
+    expect(desarquivar.mock.calls).toStrictEqual([[1, 6]]);
+  });
+
+  it('a mudança de status também leva a versão da página', async () => {
     const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
     await montar(COM_VERSAO);
     await clicar(botao('Aguardando Retorno'), 'Aguardando Retorno');
 
-    expect(atualizar.mock.calls[0]).toStrictEqual([1, { status: StatusEnum.AGUARDANDO }]);
+    expect(atualizar.mock.calls[0]).toStrictEqual([
+      1,
+      { status: StatusEnum.AGUARDANDO, versao_esperada: 6 },
+    ]);
+  });
+
+  it('API anterior à 4 (sem versão): as escritas da TI saem como antes', async () => {
+    const cancelar = vi.spyOn(chamadosService, 'cancelar').mockResolvedValue(CHAMADO);
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar({ setor_destino: 'TI' } as Partial<Chamado>);
+    await clicar(botao('Cancelar Chamado'), 'Cancelar Chamado');
+    await digitarMotivo('Duplicado do CHAM-2026-0002.');
+    await clicar(ultimo('Sim, cancelar'), 'Sim, cancelar');
+
+    expect(cancelar.mock.calls).toStrictEqual([[1, undefined]]);
+    expect(atualizar.mock.calls).toStrictEqual([[1, { solucao: 'Duplicado do CHAM-2026-0002.' }]]);
   });
 });
 

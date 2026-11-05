@@ -574,9 +574,172 @@ describe('ChamadoModal — reatribuição na Qualidade', () => {
     expect(erro).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
   });
 
-  it('chamado da TI com versão: a troca sai sem versao_esperada', async () => {
+  // API-12: a troca da TI leva a versão do chamado desta janela.
+  it('chamado da TI com versão: a troca leva a versao_esperada dele', async () => {
     await abrir({ setor_destino: 'TI', versao: 9 } as Partial<Chamado>);
     await escolherOpcao('Sem atribuição');
-    expect(atualizar.mock.calls).toStrictEqual([[5, { tecnico_responsavel_id: null }]]);
+    expect(atualizar.mock.calls).toStrictEqual([
+      [5, { tecnico_responsavel_id: null, versao_esperada: 9 }],
+    ]);
+  });
+});
+
+/**
+ * O responsável da TI com versão (API-12), e as respostas que chegam depois
+ * de a janela trocar de chamado.
+ */
+describe('ChamadoModal — responsável da TI com versão (API-12)', () => {
+  const TI = {
+    ...CHAMADO,
+    id: 5,
+    titulo: 'Impressora do RH parada',
+    setor_destino: 'TI',
+    tecnico_responsavel_id: 1,
+    versao: 9,
+  } as unknown as Chamado;
+  const OUTRO = { ...TI, id: 6, titulo: 'VPN do financeiro caiu', versao: 2 } as Chamado;
+  const CONFLITO = {
+    response: { status: 409, data: { detail: 'versão', codigo: 'versao_desatualizada', versao_atual: 10 } },
+  };
+
+  let noServidor: Record<number, Chamado>;
+  const render = async (id: number) => {
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={SESSAO}>
+          <ThemeProvider>
+            <ChamadosProvider>
+              <ChamadoModal chamadoId={id} aoFechar={() => {}} aoAbrirEmPagina={() => {}} />
+            </ChamadosProvider>
+          </ThemeProvider>
+        </AuthContext.Provider>
+      );
+    });
+  };
+  const abrir = async (id = 5) => {
+    act(() => root.unmount());
+    root = createRoot(host);
+    await render(id);
+  };
+
+  const seletorDoResponsavel = () =>
+    Array.from(document.querySelectorAll('[role="combobox"]')).find((b) =>
+      (b.getAttribute('aria-labelledby') ?? '')
+        .split(/\s+/)
+        .some((i) => document.getElementById(i)?.textContent?.includes('Responsável'))
+    ) as HTMLElement | undefined;
+  const escolherOpcao = async (texto: string) => {
+    const s = seletorDoResponsavel();
+    expect(s, 'seletor de responsável não apareceu').toBeTruthy();
+    await act(async () => {
+      s!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const alvo = Array.from(document.querySelectorAll('[role="option"]')).find(
+      (o) => o.textContent?.trim() === texto
+    );
+    expect(alvo, `opção "${texto}" não apareceu`).toBeTruthy();
+    await act(async () => {
+      alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  };
+  const texto = () => document.body.textContent ?? '';
+
+  let atualizar: MockInstance<typeof chamadosService.atualizar>;
+  let erro: MockInstance<typeof toast.error>;
+
+  beforeEach(() => {
+    noServidor = { 5: TI, 6: OUTRO };
+    vi.mocked(chamadosService.buscar).mockImplementation(async (id: number) => noServidor[id]);
+    vi.mocked(chamadosService.listarResponsaveisTI).mockResolvedValue([
+      { id: 1, nome: 'rickelme' },
+      { id: 3, nome: 'tecnica' },
+    ]);
+    vi.mocked(usuariosService.listarTodos).mockResolvedValue([
+      { id: 1, nome: 'rickelme', role_id: 1, ativo: true } as Usuario,
+      { id: 3, nome: 'tecnica', role_id: 2, ativo: true } as Usuario,
+    ]);
+    atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(async (id, d) => ({ ...noServidor[id], ...d, versao: 99 }) as Chamado);
+    erro = vi.spyOn(toast, 'error').mockImplementation(() => '');
+  });
+
+  it('409: nada se repete, a janela e a lista são relidas, e a troca nova leva a versão relida', async () => {
+    await abrir();
+    const leiturasDaLista = vi.mocked(chamadosService.listarResponsaveisTI).mock.calls.length;
+    atualizar.mockRejectedValueOnce(CONFLITO);
+    // Outra pessoa trocou o responsável enquanto esta janela estava aberta.
+    noServidor[5] = { ...TI, tecnico_responsavel_id: 3, versao: 10 } as Chamado;
+    await escolherOpcao('Sem atribuição');
+
+    expect(atualizar.mock.calls).toStrictEqual([[5, { tecnico_responsavel_id: null, versao_esperada: 9 }]]);
+    expect(erro).toHaveBeenCalledWith(MENSAGEM_ATRIBUICAO_MUDOU);
+    expect(vi.mocked(chamadosService.listarResponsaveisTI).mock.calls.length).toBeGreaterThan(leiturasDaLista);
+    // A janela mostra o responsável de agora — a escolha anterior não ficou
+    // selecionada como se tivesse valido.
+    expect(seletorDoResponsavel()?.textContent).toContain('tecnica');
+
+    await escolherOpcao('rickelme');
+    expect(atualizar.mock.calls[1]).toStrictEqual([5, { tecnico_responsavel_id: 1, versao_esperada: 10 }]);
+    expect(atualizar).toHaveBeenCalledTimes(2);
+  });
+
+  it('timeout: "não confirmado", sem reenviar, e a janela relê', async () => {
+    await abrir();
+    const leituras = vi.mocked(chamadosService.buscar).mock.calls.length;
+    atualizar.mockRejectedValueOnce({ code: 'ECONNABORTED', request: {}, message: 'timeout' });
+    await escolherOpcao('tecnica');
+
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(erro).toHaveBeenCalledWith(
+      'Não foi possível confirmar se a alteração foi salva (servidor ou conexão). Nada foi reenviado. Confira o chamado antes de tentar de novo.'
+    );
+    expect(vi.mocked(chamadosService.buscar).mock.calls.length).toBeGreaterThan(leituras);
+  });
+
+  it('a resposta atrasada do chamado anterior não toma o lugar do aberto', async () => {
+    await abrir();
+    let soltar: (c: Chamado) => void = () => {};
+    atualizar.mockImplementationOnce(() => new Promise<Chamado>((r) => (soltar = r)));
+    await escolherOpcao('tecnica');
+    await render(6);
+    expect(texto()).toContain('VPN do financeiro caiu');
+
+    await act(async () => soltar({ ...TI, tecnico_responsavel_id: 3, versao: 10 } as Chamado));
+    expect(texto()).toContain('VPN do financeiro caiu');
+    expect(texto()).not.toContain('Impressora do RH parada');
+  });
+
+  it('a escrita que responde depois do 404 não traz o chamado de volta', async () => {
+    await abrir();
+    let soltar: (c: Chamado) => void = () => {};
+    atualizar.mockImplementationOnce(() => new Promise<Chamado>((r) => (soltar = r)));
+    const status = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Aguardando retorno'
+    );
+    expect(status, 'ação de status').toBeTruthy();
+    await act(async () => {
+      status!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    // Enquanto o status não volta, a troca de responsável dá 404: acabou o acesso.
+    atualizar.mockRejectedValueOnce({ response: { status: 404, data: { detail: 'Chamado não encontrado' } } });
+    await escolherOpcao('tecnica');
+    expect(texto()).toContain('Chamado indisponível');
+
+    await act(async () => soltar({ ...TI, status: StatusEnum.AGUARDANDO, versao: 10 } as Chamado));
+    expect(texto()).toContain('Chamado indisponível');
+    expect(texto()).not.toContain('Impressora do RH parada');
+  });
+
+  it('o 404 atrasado do chamado anterior não encerra o aberto', async () => {
+    await abrir();
+    let falhar: (e: unknown) => void = () => {};
+    atualizar.mockImplementationOnce(() => new Promise<Chamado>((_, f) => (falhar = f)));
+    await escolherOpcao('tecnica');
+    await render(6);
+
+    await act(async () => falhar({ response: { status: 404, data: { detail: 'Chamado não encontrado' } } }));
+    expect(texto()).toContain('VPN do financeiro caiu');
+    expect(texto()).not.toContain('Chamado indisponível');
   });
 });

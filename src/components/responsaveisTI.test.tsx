@@ -200,7 +200,7 @@ describe('a lista vem só da API-9', () => {
   it('escolher manda o id da lista, e o quadro recebe o chamado', async () => {
     await abrirModal();
     await escolher('aaa.tecnico.ti');
-    expect(atualizar.mock.calls).toStrictEqual([[107, { tecnico_responsavel_id: 65 }]]);
+    expect(atualizar.mock.calls).toStrictEqual([[107, { tecnico_responsavel_id: 65, versao_esperada: 4 }]]);
   });
 
   it('administrador e técnico da TI pedem a lista; técnico da Qualidade e usuário, não', async () => {
@@ -352,7 +352,7 @@ describe('o responsável antigo', () => {
   it('desatribuir continua permitido', async () => {
     await abrirModal(ADMIN, { tecnico_responsavel_id: 56 });
     await escolher('Sem atribuição');
-    expect(atualizar.mock.calls).toStrictEqual([[107, { tecnico_responsavel_id: null }]]);
+    expect(atualizar.mock.calls).toStrictEqual([[107, { tecnico_responsavel_id: null, versao_esperada: 4 }]]);
   });
 
   it('escolher quem já está não faz requisição', async () => {

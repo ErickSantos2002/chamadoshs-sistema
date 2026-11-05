@@ -715,11 +715,168 @@ describe('Qualidade — atendimento pela rota restrita', () => {
       expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
     });
 
-    it('TI com versão no chamado: o PUT de antes, sem versao_esperada', async () => {
+    // API-12: a TI com versão trava; a ação leva a versão do chamado na tela.
+    it('TI com versão no chamado: o PUT leva a versao_esperada dele', async () => {
       atualizar.mockResolvedValue(chamadoCom({ status: StatusEnum.AGUARDANDO }));
       await montarQ(ADMIN, chamadoCom({ setor_destino: SetorDestinoEnum.TI, versao: 6 } as Partial<Chamado>));
       await clicar('Aguardando retorno');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.AGUARDANDO, versao_esperada: 6 }],
+      ]);
+    });
+
+    it('TI sem versão no chamado (API anterior à 4): o PUT de antes, sem versao_esperada', async () => {
+      atualizar.mockResolvedValue(chamadoCom({ status: StatusEnum.AGUARDANDO }));
+      await montarQ(ADMIN, chamadoCom({ setor_destino: SetorDestinoEnum.TI, versao: undefined } as Partial<Chamado>));
+      await clicar('Aguardando retorno');
       expect(atualizar.mock.calls).toStrictEqual([[50, { status: StatusEnum.AGUARDANDO }]]);
     });
+  });
+});
+
+/**
+ * A TI com versão (API-12): a ação leva a versão do chamado NA TELA, o 409
+ * não se repete, e a resposta que não chega não vira sucesso nem reenvio.
+ */
+describe('TI — a versão (API-12)', () => {
+  const TI = (extra: Partial<Chamado> = {}) =>
+    chamadoCom({ setor_destino: SetorDestinoEnum.TI, versao: 6, ...extra } as Partial<Chamado>);
+  const CONFLITO = {
+    response: { status: 409, data: { detail: 'versão', codigo: 'versao_desatualizada', versao_atual: 7 } },
+  };
+  const SEM_RESPOSTA = { code: 'ECONNABORTED', request: {}, message: 'timeout of 30000ms exceeded' };
+
+  let recarregar: ReturnType<typeof vi.fn>;
+  let guardar: ReturnType<typeof vi.fn>;
+  const montarTI = async (chamado: Chamado) => {
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={ADMIN}>
+          <ChamadosProvider>
+            <AcoesRapidas
+              chamado={chamado}
+              aoMudar={aoMudar}
+              aoPrecisarRecarregar={recarregar}
+              aoGuardarRascunho={guardar}
+            />
+          </ChamadosProvider>
+        </AuthContext.Provider>
+      );
+    });
+  };
+  const avisos = () => vi.mocked(toast.error).mock.calls.map((c) => String(c[0]));
+
+  beforeEach(() => {
+    recarregar = vi.fn();
+    guardar = vi.fn();
+  });
+
+  it('resolver leva status, solução e a versão do chamado na tela', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(TI({ versao: 7 }));
+    await montarTI(TI());
+    await clicar('Marcar como resolvido');
+    await digitarSolucao(SOLUCAO_OK);
+    await clicar('Resolver');
+
+    expect(atualizar.mock.calls).toStrictEqual([
+      [50, { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 6 }],
+    ]);
+  });
+
+  it('409: nada se repete, os botões esperam a versão nova, e a solução volta', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockRejectedValueOnce(CONFLITO);
+    await montarTI(TI());
+    await clicar('Marcar como resolvido');
+    await digitarSolucao(SOLUCAO_OK);
+    await clicar('Resolver');
+
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(aoMudar).not.toHaveBeenCalled();
+    expect(avisos().some((a) => a.includes('alterado por outra pessoa'))).toBe(true);
+    expect(recarregar).toHaveBeenCalledTimes(1);
+    expect(guardar).toHaveBeenCalledWith(SOLUCAO_OK);
+    // Ainda na versão velha: as ações estão travadas.
+    expect(host.textContent).toContain('Este chamado mudou');
+    expect(
+      Array.from(host.querySelectorAll('button')).every((b) => b.disabled)
+    ).toBe(true);
+
+    // O chamado relido chega: os botões voltam, a solução também, e o novo
+    // clique leva a versão relida.
+    atualizar.mockResolvedValueOnce(TI({ versao: 8 }));
+    await montarTI(TI({ versao: 7 }));
+    expect(host.textContent).not.toContain('Este chamado mudou');
+    await clicar('Marcar como resolvido');
+    expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+    await clicar('Resolver');
+    expect(atualizar.mock.calls[1]).toStrictEqual([
+      50,
+      { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 7 },
+    ]);
+  });
+
+  it.each([
+    ['timeout', SEM_RESPOSTA],
+    ['5xx', { response: { status: 503, data: { detail: 'fora' } } }],
+  ])('%s: "não confirmado", sem reenviar, com a solução guardada e o chamado relido', async (_, erro) => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockRejectedValue(erro);
+    await montarTI(TI());
+    await clicar('Marcar como resolvido');
+    await digitarSolucao(SOLUCAO_OK);
+    await clicar('Resolver');
+
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(aoMudar).not.toHaveBeenCalled();
+    expect(avisos()).toContain(
+      'Não foi possível confirmar se a alteração foi salva (servidor ou conexão). Nada foi reenviado. Confira o chamado antes de tentar de novo.'
+    );
+    expect(guardar).toHaveBeenCalledWith(SOLUCAO_OK);
+    expect(recarregar).toHaveBeenCalledTimes(1);
+  });
+
+  it('dois cliques no mesmo quadro: uma escrita só', async () => {
+    let soltar: (c: Chamado) => void = () => {};
+    const atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(() => new Promise<Chamado>((r) => (soltar = r)));
+    await montarTI(TI());
+    const alvo = Array.from(host.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Aguardando retorno'
+    )!;
+    await act(async () => {
+      alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => soltar(TI({ versao: 7 })));
+    expect(atualizar).toHaveBeenCalledTimes(1);
+  });
+
+  it('404: nada é aplicado, e quem mostra o chamado relê', async () => {
+    vi.spyOn(chamadosService, 'atualizar').mockRejectedValue({ response: { status: 404, data: {} } });
+    await montarTI(TI());
+    await clicar('Aguardando retorno');
+    expect(aoMudar).not.toHaveBeenCalled();
+    expect(recarregar).toHaveBeenCalledTimes(1);
+  });
+
+  it('403: nada é aplicado nem repetido, e o toast é só o do interceptor', async () => {
+    const atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockRejectedValue({ response: { status: 403, data: { detail: 'x' } } });
+    await montarTI(TI());
+    await clicar('Aguardando retorno');
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(aoMudar).not.toHaveBeenCalled();
+    expect(vi.mocked(toast.error)).not.toHaveBeenCalled();
+  });
+
+  it('outro chamado na tela: a versão é a dele, nunca a do anterior', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(TI());
+    await montarTI(TI({ versao: 3 }));
+    await montarTI(TI({ id: 51, versao: 9 } as Partial<Chamado>));
+    await clicar('Aguardando retorno');
+    expect(atualizar.mock.calls).toStrictEqual([
+      [51, { status: StatusEnum.AGUARDANDO, versao_esperada: 9 }],
+    ]);
   });
 });

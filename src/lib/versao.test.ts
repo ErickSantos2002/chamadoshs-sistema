@@ -53,13 +53,27 @@ describe('versaoValida / lerVersao', () => {
 });
 
 describe('precondicaoDaEscrita', () => {
-  it('TI: nada — o corpo segue o de antes, mesmo com versão no chamado', () => {
-    expect(precondicaoDaEscrita({ setor_destino: TI, versao: 4 })).toEqual({});
+  // API-12: a TI com versão trava a linha; a escrita leva a do chamado.
+  it('TI com versão: a versão do próprio chamado', () => {
+    expect(precondicaoDaEscrita({ setor_destino: TI, versao: 4 })).toEqual({ versao_esperada: 4 });
     expect(escreveSemVersao({ setor_destino: TI })).toBe(true);
   });
 
-  it('setor ausente (API anterior ao setor) é TI', () => {
-    expect(precondicaoDaEscrita({ versao: 4 })).toEqual({});
+  // API anterior à 4: na TI a escrita sai como sempre saiu, sem inventar número.
+  it.each([undefined, null, 0, '4', 1.5, true])('TI com versão %s: escreve sem versão', (v) => {
+    expect(precondicaoDaEscrita({ setor_destino: TI, versao: v } as unknown as Chamado)).toEqual({});
+  });
+
+  it('setor ausente (API anterior ao setor) é TI: versão se houver, nada se não', () => {
+    expect(precondicaoDaEscrita({ versao: 4 })).toEqual({ versao_esperada: 4 });
+    expect(precondicaoDaEscrita({} as unknown as Chamado)).toEqual({});
+  });
+
+  it('a versão é sempre a do chamado passado, nunca de outro', () => {
+    const a = { setor_destino: TI, versao: 3 };
+    const b = { setor_destino: TI, versao: 9 };
+    expect(precondicaoDaEscrita(a)).toEqual({ versao_esperada: 3 });
+    expect(precondicaoDaEscrita(b)).toEqual({ versao_esperada: 9 });
   });
 
   it('Qualidade com versão: a versão do próprio chamado', () => {
