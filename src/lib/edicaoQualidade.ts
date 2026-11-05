@@ -11,7 +11,8 @@ import { Chamado, ChamadoUpdate, PrioridadeEnum, StatusEnum } from '../types/api
  * status pela rota restrita, o coordenador — com a página aberta desde
  * antes — troca só a prioridade e salva, e o PUT devolve o status antigo.
  *
- * Por isso, só na Qualidade:
+ * Por isso — na Qualidade desde o FE-3, e na TI desde o T-1 (fechamento da
+ * FE-5), que tinha o mesmo defeito:
  *
  * 1. ao entrar na edição, o chamado é relido e vira a REFERÊNCIA;
  * 2. ao salvar, vai só o que difere da referência;
@@ -29,6 +30,9 @@ import { Chamado, ChamadoUpdate, PrioridadeEnum, StatusEnum } from '../types/api
  * versão da releitura em `versao_esperada`, e uma escrita que tenha entrado
  * no meio faz a API recusar com 409, sem gravar nada. A página trata esse
  * 409 como o conflito acima — relê, mostra, não repete (FE-4).
+ *
+ * Na TI a API confere a versão sem travar a linha (sem `FOR UPDATE`): fica
+ * de fora só a corrida de duas gravações dentro da API no mesmo instante.
  */
 
 export type CampoEditavel =

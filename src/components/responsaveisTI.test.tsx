@@ -428,12 +428,28 @@ describe('a página do chamado', () => {
     expect(host.textContent).not.toContain('Não encontrado');
   });
 
-  it('o responsável antigo é mantido: salvar outro campo manda o mesmo id', async () => {
+  // T-1: o responsável antigo fica porque o PUT não o leva — a edição manda
+  // só o que mudou. Antes ia o mesmo id, que a API aceitava por não ser troca.
+  it('o responsável antigo é mantido: salvar outro campo não manda o responsável', async () => {
     await montarPagina(ADMIN, { tecnico_responsavel_id: 56 });
     await clicar('Editar Detalhes');
     expect(seletorDoResponsavel()!.textContent).toContain('tecnico.inativo (fora da equipe)');
+    const prioridade = Array.from(host.querySelectorAll('[role="combobox"]')).find((b) =>
+      nomeAcessivel(b).startsWith('Prioridade')
+    );
+    await act(async () => {
+      prioridade!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const alta = Array.from(document.querySelectorAll('[role="option"]')).find(
+      (o) => o.textContent?.trim() === 'Alta'
+    );
+    await act(async () => {
+      alta!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
     await clicar('Salvar');
-    expect(atualizar.mock.calls[0][1]).toMatchObject({ tecnico_responsavel_id: 56 });
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(atualizar.mock.calls[0][1]).toMatchObject({ prioridade: 'Alta' });
+    expect(atualizar.mock.calls[0][1]).not.toHaveProperty('tecnico_responsavel_id');
   });
 
   it('400 no PUT: o formulário fica, com o que foi escolhido, e a lista é relida', async () => {

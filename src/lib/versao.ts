@@ -55,6 +55,25 @@ export const escreveSemVersao = (chamado: Pick<Chamado, 'setor_destino'>): boole
   setorDoChamado(chamado).setor === SetorDestinoEnum.TI;
 
 /**
+ * A pré-condição da EDIÇÃO de um chamado da TI (T-1): a versão, se o chamado
+ * a tiver; nada, se não.
+ *
+ * Na TI a API trata `versao_esperada` como opcional e, quando vem, a confere
+ * e recusa com 409 a que não bate (API-4b; `test_ti_com_versao_velha_ainda_e_409`).
+ * A edição passou a mandá-la para que uma escrita alheia entre a releitura e
+ * o PUT não seja sobrescrita. Sem versão válida — API anterior à 4 — a edição
+ * segue sem ela, como sempre seguiu: na TI a falta da versão não trava nada.
+ *
+ * Não é o controle da Qualidade: no PUT da TI a API confere sem `FOR UPDATE`,
+ * e duas escritas no mesmo instante ainda passam as duas. Só a edição da
+ * página usa isto; as ações rápidas da TI seguem sem versão.
+ */
+export function precondicaoDaEdicaoDaTI(chamado: Pick<Chamado, 'versao'>): Precondicao {
+  const versao = lerVersao(chamado);
+  return versao === null ? {} : { versao_esperada: versao };
+}
+
+/**
  * A pré-condição de uma escrita neste chamado, tirada DELE — nunca de outro
  * objeto, para a versão não ser a de outro chamado. `null` é "não escreva":
  * chamado protegido sem versão válida.

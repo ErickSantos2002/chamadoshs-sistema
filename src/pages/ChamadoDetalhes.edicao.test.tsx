@@ -21,10 +21,13 @@ import ChamadoDetalhes from './ChamadoDetalhes';
  *
  * ── A trava da TI ─────────────────────────────────────────────────────
  *
- * Estes casos descrevem a página ANTES do atendimento da Qualidade: o corpo
- * exato do PUT da edição (os quatro campos sempre, a solução só quando muda),
- * o PUT das ações rápidas, e quem vê o quê. A Qualidade ganha caminho próprio;
- * a TI fica como está, e é isso que se trava aqui.
+ * Estes casos descrevem o corpo exato do PUT da edição, o PUT das ações
+ * rápidas, e quem vê o quê.
+ *
+ * Até o T-1 (fechamento da FE-5) a edição mandava os quatro campos sempre,
+ * e desfazia em silêncio o que outra pessoa gravasse num campo que a pessoa
+ * nem tocou. Agora vai só a diferença, conferida contra uma releitura, com a
+ * versão relida — ver "T-1" abaixo. As ações rápidas não mudaram.
  */
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -157,11 +160,11 @@ afterEach(() => {
 
 describe('TI — comentar durante a edição', () => {
   /**
-   * Caracterização, não promessa: na TI a recarga do comentário continua
-   * repondo os campos com o servidor, e o PUT continua completo. A correção
-   * do M-2 é só da Qualidade, que tem a referência da edição segura.
+   * T-1: a TI ganhou a referência da edição, e com ela a correção do M-2 —
+   * a recarga do comentário não repõe mais os campos, e o PUT leva só o que
+   * a pessoa mudou. Antes a recarga apagava a prioridade escolhida.
    */
-  it('a recarga repõe os campos, e o PUT segue completo', async () => {
+  it('a recarga mantém o que foi editado, e o PUT leva só a diferença', async () => {
     const atualizar = vi
       .spyOn(chamadosService, 'atualizar')
       .mockImplementation(async (_id, dados) => ({ ...noServidor, ...dados }) as Chamado);
@@ -181,76 +184,52 @@ describe('TI — comentar durante a edição', () => {
     await clicar(botao('Enviar Comentário'), 'Enviar Comentário');
     await clicar(botao('Salvar'), 'Salvar');
 
-    expect(atualizar.mock.calls[0]).toStrictEqual([
-      1,
-      {
-        categoria_id: null,
-        status: StatusEnum.EM_ANDAMENTO,
-        prioridade: 'Média',
-        tecnico_responsavel_id: 1,
-      },
-    ]);
+    expect(atualizar.mock.calls[0]).toStrictEqual([1, { prioridade: 'Alta' }]);
   });
 });
 
 describe('TI — o PUT da edição', () => {
-  it('manda os quatro campos, mesmo os que não mudaram, e relê da API', async () => {
+  // T-1: antes iam os quatro campos, mesmo os que não mudaram.
+  it('manda só o campo que mudou, relê antes e relê da API depois', async () => {
     const atualizar = vi
       .spyOn(chamadosService, 'atualizar')
       .mockImplementation(async (_id, dados) => ({ ...noServidor, ...dados }) as Chamado);
     await montar();
     await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    const leiturasAntes = vi.mocked(chamadosService.buscar).mock.calls.length;
     await escolher('Prioridade', 'Alta');
     await clicar(botao('Salvar'), 'Salvar');
 
+    expect(vi.mocked(chamadosService.buscar).mock.calls.length).toBe(leiturasAntes + 1);
     expect(atualizar).toHaveBeenCalledTimes(1);
-    expect(atualizar.mock.calls[0]).toStrictEqual([
-      1,
-      {
-        categoria_id: null,
-        status: StatusEnum.EM_ANDAMENTO,
-        prioridade: 'Alta',
-        tecnico_responsavel_id: 1,
-      },
-    ]);
+    // API anterior à 4 (o chamado não traz versão): a diferença vai sem ela.
+    expect(atualizar.mock.calls[0]).toStrictEqual([1, { prioridade: 'Alta' }]);
     expect(vi.mocked(api.get)).toHaveBeenCalledWith('/chamados/1');
   });
 
-  it('salvar sem mexer em nada ainda manda o PUT completo', async () => {
+  // T-1: antes um PUT completo saía mesmo sem mudança nenhuma.
+  it('salvar sem mexer em nada não manda nada e fecha a edição', async () => {
     const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
     await montar();
     await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
     await clicar(botao('Salvar'), 'Salvar');
 
-    expect(atualizar.mock.calls[0]).toStrictEqual([
-      1,
-      {
-        categoria_id: null,
-        status: StatusEnum.EM_ANDAMENTO,
-        prioridade: 'Média',
-        tecnico_responsavel_id: 1,
-      },
-    ]);
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(botao('Salvar')).toBeUndefined();
+    expect(botao('Editar Detalhes')).toBeTruthy();
   });
 
-  // FE-4: a TI não muda. Com uma API-4, o chamado da TI também traz versão,
-  // e mesmo assim o PUT sai com os quatro campos de sempre, sem pré-condição.
-  it('API-4: o chamado da TI tem versão, e o PUT continua sem versao_esperada', async () => {
+  // T-1: com a API-4 o chamado da TI traz versão, e a edição a manda — a da
+  // releitura antes do PUT. As ações rápidas da TI seguem sem (abaixo).
+  it('API-4: o PUT leva a versão relida antes de salvar', async () => {
     const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
     await montar({ versao: 6, setor_destino: 'TI' } as Partial<Chamado>);
     await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
     await escolher('Prioridade', 'Alta');
+    noServidor = { ...noServidor, versao: 7 } as Chamado;
     await clicar(botao('Salvar'), 'Salvar');
 
-    expect(atualizar.mock.calls[0]).toStrictEqual([
-      1,
-      {
-        categoria_id: null,
-        status: StatusEnum.EM_ANDAMENTO,
-        prioridade: 'Alta',
-        tecnico_responsavel_id: 1,
-      },
-    ]);
+    expect(atualizar.mock.calls[0]).toStrictEqual([1, { prioridade: 'Alta', versao_esperada: 7 }]);
   });
 
   it('"Sem atribuição" manda null, não some do corpo', async () => {
@@ -358,9 +337,10 @@ describe('quem não é da equipe', () => {
 
 describe('TI — a permissão cai no meio da edição', () => {
   // Escolheu outro responsável, e a revalidação falhou antes do "Salvar": a
-  // troca é de quem administra, e sem a permissão vigente o PUT leva o
-  // responsável de antes — os outros campos seguem como editados.
-  it('revalidação falhou: o PUT leva o responsável de antes', async () => {
+  // troca é de quem administra, e sem a permissão vigente o responsável não
+  // vai — os outros campos seguem como editados. (Antes do T-1 ia o de
+  // antes, que podia desfazer uma troca feita por outra pessoa.)
+  it('revalidação falhou: o PUT não leva o responsável', async () => {
     const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
     await montar();
     await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
@@ -384,14 +364,137 @@ describe('TI — a permissão cai no meio da edição', () => {
     });
     await clicar(botao('Salvar'), 'Salvar');
 
+    expect(atualizar.mock.calls[0]).toStrictEqual([1, { prioridade: 'Alta' }]);
+  });
+});
+
+/**
+ * T-1 — a edição da TI contra a edição de outra pessoa (§6 da especificação).
+ *
+ * A abre a edição na versão 6; B grava antes de A salvar (aqui, o chamado do
+ * servidor muda entre a abertura e o "Salvar"). Classe A: B mudou outro campo
+ * — o PUT de A não leva esse campo, e a mudança de B fica. Classe B: B mudou o
+ * mesmo campo — nada é salvo, e a tela mostra. A janela entre a releitura e o
+ * PUT é da API (409). O que sobra — as duas escritas já dentro da API no mesmo
+ * instante, porque o PUT da TI não trava a linha — não se testa aqui.
+ */
+describe('T-1 — a edição da TI contra a edição de outra pessoa', () => {
+  const EM_TI = { versao: 6, setor_destino: 'TI' } as Partial<Chamado>;
+  const gravarDeB = (mudanca: Partial<Chamado>) => {
+    noServidor = { ...noServidor, ...mudanca, versao: 7 } as Chamado;
+  };
+
+  it.each([
+    ['prioridade', { prioridade: 'Alta' }],
+    ['categoria', { categoria_id: 4 }],
+    ['responsável', { tecnico_responsavel_id: 3 }],
+    ['solução', { solucao: 'Reinstalado o conector pela equipe.' }],
+  ] as const)('classe A: B mudou %s, A muda só o status — o PUT não leva o campo de B', async (_c, mudanca) => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(EM_TI);
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await escolher('Status', StatusEnum.AGUARDANDO);
+    gravarDeB(mudanca as Partial<Chamado>);
+    await clicar(botao('Salvar'), 'Salvar');
+
+    expect(atualizar).toHaveBeenCalledTimes(1);
     expect(atualizar.mock.calls[0]).toStrictEqual([
       1,
-      {
-        categoria_id: null,
-        status: StatusEnum.EM_ANDAMENTO,
-        prioridade: 'Alta',
-        tecnico_responsavel_id: 1,
-      },
+      { status: StatusEnum.AGUARDANDO, versao_esperada: 7 },
     ]);
+  });
+
+  it('classe A: B mudou o status, A muda só a prioridade — o status de B fica', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(EM_TI);
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await escolher('Prioridade', 'Baixa');
+    gravarDeB({ status: StatusEnum.AGUARDANDO });
+    await clicar(botao('Salvar'), 'Salvar');
+
+    expect(atualizar.mock.calls[0]).toStrictEqual([1, { prioridade: 'Baixa', versao_esperada: 7 }]);
+  });
+
+  it.each([
+    ['Prioridade', 'Alta', { prioridade: 'Baixa' }, 'Prioridade (agora: Baixa)'],
+    ['Status', StatusEnum.AGUARDANDO, { status: StatusEnum.RESOLVIDO }, 'Status (agora: Resolvido)'],
+    ['Técnico responsável', 'tecnica', { tecnico_responsavel_id: null }, 'Técnico responsável (agora:'],
+  ] as const)(
+    'classe B: B mudou %s, e A também — nada é salvo, a tela mostra, e o de A fica',
+    async (rotulo, escolhaDeA, mudancaDeB, aviso) => {
+      const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+      await montar(EM_TI);
+      await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+      await escolher(rotulo, escolhaDeA);
+      gravarDeB(mudancaDeB as Partial<Chamado>);
+      await clicar(botao('Salvar'), 'Salvar');
+
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(host.textContent).toContain('Este chamado mudou enquanto você editava');
+      expect(host.textContent).toContain(aviso);
+      const seletor = Array.from(host.querySelectorAll('[role="combobox"]')).find((b) =>
+        nomeAcessivel(b).startsWith(rotulo)
+      );
+      expect(seletor?.textContent).toContain(escolhaDeA);
+
+      // Salvar de novo é decisão de A, contra a referência nova.
+      await clicar(botao('Salvar'), 'Salvar');
+      expect(atualizar).toHaveBeenCalledTimes(1);
+      expect(atualizar.mock.calls[0][1]).toHaveProperty('versao_esperada', 7);
+    }
+  );
+
+  it('409: outra escrita entrou entre a releitura e o PUT — nada repete, e a tela mostra', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockImplementation(async () => {
+      noServidor = { ...noServidor, prioridade: 'Urgente', versao: 8 } as unknown as Chamado;
+      throw {
+        response: {
+          status: 409,
+          data: { detail: 'Chamado alterado', codigo: 'versao_desatualizada', versao_atual: 8 },
+        },
+      };
+    });
+    await montar(EM_TI);
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await escolher('Status', StatusEnum.AGUARDANDO);
+    await clicar(botao('Salvar'), 'Salvar');
+
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(host.textContent).toContain('Outra pessoa salvou este chamado enquanto você salvava');
+    expect(botao('Salvar')).toBeTruthy();
+
+    atualizar.mockResolvedValue(CHAMADO);
+    await clicar(botao('Salvar'), 'Salvar');
+    expect(atualizar.mock.calls[1]).toStrictEqual([
+      1,
+      { status: StatusEnum.AGUARDANDO, versao_esperada: 8 },
+    ]);
+  });
+
+  it('a releitura antes de salvar falha: nada é enviado, e o editado fica', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(EM_TI);
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    vi.mocked(chamadosService.buscar).mockRejectedValueOnce({ request: {}, message: 'Network Error' });
+    await clicar(botao('Salvar'), 'Salvar');
+
+    expect(atualizar).not.toHaveBeenCalled();
+    const seletor = Array.from(host.querySelectorAll('[role="combobox"]')).find((b) =>
+      nomeAcessivel(b).startsWith('Prioridade')
+    );
+    expect(seletor?.textContent).toContain('Alta');
+  });
+
+  it('cancelar e abrir de novo: a edição parte do chamado, não do que foi cancelado', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(CHAMADO);
+    await montar(EM_TI);
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await escolher('Prioridade', 'Alta');
+    await clicar(botao('Cancelar'), 'Cancelar');
+    await clicar(botao('Editar Detalhes'), 'Editar Detalhes');
+    await clicar(botao('Salvar'), 'Salvar');
+
+    expect(atualizar).not.toHaveBeenCalled();
   });
 });

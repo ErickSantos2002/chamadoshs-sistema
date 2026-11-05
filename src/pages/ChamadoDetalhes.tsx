@@ -43,6 +43,7 @@ import {
   ehConflitoDeVersao,
   ehVersaoAusente,
   escreveSemVersao,
+  precondicaoDaEdicaoDaTI,
   precondicaoDaEscrita,
 } from '../lib/versao';
 import AcoesRapidas from '../components/AcoesRapidas';
@@ -420,14 +421,14 @@ const ChamadoDetalhes: React.FC = () => {
         setCategoriaNome('Não especificada');
       }
 
-      // Inicializar estados de edição — menos com a edição da Qualidade
-      // aberta neste chamado. Comentar no meio dela recarrega a página, e
-      // repor os campos aqui apagaria o que a pessoa escolheu e poria a
+      // Inicializar estados de edição — menos com a edição aberta neste
+      // chamado (TI ou Qualidade). Comentar no meio dela recarrega a página,
+      // e repor os campos aqui apagaria o que a pessoa escolheu e poria a
       // mudança de outra pessoa no formulário como se fosse dela. A edição
       // segue contra a mesma referência, e o salvamento confere o conflito.
-      const edicaoDaQualidadeAberta =
+      const edicaoAberta =
         referenciaDaEdicao.current !== null && chamado?.id === chamadoData.id;
-      if (!edicaoDaQualidadeAberta) {
+      if (!edicaoAberta) {
         setCategoriaEditada(chamadoData.categoria_id);
         setStatusEditado(chamadoData.status);
         setPrioridadeEditada(chamadoData.prioridade);
@@ -476,14 +477,20 @@ const ChamadoDetalhes: React.FC = () => {
   };
 
   /**
-   * Entrar na edição. Na TI, como sempre. Na Qualidade, relê o chamado antes:
-   * a referência precisa ser o que está no servidor agora, e não o que a
-   * página carregou há meia hora.
+   * Entrar na edição. Na TI, sem pedido: a referência é o chamado da página,
+   * e os campos partem dele — o que sobrou de uma edição cancelada não volta.
+   * O salvamento relê e confere o que mudou desde aqui (T-1). Na Qualidade,
+   * relê o chamado antes: a referência precisa ser o que está no servidor
+   * agora, e não o que a página carregou há meia hora.
    */
   const iniciarEdicao = async () => {
     if (!chamado) return;
     limparFalha('edicao');
     if (!ehDaQualidade) {
+      referenciaDaEdicao.current = fotografar(chamado);
+      preencherEdicao(chamado);
+      setConflitoNaEdicao(null);
+      setConflitoDeVersaoNaEdicao(false);
       setEntradaNaEdicao((n) => n + 1);
       setModoEdicao(true);
       return;
@@ -684,41 +691,93 @@ const ChamadoDetalhes: React.FC = () => {
       return;
     }
 
-    try {
-      setLoading(true);
+    await salvarEdicaoDaTI(referenciaDaEdicao.current ?? fotografar(chamado));
+  };
 
+  /**
+   * Salvar na TI (T-1): só o que mudou, conferido contra o servidor.
+   *
+   * Antes a edição mandava categoria, status, prioridade e responsável
+   * sempre, com o valor de quando a página carregou — e a mudança que outra
+   * pessoa gravasse nesse meio tempo, num campo que a pessoa nem tocou, era
+   * desfeita em silêncio (o PUT da API grava só o que chega, mas chegava
+   * tudo). Agora, como na Qualidade:
+   *
+   * 1. vai só o que difere da referência (o chamado de quando a edição abriu);
+   * 2. antes do PUT o chamado é relido; se um campo que a pessoa editou mudou
+   *    no servidor desde a referência, nada é salvo, o que ela digitou fica,
+   *    e a tela mostra o que mudou;
+   * 3. o PUT leva a versão da releitura, e a API recusa com 409 a escrita
+   *    alheia que entrou entre a releitura e o PUT.
+   *
+   * O que sobra: o PUT da TI não trava a linha na API. Duas gravações no
+   * mesmo instante — as duas já dentro da API — ainda passam as duas. Fechar
+   * isso é com a API (lock na TI), não com a tela.
+   *
+   * O responsável só entra com a permissão vigente de trocá-lo; sem ela, não
+   * vai — antes ia o de antes, que era o mesmo efeito com risco de desfazer
+   * uma troca alheia.
+   */
+  const salvarEdicaoDaTI = async (referencia: FotoDaEdicao) => {
+    if (!chamado) return;
+
+    const diferenca = diferencaDaEdicao(referencia, {
       // `?? null` nos dois campos limpáveis: escolher "Sem categoria" ou "Sem
       // atribuição" deixa o estado local `undefined`, o axios descarta
       // `undefined` antes de enviar, e a API com `exclude_unset` não toca no
       // que não chegou — a limpeza era engolida em silêncio. `null` viaja.
-      const dadosAtualizacao: ChamadoUpdate = {
-        categoria_id: categoriaEditada ?? null,
-        status: statusEditado,
-        prioridade: prioridadeEditada,
-        // A troca do responsável é de quem administra. Sem a permissão vigente
-        // (perdida ou não confirmada depois de escolher), vai o de antes.
-        tecnico_responsavel_id: podeAdministrar
-          ? (tecnicoEditado ?? null)
-          : (chamado.tecnico_responsavel_id ?? null),
-      };
+      categoria_id: categoriaEditada ?? null,
+      status: statusEditado,
+      prioridade: prioridadeEditada,
+      tecnico_responsavel_id: podeAdministrar
+        ? (tecnicoEditado ?? null)
+        : referencia.tecnico_responsavel_id,
+      // A solução só vai quando muda de fato, e não vai apagada: reenviar o
+      // valor carregado faria um chamado antigo de solução curta ser recusado
+      // ao salvar qualquer outro campo.
+      solucao: solucaoEditada,
+    });
 
-      // A solução só vai quando muda de fato. Reenviar o valor carregado faria
-      // um chamado antigo de solução curta ser recusado ao salvar qualquer
-      // outro campo, quando a API passar a exigir tamanho mínimo — a pessoa
-      // mexeria no status e levaria erro sobre um texto que nem tocou.
-      if (solucaoEditada !== (chamado.solucao ?? '')) {
-        dadosAtualizacao.solucao = solucaoEditada || undefined;
+    if (Object.keys(diferenca).length === 0) {
+      cancelarEdicao();
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      let servidor: Chamado;
+      try {
+        servidor = await chamadosService.buscar(chamado.id);
+      } catch (err) {
+        if (perdeuAcesso(err)) return;
+        toast.error(
+          'Não foi possível conferir o chamado antes de salvar. O que você editou foi mantido.'
+        );
+        return;
       }
 
-      await atualizarChamado(chamado.id, dadosAtualizacao);
+      const conflitos = camposEmConflito(referencia, fotografar(servidor), diferenca);
+      if (conflitos.length > 0) {
+        rebasearEdicao(servidor, diferenca);
+        setConflitoNaEdicao(conflitos);
+        setConflitoDeVersaoNaEdicao(false);
+        return;
+      }
 
-      setModoEdicao(false);
-      await carregarDados(true, {
-        atribuicaoSalva:
-          (dadosAtualizacao.tecnico_responsavel_id ?? null) !== (chamado.tecnico_responsavel_id ?? null),
-      }); // Forçar busca da API
+      // A versão é a do `servidor`, relido agora — do mesmo chamado.
+      await atualizarChamado(chamado.id, { ...diferenca, ...precondicaoDaEdicaoDaTI(servidor) });
+
+      cancelarEdicao();
+      await carregarDados(true, { atribuicaoSalva: 'tecnico_responsavel_id' in diferenca });
     } catch (err: any) {
       if (perdeuAcesso(err)) return;
+      // 409 de versão: outra pessoa salvou entre a releitura e o PUT. Nada
+      // foi gravado; relê e mostra, sem repetir.
+      if (ehConflitoDeVersao(err)) {
+        await tratarConflitoDeVersaoNaEdicao(referencia, diferenca);
+        return;
+      }
       // 400 do responsável (API-9: inativo; API-6: fora da TI, conta de
       // serviço). Nada foi gravado. A edição fica aberta com tudo o que foi
       // digitado, o motivo é o `detail` do backend, a lista é relida — e o
