@@ -85,6 +85,16 @@ variável**: nada muda na API. O seletor de solicitante e a edição da TI usam
 o que a API-11 já responde; contra API anterior à API-4, que não manda a
 versão, a edição da TI manda só a diferença, sem versão.
 
+A integração do FE-5 com a API-12 (concorrência da TI) **tem ordem: a API-12
+(`chamadoshs-api`, `feat/setor-destino-api-12`, `e12ce6d`) sobe antes do
+front, ou junto.** Contra a API-11 o front funciona igual — ela já aceita
+`versao_esperada` na TI e responde 409 à versão velha —, mas sem a trava da
+linha: duas escritas com a mesma versão no mesmo instante ainda passam as
+duas. Nenhuma variável nova, nenhuma migration. Rollback do front sozinho
+volta as ações da TI ao "vale a última"; rollback da API sozinha mantém o
+front funcionando, sem a trava. Detalhes em `docs/fe-5-permissoes-e-api9.md`,
+§16.
+
 ### Added
 
 - **Setor de destino do chamado — TI ou Qualidade — na janela e na página do
@@ -145,6 +155,20 @@ versão, a edição da TI manda só a diferença, sem versão.
 
 ### Changed
 
+- **As escritas da TI levam a versão do chamado (FE-5 + API-12).** Mudar
+  status pelas ações rápidas, resolver, cancelar com motivo, arquivar,
+  desarquivar e trocar o responsável no modal mandam a versão do chamado que
+  está na tela. Se outra pessoa mudou o chamado depois que ele foi mostrado,
+  nada é gravado: a tela avisa "Este chamado foi alterado por outra pessoa",
+  relê o chamado e espera um clique novo — nunca repete sozinha. A solução e
+  o motivo digitados ficam. Sem resposta do servidor (queda, tempo esgotado,
+  5xx), a tela diz que não conseguiu confirmar se salvou, relê e não reenvia.
+- **O motivo do cancelamento não vai mais por cima do cancelamento de outra
+  pessoa.** Se o chamado foi cancelado por outra pessoa enquanto o motivo era
+  digitado, "Confirmar" não grava nada e o motivo fica no campo.
+- **Dois cliques seguidos em arquivar ou cancelar mandam uma marca só.**
+- **No modal do quadro, a resposta atrasada de um chamado não toma o lugar do
+  chamado aberto depois**, nem o encerra por um 404 que era do anterior.
 - **Ações de equipe pela regra da API-11 (FE-5).** Editar, arquivar,
   desarquivar, mudar status e prioridade, resolver, atribuir e comentar como
   interno aparecem só para quem a API deixa alterar o chamado como equipe: o

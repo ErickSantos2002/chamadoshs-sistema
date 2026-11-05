@@ -808,7 +808,9 @@ página. Restante:
    não.
 
 Proposta, **não feita e não autorizada**: trava da linha no `PUT` da TI e
-versão nas ações rápidas (API-12), e histórico dos outros campos.
+versão nas ações rápidas (API-12), e histórico dos outros campos. (Depois
+feitas, com autorização própria: a trava na API-12 e a versão nas ações no
+front — §16. O histórico dos outros campos continua pendente.)
 
 ### 15.9 Testes executados
 
@@ -860,3 +862,213 @@ caminho do FE-4. Nenhuma variável `VITE_*` nova.
 
 Nada publicado. Sem push, PR, merge ou deploy; nenhum commit no backend;
 nenhum acesso a produção ou a dado real; stash `47d800d` intocado.
+
+## 16. Integração da concorrência da TI com a API-12
+
+Fecha, do lado do front, o que a §15.8 deixou aberto (itens 1 e 2). Branch
+`feat/setor-destino-fe-5`, a partir de `ad01793`; API-12 local
+(`feat/setor-destino-api-12`, `e12ce6d`) sem nenhuma mudança. Nada
+publicado.
+
+### 16.1 Fluxos agora versionados
+
+| Fluxo | Onde | Requisição | Versão enviada | Antes |
+|---|---|---|---|---|
+| Ações rápidas (status) | `AcoesRapidas` (modal) e `handleMudancaRapidaStatus` (página) | `PUT /chamados/{id}` `{status}` | a do chamado na tela | sem versão |
+| Resolver | passo do `AcoesRapidas`; modal "Resolver" da página | `PUT` `{status, solucao}` | a do chamado na tela | sem versão |
+| Cancelar com motivo | `cancelarComVersao` (página) | `PATCH .../cancelar`, depois `PUT {solucao}` | a da página; o motivo, a que o cancelamento devolveu | duas escritas sem versão |
+| Arquivar / desarquivar | `handleArquivarChamado` (página) | `PATCH .../arquivar` ou `.../desarquivar` | a da página | sem corpo |
+| Responsável no modal | `atribuir` (`ChamadoModal`) | `PUT` `{tecnico_responsavel_id}` | a do chamado na janela | sem versão |
+| Edição da página (T-1) | `salvarEdicaoDaTI` | `PUT` com a diferença | a da releitura conferida campo a campo | igual (já tinha) |
+| Qualidade (todas) | os mesmos componentes | idem | a de sempre (obrigatória) | igual |
+
+Não há outro ponto de escrita de chamado da TI no front: o quadro não
+arrasta cartões, e avaliação e exclusão não levam versão na API (§5 do
+`docs/concorrencia-da-ti.md` da API-12).
+
+### 16.2 Regra da versão
+
+`precondicaoDaEscrita(chamado)` (`lib/versao.ts`) agora devolve a versão do
+próprio chamado nos dois setores. Sem versão válida: na Qualidade, `null` (a
+escrita não sai, como antes); na TI, `{}` (sai sem versão, como sempre saiu —
+só acontece contra API anterior à 4, que não manda `versao`).
+
+A versão é **a do chamado em que a pessoa se baseou** — o que está na tela
+quando ela clica. Nenhum fluxo relê o chamado só para obter um número: isso
+faria a versão sempre bater e a ação desfazer em silêncio o que outra pessoa
+acabou de gravar. A única releitura antes de escrever continua sendo a da
+edição da página (T-1), que compara os campos editados antes de aceitar a
+versão relida. A versão nunca vem de outro chamado, do quadro, do
+`localStorage` ou de outra sessão: é lida do objeto passado à função.
+
+### 16.3 Tratamento do 409
+
+Comum a todos os fluxos (helpers de `lib/versao.ts`; o corpo real da API é
+`{detail, codigo: "versao_desatualizada", versao_atual}`, e só o `codigo`
+separa este 409 dos outros):
+
+1. o carregamento termina; nada de sucesso;
+2. nada é repetido — a nova tentativa é um clique novo, já sobre o chamado
+   relido;
+3. o que foi digitado fica (solução no passo de resolver e no modal da
+   página; motivo do cancelamento; edição da página);
+4. a tela relê o chamado e avisa: "Este chamado foi alterado por outra
+   pessoa…" (no modal do responsável: "Este chamado mudou enquanto você
+   escolhia o responsável…");
+5. nas ações rápidas os botões ficam travados até a versão nova chegar; no
+   modal do responsável o seletor volta a mostrar quem é o responsável agora,
+   e a lista de elegíveis é relida.
+
+### 16.4 Tempo esgotado, rede e 5xx
+
+Não há como saber se a escrita entrou. Ações rápidas, resolver, responsável
+no modal, cancelar e arquivar passam a dizer "Não foi possível confirmar se
+a alteração foi salva… Nada foi reenviado. Confira o chamado antes de tentar
+de novo." — antes, as marcas e as ações rápidas mostravam "Erro…", que dizia
+que nada tinha entrado. As ações rápidas e o modal relêem o chamado; a página
+mantém o aviso com "Conferir o chamado" (C3). Nada é reenviado. Se a escrita
+tiver entrado, a versão subiu, e um novo clique com a versão velha recebe 409
+— não grava duas vezes.
+
+### 16.5 Rascunhos e respostas atrasadas
+
+- Solução e motivo ficam depois de 409, 428, timeout e 5xx; saem só com a
+  gravação confirmada. Nada vai para o navegador nem para o servidor.
+- **Cancelado por outra pessoa enquanto o motivo era digitado:** antes, a
+  releitura depois do 409 trazia `cancelado: true`, e um novo "Confirmar"
+  pulava o cancelamento e gravava o motivo por cima do registro de outra
+  pessoa (na Qualidade desde o FE-4; na TI passaria a valer agora). A página
+  só pula o cancelamento quando foi ela que cancelou (`cancelamentoProprio`);
+  senão avisa e não grava nada.
+- **Modal do quadro:** a resposta de uma escrita só troca a janela se for do
+  chamado aberto nela (`registrarMudanca`), e um 404 de um chamado que a
+  janela já deixou só tira o card do quadro (`encerrarAcesso`). Antes, a
+  resposta atrasada de A podia aparecer na janela de B, e o 404 de A
+  encerrava B.
+- Trava síncrona nas marcas da página (`marcaEmCurso`) e na troca de
+  responsável do modal (`atribuindoRef`), como a que as ações rápidas já
+  tinham: dois cliques no mesmo quadro mandam uma escrita só.
+- Perda de acesso, revalidação e troca de sessão seguem as regras da §14;
+  nenhuma resposta depois do 404 traz o chamado de volta (três defesas:
+  `encerradoPara`, o guard por id e o próprio `acessoEncerrado` na
+  renderização).
+
+### 16.6 Qualidade
+
+Sem mudança de semântica: versão obrigatória, 428, 409, rebaseamento da
+edição, rota de atendimento, atendentes. Os testes da Qualidade (FE-3/FE-4) e
+o T-1 passam sem alteração. A mudança na Qualidade é só a do motivo por cima
+de um cancelamento alheio (§16.5), que valia para os dois setores.
+
+### 16.7 Compatibilidade
+
+| Combinação | Resultado |
+|---|---|
+| FE-5 atualizado + API-12 | protegido: a TI com versão trava a linha; duas escritas com a mesma versão → uma 200, outra 409 |
+| FE-5 atualizado + API-11 | funciona igual (a API-11 já aceita `versao_esperada` na TI e dá 409 à versão velha), sem a trava: duas escritas no mesmo instante ainda passam as duas |
+| FE-5 `ad01793` + API-12 | funciona; só a edição da página fica protegida, as ações seguem "vale a última" |
+| Versões misturadas no ar (abas antigas abertas) | cada aba manda o que o seu código manda; nada quebra |
+
+Nenhuma operação versionada é incompatível com a API-11. **Ordem recomendada:
+API-12 antes do front (ou junto).** Rollback: do front, volta às ações sem
+versão; da API, o front segue funcionando sem a trava. Nenhuma variável
+`VITE_*`, nenhuma migration.
+
+### 16.8 Testes (camada A — Vitest com mocks)
+
+Suíte inteira: **96 arquivos, 1.700 testes** (1.672 + 28), todos passando;
+`tsc --noEmit` e a paleta sem erro. Novos: "TI — a versão (API-12)" em
+`AcoesRapidas.test.tsx` (8), "TI — cancelar, arquivar e status com versão
+(API-12)" em `ChamadoDetalhes.edicao.test.tsx` (10, no lugar dos 3 de "sem
+versão"), "responsável da TI com versão (API-12)" em
+`ChamadoModal.test.tsx` (5), e casos novos em `versao.test.ts`. Trocados de
+propósito, porque fixavam o contrato antigo: 2 em `versao.test.ts`, 1 em
+`AcoesRapidas.test.tsx`, 1 em `ChamadoModal.test.tsx`, 2 em
+`responsaveisTI.test.tsx`.
+
+**Mutação** (cada uma aplicada sozinha, arquivo restaurado byte a byte):
+sem versão na TI (15 falhas), versão do primeiro chamado mostrado (3),
+repetir após 409 (2), repetir após timeout (2), descartar a solução no
+conflito (3), sucesso após 409 (1), resposta atrasada de outro chamado na
+janela (1), 404 atrasado do anterior encerra o aberto (1), trocar o
+responsável sem nova escolha (1), motivo por cima do cancelamento alheio
+(1), marca dupla (1), cancelar da TI pelo caminho sem versão (5) — todas
+mortas. **Sobreviveu**: tirar só a guarda `encerradoPara` de
+`registrarMudanca` — equivalente, porque o guard por id e o
+`acessoEncerrado` também seguram a janela; tirar ela e o guard por id juntos
+morre.
+
+### 16.9 Homologação
+
+- **B — HTTP real contra a API-12** (`git archive e12ce6d` fora da árvore,
+  PG15 descartável na 54341, banco `hml_fe12`, contas fictícias, saída de
+  rede só loopback, webhook num coletor local que só conta): **115/115**.
+  Para ação rápida, resolver, campos diferentes, reatribuir, cancelar ×
+  motivo, cancelar × cancelar, arquivar × editar nas duas ordens, arquivar ×
+  arquivar, arquivar × cancelar, desarquivar × editar e × desarquivar: as
+  duas sessões (hml_admin, hml_ti) observam N; A grava com N (200, N+1); B
+  com N → 409 `versao_desatualizada` com `versao_atual` N+1; versão final
+  N+1, histórico e webhook só de A. Versão de duas gravações atrás → 409;
+  versão 0 → 422; sem versão → 200. Marca redundante (arquivar o arquivado)
+  → 400 "Chamado já está arquivado", versão parada. Comum 403, conta de
+  serviço 403 (PUT e marca), técnico da Qualidade 404, sem token 401,
+  inexistente 404 — nenhuma devolve `versao_atual`, nenhuma mexe no chamado.
+  Solicitante cancela o próprio com versão: 200. Qualidade: 428 e 409.
+- **Concorrência real (PostgreSQL):** 15 rodadas largando juntas por
+  barreira, as duas sessões com a mesma versão: 15/15 com exatamente um 200
+  e um 409, versão +1, histórico e webhook só do vencedor; venceu ora um,
+  ora outro (9 × hml_admin, 6 × hml_ti).
+- **C/D — front real no navegador, duas sessões** (`build:homologacao`
+  contra `127.0.0.1:8012`, artefato conferido sem host de produção; a mesma
+  build servida em `127.0.0.1:4174` para hml_admin e em `localhost:4175`
+  para hml_ti — origens separadas, sessões separadas). Corpos lidos do
+  `XMLHttpRequest`:
+  - status: B inicia; A, na versão velha, clica → um `PUT
+    {"status":"Em Andamento","versao_esperada":1}`, 409, aviso, releitura,
+    botões do estado novo, nenhum reenvio;
+  - resolver: A digita a solução, B muda o status, A confirma → um `PUT`
+    com versão 2, 409; a solução volta ao reabrir;
+  - cancelar: A e B digitam motivos, B cancela, A confirma → um `PATCH
+    {"versao_esperada":2}`, 409, motivo no campo; confirmar de novo → nenhuma
+    requisição, "já foi cancelado por outra pessoa"; no banco, o motivo de B;
+  - arquivar × arquivar: um `PATCH` com versão 2, 409, a página fica e
+    mostra "Arquivado";
+  - responsável no modal do quadro: B muda o status, A escolhe hml_ti → um
+    `PUT {"tecnico_responsavel_id":2,"versao_esperada":2}`, 409, aviso,
+    janela relida, seletor de volta a "Sem atribuição"; nenhum webhook de
+    atribuição;
+  - conta de serviço (hml_svc_ti): vê o chamado, sem ações de equipe.
+
+  No banco, os cinco chamados só têm no histórico as escritas vencedoras, e
+  os únicos webhooks deles são os de abertura.
+
+### 16.10 Riscos residuais
+
+1. **API-11 no ar com este front:** sem trava; a corrida simultânea da
+   §15.8, item 1, volta. Depende da ordem de deploy (§16.7).
+2. **Cancelar com motivo continua sendo duas escritas.** Entre o cancelamento
+   e o motivo outra pessoa pode gravar: o motivo recebe 409, o chamado fica
+   cancelado sem motivo, o motivo fica no campo e o aviso diz isso. Juntar
+   as duas pede rota ou campo novo na API (não autorizado).
+3. **Autorização lida antes da trava** (limite da API-12, §7 dela): quem
+   perde a permissão enquanto espera a trava ainda grava.
+4. **Histórico só registra status**: prioridade, responsável e solução não
+   deixam trilha.
+5. **Clientes sem versão** (front antigo em aba aberta, scripts) seguem
+   "vale a última" até o front novo chegar a todos.
+6. **TI contra API anterior à 4** (sem `versao`): as escritas saem sem
+   versão — o comportamento de antes, não um bloqueio.
+
+### 16.11 Dependências e bloqueios de publicação
+
+- API-12 publicada antes do front (ou junto); sem ela a classe B simultânea
+  segue aberta.
+- As dependências da §14.9 e da §15.11 continuam: inventário das contas,
+  `PAINEL_CONTAS_IDS`, `SETORES_TI_IDS` reais, Administrador humano ativo.
+- Versão do produto segue 1.7.8.
+
+### 16.12 Situação
+
+Nada publicado. Sem push, PR, merge ou deploy; nenhum commit no backend; a
+árvore da API-12 intocada; nenhum acesso a produção ou dado real; stash
+`47d800d` intocado.
