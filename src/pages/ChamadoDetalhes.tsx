@@ -42,7 +42,6 @@ import {
   MENSAGEM_VERSAO_AUSENTE,
   ehConflitoDeVersao,
   ehVersaoAusente,
-  escreveSemVersao,
   precondicaoDaEdicaoDaTI,
   precondicaoDaEscrita,
 } from '../lib/versao';
@@ -73,6 +72,7 @@ import {
 import { confirmacaoConfere, podeExcluir } from '../utils/exclusao';
 import {
   classificarFalhaDeEscrita,
+  mensagemDaFalhaDaMarca,
   type FalhaDeEscrita,
   type OperacaoDeEscrita,
 } from '../lib/escrita';
@@ -176,6 +176,11 @@ const ChamadoDetalhes: React.FC = () => {
   const [mostrarModalCancelar, setMostrarModalCancelar] = useState(false);
   const [mostrarModalArquivar, setMostrarModalArquivar] = useState(false);
   const [processando, setProcessando] = useState(false);
+  // Cancelar e arquivar: o `disabled` só chega no próximo desenho, e dois
+  // cliques no mesmo quadro mandariam duas marcas. A trava é síncrona.
+  const marcaEmCurso = useRef(false);
+  // O chamado que ESTA página cancelou e cujo motivo ainda falta gravar.
+  const cancelamentoProprio = useRef<number | null>(null);
   const [motivoCancelamento, setMotivoCancelamento] = useState('');
 
   // Exclusão. O protocolo digitado é a trava: o botão só libera quando ele
@@ -710,9 +715,9 @@ const ChamadoDetalhes: React.FC = () => {
    * 3. o PUT leva a versão da releitura, e a API recusa com 409 a escrita
    *    alheia que entrou entre a releitura e o PUT.
    *
-   * O que sobra: o PUT da TI não trava a linha na API. Duas gravações no
-   * mesmo instante — as duas já dentro da API — ainda passam as duas. Fechar
-   * isso é com a API (lock na TI), não com a tela.
+   * Desde a API-12 o PUT da TI com versão trava a linha antes de conferir:
+   * duas gravações no mesmo instante não passam as duas. Contra uma API-11,
+   * essa janela continua aberta — é da API, não da tela.
    *
    * O responsável só entra com a permissão vigente de trocá-lo; sem ela, não
    * vai — antes ia o de antes, que era o mesmo efeito com risco de desfazer
@@ -886,8 +891,9 @@ const ChamadoDetalhes: React.FC = () => {
     if (operacoesRecusadas.has('status')) return;
     setFalhaDeEscrita(null);
 
-    // Na Qualidade, a versão do chamado desta página (M-1): se outra pessoa
-    // mudou o status depois que ela carregou, a API recusa em vez de desfazer.
+    // A versão do chamado desta página (M-1; TI desde a API-12): se outra
+    // pessoa mudou o chamado depois que ela carregou, a API recusa em vez de
+    // desfazer.
     const precondicao = precondicaoDaEscrita(chamado);
     if (precondicao === null) {
       toast.error(MENSAGEM_SEM_VERSAO);
@@ -981,47 +987,33 @@ const ChamadoDetalhes: React.FC = () => {
       return;
     }
 
-    // Fora da TI (FE-4), o cancelamento com motivo são DUAS escritas, e não
-    // uma transação: cancelar, depois o PUT do motivo com a versão que o
-    // cancelamento devolveu — a de antes já não vale, o cancelamento a subiu.
-    // Se a segunda falhar, o chamado fica cancelado sem motivo; o motivo fica
-    // no campo, e um novo "Confirmar" só registra o motivo.
-    if (!escreveSemVersao(chamado)) {
-      await cancelarComVersao(chamado);
-      return;
-    }
-
-    try {
-      setProcessando(true);
-
-      // Primeiro cancela o chamado
-      await chamadosService.cancelar(chamado.id);
-
-      // Depois atualiza com o motivo (solução)
-      await atualizarChamado(chamado.id, { solucao: motivoCancelamento });
-
-      setMostrarModalCancelar(false);
-      setMotivoCancelamento('');
-
-      // Redireciona para a página de chamados
-      navigate('/chamados', { replace: true });
-    } catch (err: any) {
-      if (perdeuAcesso(err)) return;
-      console.error('Erro ao cancelar chamado:', err);
-      toast.error(err?.response?.data?.detail || 'Erro ao cancelar chamado.');
-    } finally {
-      setProcessando(false);
-    }
+    // Nos dois setores (FE-4; TI desde a API-12), o cancelamento com motivo
+    // são DUAS escritas, e não uma transação: cancelar com a versão desta
+    // página, depois o PUT do motivo com a versão que o cancelamento devolveu
+    // — a de antes já não vale, o cancelamento a subiu. Se a segunda falhar,
+    // o chamado fica cancelado sem motivo; o motivo fica no campo, e um novo
+    // "Confirmar" só registra o motivo.
+    await cancelarComVersao(chamado);
   };
 
-  /** As duas escritas do cancelamento da Qualidade. Ver `handleCancelarChamado`. */
+  /** As duas escritas do cancelamento. Ver `handleCancelarChamado`. */
   const cancelarComVersao = async (alvo: Chamado) => {
     const MOTIVO_NAO_REGISTRADO =
       'O chamado foi cancelado, mas o motivo não foi registrado. O motivo continua no campo: confirme de novo para registrá-lo.';
 
+    if (marcaEmCurso.current) return;
+    marcaEmCurso.current = true;
     setProcessando(true);
     try {
-      // Já cancelado (a primeira escrita passou antes): só falta o motivo.
+      // Já cancelado POR ESTA PÁGINA (a primeira escrita passou antes): só
+      // falta o motivo. Cancelado por outra pessoa, o motivo não vai: ele
+      // escreveria por cima do registro dela, numa decisão que não foi esta.
+      if (alvo.cancelado && cancelamentoProprio.current !== alvo.id) {
+        toast.error(
+          'Este chamado já foi cancelado por outra pessoa. Nada foi salvo; o motivo que você digitou continua no campo.'
+        );
+        return;
+      }
       let cancelado = alvo;
       if (!alvo.cancelado) {
         const precondicao = precondicaoDaEscrita(alvo);
@@ -1034,9 +1026,10 @@ const ChamadoDetalhes: React.FC = () => {
         } catch (err: any) {
           if (perdeuAcesso(err)) return;
           if (await recarregarAposRecusaDeVersao(err)) return;
-          toast.error(err?.response?.data?.detail || 'Erro ao cancelar chamado.');
+          toast.error(mensagemDaFalhaDaMarca(err, 'Erro ao cancelar chamado.'));
           return;
         }
+        cancelamentoProprio.current = alvo.id;
         setChamado(cancelado);
         aplicarChamado(cancelado);
       }
@@ -1068,6 +1061,7 @@ const ChamadoDetalhes: React.FC = () => {
       setMotivoCancelamento('');
       navigate('/chamados', { replace: true });
     } finally {
+      marcaEmCurso.current = false;
       setProcessando(false);
     }
   };
@@ -1076,14 +1070,16 @@ const ChamadoDetalhes: React.FC = () => {
   const handleArquivarChamado = async () => {
     if (!chamado || !user) return;
 
-    // Na Qualidade, as marcas levam a versão do chamado desta página. Na TI,
-    // `{}`: a requisição sai sem corpo, como sempre.
+    // As marcas levam a versão do chamado desta página, nos dois setores. Na
+    // TI sem versão (API anterior à 4), `{}`: a requisição sai sem corpo.
+    if (marcaEmCurso.current) return;
     const precondicao = precondicaoDaEscrita(chamado);
     if (precondicao === null) {
       toast.error(MENSAGEM_SEM_VERSAO);
       return;
     }
 
+    marcaEmCurso.current = true;
     try {
       setProcessando(true);
 
@@ -1107,8 +1103,9 @@ const ChamadoDetalhes: React.FC = () => {
         return;
       }
       console.error('Erro ao arquivar/desarquivar chamado:', err);
-      toast.error(err?.response?.data?.detail || 'Erro ao processar solicitação.');
+      toast.error(mensagemDaFalhaDaMarca(err, 'Erro ao processar solicitação.'));
     } finally {
+      marcaEmCurso.current = false;
       setProcessando(false);
     }
   };
