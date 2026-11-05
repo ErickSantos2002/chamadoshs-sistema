@@ -204,7 +204,7 @@ describe('montarCorpoTI — o corpo de sempre', () => {
   };
 
   it('Usuario: para si, sem responsável — as seis chaves', () => {
-    const corpo = montarCorpoTI({ ...base, ehEquipe: false, usuarioId: 7, solicitanteId: undefined });
+    const corpo = montarCorpoTI({ ...base, ehEquipe: false, escolheSolicitante: false, usuarioId: 7, solicitanteId: undefined });
     expect(corpo).toStrictEqual({
       solicitante_id: 7,
       titulo: 'Impressora do RH sem papel',
@@ -215,13 +215,32 @@ describe('montarCorpoTI — o corpo de sempre', () => {
     });
   });
 
-  it('equipe: o solicitante escolhido e ela como responsável', () => {
-    const corpo = montarCorpoTI({ ...base, ehEquipe: true, usuarioId: 3, solicitanteId: 8 });
-    expect(corpo).toMatchObject({ solicitante_id: 8, tecnico_responsavel_id: 3 });
+  it('administrador humano: o solicitante escolhido', () => {
+    const corpo = montarCorpoTI({
+      ...base,
+      ehEquipe: true,
+      escolheSolicitante: true,
+      usuarioId: 1,
+      solicitanteId: 8,
+    });
+    expect(corpo).toMatchObject({ solicitante_id: 8, tecnico_responsavel_id: 1 });
+  });
+
+  // T-2: um id que sobrou no estado (a permissão caiu depois de escolher, ou
+  // nunca houve) não sai de quem não pode escolher — vai o próprio id.
+  it('quem não escolhe o solicitante manda o próprio id, mesmo com um escolhido no estado', () => {
+    const corpo = montarCorpoTI({
+      ...base,
+      ehEquipe: true,
+      escolheSolicitante: false,
+      usuarioId: 3,
+      solicitanteId: 8,
+    });
+    expect(corpo).toMatchObject({ solicitante_id: 3, tecnico_responsavel_id: 3 });
   });
 
   it('não leva setor_destino', () => {
-    const corpo = montarCorpoTI({ ...base, ehEquipe: false, usuarioId: 7, solicitanteId: undefined });
+    const corpo = montarCorpoTI({ ...base, ehEquipe: false, escolheSolicitante: false, usuarioId: 7, solicitanteId: undefined });
     expect(corpo).not.toHaveProperty('setor_destino');
   });
 });
@@ -267,7 +286,7 @@ describe('montarCorpoQualidade — só o que a Qualidade aceita', () => {
 describe('validarQualidade — na ordem da tela', () => {
   const ok = {
     descricao: 'Desvio na calibração da balança 3.',
-    ehEquipe: false,
+    escolheSolicitante: false,
     solicitanteId: undefined as number | undefined,
     responsavelId: 21 as number | undefined,
     atendentes: ATENDENTES,
@@ -287,8 +306,8 @@ describe('validarQualidade — na ordem da tela', () => {
     );
   });
 
-  it('a equipe sem solicitante, antes do responsável', () => {
-    expect(validarQualidade({ ...ok, ehEquipe: true, responsavelId: undefined })).toBe(
+  it('quem escolhe o solicitante e não escolheu: antes do responsável', () => {
+    expect(validarQualidade({ ...ok, escolheSolicitante: true, responsavelId: undefined })).toBe(
       'Selecione o solicitante.'
     );
   });

@@ -3,6 +3,7 @@ import {
   podeAdministrar,
   podeAdministrarUsuarios,
   podeAlterarComoEquipe,
+  podeEscolherSolicitante,
 } from '../lib/permissoes';
 
 /**
@@ -36,6 +37,8 @@ export function usePermissoes() {
     podeAdministrar: podeAdministrar(user, vigente),
     /** Só o administrador humano, com identidade confirmada e vigente. */
     podeAdministrarUsuarios: podeAdministrarUsuarios(user, vigente),
+    /** Abrir chamado em nome de outra pessoa: o administrador humano, confirmado e vigente. */
+    podeEscolherSolicitante: podeEscolherSolicitante(user, vigente),
     /**
      * Pode alterar este chamado pelas rotas da equipe (editar, arquivar,
      * desarquivar, cancelar alheio). `atendentes` é a lista da Qualidade, ou

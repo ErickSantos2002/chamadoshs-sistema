@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { usePermissoes } from '../hooks/usePermissoes';
+import { ehAdministrador } from '../lib/permissoes';
 import { useChamados } from '../hooks/useChamados';
 import { slaConfigsService } from '../services/chamadoshsapi';
 import {
@@ -59,6 +61,8 @@ const TITULO_MAXIMO = 200;
  */
 export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCancelar }) => {
   const { user } = useAuth();
+  const { podeEscolherSolicitante: escolheSolicitante, confirmando, semConfirmacao } =
+    usePermissoes();
   const { darkMode } = useTheme();
   const { categorias, usuarios, criarChamado, carregarCategorias, carregarUsuarios } =
     useChamados();
@@ -72,9 +76,19 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Quem é da equipe abre chamado em nome de outra pessoa e já fica como
-  // responsável. Quem não é abre só para si.
+  // Abrir em nome de outra pessoa é do administrador humano confirmado — a
+  // regra da API (`podeEscolherSolicitante`). Técnico, conta de serviço
+  // administradora, usuário comum e quem ainda não teve a identidade
+  // confirmada abrem para si: a API grava quem abriu, e a tela não oferece uma
+  // escolha que ela ignora. O perfil do `localStorage` não decide isto.
+  // Só o corpo da TI ainda lê o perfil: `tecnico_responsavel_id`, que a API
+  // descarta na abertura (ver `montarCorpoTI`).
   const ehEquipe = user?.role === 'Tecnico' || user?.role === 'Administrador';
+  // O administrador pelo perfil cuja condição de pessoa ainda não se sabe
+  // (confirmando, ou a confirmação falhou): a escolha não aparece, e a tela
+  // diz por quê. A nova tentativa é a do aviso do layout.
+  const solicitanteAguardaConfirmacao =
+    !escolheSolicitante && ehAdministrador(user) && (confirmando || semConfirmacao);
 
   // Prazos por prioridade, para quem abre o chamado ver o que a escolha
   // significa. Sem isso a prioridade vira palpite: "Alta" e "Média" são
@@ -83,8 +97,8 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
   useEffect(() => {
     carregarCategorias();
-    if (ehEquipe) carregarUsuarios();
-  }, [carregarCategorias, carregarUsuarios, ehEquipe]);
+    if (escolheSolicitante) carregarUsuarios();
+  }, [carregarCategorias, carregarUsuarios, escolheSolicitante]);
 
   useEffect(() => {
     // Falhar aqui não impede abrir chamado: sem os prazos, o bloco some e o
@@ -160,7 +174,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
     const problema = validarQualidade({
       descricao,
-      ehEquipe,
+      escolheSolicitante,
       solicitanteId,
       responsavelId,
       atendentes,
@@ -177,7 +191,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       const novo = montarCorpoQualidade({
         descricao,
         prioridade,
-        solicitante_id: ehEquipe ? solicitanteId! : usuarioId,
+        solicitante_id: escolheSolicitante ? solicitanteId! : usuarioId,
         tecnico_responsavel_id: responsavelId!,
       });
 
@@ -222,7 +236,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       return;
     }
 
-    if (ehEquipe && !solicitanteId) {
+    if (escolheSolicitante && !solicitanteId) {
       setErro('Selecione o solicitante.');
       return;
     }
@@ -233,6 +247,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
       const novo = montarCorpoTI({
         ehEquipe,
+        escolheSolicitante,
         usuarioId: user.id,
         solicitanteId,
         titulo,
@@ -348,7 +363,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
         <ContadorMinimo valor={descricao} minimo={MINIMO_DESCRICAO} />
       </div>
 
-      {ehEquipe && (
+      {escolheSolicitante && (
         <div>
           <RotuloDeCampo htmlFor="solicitante" obrigatorio>Solicitante</RotuloDeCampo>
           {/* A lista mais longa do sistema — trinta e poucos nomes. É onde a
@@ -368,13 +383,17 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
               })),
             ]}
           />
-          {/* Só na TI: na Qualidade o responsável é escolhido abaixo. */}
-          {!naQualidade && (
-            <p className="mt-1 text-xs text-conteudo-tenue">
-              Você fica como técnico responsável.
-            </p>
-          )}
+          {/* A dica "Você fica como técnico responsável." saiu: na abertura
+              da TI a API descarta o responsável do corpo, e o chamado nasce
+              sem atribuição — a dica prometia o que não acontece. */}
         </div>
+      )}
+
+      {solicitanteAguardaConfirmacao && (
+        <p className="text-xs text-conteudo-tenue" role="status">
+          A escolha do solicitante aparece quando suas permissões forem confirmadas. Até lá, o
+          chamado é aberto em seu nome.
+        </p>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -30,13 +30,14 @@ import NovoChamadoForm from './NovoChamadoForm';
  * trava por aprovação:
  *
  *   `tecnico_responsavel_id` vai no corpo para a equipe, e a API o descarta na
- *   abertura TI. A dica "Você fica como técnico responsável." promete o que
- *   não acontece.
+ *   abertura TI. Segue dívida registrada no CHANGELOG.
  *
- *   O Técnico vê o seletor de solicitante, mas a API só honra a escolha quando
- *   quem abre é Administrador. Para o Técnico ela grava o próprio usuário.
- *
- * Os dois são dívida registrada no CHANGELOG, e consertá-los é outra etapa.
+ * O que estava errado e foi consertado (T-2, fechamento da FE-5): o Técnico
+ * via o seletor de solicitante, que a API só honra do administrador humano
+ * — para os outros ela grava quem abriu —, e a dica "Você fica como técnico
+ * responsável." prometia o que não acontece. Agora só o administrador humano
+ * confirmado escolhe o solicitante, e a dica saiu. A matriz completa está em
+ * `NovoChamadoForm.solicitante.test.tsx`.
  */
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -239,14 +240,16 @@ describe('abertura TI — o corpo enviado', () => {
     expect(criar.mock.calls[0][0]).not.toHaveProperty('setor_destino');
   });
 
-  it('Técnico: o solicitante escolhido e ele mesmo como responsável', async () => {
+  // T-2: antes o Técnico escolhia um solicitante que a API ignorava. Agora
+  // abre para si, como a API grava; o responsável segue no corpo (dívida).
+  it('Técnico: sem seletor, abre para si', async () => {
     await montar(TECNICO);
     await preencherTI();
-    await escolher('solicitante', 'Lidisay');
+    expect(document.getElementById('solicitante')).toBeNull();
     await enviar();
 
     expect(criar.mock.calls[0][0]).toStrictEqual({
-      solicitante_id: 8,
+      solicitante_id: 3,
       titulo: 'Impressora do RH sem papel',
       descricao: DESCRICAO_OK,
       prioridade: PrioridadeEnum.MEDIA,
@@ -318,11 +321,15 @@ describe('abertura TI — os campos', () => {
     expect(document.body.textContent).not.toContain('Você fica como técnico responsável.');
   });
 
-  it('a equipe vê o seletor de solicitante e a dica', async () => {
-    for (const quem of [TECNICO, ADMIN]) {
-      await montar(quem);
-      expect(document.getElementById('solicitante'), quem.user!.role).toBeTruthy();
-      expect(document.body.textContent).toContain('Você fica como técnico responsável.');
+  // T-2: o seletor é do administrador humano; a dica saiu para todos.
+  it('só o administrador humano vê o seletor, e ninguém vê a dica', async () => {
+    for (const [quem, ve] of [
+      [TECNICO, false],
+      [ADMIN, true],
+    ] as const) {
+      await remontar(quem);
+      expect(Boolean(document.getElementById('solicitante')), quem.user!.role).toBe(ve);
+      expect(document.body.textContent).not.toContain('Você fica como técnico responsável.');
     }
   });
 });
@@ -370,8 +377,8 @@ describe('abertura TI — validação, na ordem', () => {
     expect(mensagem()).toBe('Descrição é obrigatório.');
   });
 
-  it('a equipe sem solicitante: "Selecione o solicitante." depois dos textos', async () => {
-    await montar(TECNICO);
+  it('o administrador sem solicitante: "Selecione o solicitante." depois dos textos', async () => {
+    await montar(ADMIN);
     await digitar('titulo', 'Impressor');
     await digitar('descricao', DESCRICAO_OK);
     await enviar();
@@ -642,9 +649,9 @@ describe('TI com a Qualidade disponível — o corpo não muda', () => {
     });
   });
 
-  it('as mensagens da TI são as de sempre, e a dica continua', async () => {
-    await montar(TECNICO);
-    expect(document.body.textContent).toContain('Você fica como técnico responsável.');
+  it('as mensagens da TI são as de sempre, sem a dica', async () => {
+    await montar(ADMIN);
+    expect(document.body.textContent).not.toContain('Você fica como técnico responsável.');
     await digitar('titulo', 'Impressor');
     await digitar('descricao', DESCRICAO_OK);
     await enviar();
@@ -697,11 +704,16 @@ describe('modo Qualidade — os campos', () => {
     expect(rotulo?.textContent).toContain('Responsável');
   });
 
-  it('a equipe continua vendo o solicitante, pela regra de hoje', async () => {
-    for (const quem of [TECNICO, ADMIN]) {
+  // T-2: a mesma regra da TI — a criação da Qualidade passa pela mesma
+  // linha da API (`is_admin_humano`).
+  it('só o administrador humano vê o solicitante', async () => {
+    for (const [quem, ve] of [
+      [TECNICO, false],
+      [ADMIN, true],
+    ] as const) {
       await remontar(quem);
       await marcar('Qualidade');
-      expect(document.getElementById('solicitante'), quem.user!.role).toBeTruthy();
+      expect(Boolean(document.getElementById('solicitante')), quem.user!.role).toBe(ve);
     }
   });
 });
@@ -747,15 +759,15 @@ describe('modo Qualidade — o corpo enviado', () => {
     });
   });
 
-  /** A regra de hoje, preservada: a API é quem decide se honra a escolha. */
-  it('Técnico manda o solicitante escolhido, como na TI', async () => {
+  /** T-2: o Técnico abre para si, como na TI — é o que a API grava. */
+  it('Técnico manda o próprio id, sem seletor', async () => {
     await montar(TECNICO);
     await marcar('Qualidade');
     await digitar('descricao', DESCRICAO_Q);
-    await escolher('solicitante', 'Gabriel');
+    expect(document.getElementById('solicitante')).toBeNull();
     await escolher('responsavel', 'Ana Qualidade');
     await enviar();
-    expect(corpoEnviado()).toMatchObject({ solicitante_id: 7, tecnico_responsavel_id: 21 });
+    expect(corpoEnviado()).toMatchObject({ solicitante_id: 3, tecnico_responsavel_id: 21 });
   });
 
   it('título e categoria digitados antes na TI não vão junto', async () => {

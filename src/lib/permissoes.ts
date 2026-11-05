@@ -116,6 +116,21 @@ export function podeAdministrarUsuarios(
 }
 
 /**
+ * Abrir chamado em nome de outra pessoa (escolher o solicitante): só o
+ * administrador humano, e só depois da confirmação. É a regra da criação na
+ * API (`is_admin_humano` em `criar_chamado`, API-11, S3): para qualquer outra
+ * conta ela grava quem abriu, e ignora o `solicitante_id` do corpo em
+ * silêncio. Oferecer a escolha a quem a API ignora daria o chamado por aberto
+ * em nome de alguém e o gravaria no nome de quem abriu.
+ */
+export function podeEscolherSolicitante(
+  usuario: IdentidadeParaPermissao | null | undefined,
+  confirmada: boolean
+): boolean {
+  return confirmada === true && ehAdministradorHumano(usuario);
+}
+
+/**
  * Pode alterar `chamado` pelas rotas da equipe: editar (status, prioridade,
  * categoria, solução, responsável), arquivar, desarquivar e cancelar chamado
  * alheio. A regra `pode_alterar_como_equipe` da API (API-6, D8; API-11, S2):

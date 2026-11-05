@@ -135,16 +135,22 @@ export async function consultarQualidade(): Promise<ConsultaDaQualidade> {
 }
 
 /**
- * O corpo da TI, exatamente o de antes do setor existir — o
- * `NovoChamadoForm.test` trava as seis chaves e os valores.
+ * O corpo da TI, com as seis chaves de antes do setor existir — o
+ * `NovoChamadoForm.test` trava as chaves e os valores.
+ *
+ * O solicitante escolhido só vai de quem pode escolhê-lo
+ * (`podeEscolherSolicitante`: o administrador humano confirmado). Para
+ * qualquer outra conta vai o próprio id, que é o que a API grava de todo
+ * modo: um id escolhido por quem a API ignora não sai daqui.
  *
  * `tecnico_responsavel_id` continua indo para a equipe, e a API continua o
  * descartando na abertura TI. É dívida registrada, não regra: mexer nele é
- * mudar a TI, e esta etapa não muda a TI. `setor_destino` não vai — omitido
- * é TI, e mandá-lo seria outra mudança no corpo.
+ * mudar a TI. `setor_destino` não vai — omitido é TI, e mandá-lo seria outra
+ * mudança no corpo.
  */
 export function montarCorpoTI(campos: {
   ehEquipe: boolean;
+  escolheSolicitante: boolean;
   usuarioId: number;
   solicitanteId: number | undefined;
   titulo: string;
@@ -153,7 +159,7 @@ export function montarCorpoTI(campos: {
   categoriaId: number | undefined;
 }): ChamadoCreate {
   return {
-    solicitante_id: campos.ehEquipe ? campos.solicitanteId! : campos.usuarioId,
+    solicitante_id: campos.escolheSolicitante ? campos.solicitanteId! : campos.usuarioId,
     titulo: campos.titulo.trim(),
     descricao: campos.descricao.trim(),
     prioridade: campos.prioridade,
@@ -192,7 +198,7 @@ export function montarCorpoQualidade(campos: {
  */
 export function validarQualidade(campos: {
   descricao: string;
-  ehEquipe: boolean;
+  escolheSolicitante: boolean;
   solicitanteId: number | undefined;
   responsavelId: number | undefined;
   atendentes: AtendenteQualidade[];
@@ -200,7 +206,7 @@ export function validarQualidade(campos: {
   const descricao = validarMinimo(campos.descricao, MINIMO_DESCRICAO, 'Descrição');
   if (descricao) return descricao;
 
-  if (campos.ehEquipe && !campos.solicitanteId) return 'Selecione o solicitante.';
+  if (campos.escolheSolicitante && !campos.solicitanteId) return 'Selecione o solicitante.';
 
   const naLista = campos.atendentes.some((a) => a.id === campos.responsavelId);
   if (!naLista) return MENSAGEM_RESPONSAVEL;

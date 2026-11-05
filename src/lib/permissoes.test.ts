@@ -6,6 +6,7 @@ import {
   podeAdministrar,
   podeAdministrarUsuarios,
   podeAlterarComoEquipe,
+  podeEscolherSolicitante,
 } from './permissoes';
 
 /**
@@ -196,5 +197,27 @@ describe('podeAlterarComoEquipe: a regra pode_alterar_como_equipe da API (C2)', 
   it('sem chamado ou sem usuário, não', () => {
     expect(podeAlterarComoEquipe(contas.adminHumano, true, null, atendentes)).toBe(false);
     expect(podeAlterarComoEquipe(null, true, TI, atendentes)).toBe(false);
+  });
+});
+
+describe('podeEscolherSolicitante: a regra da criação na API (T-2)', () => {
+  it('só o administrador humano, e só confirmado', () => {
+    expect(podeEscolherSolicitante(PERFIS.administrador, true)).toBe(true);
+    expect(podeEscolherSolicitante(PERFIS.administradorForaDaTI, true)).toBe(true);
+    expect(podeEscolherSolicitante(PERFIS.administrador, false)).toBe(false);
+  });
+
+  it('a conta de serviço administradora e o administrador sem a marca lida não escolhem', () => {
+    expect(podeEscolherSolicitante({ ...PERFIS.administrador, conta_de_servico: true }, true)).toBe(false);
+    expect(podeEscolherSolicitante({ role: 'Administrador', role_id: 1 }, true)).toBe(false);
+    expect(podeEscolherSolicitante({ ...PERFIS.administrador, conta_de_servico: 'false' }, true)).toBe(false);
+  });
+
+  it('nenhum outro perfil escolhe, nem o técnico da TI', () => {
+    for (const [nome, perfil] of Object.entries(PERFIS)) {
+      if (nome.startsWith('administrador')) continue;
+      expect(podeEscolherSolicitante(perfil, true), nome).toBe(false);
+    }
+    expect(podeEscolherSolicitante(null, true)).toBe(false);
   });
 });
