@@ -55,6 +55,16 @@ function detalheDe(erro: unknown): string | null {
   return typeof detalhe === 'string' && detalhe.trim() ? detalhe.trim() : null;
 }
 
+/**
+ * O aviso de uma marca (cancelar, arquivar, desarquivar) que falhou sem ser
+ * de versão nem de acesso: sem resposta, "não confirmado" — nunca "erro", que
+ * diria que nada entrou; com resposta, o `detail` da API ou o texto padrão.
+ */
+export function mensagemDaFalhaDaMarca(erro: unknown, padrao: string): string {
+  if (classificarFalhaDeEscrita(erro).tipo === 'incerta') return MENSAGEM_INCERTA;
+  return detalheDe(erro) ?? padrao;
+}
+
 export function classificarFalhaDeEscrita(erro: unknown): FalhaDeEscrita {
   const resposta = (erro as { response?: { status?: unknown } } | null)?.response;
   const status = typeof resposta?.status === 'number' ? resposta.status : null;

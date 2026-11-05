@@ -22,10 +22,13 @@ import { setorDoChamado } from './setor';
  *
  * ── Quem manda a versão ───────────────────────────────────────────────
  *
- * Só o chamado que não é da TI. A TI segue com o corpo de antes, sem versão:
- * na API ela é opcional ali, e mandar mudaria um fluxo que não pediu nada.
- * Setor inesperado conta como protegido — na dúvida, a escrita leva a
- * pré-condição; uma API-4 aceita a versão em qualquer setor.
+ * Todo chamado que tiver versão (API-12). Na TI ela é opcional na API, mas,
+ * quando vem, a API-12 trava a linha antes de conferir: duas escritas com a
+ * mesma versão não passam as duas, e a que chegou depois recebe 409 sem
+ * gravar nada. A versão é a do chamado em que a pessoa se baseou — o que
+ * está na tela quando ela clica, nunca uma releitura feita só para mandar
+ * um número que bata. Setor inesperado conta como protegido — na dúvida, a
+ * escrita leva a pré-condição; uma API-4 aceita a versão em qualquer setor.
  *
  * ── Sem versão válida, a Qualidade não escreve ───────────────────────
  *
@@ -33,7 +36,9 @@ import { setorDoChamado } from './setor';
  * inventar um número (0, 1, o de outro chamado) seria pior que não mandar:
  * a pré-condição passaria a dizer algo falso. A escrita da Qualidade para
  * antes de sair, com aviso, e o que a pessoa digitou fica. Também evita o
- * 422 do atendimento de uma API-3, que recusa campo a mais.
+ * 422 do atendimento de uma API-3, que recusa campo a mais. Na TI, sem
+ * versão válida, a escrita sai sem ela, como sempre saiu: ali a API não a
+ * exige, e travar a TI por isso tiraria dela todas as ações.
  */
 
 /** Versão aceitável: inteiro seguro ≥ 1. `true`, "3", 1.5, 0, NaN não são. */
@@ -47,26 +52,18 @@ export function lerVersao(chamado: Pick<Chamado, 'versao'> | null | undefined): 
   return versaoValida(valor) ? valor : null;
 }
 
-/** O que acompanha uma escrita: nada (TI) ou a versão esperada. */
+/** O que acompanha uma escrita: a versão esperada, ou nada (TI sem versão). */
 export type Precondicao = { versao_esperada?: number };
 
-/** O chamado é da TI, onde a escrita segue sem versão. */
+/** O chamado é da TI, onde a escrita pode sair sem versão se ele não tiver uma. */
 export const escreveSemVersao = (chamado: Pick<Chamado, 'setor_destino'>): boolean =>
   setorDoChamado(chamado).setor === SetorDestinoEnum.TI;
 
 /**
  * A pré-condição da EDIÇÃO de um chamado da TI (T-1): a versão, se o chamado
- * a tiver; nada, se não.
- *
- * Na TI a API trata `versao_esperada` como opcional e, quando vem, a confere
- * e recusa com 409 a que não bate (API-4b; `test_ti_com_versao_velha_ainda_e_409`).
- * A edição passou a mandá-la para que uma escrita alheia entre a releitura e
- * o PUT não seja sobrescrita. Sem versão válida — API anterior à 4 — a edição
- * segue sem ela, como sempre seguiu: na TI a falta da versão não trava nada.
- *
- * Não é o controle da Qualidade: no PUT da TI a API confere sem `FOR UPDATE`,
- * e duas escritas no mesmo instante ainda passam as duas. Só a edição da
- * página usa isto; as ações rápidas da TI seguem sem versão.
+ * a tiver; nada, se não. É `precondicaoDaEscrita` para um chamado da TI, com
+ * o nome que diz de onde a versão vem: do `servidor` relido antes do PUT —
+ * relido para conferir os campos editados, e não só para ter um número.
  */
 export function precondicaoDaEdicaoDaTI(chamado: Pick<Chamado, 'versao'>): Precondicao {
   const versao = lerVersao(chamado);
@@ -76,14 +73,14 @@ export function precondicaoDaEdicaoDaTI(chamado: Pick<Chamado, 'versao'>): Preco
 /**
  * A pré-condição de uma escrita neste chamado, tirada DELE — nunca de outro
  * objeto, para a versão não ser a de outro chamado. `null` é "não escreva":
- * chamado protegido sem versão válida.
+ * chamado protegido (fora da TI) sem versão válida.
  */
 export function precondicaoDaEscrita(
   chamado: Pick<Chamado, 'setor_destino' | 'versao'>
 ): Precondicao | null {
-  if (escreveSemVersao(chamado)) return {};
   const versao = lerVersao(chamado);
-  return versao === null ? null : { versao_esperada: versao };
+  if (versao !== null) return { versao_esperada: versao };
+  return escreveSemVersao(chamado) ? {} : null;
 }
 
 const respostaDo = (erro: unknown): { status?: unknown; data?: unknown } | undefined =>

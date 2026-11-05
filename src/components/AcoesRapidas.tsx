@@ -21,6 +21,7 @@ import {
   precondicaoDaEscrita,
   versaoAtualDoConflito,
 } from '../lib/versao';
+import { MENSAGEM_INCERTA, classificarFalhaDeEscrita } from '../lib/escrita';
 import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
 import ContadorMinimo from './ContadorMinimo';
 import { Button, RotuloDeCampo, Textarea } from './ui';
@@ -106,16 +107,22 @@ const TRANSICOES: Partial<
  * Nunca os dois: quando a rota vale, os botões mudam de caminho, e um erro
  * dela nunca é repetido pelo PUT.
  *
- * ── A versão (FE-4) ───────────────────────────────────────────────────
+ * ── A versão (FE-4; TI desde a API-12) ────────────────────────────────
  *
- * Num chamado da Qualidade, os dois caminhos levam a versão do chamado que
- * está NA TELA — é ela que diz em que a pessoa se baseou ao clicar. Se outra
- * pessoa gravou antes, a API recusa com 409 e nada é sobrescrito: a tela
- * relê o chamado, os botões são refeitos a partir dele e ficam travados até
- * a versão nova chegar, e a solução digitada volta no próximo "resolver".
- * Nada é repetido sozinho: a nova tentativa é um clique novo. Sem versão
- * válida (API anterior à 4), a escrita da Qualidade nem sai. A TI segue sem
- * versão nenhuma.
+ * Nos dois setores, os dois caminhos levam a versão do chamado que está NA
+ * TELA — é ela que diz em que a pessoa se baseou ao clicar. Nada é relido
+ * antes de mandar: uma versão buscada na hora bateria sempre e deixaria a
+ * ação desfazer o que outra pessoa acabou de gravar. Se outra pessoa gravou
+ * antes, a API recusa com 409 e nada é sobrescrito: a tela relê o chamado,
+ * os botões são refeitos a partir dele e ficam travados até a versão nova
+ * chegar, e a solução digitada volta no próximo "resolver". Nada é repetido
+ * sozinho: a nova tentativa é um clique novo. Sem versão válida (API
+ * anterior à 4), a escrita da Qualidade nem sai, e a da TI sai sem versão.
+ *
+ * Sem resposta (timeout, rede, 5xx), não há como saber se a escrita entrou:
+ * a tela diz isso, guarda a solução e relê o chamado — nada é reenviado. Se
+ * a escrita tiver entrado, a versão subiu, e um clique repetido com a versão
+ * velha seria 409, não uma segunda gravação.
  */
 export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
   chamado,
@@ -287,6 +294,12 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
       } else if (err?.response?.status === 404) {
         // O chamado saiu do alcance de quem clicou (FE-5). Quem mostra o
         // chamado relê, e é ela quem diz que ele não está mais disponível.
+        setResolvendo(false);
+        pedirRecarga();
+      } else if (classificarFalhaDeEscrita(err).tipo === 'incerta') {
+        // Pode ter entrado: diz isso, guarda a solução e relê. Nada é reenviado.
+        toast.error(MENSAGEM_INCERTA);
+        if (solucao.trim()) rascunhoDaSolucao.current = solucao;
         setResolvendo(false);
         pedirRecarga();
       } else if (err?.response?.status !== 403) {
