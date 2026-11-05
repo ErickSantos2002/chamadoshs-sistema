@@ -15,12 +15,21 @@ import {
   rascunhosComConteudo,
 } from '../lib/acesso';
 import {
+  MENSAGEM_ATRIBUICAO_MUDOU,
   interpretarErroDaReatribuicao,
   opcoesDeResponsavelDaQualidade,
   podeReatribuirNaQualidade,
 } from '../lib/atendimento';
+import { MENSAGEM_INCERTA, classificarFalhaDeEscrita } from '../lib/escrita';
 import { setorDoChamado } from '../lib/setor';
-import { MENSAGEM_SEM_VERSAO, maisRecente, precondicaoDaEscrita } from '../lib/versao';
+import {
+  MENSAGEM_SEM_VERSAO,
+  MENSAGEM_VERSAO_AUSENTE,
+  ehConflitoDeVersao,
+  ehVersaoAusente,
+  maisRecente,
+  precondicaoDaEscrita,
+} from '../lib/versao';
 import { Chamado, Comentario, SetorDestinoEnum } from '../types/api';
 import {
   Avatar,
@@ -163,12 +172,18 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   const [internoRecusado, setInternoRecusado] = useState(false);
   const internoBloqueado = comentarioInterno && (internoRecusado || !podeAdministrar);
   const [atribuindo, setAtribuindo] = useState(false);
+  // O `disabled` do seletor só chega no próximo desenho: a trava é síncrona.
+  const atribuindoRef = useRef(false);
 
   // O chamado saiu do alcance de quem o via (FE-5, `lib/acesso`). O id fica
   // num ref para as respostas atrasadas — e a releitura que a remoção do card
   // provoca no efeito de carga — não o trazerem de volta à janela.
   const [acessoEncerrado, setAcessoEncerrado] = useState<RascunhoPreservado[] | null>(null);
   const encerradoPara = useRef<number | null>(null);
+  // O chamado da janela AGORA. Uma escrita do chamado anterior que responde
+  // depois da troca chega ao quadro, mas não à janela (FE-5 + API-12).
+  const idDaJanela = useRef(chamadoId);
+  idDaJanela.current = chamadoId;
   // A solução que ficou no passo de resolução do `AcoesRapidas`.
   const rascunhoDoAtendimento = useRef('');
 
@@ -334,7 +349,9 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   const registrarMudanca = (atualizado: Chamado) => {
     // Resposta de uma escrita que saiu antes da perda de acesso.
     if (encerradoPara.current === atualizado.id) return;
-    setChamado(atualizado);
+    // A janela só troca pelo mesmo chamado: a resposta atrasada de outro não
+    // toma o lugar do que está aberto.
+    setChamado((atual) => (atual && atual.id === atualizado.id ? atualizado : atual));
     aplicarChamado(atualizado);
   };
 
@@ -344,6 +361,11 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
    * só o comentário que ela tinha digitado, para copiar. Nada é reenviado.
    */
   const encerrarAcesso = (id: number) => {
+    // O 404 é de um chamado que a janela já deixou: só o card sai do quadro.
+    if (idDaJanela.current !== id) {
+      removerChamado(id);
+      return;
+    }
     encerradoPara.current = id;
     setAcessoEncerrado(
       rascunhosComConteudo([
@@ -382,11 +404,23 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
    * Troca o responsável de um chamado da TI. Quem aparece no seletor é a
    * lista da API-9 (`lib/responsaveis`), e só ela — o filtro de perfil que
    * morava aqui oferecia quem o PUT recusava. Escolher quem já está não sai.
+   *
+   * Leva a versão do chamado desta janela (API-12): se outra pessoa mudou o
+   * chamado depois que ele foi mostrado, a API recusa com 409 e nada é
+   * gravado. A janela relê o chamado e a lista, o seletor volta a mostrar o
+   * responsável de agora, e a troca é uma escolha nova — nunca repetida.
    */
   const atribuir = async (valor: string) => {
-    if (!chamado) return;
+    if (!chamado || atribuindoRef.current) return;
     if ((valor ? Number(valor) : null) === (chamado.tecnico_responsavel_id ?? null)) return;
 
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
+
+    atribuindoRef.current = true;
     try {
       setAtribuindo(true);
       // `null`, não `undefined`: a API só limpa a atribuição se o campo FOR na
@@ -394,11 +428,24 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       // `undefined`, escolher "Sem atribuição" viraria silêncio.
       const atualizado = await chamadosService.atualizar(chamado.id, {
         tecnico_responsavel_id: valor ? Number(valor) : null,
+        ...precondicao,
       });
       registrarMudanca(atualizado);
     } catch (err: any) {
       if (ehPerdaDeAcesso(err)) {
         encerrarAcesso(chamado.id);
+        return;
+      }
+      if (ehConflitoDeVersao(err) || ehVersaoAusente(err)) {
+        toast.error(ehConflitoDeVersao(err) ? MENSAGEM_ATRIBUICAO_MUDOU : MENSAGEM_VERSAO_AUSENTE);
+        void responsaveisTI.recarregar();
+        void recarregar();
+        return;
+      }
+      if (classificarFalhaDeEscrita(err).tipo === 'incerta') {
+        // Pode ter entrado. Nada é reenviado; a janela relê para mostrar.
+        toast.error(MENSAGEM_INCERTA);
+        void recarregar();
         return;
       }
       // 400 do responsável (inativo, fora da TI, conta de serviço): a lista
@@ -417,6 +464,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
         );
       }
     } finally {
+      atribuindoRef.current = false;
       setAtribuindo(false);
     }
   };
