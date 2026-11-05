@@ -651,12 +651,20 @@ foram percorridos nesta rodada.
   versão, e salvar sobrescreve em silêncio a prioridade que outra pessoa
   mudou depois de a página carregar (desenho do FE-4: versão só na
   Qualidade); Auditoria e `UsuariosTab` ainda decidem por perfil, protegidas
-  pela rota.
+  pela rota. *O seletor de solicitante (T-2) e a sobrescrita da TI (T-1,
+  classe A) foram tratados na §15; a concorrência no mesmo campo, não por
+  inteiro (§15.8).*
 
 ### 14.9 Riscos residuais e dependências para publicar
 
-1. **Ordem:** API-11 antes do front. Contra API anterior, o lembrete some sem
-   erro e as ações seguem a regra nova (mais restritiva), sem 403 evitável.
+1. **Ordem:** API-11 antes do front. Contra API anterior as ações seguem a
+   regra nova (mais restritiva), sem 403 evitável. O lembrete **não** some
+   sem erro para todo mundo, como esta seção dizia: sem a rota,
+   `lembretes-do-dia` cai em `/tarefas-recorrentes/{tarefa_id}`, a resposta
+   não é 403, e o quadro mostra a caixa discreta "Não foi possível carregar
+   as tarefas do dia agora…", que volta a cada atualização automática
+   (`Chamados.tsx`, estado `falhou`). Corrigido na auditoria de prontidão
+   (T-6); lido no código, não homologado contra a API antiga.
 2. **Administrador humano ativo** em produção antes da API-11 — com zero, a
    administração trava.
 3. **Inventário das contas reais:** quais são de serviço, qual é a TV. Sem
@@ -672,3 +680,183 @@ foram percorridos nesta rodada.
 8. `SETOR_QUALIDADE_ID` segue desligado fora do banco descartável.
 
 Nada foi publicado. Sem push, PR, merge ou deploy; nenhum commit no backend.
+
+## 15. Fechamento final T-1/T-2: concorrência da TI e seletor de solicitante
+
+Branch `feat/setor-destino-fe-5`, a partir de `c2d7ba4`. API-11
+(`chamadoshs-api`, `feat/setor-destino-api-11`, `5547893`) **sem nenhuma
+mudança**; nenhuma variável nova; versão do produto segue 1.7.8.
+
+| Commit | O quê |
+|---|---|
+| `747409e` | `fix(chamados): restringe seletor de solicitante` (T-2) |
+| `9e29dd7` | `fix(chamados): evita envio de campos nao alterados` (T-1) |
+| (este) | `docs(front): registra analise final de concorrencia` |
+
+### 15.1 Correção do T-2
+
+O seletor de solicitante do formulário novo aparecia por perfil
+(`ehEquipe`): técnico e conta de serviço Administradora o viam, escolhiam
+alguém, e a API abria o chamado no nome de quem abriu, sem avisar
+(`criar_chamado`: `is_admin_humano(current_user) and solicitante_id`).
+Agora o seletor, a lista de usuários, a validação e o `solicitante_id` dos
+dois corpos (TI e Qualidade) seguem `podeEscolherSolicitante` — o mesmo
+`ehAdministradorHumano` da §14, com a confirmação vigente do `usePermissoes`.
+
+### 15.2 Política do seletor
+
+| Quem abre | Seletor | `solicitante_id` enviado |
+|---|---|---|
+| Administrador humano, confirmado | sim | o escolhido |
+| Administrador, confirmação em andamento ou falhou | não, com nota | o próprio |
+| Administrador sem a marca de serviço lida | não | o próprio |
+| Conta de serviço Administradora | não | o próprio |
+| Técnico (TI, Qualidade, outro setor, sem setor) | não | o próprio |
+| Usuário | não | o próprio |
+| Permissão caiu depois de escolher | some | o próprio (a escolha velha não vai) |
+
+`role` sozinho e o que está no `localStorage` não liberam o seletor: um
+Administrador restaurado do navegador espera a confirmação, e uma resposta
+atrasada de outra sessão não o devolve. A nota "A escolha do solicitante
+aparece quando suas permissões forem confirmadas. Até lá, o chamado é aberto
+em seu nome." aparece só para Administrador em confirmação ou sem
+confirmação. A dica falsa "Você fica como técnico responsável." saiu. O
+`tecnico_responsavel_id` continua no corpo da abertura da TI para quem é da
+equipe por perfil — a API o descarta na criação (homologado: o chamado fica
+sem responsável); não é escolha de solicitante e ficou fora do T-2.
+
+### 15.3 Análise do T-1
+
+Antes, `handleSalvarEdicao` da TI mandava `categoria_id`, `status`,
+`prioridade` e `tecnico_responsavel_id` sempre, tirados do estado da tela, e
+nenhuma versão. Como o `PUT` da API aplica só o que vem no corpo
+(`model_dump(exclude_unset=True)`), mandar campo não alterado com o valor da
+abertura **é** reescrever esse campo. Duas classes:
+
+- **Classe A — corpo em excesso:** A abre, B muda a prioridade, A muda só o
+  status e salva: a prioridade de B volta ao valor antigo, sem 409, sem
+  aviso e sem histórico (só status entra no histórico). Reproduzido no banco
+  descartável com o corpo antigo (§15.9).
+- **Classe B — mesmo campo:** A e B mudam a mesma coisa; vale a última.
+
+### 15.4 Campos com risco
+
+`categoria_id`, `status`, `prioridade`, `tecnico_responsavel_id` (sempre) e
+`solucao` (quando editada). Na classe A, os quatro primeiros eram
+reescritos mesmo sem a pessoa tocar neles.
+
+### 15.5 Contrato real da API-11 na TI
+
+- `versao_esperada` é **opcional** na TI e, quando vem, **é conferida**:
+  diferente da versão atual, 409 `versao_desatualizada` com `versao_atual`
+  (`conferir_versao(..., obrigatoria=eh_qualidade)`). Provado nos testes da
+  própria API (`test_ti_com_versao_velha_ainda_e_409`, PG) e aqui, por HTTP.
+- A conferência na TI **não trava a linha** (`FOR UPDATE` só na Qualidade;
+  `test_a_ti_nao_pede_o_lock`). Duas gravações simultâneas com a mesma versão
+  podem passar as duas.
+- O gatilho de versão incrementa em toda mudança real, TI incluída, e a
+  resposta traz `versao`.
+- O histórico grava só troca de status.
+- O único cliente da API é este front; o n8n só recebe webhook.
+
+A frase do FE-4 "TI sem versão" era escolha do front, não política da API.
+
+### 15.6 Alternativa escolhida
+
+Caso 1, só no front, sem mudar contrato: a edição da TI usa a mesma máquina
+da Qualidade (`lib/edicaoQualidade.ts`) — retrato na abertura, diferença,
+releitura antes de salvar, conferência por campo, rebase — e manda a versão
+relida (`precondicaoDaEdicaoDaTI`, que manda nada quando a API não informa
+versão). Consideradas e não feitas: só acrescentar `versao_esperada` ao corpo
+completo (não resolve a classe A por si: qualquer gravação alheia vira 409,
+inclusive em campo que a pessoa não tocou, e na API sem versão nada muda);
+trava na API (API-12) — fora do que esta etapa pode fazer.
+
+### 15.7 Correção aplicada (`9e29dd7`)
+
+- `iniciarEdicao` da TI fotografa o chamado e preenche os campos a partir
+  dele (cancelar e reabrir não herda o que foi cancelado).
+- `salvarEdicaoDaTI`: diferença vazia fecha a edição sem enviar; senão relê
+  o chamado; releitura falhou → nada é enviado, o editado fica; campo editado
+  que também mudou no servidor → nada é enviado, os campos são rebaseados e
+  aparece "Este chamado mudou enquanto você editava"; senão `PUT` com a
+  diferença e a versão relida.
+- 409 → "Outra pessoa salvou este chamado enquanto você salvava", nada é
+  repetido; salvar de novo é decisão da pessoa e leva a versão nova.
+- Sem a permissão vigente, o responsável não vai no corpo (antes ia o de
+  antes, que podia desfazer a troca de outra pessoa).
+- A recarga durante a edição (ex.: comentar) não repõe os campos — a guarda
+  do M-2 passou a valer para a TI.
+- Perda de acesso, recusa do responsável (400) e C3 seguem os caminhos da
+  §13/§14. A Qualidade não mudou de caminho.
+
+### 15.8 Riscos residuais (classe B não está fechada)
+
+O T-1 **não** está resolvido por inteiro. Fechado: a classe A na edição da
+página. Restante:
+
+1. **Duas gravações simultâneas** com a mesma versão passam as duas (sem
+   `FOR UPDATE` na TI). Homologado: 12 de 20 rodadas.
+2. **Ações rápidas da TI, resolver e motivo do cancelamento** seguem sem
+   versão: vale a última gravação; a troca de status fica no histórico.
+3. **Prioridade, responsável e solução** não entram no histórico: uma
+   sobrescrita nesses campos não deixa rastro.
+4. **Depois de um 5xx sem resposta**, salvar de novo pode acusar conflito
+   com a própria gravação que entrou.
+5. Edição aberta numa API anterior à API-4 (sem `versao`): vai a diferença
+   sem versão — a classe A fica fechada, a janela entre releitura e envio
+   não.
+
+Proposta, **não feita e não autorizada**: trava da linha no `PUT` da TI e
+versão nas ações rápidas (API-12), e histórico dos outros campos.
+
+### 15.9 Testes executados
+
+- **Camada A (Vitest):** `NovoChamadoForm.solicitante.test.tsx` (25, novo),
+  `permissoes.test.ts`, `qualidade.test.ts`, `NovoChamadoForm.test.tsx`;
+  `ChamadoDetalhes.edicao.test.tsx` com o bloco "T-1 — a edição da TI contra
+  a edição de outra pessoa" (11) e 6 expectativas trocadas de propósito;
+  `responsaveisTI.test.tsx` (1 trocada). Suíte inteira: 96 arquivos, 1.672
+  testes, todos passando; `tsc --noEmit` e a paleta sem erro.
+- **Mutação T-2:** papel decide (20 falhas), sem confirmação (4), papel sem
+  marca (5), corpo da TI ignora a regra (2), corpo da Qualidade (1), hook com
+  `confirmada` em vez de `vigente` (2), sem as duas guardas de resposta
+  atrasada (1). Tirar uma guarda só sobrevive: são redundantes de propósito.
+- **Mutação T-1:** N1–N9 todas mortas (sem conferência, sem versão, versão
+  da abertura, corpo completo, 409 sem tratamento, recarga repõe campos,
+  abertura sem preencher, diferença vazia envia, responsável sem permissão).
+- **Camada B (HTTP, API-11 local, PG15 descartável, 28/28):** corpo antigo
+  desfaz a prioridade de B (linha de base); diferença com versão relida
+  preserva B, versão +1 por gravação, histórico com a troca de A; versão da
+  abertura → 409, nada gravado; classe B em prioridade e em status → 409 e o
+  valor de B fica; simultâneo 12/20 ambos 200; abertura com
+  `solicitante_id=11` fica com 11 para o admin humano, 2 para o técnico e 8
+  para a conta de serviço Administradora.
+- **Camada C (navegador, `build:homologacao` contra `127.0.0.1:8011`,
+  artefato sem host de produção):** hml_ti muda o status enquanto hml_admin
+  muda a prioridade → releitura, `PUT`, estado final com os dois, versão 4,
+  histórico com hml_ti. Mesmo campo → nenhum `PUT`, aviso "Prioridade
+  (agora: Baixa)", o Alta de A no campo; salvar de novo → corpo
+  `{"prioridade":"Alta","versao_esperada":3}`. Formulário novo: hml_ti e
+  hml_svc_admin sem seletor, corpo com o próprio id; hml_admin com o seletor,
+  corpo com `solicitante_id: 11`, gravado 11.
+
+### 15.10 Compatibilidade
+
+Sem ordem nova: o que o T-1 e o T-2 usam já está na API-11, que já sobe
+antes do front (§14.9). Contra API anterior à API-4 a edição da TI manda a
+diferença sem versão. A Qualidade segue com `precondicaoDaEscrita` e o
+caminho do FE-4. Nenhuma variável `VITE_*` nova.
+
+### 15.11 Decisões pendentes
+
+- Se a classe B residual da TI (§15.8, itens 1 a 3) é aceitável para
+  publicar, ou se a API-12 (trava no `PUT` da TI, versão nas ações rápidas)
+  entra antes.
+- As mesmas da §14.9: inventário das contas, `PAINEL_CONTAS_IDS`,
+  `SETORES_TI_IDS` reais, Administrador humano ativo.
+
+### 15.12 Situação de publicação
+
+Nada publicado. Sem push, PR, merge ou deploy; nenhum commit no backend;
+nenhum acesso a produção ou a dado real; stash `47d800d` intocado.

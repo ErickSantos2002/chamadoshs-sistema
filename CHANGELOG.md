@@ -73,9 +73,17 @@ os administradores humanos ativos em produção: com zero, a administração
 trava. O lembrete da TV só volta com `PAINEL_CONTAS_IDS` preenchida com o id
 real da conta do painel — que ainda depende do inventário das contas; vazia,
 a TV mostra o quadro sem o lembrete, sem aviso e sem erro. Contra API
-anterior à API-11 o front falha seguro: a rota do lembrete não existe, o
-bloco não aparece, e o quadro segue. Detalhes em
-`docs/fe-5-permissoes-e-api9.md`, §14.
+anterior à API-11 o quadro segue, mas o lembrete não some em silêncio para
+todo mundo: a rota não existe, o pedido cai em `/tarefas-recorrentes/{id}`, a
+resposta não é 403, e quem recebe esse erro vê a caixa discreta "Não foi
+possível carregar as tarefas do dia agora…", repetida a cada atualização
+automática (lido no código; não homologado contra a API antiga). Mais um
+motivo para a ordem. Detalhes em `docs/fe-5-permissoes-e-api9.md`, §14 e §15.
+
+O fechamento final do FE-5 (T-1 e T-2) **não acrescenta ordem nem
+variável**: nada muda na API. O seletor de solicitante e a edição da TI usam
+o que a API-11 já responde; contra API anterior à API-4, que não manda a
+versão, a edição da TI manda só a diferença, sem versão.
 
 ### Added
 
@@ -240,6 +248,26 @@ bloco não aparece, e o quadro segue. Detalhes em
 - **Permissão administrativa não vem mais do navegador (FE-5).** Ela é
   confirmada no servidor a cada abertura e renovação de sessão; uma resposta
   atrasada de outra sessão é descartada.
+- **Só o Administrador humano escolhe o solicitante ao abrir um chamado
+  (FE-5, T-2).** Antes o seletor aparecia para técnico e para conta de serviço
+  Administradora, e a API abria o chamado no nome de quem abriu, em silêncio.
+  Agora ele aparece só quando o servidor confirmou que a pessoa é
+  Administrador e não é conta de serviço — a mesma regra que a API usa.
+  Enquanto a confirmação anda, ou se ela falhar, o chamado é aberto no nome de
+  quem abre, e uma nota diz isso; uma escolha feita antes de a permissão cair
+  não vai junto. A dica "Você fica como técnico responsável.", que não era
+  verdade, saiu.
+- **Editar um chamado da TI não desfaz mais o que outra pessoa salvou
+  (FE-5, T-1).** Antes a edição mandava os quatro campos — categoria, status,
+  prioridade e responsável — do jeito que estavam quando a página abriu: trocar
+  só o status devolvia, sem aviso, a prioridade que outra pessoa tinha mudado
+  depois. Agora vai só o que a pessoa mudou, o chamado é relido antes de
+  salvar, e o pedido leva a versão relida. Se a outra pessoa mexeu no mesmo
+  campo, nada é salvo, o que foi editado fica nos campos e a tela diz o que
+  mudou; se ela salvou entre a releitura e o envio, a API recusa e a tela
+  avisa. Salvar sem mudar nada não envia nada. Comentar durante a edição não
+  repõe mais os campos (a correção do M-2, agora também na TI). As ações
+  rápidas da TI não mudaram.
 
 ### Pendências conhecidas
 
@@ -251,10 +279,12 @@ bloco não aparece, e o quadro segue. Detalhes em
   TI.
 - **Técnico vê um seletor de solicitante que a API ignora** — ela só honra o
   solicitante escolhido quando quem abre é Administrador. Vale para os dois
-  setores; mantido como está, para não mudar a TI nesta etapa.
+  setores; mantido como está, para não mudar a TI nesta etapa. *FE-5, T-2:
+  corrigido; o seletor é só do Administrador humano confirmado.*
 - **A dica "Você fica como técnico responsável." não é verdade na TI**: a API
   descarta o `tecnico_responsavel_id` na abertura. Na Qualidade a dica não
-  aparece.
+  aparece. *FE-5, T-2: a dica saiu. O campo segue indo no corpo da abertura
+  da TI para quem é da equipe, e a API segue o descartando.*
 - **FE-3 validado só por testes automatizados**, contra o contrato do API-3
   (`d5e327f`) e as respostas reais das quatro versões da API à sonda. Teste
   manual e visual pendentes, pelo mesmo motivo do FE-2.
@@ -300,6 +330,17 @@ bloco não aparece, e o quadro segue. Detalhes em
   conta de serviço, qual é a TV), `PAINEL_CONTAS_IDS` e `SETORES_TI_IDS` com
   ids reais, ao menos um Administrador humano ativo, e a ordem API-11 antes
   do front. Riscos residuais em `docs/fe-5-permissoes-e-api9.md`, §14.
+- **Edição simultânea na TI: o T-1 fecha a perda em campo diferente, não a
+  concorrência inteira.** Quem resta: duas gravações da TI que chegam à API
+  no mesmo instante, com a mesma versão, passam as duas — o `PUT` da TI
+  confere a versão sem travar a linha (na homologação local, 12 de 20
+  rodadas simultâneas gravaram as duas); as ações rápidas da TI, o resolver e
+  o motivo do cancelamento seguem sem versão (vale a última, e a troca de
+  status fica no histórico); prioridade, responsável e solução não entram no
+  histórico; e, depois de um erro de servidor sem resposta, salvar de novo
+  pode acusar conflito com a própria gravação. Fechar de vez pede a trava na
+  API (proposta, não feita). Detalhes em `docs/fe-5-permissoes-e-api9.md`,
+  §15.
 
 ---
 
