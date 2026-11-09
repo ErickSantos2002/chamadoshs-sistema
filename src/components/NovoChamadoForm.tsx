@@ -117,12 +117,15 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
   // ── A Qualidade ──────────────────────────────────────────────────────
   //
   // A API decide se ela existe: a consulta de atendentes é a pergunta, e só
-  // `disponivel` oferece o setor (ver `lib/qualidade`). Enquanto a resposta
-  // não chega, o formulário é o da TI de sempre.
+  // `disponivel` libera o setor (ver `lib/qualidade`).
   //
-  // Título, categoria e responsável ficam guardados ao trocar de setor: quem
-  // volta encontra o que digitou. Só o setor marcado decide o que vai no corpo.
-  const [setor, setSetor] = useState<SetorDestinoEnum>(SetorDestinoEnum.TI);
+  // O setor de atendimento é escolha de quem abre, e nasce sem nenhum
+  // marcado (1.8.0): não há padrão, nem pelo perfil de quem abre, nem pela
+  // categoria. Até a escolha, o formulário mostra só ela — os campos dependem
+  // do setor. Título, categoria e responsável ficam guardados ao trocar de
+  // setor: quem volta encontra o que digitou. Só o setor marcado decide o que
+  // vai no corpo.
+  const [setor, setSetor] = useState<SetorDestinoEnum | null>(null);
   const [disponibilidade, setDisponibilidade] =
     useState<DisponibilidadeQualidade>('verificando');
   const [atendentes, setAtendentes] = useState<AtendenteQualidade[]>([]);
@@ -152,16 +155,17 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
     };
   }, [consultar]);
 
-  // Quem já está na Qualidade continua vendo a escolha, mesmo que ela tenha
-  // ficado indisponível: é por ela que se volta para a TI.
-  const mostrarSetores =
-    disponibilidade === 'disponivel' || disponibilidade === 'sem-atendentes' || naQualidade;
+  // A escolha aparece sempre, com a Qualidade desabilitada e o motivo quando
+  // a API não a oferece: é obrigatória, e quem já está na Qualidade volta
+  // para a TI por ela.
   const qualidadeLiberada = disponibilidade === 'disponivel';
   const motivoQualidade = qualidadeLiberada
     ? null
-    : disponibilidade === 'sem-atendentes'
-      ? MENSAGEM_SEM_ATENDENTES
-      : 'A abertura para a Qualidade está indisponível no momento.';
+    : disponibilidade === 'verificando'
+      ? 'Verificando se a Qualidade está disponível…'
+      : disponibilidade === 'sem-atendentes'
+        ? MENSAGEM_SEM_ATENDENTES
+        : 'A abertura para a Qualidade está indisponível no momento.';
 
   const trocarSetor = (novo: SetorDestinoEnum) => {
     setSetor(novo);
@@ -222,6 +226,11 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       return;
     }
 
+    if (setor === null) {
+      setErro('Escolha o setor de atendimento.');
+      return;
+    }
+
     if (naQualidade) {
       await enviarQualidade(user.id);
       return;
@@ -272,215 +281,227 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
         <Aviso variante="perigo">{erro}</Aviso>
       )}
 
-      {mostrarSetores && (
-        // Rádio nativo, e não o `Seletor`: são duas opções sempre à vista, e o
-        // grupo de mesmo `name` já dá as setas do teclado e o anúncio
-        // "1 de 2" sem nada escrito aqui.
-        <fieldset>
-          <legend className="mb-1.5 text-sm font-medium text-conteudo">
-            Setor de destino
-          </legend>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            {[
-              { valor: SetorDestinoEnum.TI, rotulo: 'TI', liberado: true },
-              { valor: SetorDestinoEnum.QUALIDADE, rotulo: 'Qualidade', liberado: qualidadeLiberada },
-            ].map((opcao) => {
-              const marcado = setor === opcao.valor;
-              return (
-                <label
-                  key={opcao.valor}
+      {/* Rádio nativo, e não o `Seletor`: são duas opções sempre à vista, e o
+          grupo de mesmo `name` já dá as setas do teclado e o anúncio "1 de 2"
+          sem nada escrito aqui. O `required` vale para o grupo: o navegador
+          barra o envio sem setor, e `enviar` confere de novo. */}
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-medium text-conteudo">
+          Setor de atendimento{' '}
+          <span aria-hidden="true" className="text-on-tint-danger">
+            *
+          </span>
+        </legend>
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          {[
+            { valor: SetorDestinoEnum.TI, rotulo: 'TI', liberado: true },
+            { valor: SetorDestinoEnum.QUALIDADE, rotulo: 'Qualidade', liberado: qualidadeLiberada },
+          ].map((opcao) => {
+            const marcado = setor === opcao.valor;
+            return (
+              <label
+                key={opcao.valor}
+                className={cn(
+                  'inline-flex items-center gap-2 text-sm text-conteudo-suave',
+                  opcao.liberado ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                )}
+              >
+                {/* O desenho é o do `Checkbox`, em círculo: input `peer`
+                    escondido, e o anel de foco no que se vê. */}
+                <input
+                  type="radio"
+                  name={`setor-destino${idDoMotivo}`}
+                  value={opcao.valor}
+                  className="peer sr-only"
+                  checked={marcado}
+                  required
+                  disabled={!opcao.liberado}
+                  aria-describedby={
+                    !opcao.liberado && motivoQualidade ? idDoMotivo : undefined
+                  }
+                  onChange={() => trocarSetor(opcao.valor)}
+                />
+                <span
+                  aria-hidden="true"
                   className={cn(
-                    'inline-flex items-center gap-2 text-sm text-conteudo-suave',
-                    opcao.liberado ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                    'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors',
+                    marcado ? 'border-sinal' : 'border-borda-control bg-superficie',
+                    'peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--focus-ring)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-superficie'
                   )}
                 >
-                  {/* O desenho é o do `Checkbox`, em círculo: input `peer`
-                      escondido, e o anel de foco no que se vê. */}
-                  <input
-                    type="radio"
-                    name={`setor-destino${idDoMotivo}`}
-                    value={opcao.valor}
-                    className="peer sr-only"
-                    checked={marcado}
-                    disabled={!opcao.liberado}
-                    aria-describedby={
-                      !opcao.liberado && motivoQualidade ? idDoMotivo : undefined
-                    }
-                    onChange={() => trocarSetor(opcao.valor)}
-                  />
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors',
-                      marcado ? 'border-sinal' : 'border-borda-control bg-superficie',
-                      'peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--focus-ring)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-superficie'
-                    )}
-                  >
-                    {marcado && <span className="h-2 w-2 rounded-full bg-sinal" />}
-                  </span>
-                  {opcao.rotulo}
-                </label>
-              );
-            })}
+                  {marcado && <span className="h-2 w-2 rounded-full bg-sinal" />}
+                </span>
+                {opcao.rotulo}
+              </label>
+            );
+          })}
+        </div>
+        {motivoQualidade && (
+          <p id={idDoMotivo} className="mt-1 text-xs text-conteudo-tenue">
+            {motivoQualidade}
+          </p>
+        )}
+        {setor === null && (
+          <p className="mt-1 text-xs text-conteudo-tenue">
+            Escolha quem vai atender o chamado para preencher o restante.
+          </p>
+        )}
+      </fieldset>
+
+      {setor !== null && (
+        <>
+          {!naQualidade && (
+            <div>
+              <RotuloDeCampo htmlFor="titulo" obrigatorio>Título</RotuloDeCampo>
+              <Input
+                id="titulo"
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                maxLength={TITULO_MAXIMO}
+                placeholder="Ex: Impressora do financeiro não conecta"
+                required
+              />
+              <ContadorMinimo
+                valor={titulo}
+                minimo={MINIMO_TITULO}
+                maximo={TITULO_MAXIMO}
+              />
+            </div>
+          )}
+
+          <div>
+            <RotuloDeCampo htmlFor="descricao" obrigatorio>Descrição</RotuloDeCampo>
+            <Textarea
+              id="descricao"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              rows={5}
+              placeholder="O que aconteceu, desde quando, e o que já foi tentado."
+              required
+            />
+            <ContadorMinimo valor={descricao} minimo={MINIMO_DESCRICAO} />
           </div>
-          {motivoQualidade && (
-            <p id={idDoMotivo} className="mt-1 text-xs text-conteudo-tenue">
-              {motivoQualidade}
+
+          {escolheSolicitante && (
+            <div>
+              <RotuloDeCampo htmlFor="solicitante" obrigatorio>Solicitante</RotuloDeCampo>
+              {/* A lista mais longa do sistema — trinta e poucos nomes. É onde a
+                  busca por digitação do seletor mais vale: digitar "ga" chega em
+                  Gabriel sem rolar. O `required` nativo saiu junto com o <select>,
+                  e não faz falta: `enviar` já recusa com "Selecione o solicitante". */}
+              <Seletor
+                id="solicitante"
+                rotulo="Solicitante"
+                valor={solicitanteId ? String(solicitanteId) : ''}
+                aoMudar={(v) => setSolicitanteId(v ? Number(v) : undefined)}
+                opcoes={[
+                  { valor: '', rotulo: 'Selecione o solicitante' },
+                  ...usuarios.map((usuario) => ({
+                    valor: String(usuario.id),
+                    rotulo: usuario.nome,
+                  })),
+                ]}
+              />
+              {/* A dica "Você fica como técnico responsável." saiu: na abertura
+                  da TI a API descarta o responsável do corpo, e o chamado nasce
+                  sem atribuição — a dica prometia o que não acontece. */}
+            </div>
+          )}
+
+          {solicitanteAguardaConfirmacao && (
+            <p className="text-xs text-conteudo-tenue" role="status">
+              A escolha do solicitante aparece quando suas permissões forem confirmadas. Até lá, o
+              chamado é aberto em seu nome.
             </p>
           )}
-        </fieldset>
-      )}
 
-      {!naQualidade && (
-        <div>
-          <RotuloDeCampo htmlFor="titulo" obrigatorio>Título</RotuloDeCampo>
-          <Input
-            id="titulo"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-            maxLength={TITULO_MAXIMO}
-            placeholder="Ex: Impressora do financeiro não conecta"
-            required
-          />
-          <ContadorMinimo
-            valor={titulo}
-            minimo={MINIMO_TITULO}
-            maximo={TITULO_MAXIMO}
-          />
-        </div>
-      )}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {naQualidade ? (
+              <div>
+                <RotuloDeCampo htmlFor="responsavel" obrigatorio>Responsável</RotuloDeCampo>
+                {/* Só quem a API devolveu, e nada escolhido de partida: atribuir a
+                    alguém é decisão de quem abre, e "Sem atribuição" a API recusa. */}
+                <Seletor
+                  id="responsavel"
+                  rotulo="Responsável"
+                  valor={responsavelId ? String(responsavelId) : ''}
+                  aoMudar={(v) => setResponsavelId(v ? Number(v) : undefined)}
+                  opcoes={[
+                    { valor: '', rotulo: 'Selecione o responsável' },
+                    ...atendentes.map((atendente) => ({
+                      valor: String(atendente.id),
+                      rotulo: atendente.nome,
+                    })),
+                  ]}
+                />
+              </div>
+            ) : (
+              <div>
+                <RotuloDeCampo htmlFor="categoria">Categoria</RotuloDeCampo>
+                <Seletor
+                  id="categoria"
+                  rotulo="Categoria"
+                  valor={categoriaId ? String(categoriaId) : ''}
+                  aoMudar={(v) => setCategoriaId(v ? Number(v) : undefined)}
+                  opcoes={[
+                    { valor: '', rotulo: 'Sem categoria' },
+                    ...categorias.map((categoria) => ({
+                      valor: String(categoria.id),
+                      rotulo: categoria.nome,
+                    })),
+                  ]}
+                />
+              </div>
+            )}
 
-      <div>
-        <RotuloDeCampo htmlFor="descricao" obrigatorio>Descrição</RotuloDeCampo>
-        <Textarea
-          id="descricao"
-          value={descricao}
-          onChange={(e) => setDescricao(e.target.value)}
-          rows={5}
-          placeholder="O que aconteceu, desde quando, e o que já foi tentado."
-          required
-        />
-        <ContadorMinimo valor={descricao} minimo={MINIMO_DESCRICAO} />
-      </div>
-
-      {escolheSolicitante && (
-        <div>
-          <RotuloDeCampo htmlFor="solicitante" obrigatorio>Solicitante</RotuloDeCampo>
-          {/* A lista mais longa do sistema — trinta e poucos nomes. É onde a
-              busca por digitação do seletor mais vale: digitar "ga" chega em
-              Gabriel sem rolar. O `required` nativo saiu junto com o <select>,
-              e não faz falta: `enviar` já recusa com "Selecione o solicitante". */}
-          <Seletor
-            id="solicitante"
-            rotulo="Solicitante"
-            valor={solicitanteId ? String(solicitanteId) : ''}
-            aoMudar={(v) => setSolicitanteId(v ? Number(v) : undefined)}
-            opcoes={[
-              { valor: '', rotulo: 'Selecione o solicitante' },
-              ...usuarios.map((usuario) => ({
-                valor: String(usuario.id),
-                rotulo: usuario.nome,
-              })),
-            ]}
-          />
-          {/* A dica "Você fica como técnico responsável." saiu: na abertura
-              da TI a API descarta o responsável do corpo, e o chamado nasce
-              sem atribuição — a dica prometia o que não acontece. */}
-        </div>
-      )}
-
-      {solicitanteAguardaConfirmacao && (
-        <p className="text-xs text-conteudo-tenue" role="status">
-          A escolha do solicitante aparece quando suas permissões forem confirmadas. Até lá, o
-          chamado é aberto em seu nome.
-        </p>
-      )}
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {naQualidade ? (
-          <div>
-            <RotuloDeCampo htmlFor="responsavel" obrigatorio>Responsável</RotuloDeCampo>
-            {/* Só quem a API devolveu, e nada escolhido de partida: atribuir a
-                alguém é decisão de quem abre, e "Sem atribuição" a API recusa. */}
-            <Seletor
-              id="responsavel"
-              rotulo="Responsável"
-              valor={responsavelId ? String(responsavelId) : ''}
-              aoMudar={(v) => setResponsavelId(v ? Number(v) : undefined)}
-              opcoes={[
-                { valor: '', rotulo: 'Selecione o responsável' },
-                ...atendentes.map((atendente) => ({
-                  valor: String(atendente.id),
-                  rotulo: atendente.nome,
-                })),
-              ]}
-            />
-          </div>
-        ) : (
-          <div>
-            <RotuloDeCampo htmlFor="categoria">Categoria</RotuloDeCampo>
-            <Seletor
-              id="categoria"
-              rotulo="Categoria"
-              valor={categoriaId ? String(categoriaId) : ''}
-              aoMudar={(v) => setCategoriaId(v ? Number(v) : undefined)}
-              opcoes={[
-                { valor: '', rotulo: 'Sem categoria' },
-                ...categorias.map((categoria) => ({
-                  valor: String(categoria.id),
-                  rotulo: categoria.nome,
-                })),
-              ]}
-            />
-          </div>
-        )}
-
-        <div>
-          <RotuloDeCampo htmlFor="prioridade">Prioridade</RotuloDeCampo>
-          {/* A mesma cor que a prioridade tem nos gráficos e nos filtros. */}
-          <Seletor
-            id="prioridade"
-            rotulo="Prioridade"
-            valor={prioridade}
-            aoMudar={(v) => setPrioridade(v as PrioridadeEnum)}
-            opcoes={Object.values(PrioridadeEnum).map((p) => ({
-              valor: p,
-              rotulo: p,
-              cor: corDaPrioridade(p, darkMode),
-            }))}
-          />
-        </div>
-      </div>
-
-      {prazoEscolhido && (
-        <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
-          <Rotulo como="p">
-            O que a prioridade {prazoEscolhido.prioridade} compromete
-          </Rotulo>
-
-          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
-            <span className="flex items-center gap-1.5 text-conteudo">
-              <IconeRelogio className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
-              <span className="text-conteudo-tenue">Alguém assume em até</span>
-              <strong className="font-semibold">
-                {formatarPrazo(prazoEscolhido.minutos_resposta)}
-              </strong>
-            </span>
-
-            <span className="flex items-center gap-1.5 text-conteudo">
-              <IconeEscudoConfere className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
-              <span className="text-conteudo-tenue">Resolvido em até</span>
-              <strong className="font-semibold">
-                {formatarPrazo(prazoEscolhido.minutos_resolucao)}
-              </strong>
-            </span>
+            <div>
+              <RotuloDeCampo htmlFor="prioridade">Prioridade</RotuloDeCampo>
+              {/* A mesma cor que a prioridade tem nos gráficos e nos filtros. */}
+              <Seletor
+                id="prioridade"
+                rotulo="Prioridade"
+                valor={prioridade}
+                aoMudar={(v) => setPrioridade(v as PrioridadeEnum)}
+                opcoes={Object.values(PrioridadeEnum).map((p) => ({
+                  valor: p,
+                  rotulo: p,
+                  cor: corDaPrioridade(p, darkMode),
+                }))}
+              />
+            </div>
           </div>
 
-          <p className="mt-2 text-xs text-conteudo-tenue">
-            Contado em horário útil ({EXPEDIENTE}), descontando o tempo em que o
-            chamado ficar aguardando resposta sua.
-          </p>
-        </div>
+          {prazoEscolhido && (
+            <div className="rounded-xl border border-borda bg-superficie-elevada p-4">
+              <Rotulo como="p">
+                O que a prioridade {prazoEscolhido.prioridade} compromete
+              </Rotulo>
+
+              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+                <span className="flex items-center gap-1.5 text-conteudo">
+                  <IconeRelogio className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+                  <span className="text-conteudo-tenue">Alguém assume em até</span>
+                  <strong className="font-semibold">
+                    {formatarPrazo(prazoEscolhido.minutos_resposta)}
+                  </strong>
+                </span>
+
+                <span className="flex items-center gap-1.5 text-conteudo">
+                  <IconeEscudoConfere className="h-4 w-4 text-conteudo-tenue" aria-hidden="true" />
+                  <span className="text-conteudo-tenue">Resolvido em até</span>
+                  <strong className="font-semibold">
+                    {formatarPrazo(prazoEscolhido.minutos_resolucao)}
+                  </strong>
+                </span>
+              </div>
+
+              <p className="mt-2 text-xs text-conteudo-tenue">
+                Contado em horário útil ({EXPEDIENTE}), descontando o tempo em que o
+                chamado ficar aguardando resposta sua.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       <div className="flex justify-end gap-2 pt-2">

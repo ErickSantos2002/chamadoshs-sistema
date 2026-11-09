@@ -145,8 +145,8 @@ export async function consultarQualidade(): Promise<ConsultaDaQualidade> {
  *
  * `tecnico_responsavel_id` continua indo para a equipe, e a API continua o
  * descartando na abertura TI. É dívida registrada, não regra: mexer nele é
- * mudar a TI. `setor_destino` não vai — omitido é TI, e mandá-lo seria outra
- * mudança no corpo.
+ * mudar a TI. `setor_destino` vai sempre, desde a 1.8.0: o setor passou a ser
+ * escolha obrigatória no formulário.
  */
 export function montarCorpoTI(campos: {
   ehEquipe: boolean;
@@ -159,6 +159,9 @@ export function montarCorpoTI(campos: {
   categoriaId: number | undefined;
 }): ChamadoCreate {
   return {
+    // Explícito desde a 1.8.0: a TI é escolha de quem abre, não a falta de
+    // escolha. A API ainda aceita a ausência como TI, só para o front antigo.
+    setor_destino: SetorDestinoEnum.TI,
     solicitante_id: campos.escolheSolicitante ? campos.solicitanteId! : campos.usuarioId,
     titulo: campos.titulo.trim(),
     descricao: campos.descricao.trim(),

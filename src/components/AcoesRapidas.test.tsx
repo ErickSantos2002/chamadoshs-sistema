@@ -56,6 +56,10 @@ const TECNICO = (() => {
   return { ...s, user: { ...s.user!, integra_equipe_ti: true } };
 })();
 const TECNICO_DE_FORA = sessao(3, 'Tecnico');
+// A técnica da equipe da Qualidade: fora da TI, e na lista de atendentes que
+// os casos da Qualidade montam (id 3). Na Qualidade, é ela a equipe — o
+// técnico da TI não altera os chamados de lá (API-13).
+const TECNICA_DA_QUALIDADE = TECNICO_DE_FORA;
 const USUARIO = sessao(7, 'Usuario');
 
 const chamadoCom = (extra: Partial<Chamado> = {}): Chamado =>
@@ -437,7 +441,7 @@ describe('Qualidade — atendimento pela rota restrita', () => {
     });
 
     it('técnico responsável e elegível: a mesma rota, e os botões uma vez só', async () => {
-      await montarQ(TECNICO, daQualidade({ tecnico_responsavel_id: 3 }));
+      await montarQ(TECNICA_DA_QUALIDADE, daQualidade({ tecnico_responsavel_id: 3 }));
       expect(botoes()).toEqual(['Aguardando retorno', 'Marcar como resolvido']);
       await clicar('Aguardando retorno');
       expect(atender).toHaveBeenCalledTimes(1);
@@ -476,7 +480,7 @@ describe('Qualidade — atendimento pela rota restrita', () => {
      */
     it('rota indisponível ao resolver, para a equipe: o passo fecha, sem PUT', async () => {
       falhar(resp(404, 'Not Found'));
-      await montarQ(TECNICO, daQualidade({ tecnico_responsavel_id: 3 }));
+      await montarQ(TECNICA_DA_QUALIDADE, daQualidade({ tecnico_responsavel_id: 3 }));
       await clicar('Marcar como resolvido');
       await digitarSolucao(SOLUCAO_OK);
       await clicar('Resolver');
@@ -550,7 +554,7 @@ describe('Qualidade — atendimento pela rota restrita', () => {
 
     it('503 para a equipe responsável: também não vira PUT sozinho', async () => {
       falhar(resp(503));
-      await montarQ(TECNICO, daQualidade({ tecnico_responsavel_id: 3 }));
+      await montarQ(TECNICA_DA_QUALIDADE, daQualidade({ tecnico_responsavel_id: 3 }));
       await clicar('Aguardando retorno');
       expect(atender).toHaveBeenCalledTimes(1);
       expect(atualizar).not.toHaveBeenCalled();

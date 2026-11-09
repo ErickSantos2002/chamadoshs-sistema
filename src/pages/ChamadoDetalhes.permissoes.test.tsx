@@ -63,10 +63,14 @@ const CONTAS: Record<string, Conta> = {
   'conta de serviço Usuário': { id: 73, role: 'Usuario', integra_equipe_ti: false },
 };
 
-/** Quem altera como equipe em cada setor, pela API-11. */
+/**
+ * Quem altera como equipe em cada setor, pela API-11 e pela API-13: cada
+ * equipe no seu setor (até a API-12 o técnico da TI também alterava os da
+ * Qualidade). O interno segue a mesma regra, no setor do chamado.
+ */
 const EQUIPE_TI = ['administrador humano', 'técnico humano TI'];
-const EQUIPE_QUALIDADE = ['administrador humano', 'técnico humano TI', 'técnico humano Qualidade'];
-const INTERNO = ['administrador humano', 'técnico humano TI'];
+const EQUIPE_QUALIDADE = ['administrador humano', 'técnico humano Qualidade'];
+const INTERNO = EQUIPE_TI;
 
 const BASE = {
   id: 1,
@@ -228,6 +232,8 @@ describe('C2 — chamado da Qualidade: a segregação dela', () => {
       expect(texto()).toContain('Chamado fictício da matriz');
       expect(tem('Editar Detalhes')).toBe(equipe);
       expect(tem('Arquivar')).toBe(equipe);
+      // O interno é da equipe da Qualidade aqui, e não da TI (API-13).
+      expect(opcaoInterno()).toBe(equipe);
     });
   }
 });

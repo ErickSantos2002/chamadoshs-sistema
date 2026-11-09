@@ -229,7 +229,8 @@ const ChamadoDetalhes: React.FC = () => {
   // - `ehSolicitante`: o que é do solicitante — cancelar o que abriu (a
   //   avaliação mora no `Avaliacao`, com a mesma regra);
   // - `podeAdministrarUsuarios`: administrador humano — excluir;
-  // - `podeAdministrar`: interno e responsável da TI.
+  // - `podeAdministrar`: responsável da TI. O interno segue
+  //   `alteraComoEquipe` (API-13): é da equipe do setor do chamado.
   //
   // Conta de serviço não altera como equipe, qualquer que seja o perfil.
   const {
@@ -258,7 +259,7 @@ const ChamadoDetalhes: React.FC = () => {
 
   // Interno marcado sem permissão — recusado pela API, ou a permissão saiu
   // depois de marcar: não sai, e não vira público sozinho.
-  const internoBloqueado = comentarioInterno && (internoRecusado || !podeAdministrar);
+  const internoBloqueado = comentarioInterno && (internoRecusado || !alteraComoEquipe);
 
   // O que a pessoa digitou, sempre o do último desenho: quem encerra o acesso
   // pode vir de um manipulador antigo, e a cópia dele estaria velha (ou com
@@ -822,7 +823,7 @@ const ChamadoDetalhes: React.FC = () => {
   const handleEnviarComentario = async () => {
     if (!novoComentario.trim() || !chamado || !user || internoBloqueado) return;
     // Sempre explícito: `true` só com a opção marcada por quem pode.
-    const interno = comentarioInterno && podeAdministrar;
+    const interno = comentarioInterno && alteraComoEquipe;
 
     try {
       setEnviandoComentario(true);
@@ -2052,7 +2053,7 @@ const ChamadoDetalhes: React.FC = () => {
 
               <div className="mt-2">
                 <OpcaoDeComentarioInterno
-                  pode={podeAdministrar}
+                  pode={alteraComoEquipe}
                   interno={comentarioInterno}
                   bloqueado={internoBloqueado}
                   aoMudar={setComentarioInterno}

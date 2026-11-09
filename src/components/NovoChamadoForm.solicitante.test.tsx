@@ -92,11 +92,32 @@ const arvore = (conteudo: React.ReactNode) => (
 
 const formulario = () => <NovoChamadoForm aoCriar={aoCriar} aoCancelar={() => {}} />;
 
-const montar = async (quem: Contexto) => {
+/**
+ * Monta e marca a TI: o solicitante só aparece depois do setor (1.8.0).
+ * `setor: null` só renderiza de novo, sem tocar na escolha — para trocar a
+ * identidade com o formulário já preenchido.
+ */
+const montar = async (quem: Contexto, { setor = 'TI' }: { setor?: 'TI' | null } = {}) => {
   await act(async () => {
     root.render(<AuthContext.Provider value={quem}>{arvore(formulario())}</AuthContext.Provider>);
   });
+  if (setor) await escolherSetor(setor);
 };
+
+/**
+ * Marca o setor de atendimento pelo rótulo, como a pessoa (1.8.0: a escolha é
+ * obrigatória e nasce vazia, e os campos só aparecem depois dela).
+ */
+const escolherSetor = async (rotulo: 'TI' | 'Qualidade') => {
+  const alvo = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="radio"]')).find(
+    (r) => r.closest('label')?.textContent?.trim().startsWith(rotulo)
+  );
+  expect(alvo, `rádio "${rotulo}" não apareceu`).toBeTruthy();
+  await act(async () => {
+    alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+};
+
 
 /** Desmonta e monta de novo: `root.render` repetido só reconcilia. */
 const remontar = async (quem: Contexto) => {
@@ -294,7 +315,7 @@ describe('T-2 — o corpo enviado', () => {
     await escolher('solicitante', 'Gabriel Ficticio');
     await escolher('responsavel', 'Ana Qualidade Ficticia');
 
-    await montar(ADMIN_SERVICO);
+    await montar(ADMIN_SERVICO, { setor: null });
     expect(temSeletor()).toBe(false);
     await enviar();
     expect(corpo()).toMatchObject({ setor_destino: 'QUALIDADE', solicitante_id: 2 });
@@ -354,6 +375,7 @@ describe('T-2 — com o AuthProvider de verdade', () => {
         </AuthProvider>
       );
     });
+    await escolherSetor('TI');
   };
 
   const adiado = <T,>() => {

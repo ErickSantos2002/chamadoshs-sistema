@@ -203,9 +203,10 @@ describe('montarCorpoTI — o corpo de sempre', () => {
     categoriaId: 4 as number | undefined,
   };
 
-  it('Usuario: para si, sem responsável — as seis chaves', () => {
+  it('Usuario: para si, sem responsável — as sete chaves', () => {
     const corpo = montarCorpoTI({ ...base, ehEquipe: false, escolheSolicitante: false, usuarioId: 7, solicitanteId: undefined });
     expect(corpo).toStrictEqual({
+      setor_destino: SetorDestinoEnum.TI,
       solicitante_id: 7,
       titulo: 'Impressora do RH sem papel',
       descricao: 'A impressora do RH parou de puxar papel.',
@@ -239,9 +240,9 @@ describe('montarCorpoTI — o corpo de sempre', () => {
     expect(corpo).toMatchObject({ solicitante_id: 3, tecnico_responsavel_id: 3 });
   });
 
-  it('não leva setor_destino', () => {
+  it('leva setor_destino TI, explícito (1.8.0)', () => {
     const corpo = montarCorpoTI({ ...base, ehEquipe: false, escolheSolicitante: false, usuarioId: 7, solicitanteId: undefined });
-    expect(corpo).not.toHaveProperty('setor_destino');
+    expect(corpo.setor_destino).toBe(SetorDestinoEnum.TI);
   });
 });
 

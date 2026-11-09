@@ -170,7 +170,6 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   // da API trava o envio até a pessoa escolher publicar.
   const [comentarioInterno, setComentarioInterno] = useState(false);
   const [internoRecusado, setInternoRecusado] = useState(false);
-  const internoBloqueado = comentarioInterno && (internoRecusado || !podeAdministrar);
   const [atribuindo, setAtribuindo] = useState(false);
   // O `disabled` do seletor só chega no próximo desenho: a trava é síncrona.
   const atribuindoRef = useRef(false);
@@ -199,10 +198,12 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   // técnico que lê só pelo vínculo e a conta de serviço levariam um 403.
   // Cancelado e arquivado ficam de fora pelo mesmo motivo das ações: mexer
   // neles é decisão da página inteira, junto do motivo e do histórico.
-  const podeAtribuir =
-    podeAlterarComoEquipe(chamado, ehDaQualidade ? qualidade.atendentes : null) &&
-    !chamado?.cancelado &&
-    !chamado?.arquivado;
+  const alteraComoEquipe = podeAlterarComoEquipe(chamado, ehDaQualidade ? qualidade.atendentes : null);
+  const podeAtribuir = alteraComoEquipe && !chamado?.cancelado && !chamado?.arquivado;
+  // O interno é da equipe do setor do chamado (API-13): a mesma regra de
+  // alterar como equipe, e não o perfil — o técnico da TI não escreve no
+  // interno da Qualidade, e o da Qualidade escreve no dela.
+  const internoBloqueado = comentarioInterno && (internoRecusado || !alteraComoEquipe);
   const reatribuiNaQualidade = podeAtribuir && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
 
   // Na TI, reatribuir é de quem administra (API-6: `require_equipe_ti` no
@@ -304,7 +305,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   const comentar = async () => {
     if (!chamado || !novoComentario.trim() || internoBloqueado) return;
     // Sempre explícito: `true` só com a opção marcada por quem pode.
-    const interno = comentarioInterno && podeAdministrar;
+    const interno = comentarioInterno && alteraComoEquipe;
 
     try {
       setEnviando(true);
@@ -607,7 +608,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                   aria-label="Novo comentário"
                 />
                 <OpcaoDeComentarioInterno
-                  pode={podeAdministrar}
+                  pode={alteraComoEquipe}
                   interno={comentarioInterno}
                   bloqueado={internoBloqueado}
                   aoMudar={setComentarioInterno}

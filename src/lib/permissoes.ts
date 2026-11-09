@@ -137,8 +137,8 @@ export function podeEscolherSolicitante(
  *
  * - conta de serviço, nunca;
  * - administrador humano, todos;
- * - técnico da equipe da TI (`integra_equipe_ti`), os da TI e os da
- *   Qualidade — o alcance de leitura do setor dele;
+ * - técnico da equipe da TI (`integra_equipe_ti`), só os da TI (API-13; até
+ *   a API-12 também os da Qualidade);
  * - técnico da Qualidade, só os da Qualidade. Quem é do setor a tela sabe
  *   pela lista de atendentes da API (`/chamados/atendentes-qualidade`: ativos,
  *   de pessoa, no setor da Qualidade); sem a lista, ninguém é;
@@ -163,7 +163,7 @@ export function podeAlterarComoEquipe(
   // no alcance de ninguém além do administrador.
   const { setor } = lerSetor(chamado.setor_destino);
   if (setor === null) return false;
-  if (integraEquipeTI(usuario)) return true;
+  if (integraEquipeTI(usuario)) return setor === SetorDestinoEnum.TI;
   return (
     setor === SetorDestinoEnum.QUALIDADE &&
     usuario.id !== undefined &&

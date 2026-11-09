@@ -13,18 +13,30 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [Não publicado]
+## [1.8.0] — não publicada
 
 Por Rickelme David. Branches `feat/setor-destino-fe-1` (FE-1, exibição e
 filtro), `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade),
 `feat/setor-destino-fe-3` (FE-3, atendimento da Qualidade),
-`feat/setor-destino-fe-4` (FE-4, controle de concorrência na Qualidade) e
-`feat/setor-destino-fe-5` (FE-5, permissões da equipe da TI e API-9), da
-funcionalidade Setor de Destino. Sobe como **1.8.0** quando for publicada; a
-versão não subiu aqui porque o `package.json` acende o aviso de novidades, e o
-aviso só faz sentido quando a Qualidade estiver ligada na API.
+`feat/setor-destino-fe-4` (FE-4, controle de concorrência na Qualidade),
+`feat/setor-destino-fe-5` (FE-5, permissões da equipe da TI e API-9) e
+`feat/setor-destino-fe-6` (FE-6, escolha obrigatória do setor e separação
+entre as equipes, com a API-13), da funcionalidade Setor de Destino.
 
-### ⚠️ Requer ação no deploy
+A versão subiu para **1.8.0** no FE-6, quando a publicação passou a ligar a
+TI e a Qualidade juntas: o aviso de novidades fala das duas. A data entra no
+`novidades.ts` e aqui no dia da publicação; até lá, nada aqui está no ar.
+
+### ⚠️ Requer ação no deploy (FE-6)
+
+- **API-13 antes deste front**, com `SETORES_TI_IDS` e `SETOR_QUALIDADE_ID`
+  configurados. O front manda `setor_destino` em toda abertura e só libera a
+  Qualidade quando a API a oferece; a API-13 aceita a abertura sem o campo
+  (como TI, com aviso no log) só para o front antigo, durante a troca.
+- Sem `SETOR_QUALIDADE_ID`, o formulário mostra a Qualidade desabilitada, com
+  o motivo, e a TI abre normalmente.
+
+### ⚠️ Requer ação no deploy (FE-1 a FE-5)
 
 Nada além do rebuild do front, e **sem ordem obrigatória com a API**: o campo
 é opcional. Contra a API no ar hoje — que não manda `setor_destino` — o quadro
@@ -97,6 +109,19 @@ front funcionando, sem a trava. Detalhes em `docs/fe-5-permissoes-e-api9.md`,
 
 ### Added
 
+- **Setor de atendimento obrigatório na abertura (FE-6).** O formulário
+  "Novo Chamado" pergunta primeiro "Setor de atendimento", TI ou Qualidade,
+  sem nenhum marcado — nem pelo perfil de quem abre, nem pela categoria — e os
+  campos só aparecem depois da escolha. A escolha aparece sempre: sem a
+  Qualidade na API, ela fica desabilitada com o motivo, e a TI abre. O envio
+  sem setor é barrado pelo navegador e, se passar, pela tela ("Escolha o
+  setor de atendimento."). A abertura da TI passa a mandar `setor_destino`
+  explícito.
+- **Cada equipe no seu setor (FE-6 + API-13).** O técnico da TI deixa de ver,
+  editar e comentar em interno os chamados da Qualidade; o da Qualidade vê os
+  da Qualidade, e ganha o comentário interno neles. O vínculo continua: quem
+  abriu ou é o responsável segue lendo o chamado, de qualquer setor. O
+  administrador humano segue com os dois.
 - **Setor de destino do chamado — TI ou Qualidade — na janela e na página do
   chamado**, sempre, inclusive TI. Na página é um campo de leitura da ficha;
   nesta fase não se muda o setor de um chamado.

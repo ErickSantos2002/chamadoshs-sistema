@@ -30,6 +30,39 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.8.0',
+    // Data em que a versão foi preparada, não publicada: trocar pela data da
+    // publicação no commit que a puser no ar.
+    data: '2026-11-06',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'Ao abrir um chamado, você agora escolhe quem vai atendê-lo: a TI ou a Qualidade. A escolha vem primeiro e é obrigatória — nenhuma das duas vem marcada. Na Qualidade não há título nem categoria: você descreve o caso e escolhe o responsável entre as pessoas da Qualidade.',
+      },
+      {
+        tipo: 'novidade',
+        texto:
+          'Cada chamado mostra o setor que o atende, e o quadro ganhou um filtro por setor. Você continua acompanhando todos os chamados que abriu, de qualquer setor.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Cada equipe cuida do seu setor: a TI atende os chamados da TI, e a Qualidade os da Qualidade. O responsável é escolhido entre as pessoas da equipe do setor, e os comentários internos ficam visíveis só para ela.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Se outra pessoa salvar o mesmo chamado enquanto você o edita, o sistema avisa e mostra a versão mais nova, em vez de apagar o que ela fez.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Cadastros e Tarefas Recorrentes ficam disponíveis só para quem administra o sistema. Quem não administra não vê mais esses menus.',
+      },
+    ],
+  },
+  {
     versao: '1.7.8',
     data: '2026-09-10',
     itens: [

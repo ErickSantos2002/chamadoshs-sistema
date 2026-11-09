@@ -93,7 +93,14 @@ const Sonda: React.FC = () => {
   return null;
 };
 
-const montar = async (quem: React.ContextType<typeof AuthContext>) => {
+/**
+ * Monta o formulário e, por padrão, marca a TI: quase todo caso daqui é da
+ * TI, e a escolha do setor tem casos próprios (`setor: null` monta sem ela).
+ */
+const montar = async (
+  quem: React.ContextType<typeof AuthContext>,
+  { setor = 'TI' }: { setor?: 'TI' | null } = {}
+) => {
   await act(async () => {
     root.render(
       <AuthContext.Provider value={quem}>
@@ -106,6 +113,21 @@ const montar = async (quem: React.ContextType<typeof AuthContext>) => {
       </AuthContext.Provider>
     );
   });
+  if (setor) await escolherSetor(setor);
+};
+
+/**
+ * Marca o setor de atendimento pelo rótulo, como a pessoa (1.8.0: a escolha é
+ * obrigatória e nasce vazia, e os campos só aparecem depois dela).
+ */
+const escolherSetor = async (rotulo: 'TI' | 'Qualidade') => {
+  const alvo = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="radio"]')).find(
+    (r) => r.closest('label')?.textContent?.trim().startsWith(rotulo)
+  );
+  expect(alvo, `rádio "${rotulo}" não apareceu`).toBeTruthy();
+  await act(async () => {
+    alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
 };
 
 /**
@@ -113,10 +135,13 @@ const montar = async (quem: React.ContextType<typeof AuthContext>) => {
  * árvore só reconcilia, e o efeito da consulta não roda outra vez — o laço
  * conferiria o primeiro caso repetidas vezes.
  */
-const remontar = async (quem: React.ContextType<typeof AuthContext>) => {
+const remontar = async (
+  quem: React.ContextType<typeof AuthContext>,
+  opcoes?: { setor?: 'TI' | null }
+) => {
   act(() => root.unmount());
   root = createRoot(host);
-  await montar(quem);
+  await montar(quem, opcoes);
 };
 
 /** Digita como o React enxerga: pelo setter nativo e um evento `input`. */
@@ -209,6 +234,7 @@ describe('abertura TI — o corpo enviado', () => {
 
     expect(criar).toHaveBeenCalledTimes(1);
     expect(criar.mock.calls[0][0]).toStrictEqual({
+      setor_destino: 'TI',
       solicitante_id: 7,
       titulo: 'Impressora do RH sem papel',
       descricao: DESCRICAO_OK,
@@ -220,9 +246,10 @@ describe('abertura TI — o corpo enviado', () => {
 
   /**
    * A chave existe, com `undefined`. É o que o axios descarta antes de
-   * enviar, e o formato exato é parte do que não pode mudar.
+   * enviar, e o formato exato é parte do que não pode mudar. O
+   * `setor_destino` vai explícito desde a 1.8.0: a TI é uma escolha.
    */
-  it('as seis chaves, e nenhuma outra — sem setor_destino', async () => {
+  it('as sete chaves, e nenhuma outra — com setor_destino TI', async () => {
     await montar(USUARIO);
     await preencherTI();
     await enviar();
@@ -232,12 +259,13 @@ describe('abertura TI — o corpo enviado', () => {
         'categoria_id',
         'descricao',
         'prioridade',
+        'setor_destino',
         'solicitante_id',
         'tecnico_responsavel_id',
         'titulo',
       ].sort()
     );
-    expect(criar.mock.calls[0][0]).not.toHaveProperty('setor_destino');
+    expect(criar.mock.calls[0][0].setor_destino).toBe('TI');
   });
 
   // T-2: antes o Técnico escolhia um solicitante que a API ignorava. Agora
@@ -249,6 +277,7 @@ describe('abertura TI — o corpo enviado', () => {
     await enviar();
 
     expect(criar.mock.calls[0][0]).toStrictEqual({
+      setor_destino: 'TI',
       solicitante_id: 3,
       titulo: 'Impressora do RH sem papel',
       descricao: DESCRICAO_OK,
@@ -265,6 +294,7 @@ describe('abertura TI — o corpo enviado', () => {
     await enviar();
 
     expect(criar.mock.calls[0][0]).toStrictEqual({
+      setor_destino: 'TI',
       solicitante_id: 7,
       titulo: 'Impressora do RH sem papel',
       descricao: DESCRICAO_OK,
@@ -492,27 +522,40 @@ describe('disponibilidade — o que a consulta decide', () => {
     expect(atendentes).toHaveBeenCalledTimes(1);
   });
 
-  /** A API do ar hoje: o formulário é exatamente o de antes. */
-  it('backend sem a rota (404, 405, 422): sem escolha de setor', async () => {
+  /**
+   * Sem a Qualidade — API sem a rota, 503, rede, 401 —, a escolha aparece do
+   * mesmo jeito (1.8.0): é obrigatória. A TI fica liberada, a Qualidade
+   * desabilitada com o motivo, e nenhuma das duas vem marcada.
+   */
+  const semQualidade = (rotulo: string) => {
+    expect(grupo(), rotulo).toBeTruthy();
+    expect(radio('TI')?.disabled, rotulo).toBe(false);
+    expect(radio('TI')?.checked, rotulo).toBe(false);
+    expect(radio('Qualidade')?.disabled, rotulo).toBe(true);
+    expect(radio('Qualidade')?.checked, rotulo).toBe(false);
+  };
+
+  it('backend sem a rota (404, 405, 422): a escolha aparece, só com a TI liberada', async () => {
     for (const [i, status] of [404, 405, 422].entries()) {
       atendentes.mockRejectedValue(erroHttp(status));
-      await remontar(USUARIO);
+      await remontar(USUARIO, { setor: null });
       expect(atendentes, String(status)).toHaveBeenCalledTimes(i + 1);
-      expect(grupo(), String(status)).toBeNull();
-      expect(document.querySelector('input[type="radio"]'), String(status)).toBeNull();
-      expect(document.getElementById('titulo'), String(status)).toBeTruthy();
+      semQualidade(String(status));
+      expect(document.body.textContent, String(status)).toContain(
+        'A abertura para a Qualidade está indisponível no momento.'
+      );
     }
   });
 
-  it('503: sem escolha de setor, e sem dizer que faltam atendentes', async () => {
+  it('503: só a TI liberada, e sem dizer que faltam atendentes', async () => {
     atendentes.mockRejectedValue(erroHttp(503));
-    await montar(USUARIO);
-    expect(grupo()).toBeNull();
+    await montar(USUARIO, { setor: null });
+    semQualidade('503');
     expect(document.body.textContent).not.toContain('Nenhum atendente');
     expect(vi.mocked(console.warn)).toHaveBeenCalled();
   });
 
-  it('rede, timeout e 5xx: sem escolha de setor', async () => {
+  it('rede, timeout e 5xx: só a TI liberada', async () => {
     for (const erro of [
       new Error('Network Error'),
       { code: 'ECONNABORTED' },
@@ -520,23 +563,23 @@ describe('disponibilidade — o que a consulta decide', () => {
       erroHttp(502),
     ]) {
       atendentes.mockRejectedValue(erro);
-      await remontar(USUARIO);
-      expect(grupo(), JSON.stringify(erro)).toBeNull();
+      await remontar(USUARIO, { setor: null });
+      semQualidade(JSON.stringify(erro));
     }
   });
 
-  it('401: sem escolha de setor, e o formulário não quebra', async () => {
+  it('401: só a TI liberada, e o formulário não quebra', async () => {
     atendentes.mockRejectedValue(erroHttp(401));
     await montar(USUARIO);
-    expect(grupo()).toBeNull();
+    expect(radio('Qualidade')?.disabled).toBe(true);
     expect(document.getElementById('titulo')).toBeTruthy();
   });
 
-  it('200 com atendentes: a escolha aparece, com TI marcado', async () => {
+  it('200 com atendentes: as duas liberadas, e nenhuma marcada', async () => {
     qualidadeDisponivel();
-    await montar(USUARIO);
-    expect(grupo()?.querySelector('legend')?.textContent).toContain('Setor de destino');
-    expect(radio('TI')?.checked).toBe(true);
+    await montar(USUARIO, { setor: null });
+    expect(grupo()?.querySelector('legend')?.textContent).toContain('Setor de atendimento');
+    expect(radio('TI')?.checked).toBe(false);
     expect(radio('Qualidade')?.checked).toBe(false);
     expect(radio('Qualidade')?.disabled).toBe(false);
     // Os dois no mesmo grupo nativo: setas do teclado andam entre eles.
@@ -562,7 +605,7 @@ describe('disponibilidade — o que a consulta decide', () => {
     await montar(USUARIO);
     await preencherTI();
     await enviar();
-    expect(corpoEnviado()).not.toHaveProperty('setor_destino');
+    expect(corpoEnviado().setor_destino).toBe('TI');
     expect(corpoEnviado().titulo).toBe('Impressora do RH sem papel');
   });
 
@@ -615,6 +658,47 @@ describe('disponibilidade — o que a consulta decide', () => {
   });
 });
 
+describe('setor de atendimento — escolha obrigatória (1.8.0)', () => {
+  beforeEach(() => {
+    qualidadeDisponivel();
+  });
+
+  it('antes da escolha, só ela: nenhum campo do chamado aparece', async () => {
+    await montar(USUARIO, { setor: null });
+    expect(document.getElementById('titulo')).toBeNull();
+    expect(document.getElementById('descricao')).toBeNull();
+    expect(document.getElementById('responsavel')).toBeNull();
+    expect(document.body.textContent).toContain('Escolha quem vai atender o chamado');
+  });
+
+  it('o grupo é obrigatório no navegador: sem setor, nada é enviado', async () => {
+    await montar(USUARIO, { setor: null });
+    expect(radio('TI')?.required).toBe(true);
+    expect(radio('TI')?.validity.valueMissing).toBe(true);
+    await enviar();
+    expect(criar).not.toHaveBeenCalled();
+  });
+
+  it('se o envio passar do navegador sem setor, a tela recusa e não envia', async () => {
+    await montar(USUARIO, { setor: null });
+    await act(async () => {
+      document
+        .querySelector('form')!
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(mensagem()).toBe('Escolha o setor de atendimento.');
+    expect(criar).not.toHaveBeenCalled();
+  });
+
+  it('o perfil não escolhe: técnico e administrador também começam sem setor', async () => {
+    for (const quem of [TECNICO, ADMIN]) {
+      await remontar(quem, { setor: null });
+      expect(radio('TI')?.checked).toBe(false);
+      expect(radio('Qualidade')?.checked).toBe(false);
+    }
+  });
+});
+
 describe('TI com a Qualidade disponível — o corpo não muda', () => {
   beforeEach(() => {
     qualidadeDisponivel();
@@ -625,6 +709,7 @@ describe('TI com a Qualidade disponível — o corpo não muda', () => {
     await preencherTI();
     await enviar();
     expect(corpoEnviado()).toStrictEqual({
+      setor_destino: 'TI',
       solicitante_id: 7,
       titulo: 'Impressora do RH sem papel',
       descricao: DESCRICAO_OK,
@@ -640,6 +725,7 @@ describe('TI com a Qualidade disponível — o corpo não muda', () => {
     await escolher('solicitante', 'Gabriel');
     await enviar();
     expect(corpoEnviado()).toStrictEqual({
+      setor_destino: 'TI',
       solicitante_id: 7,
       titulo: 'Impressora do RH sem papel',
       descricao: DESCRICAO_OK,
@@ -875,6 +961,7 @@ describe('alternância entre TI e Qualidade', () => {
     await marcar('TI');
     await enviar();
     expect(corpoEnviado()).toStrictEqual({
+      setor_destino: 'TI',
       solicitante_id: 7,
       titulo: 'Impressora do RH sem papel',
       descricao: DESCRICAO_OK,
@@ -970,15 +1057,16 @@ describe('modo Qualidade — erros do envio', () => {
     await enviar();
 
     await marcar('TI');
-    // Com a Qualidade fora, a escolha some e o formulário volta a ser o de antes.
-    expect(grupo()).toBeNull();
+    // Com a Qualidade fora, ela fica desabilitada, e a TI segue escolhida.
+    expect(radio('Qualidade')?.disabled).toBe(true);
+    expect(radio('TI')?.checked).toBe(true);
     expect(botao('Abrir chamado')?.disabled).toBe(false);
     await enviar();
     expect(corpoEnviado()).toMatchObject({
       titulo: 'Impressora do RH sem papel',
       descricao: DESCRICAO_OK,
     });
-    expect(corpoEnviado()).not.toHaveProperty('setor_destino');
+    expect(corpoEnviado().setor_destino).toBe('TI');
   });
 
   it('400 que recarrega para 503: o envio da Qualidade trava sem virar TI', async () => {

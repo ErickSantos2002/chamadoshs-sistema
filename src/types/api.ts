@@ -221,6 +221,8 @@ export interface Chamado {
 }
 
 export interface ChamadoCreate {
+  /** Sempre enviado pelo formulário (1.8.0); a Qualidade usa `ChamadoCreateQualidade`. */
+  setor_destino: SetorDestinoEnum.TI;
   solicitante_id: number;
   categoria_id?: number;
   titulo: string;
