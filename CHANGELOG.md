@@ -81,6 +81,15 @@ preparação, e deve ser trocada pela da publicação.
 - O solicitante e o usuário comum não ganham controle nenhum: sem "Assumir",
   sem seletor de responsável, sem ações de status.
 
+### Fixed
+
+- **A dica do comentário interno dizia "equipe da TI" em chamado da
+  Qualidade.** O texto era um só para os dois setores, mas desde a API-13 o
+  interno é da equipe do setor do chamado: na Qualidade quem lê é a equipe
+  da Qualidade, e a TI não. No chamado da Qualidade a dica passa a dizer
+  "Visível só para administradores e para a equipe da Qualidade."; na TI,
+  segue como era. Só o texto mudou — quem vê e quem cria é regra da API.
+
 ### Tests
 
 - Novos: a fila em `AcoesRapidas.test.tsx` (quem vê o quê, o corpo do

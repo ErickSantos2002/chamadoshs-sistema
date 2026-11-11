@@ -1,9 +1,9 @@
 import React from 'react';
 import { Aviso, Badge, Button, Checkbox } from './ui';
 import {
-  DICA_DO_INTERNO,
   MENSAGEM_INTERNO_RECUSADO,
   MENSAGEM_INTERNO_SEM_CONFIRMACAO,
+  dicaDoInterno,
 } from '../lib/comentarios';
 
 interface OpcaoDeComentarioInternoProps {
@@ -25,6 +25,8 @@ interface OpcaoDeComentarioInternoProps {
   /** A escolha explícita de mandar o mesmo texto como público. */
   aoTornarPublico: () => void;
   desabilitado?: boolean;
+  /** O chamado é da Qualidade: a dica diz a equipe que lê o interno. */
+  daQualidade?: boolean;
 }
 
 /**
@@ -41,6 +43,7 @@ export const OpcaoDeComentarioInterno: React.FC<OpcaoDeComentarioInternoProps> =
   aoMudar,
   aoTornarPublico,
   desabilitado = false,
+  daQualidade = false,
 }) => {
   if (bloqueado) {
     return (
@@ -66,7 +69,7 @@ export const OpcaoDeComentarioInterno: React.FC<OpcaoDeComentarioInternoProps> =
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Checkbox marcado={interno} aoMudar={aoMudar} desabilitado={desabilitado} dica={DICA_DO_INTERNO}>
+      <Checkbox marcado={interno} aoMudar={aoMudar} desabilitado={desabilitado} dica={dicaDoInterno(daQualidade)}>
         Comentário interno
       </Checkbox>
       {interno && <Badge variante="alerta">Interno</Badge>}

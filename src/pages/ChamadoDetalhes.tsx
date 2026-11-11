@@ -2065,6 +2065,7 @@ const ChamadoDetalhes: React.FC = () => {
               <div className="mt-2">
                 <OpcaoDeComentarioInterno
                   pode={alteraComoEquipe}
+                  daQualidade={ehDaQualidade}
                   interno={comentarioInterno}
                   bloqueado={internoBloqueado}
                   aoMudar={setComentarioInterno}

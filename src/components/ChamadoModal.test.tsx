@@ -484,6 +484,22 @@ describe('ChamadoModal — reatribuição na Qualidade', () => {
     erro = vi.spyOn(toast, 'error').mockImplementation(() => '');
   });
 
+  /** O interno é da equipe do setor do chamado: a dica não fala da TI aqui. */
+  it('a dica do comentário interno fala da equipe da Qualidade', async () => {
+    await abrir();
+    expect(document.body.textContent).toContain(
+      'Visível só para administradores e para a equipe da Qualidade.'
+    );
+    expect(document.body.textContent).not.toContain('para a equipe da TI.');
+  });
+
+  it('chamado da TI: a dica do comentário interno segue a da TI', async () => {
+    await abrir({ setor_destino: 'TI' } as Partial<Chamado>);
+    expect(document.body.textContent).toContain(
+      'Visível só para administradores e para a equipe da TI.'
+    );
+  });
+
   it('as opções são os atendentes, sem "Sem atribuição"', async () => {
     await abrir();
     const opcoes = (await abrirOpcoes()).map((o) => o.textContent?.trim());

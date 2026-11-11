@@ -22,6 +22,18 @@ export const MENSAGEM_INTERNO_SEM_CONFIRMACAO =
   'Não foi possível confirmar sua permissão para comentários internos agora. O texto foi mantido e não foi enviado.';
 
 export const DICA_DO_INTERNO = 'Visível só para administradores e para a equipe da TI.';
+export const DICA_DO_INTERNO_DA_QUALIDADE =
+  'Visível só para administradores e para a equipe da Qualidade.';
+
+/**
+ * A dica ao lado da opção. O interno é da equipe do setor do chamado
+ * (API-13): no chamado da Qualidade quem o lê é a equipe da Qualidade, e a
+ * TI não — a dica única, que dizia "equipe da TI" nos dois setores, prometia
+ * o contrário do que a API faz.
+ */
+export function dicaDoInterno(daQualidade: boolean): string {
+  return daQualidade ? DICA_DO_INTERNO_DA_QUALIDADE : DICA_DO_INTERNO;
+}
 
 /** O comentário interno foi recusado por permissão. */
 export function ehRecusaDoInterno(erro: unknown): boolean {

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ehRecusaDoInterno, ordenarComentarios } from './comentarios';
+import {
+  DICA_DO_INTERNO,
+  dicaDoInterno,
+  ehRecusaDoInterno,
+  ordenarComentarios,
+} from './comentarios';
 import type { Comentario } from '../types/api';
 
 const c = (id: number, created_at: string) => ({ id, created_at }) as Comentario;
@@ -48,5 +53,18 @@ describe('ehRecusaDoInterno', () => {
   it('sem resposta não', () => {
     expect(ehRecusaDoInterno(new Error('Network Error'))).toBe(false);
     expect(ehRecusaDoInterno(null)).toBe(false);
+  });
+});
+
+describe('dicaDoInterno — quem lê o comentário interno', () => {
+  it('chamado da TI: a dica de sempre', () => {
+    expect(dicaDoInterno(false)).toBe('Visível só para administradores e para a equipe da TI.');
+    expect(dicaDoInterno(false)).toBe(DICA_DO_INTERNO);
+  });
+
+  /** O interno é da equipe do setor do chamado (API-13): na Qualidade, a TI não lê. */
+  it('chamado da Qualidade: a equipe da Qualidade, e não a da TI', () => {
+    expect(dicaDoInterno(true)).toBe('Visível só para administradores e para a equipe da Qualidade.');
+    expect(dicaDoInterno(true)).not.toContain('TI');
   });
 });

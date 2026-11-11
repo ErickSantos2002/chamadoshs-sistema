@@ -613,6 +613,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 />
                 <OpcaoDeComentarioInterno
                   pode={alteraComoEquipe}
+                  daQualidade={ehDaQualidade}
                   interno={comentarioInterno}
                   bloqueado={internoBloqueado}
                   aoMudar={setComentarioInterno}
