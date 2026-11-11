@@ -31,8 +31,6 @@ export interface VersaoNovidade {
 export const NOVIDADES: VersaoNovidade[] = [
   {
     versao: '1.8.1',
-    // Data em que a versão foi preparada, não publicada: trocar pela data da
-    // publicação no commit que a puser no ar.
     data: '2026-11-11',
     itens: [
       {

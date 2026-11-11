@@ -13,10 +13,9 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [1.8.1] — não publicada
+## [1.8.1] — 2026-11-11
 
-Por Rickelme David. Branch `fix/cache-index-1-8-1`. A data entra no
-`novidades.ts` e aqui no dia da publicação; até lá, nada aqui está no ar.
+Por Rickelme David. Branch `fix/cache-index-1-8-1`. Publicada em 11/11/2026.
 
 ### Fixed
 
