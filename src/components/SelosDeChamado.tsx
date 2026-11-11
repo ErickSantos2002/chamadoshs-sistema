@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Badge, type VarianteBadge } from './ui';
-import { PrioridadeEnum, StatusEnum } from '../types/api';
+import { Chamado, PrioridadeEnum, SetorDestinoEnum, StatusEnum } from '../types/api';
 import { getRoleName } from '../utils/roleMapper';
+import { cn } from '../lib/utils';
+import { avisarSetorInesperado, rotuloDoSetor, setorDoChamado } from '../lib/setor';
 
 /**
  * O mapa de status e prioridade do ChamadosHS, num lugar só.
@@ -187,3 +189,61 @@ export const PapelBadge: React.FC<SeloProps & { roleId: number }> = ({
     {getRoleName(roleId)}
   </Badge>
 );
+
+/**
+ * Para qual equipe o chamado foi aberto: TI, Qualidade, ou o que a API mandou
+ * quando não é nenhum dos dois.
+ *
+ * ── Neutro, porque setor não é estado ────────────────────────────────
+ *
+ * Status e prioridade pedem atenção, e por isso têm cor de significado. Setor
+ * não pede nada — é endereço, como a categoria, que no cartão já é `neutro`.
+ * Pintar Qualidade de uma cor própria criaria um oitavo significado de cor
+ * numa paleta que a §16 fechou em sete. Quem distingue os setores é a
+ * palavra.
+ *
+ * O inesperado sai em `discreto`, que hoje desenha igual ao `neutro` (a E6) —
+ * o que o separa é o texto "Setor não reconhecido", e não a cor.
+ *
+ * ── O valor da API nunca vira classe ─────────────────────────────────
+ *
+ * A variante sai da ORIGEM da leitura, que é um de três valores fixos. O que
+ * a API mandou só entra como filho de texto, já limpo e cortado por
+ * `lerSetor`, e o React o escapa. O `truncate` é a segunda trava: mesmo no
+ * teto de 40 caracteres, o selo encolhe com a coluna em vez de empurrá-la.
+ */
+export const SetorBadge: React.FC<
+  SeloProps & {
+    chamado: Pick<Chamado, 'id' | 'setor_destino'>;
+    /** No cartão do quadro: TI é o caso comum e não ganha selo (FD-1). */
+    ocultarTI?: boolean;
+    /** Quando um rótulo visível ao lado já diz "Setor de destino". */
+    semPrefixo?: boolean;
+  }
+> = ({ chamado, ocultarTI = false, semPrefixo = false, className }) => {
+  const leitura = setorDoChamado(chamado);
+
+  // No efeito, e não no corpo: o corpo roda a cada desenho, e o aviso tem
+  // a própria trava contra repetição — mas não tem por que ser testado nela.
+  useEffect(() => {
+    avisarSetorInesperado(chamado);
+  }, [chamado.id, chamado.setor_destino]);
+
+  if (leitura.origem === 'inesperado') {
+    const texto = `Setor não reconhecido: ${leitura.recebido}`;
+    return (
+      <Badge variante="discreto" title={texto} className={cn('max-w-full', className)}>
+        <span className="min-w-0 truncate">{texto}</span>
+      </Badge>
+    );
+  }
+
+  if (ocultarTI && leitura.setor === SetorDestinoEnum.TI) return null;
+
+  return (
+    <Badge variante="neutro" className={className}>
+      {!semPrefixo && <span className="sr-only">Setor de destino: </span>}
+      {rotuloDoSetor(leitura.setor)}
+    </Badge>
+  );
+};

@@ -1,11 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
+import { useQualidade } from '../hooks/useQualidade';
+import { usePermissoes } from '../hooks/usePermissoes';
+import { useResponsaveisTI } from '../hooks/useResponsaveisTI';
 import { chamadosService } from '../services/chamadoshsapi';
-import { podeSerResponsavel } from '../utils/roleMapper';
-import { Chamado, Comentario } from '../types/api';
+import { ehRecusaDoResponsavel, mensagemDaRecusaDoResponsavel } from '../lib/responsaveis';
+import {
+  MENSAGEM_SEM_ACESSO,
+  RascunhoPreservado,
+  ehPerdaDeAcesso,
+  rascunhosComConteudo,
+} from '../lib/acesso';
+import {
+  MENSAGEM_ATRIBUICAO_MUDOU,
+  interpretarErroDaReatribuicao,
+  opcoesDeResponsavelDaQualidade,
+  podeReatribuirNaQualidade,
+} from '../lib/atendimento';
+import { MENSAGEM_INCERTA, classificarFalhaDeEscrita } from '../lib/escrita';
+import { setorDoChamado } from '../lib/setor';
+import {
+  MENSAGEM_SEM_VERSAO,
+  MENSAGEM_VERSAO_AUSENTE,
+  ehConflitoDeVersao,
+  ehVersaoAusente,
+  maisRecente,
+  precondicaoDaEscrita,
+} from '../lib/versao';
+import { Chamado, Comentario, SetorDestinoEnum } from '../types/api';
 import {
   Avatar,
   Aviso,
@@ -15,11 +40,15 @@ import {
   Seletor,
   Textarea,
 } from './ui';
-import { MarcaBadge, PrioridadeBadge, StatusBadge } from './SelosDeChamado';
+import { MarcaBadge, PrioridadeBadge, SetorBadge, StatusBadge } from './SelosDeChamado';
 import SlaProgresso from './SlaProgresso';
 import Avaliacao from './Avaliacao';
 import AcoesRapidas from './AcoesRapidas';
 import { IconeEnviar, IconeLinkExterno } from './ui/icones';
+import { SeletorDeResponsavelDaTI } from './SeletorDeResponsavelDaTI';
+import AcessoEncerrado from './AcessoEncerrado';
+import OpcaoDeComentarioInterno, { SeloInterno } from './OpcaoDeComentarioInterno';
+import { ehRecusaDoInterno, ordenarComentarios } from '../lib/comentarios';
 
 interface ChamadoModalProps {
   chamadoId: number | null;
@@ -116,10 +145,19 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   aoFechar,
   aoAbrirEmPagina,
 }) => {
-  const { buscarChamado, carregarComentarios, criarComentario, aplicarChamado } =
-    useChamados();
+  const {
+    chamados,
+    buscarChamado,
+    carregarComentarios,
+    criarComentario,
+    aplicarChamado,
+    removerChamado,
+    verificarQualidade,
+    marcarQualidadeIndisponivel,
+  } = useChamados();
   const usuarios = useUsuariosPorId();
-  const { user } = useAuth();
+  const { revalidarIdentidade } = useAuth();
+  const { podeAdministrar, podeAlterarComoEquipe, semConfirmacao } = usePermissoes();
 
   const [chamado, setChamado] = useState<Chamado | null>(null);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
@@ -128,19 +166,96 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
 
   const [novoComentario, setNovoComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
+  // Comentário interno (`lib/comentarios`): público por padrão, e a recusa
+  // da API trava o envio até a pessoa escolher publicar.
+  const [comentarioInterno, setComentarioInterno] = useState(false);
+  const [internoRecusado, setInternoRecusado] = useState(false);
   const [atribuindo, setAtribuindo] = useState(false);
+  // O `disabled` do seletor só chega no próximo desenho: a trava é síncrona.
+  const atribuindoRef = useRef(false);
 
-  // Mesma regra das ações de status: atribuir é da equipe, e a API recusa
-  // para o solicitante — mostrar o seletor a ele seria oferecer um 403.
+  // O chamado saiu do alcance de quem o via (FE-5, `lib/acesso`). O id fica
+  // num ref para as respostas atrasadas — e a releitura que a remoção do card
+  // provoca no efeito de carga — não o trazerem de volta à janela.
+  const [acessoEncerrado, setAcessoEncerrado] = useState<RascunhoPreservado[] | null>(null);
+  const encerradoPara = useRef<number | null>(null);
+  // O chamado da janela AGORA. Uma escrita do chamado anterior que responde
+  // depois da troca chega ao quadro, mas não à janela (FE-5 + API-12).
+  const idDaJanela = useRef(chamadoId);
+  idDaJanela.current = chamadoId;
+  // A solução que ficou no passo de resolução do `AcoesRapidas`.
+  const rascunhoDoAtendimento = useRef('');
+
+  // Na Qualidade o seletor é outro: os atendentes, sem "Sem atribuição", e só
+  // quando a API sabe validar a troca. Fora disso o campo fica só leitura.
+  const ehDaQualidade = chamado
+    ? setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE
+    : false;
+  const qualidade = useQualidade(ehDaQualidade);
+
+  // Mesma regra das ações de status: atribuir é da equipe — a regra
+  // `pode_alterar_como_equipe` da API, e não o perfil (C2). O solicitante, o
+  // técnico que lê só pelo vínculo e a conta de serviço levariam um 403.
   // Cancelado e arquivado ficam de fora pelo mesmo motivo das ações: mexer
   // neles é decisão da página inteira, junto do motivo e do histórico.
-  const podeAtribuir =
-    (user?.role === 'Administrador' || user?.role === 'Tecnico') &&
-    !chamado?.cancelado &&
-    !chamado?.arquivado;
+  const alteraComoEquipe = podeAlterarComoEquipe(chamado, ehDaQualidade ? qualidade.atendentes : null);
+  const podeAtribuir = alteraComoEquipe && !chamado?.cancelado && !chamado?.arquivado;
+  // O interno é da equipe do setor do chamado (API-13): a mesma regra de
+  // alterar como equipe, e não o perfil — o técnico da TI não escreve no
+  // interno da Qualidade, e o da Qualidade escreve no dela.
+  const internoBloqueado = comentarioInterno && (internoRecusado || !alteraComoEquipe);
+  const reatribuiNaQualidade = podeAtribuir && ehDaQualidade && podeReatribuirNaQualidade(qualidade);
 
+  // Na TI, reatribuir é de quem administra (API-6: `require_equipe_ti` no
+  // PUT da TI). Ser técnico não basta: o da Qualidade vê o chamado da TI só
+  // para ler. A lista é da API-9, pedida a cada abertura (FE-5).
+  const reatribuiNaTI =
+    Boolean(chamado) && !ehDaQualidade && podeAdministrar && !chamado?.cancelado && !chamado?.arquivado;
+  // Uma abertura por chamado escolhido no quadro — e não a cada releitura,
+  // que tira o chamado da tela por um instante e o devolve.
+  const [abertura, setAbertura] = useState(0);
+  useEffect(() => {
+    if (chamadoId !== null) setAbertura((n) => n + 1);
+    // Outro chamado começa público, sem recusa herdada.
+    setComentarioInterno(false);
+    setInternoRecusado(false);
+    // Outro chamado (ou a janela fechada): a perda de acesso era do anterior.
+    if (encerradoPara.current !== chamadoId) {
+      encerradoPara.current = null;
+      setAcessoEncerrado(null);
+    }
+  }, [chamadoId]);
+  const responsaveisTI = useResponsaveisTI(reatribuiNaTI, abertura);
+
+  // As funções do contexto mudam de identidade a cada mudança da lista
+  // (`buscarChamado` depende dela). O efeito de carga as lê daqui, para
+  // depender só do chamado escolhido — ver a nota abaixo.
+  const buscarRef = useRef(buscarChamado);
+  buscarRef.current = buscarChamado;
+  const comentariosRef = useRef(carregarComentarios);
+  comentariosRef.current = carregarComentarios;
+
+  /**
+   * Carrega o chamado escolhido — uma vez por abertura.
+   *
+   * ── Por que só `chamadoId` ────────────────────────────────────────────
+   *
+   * O efeito dependia de `buscarChamado`, que muda a cada mudança da lista
+   * do quadro. Qualquer `aplicarChamado` — mudar o status aqui mesmo, outro
+   * card salvo, a lista relida — refazia a carga: o chamado saía da tela por
+   * um instante, o comentário digitado era apagado, e o passo de resolução
+   * do `AcoesRapidas` era desmontado com a solução dentro (FE-5).
+   *
+   * Política de rascunhos: o que foi digitado vale para ESTA abertura deste
+   * chamado. Fica enquanto o mesmo chamado é atualizado; sai quando o
+   * comentário é enviado, quando outro chamado é aberto e quando a janela é
+   * fechada. Nada é guardado no navegador nem no servidor. A versão nova que
+   * chegar ao quadro entra pelo efeito seguinte, sem tocar nos rascunhos.
+   */
   useEffect(() => {
     if (chamadoId === null) return;
+    // Encerrado, fica encerrado: nenhuma releitura depois da perda de acesso.
+    if (encerradoPara.current === chamadoId) return;
 
     let cancelado = false;
 
@@ -152,7 +267,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
     setErro(null);
     setCarregando(true);
 
-    Promise.all([buscarChamado(chamadoId), carregarComentarios(chamadoId)])
+    Promise.all([buscarRef.current(chamadoId), comentariosRef.current(chamadoId)])
       .then(([dados, lista]) => {
         if (cancelado) return;
         if (!dados) {
@@ -160,7 +275,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
           return;
         }
         setChamado(dados);
-        setComentarios(lista);
+        setComentarios(ordenarComentarios(lista));
       })
       .catch(() => {
         if (!cancelado) setErro('Erro ao carregar o chamado.');
@@ -169,26 +284,54 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
         if (!cancelado) setCarregando(false);
       });
 
-    // Fechar o modal no meio da busca não deve escrever num componente morto.
+    // Fechar o modal (ou abrir outro) no meio da busca: a resposta é descartada.
     return () => {
       cancelado = true;
     };
-  }, [chamadoId, buscarChamado, carregarComentarios]);
+  }, [chamadoId]);
+
+  // O mesmo chamado, mais novo, na lista do quadro (relida, ou salva por
+  // outro caminho): a janela passa a mostrá-lo, e os rascunhos ficam. Uma
+  // versão menor não desfaz a da janela (`maisRecente`). Outros cards não
+  // mudam a identidade deste, e não chegam aqui.
+  const doQuadro = chamadoId === null ? undefined : chamados.find((c) => c.id === chamadoId);
+  useEffect(() => {
+    if (!doQuadro || encerradoPara.current === doQuadro.id) return;
+    setChamado((atual) =>
+      atual && atual.id === doQuadro.id && atual !== doQuadro ? maisRecente(atual, doQuadro) : atual
+    );
+  }, [doQuadro]);
 
   const comentar = async () => {
-    if (!chamado || !novoComentario.trim()) return;
+    if (!chamado || !novoComentario.trim() || internoBloqueado) return;
+    // Sempre explícito: `true` só com a opção marcada por quem pode.
+    const interno = comentarioInterno && alteraComoEquipe;
 
     try {
       setEnviando(true);
       await criarComentario({
         chamado_id: chamado.id,
         comentario: novoComentario.trim(),
-        is_interno: false,
+        is_interno: interno,
       });
       setNovoComentario('');
-      setComentarios(await carregarComentarios(chamado.id));
-    } catch {
-      setErro('Erro ao enviar o comentário.');
+      setComentarioInterno(false);
+      setComentarios(ordenarComentarios(await carregarComentarios(chamado.id)));
+    } catch (err: any) {
+      if (ehPerdaDeAcesso(err)) {
+        encerrarAcesso(chamado.id);
+        return;
+      }
+      // 403 num interno: o texto fica, o envio trava até a pessoa escolher
+      // publicar, e a identidade é relida. Nada se repete. O toast do 403 é
+      // do interceptor; a janela continua mostrando o chamado.
+      if (interno && ehRecusaDoInterno(err)) {
+        setInternoRecusado(true);
+        void revalidarIdentidade();
+        return;
+      }
+      if (err?.response?.status === 403) return;
+      toast.error(err?.response?.data?.detail || 'Erro ao enviar o comentário.');
     } finally {
       setEnviando(false);
     }
@@ -205,25 +348,80 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
    * mudança: o card resolvido ficava parado na coluna antiga até um F5.
    */
   const registrarMudanca = (atualizado: Chamado) => {
-    setChamado(atualizado);
+    // Resposta de uma escrita que saiu antes da perda de acesso.
+    if (encerradoPara.current === atualizado.id) return;
+    // A janela só troca pelo mesmo chamado: a resposta atrasada de outro não
+    // toma o lugar do que está aberto.
+    setChamado((atual) => (atual && atual.id === atualizado.id ? atualizado : atual));
     aplicarChamado(atualizado);
   };
 
   /**
-   * Quem pode aparecer no seletor de responsável.
-   *
-   * `podeSerResponsavel` é a mesma régua do formulário de edição: equipe, e
-   * não conta de serviço — atribuir um chamado ao painel da TV não diz quem
-   * resolve. Contas desativadas também ficam de fora: são de quem saiu, e
-   * atribuir a elas é jogar o chamado num buraco.
+   * A pessoa deixou de poder ver este chamado (`lib/acesso`). A janela para
+   * de mostrá-lo — dados, comentários, ações — e tira o card do quadro. Fica
+   * só o comentário que ela tinha digitado, para copiar. Nada é reenviado.
    */
-  const atribuiveis = Object.values(usuarios)
-    .filter((u) => u.ativo && podeSerResponsavel(u))
-    .sort((a, b) => a.nome.localeCompare(b.nome));
+  const encerrarAcesso = (id: number) => {
+    // O 404 é de um chamado que a janela já deixou: só o card sai do quadro.
+    if (idDaJanela.current !== id) {
+      removerChamado(id);
+      return;
+    }
+    encerradoPara.current = id;
+    setAcessoEncerrado(
+      rascunhosComConteudo([
+        { rotulo: 'Seu comentário', texto: novoComentario },
+        { rotulo: 'A solução do atendimento', texto: rascunhoDoAtendimento.current },
+      ])
+    );
+    setChamado(null);
+    setComentarios([]);
+    setNovoComentario('');
+    setErro(null);
+    removerChamado(id);
+  };
 
+  /**
+   * O atendimento foi recusado por algo que a tela não sabia — permissão,
+   * conflito, chamado que sumiu. Relê da API, sem passar pelo cache do
+   * contexto, que é justamente o que pode estar velho. Diz às ações se deu:
+   * sem o chamado relido, elas não voltam.
+   */
+  const recarregar = async (): Promise<boolean> => {
+    if (!chamado) return false;
+    const id = chamado.id;
+    try {
+      registrarMudanca(await chamadosService.buscar(id));
+      return encerradoPara.current !== id;
+    } catch (err) {
+      if (encerradoPara.current === id) return false;
+      if (ehPerdaDeAcesso(err)) encerrarAcesso(id);
+      else setErro('Erro ao carregar o chamado.');
+      return false;
+    }
+  };
+
+  /**
+   * Troca o responsável de um chamado da TI. Quem aparece no seletor é a
+   * lista da API-9 (`lib/responsaveis`), e só ela — o filtro de perfil que
+   * morava aqui oferecia quem o PUT recusava. Escolher quem já está não sai.
+   *
+   * Leva a versão do chamado desta janela (API-12): se outra pessoa mudou o
+   * chamado depois que ele foi mostrado, a API recusa com 409 e nada é
+   * gravado. A janela relê o chamado e a lista, o seletor volta a mostrar o
+   * responsável de agora, e a troca é uma escolha nova — nunca repetida.
+   */
   const atribuir = async (valor: string) => {
-    if (!chamado) return;
+    if (!chamado || atribuindoRef.current) return;
+    if ((valor ? Number(valor) : null) === (chamado.tecnico_responsavel_id ?? null)) return;
 
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
+
+    atribuindoRef.current = true;
     try {
       setAtribuindo(true);
       // `null`, não `undefined`: a API só limpa a atribuição se o campo FOR na
@@ -231,9 +429,34 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       // `undefined`, escolher "Sem atribuição" viraria silêncio.
       const atualizado = await chamadosService.atualizar(chamado.id, {
         tecnico_responsavel_id: valor ? Number(valor) : null,
+        ...precondicao,
       });
       registrarMudanca(atualizado);
     } catch (err: any) {
+      if (ehPerdaDeAcesso(err)) {
+        encerrarAcesso(chamado.id);
+        return;
+      }
+      if (ehConflitoDeVersao(err) || ehVersaoAusente(err)) {
+        toast.error(ehConflitoDeVersao(err) ? MENSAGEM_ATRIBUICAO_MUDOU : MENSAGEM_VERSAO_AUSENTE);
+        void responsaveisTI.recarregar();
+        void recarregar();
+        return;
+      }
+      if (classificarFalhaDeEscrita(err).tipo === 'incerta') {
+        // Pode ter entrado. Nada é reenviado; a janela relê para mostrar.
+        toast.error(MENSAGEM_INCERTA);
+        void recarregar();
+        return;
+      }
+      // 400 do responsável (inativo, fora da TI, conta de serviço): a lista
+      // na tela estava velha. Diz o motivo do backend, relê a lista, e a
+      // nova escolha é um clique novo — o PUT não se repete.
+      if (ehRecusaDoResponsavel(err)) {
+        toast.error(mensagemDaRecusaDoResponsavel(err));
+        void responsaveisTI.recarregar();
+        return;
+      }
       // O 403 já é anunciado pelo interceptor; repetir mostraria duas
       // mensagens para o mesmo erro.
       if (err?.response?.status !== 403) {
@@ -241,6 +464,47 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
           err?.response?.data?.detail || 'Não foi possível atribuir o responsável.'
         );
       }
+    } finally {
+      atribuindoRef.current = false;
+      setAtribuindo(false);
+    }
+  };
+
+  /**
+   * Troca o responsável de um chamado da Qualidade. Escolher quem já está não
+   * sai: não há mudança, e a API não precisa ser consultada para isso.
+   *
+   * Leva a versão do chamado desta janela (FE-4): se outra pessoa trocou o
+   * responsável — ou mudou qualquer coisa — depois que ela abriu, a API
+   * recusa com 409, a janela relê e a troca não é repetida.
+   */
+  const atribuirNaQualidade = async (valor: string) => {
+    if (!chamado || !valor || Number(valor) === chamado.tecnico_responsavel_id) return;
+
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
+
+    try {
+      setAtribuindo(true);
+      const atualizado = await chamadosService.atualizar(chamado.id, {
+        tecnico_responsavel_id: Number(valor),
+        ...precondicao,
+      });
+      registrarMudanca(atualizado);
+    } catch (err) {
+      if (ehPerdaDeAcesso(err)) {
+        encerrarAcesso(chamado.id);
+        return;
+      }
+      const { mensagem, recarregarAtendentes, indisponivel, recarregarChamado } =
+        interpretarErroDaReatribuicao(err);
+      if (mensagem) toast.error(mensagem);
+      if (indisponivel) marcarQualidadeIndisponivel();
+      if (recarregarAtendentes) void verificarQualidade();
+      if (recarregarChamado) void recarregar();
     } finally {
       setAtribuindo(false);
     }
@@ -251,10 +515,14 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
       aberto={chamadoId !== null}
       aoFechar={aoFechar}
       largura="xl"
-      titulo={chamado ? chamado.titulo : 'Carregando…'}
-      descricao={chamado?.protocolo}
+      titulo={acessoEncerrado ? 'Chamado indisponível' : chamado ? chamado.titulo : 'Carregando…'}
+      descricao={acessoEncerrado ? undefined : chamado?.protocolo}
       rodape={
-        chamado ? (
+        acessoEncerrado ? (
+          <Button variante="secundario" onClick={aoFechar}>
+            Fechar
+          </Button>
+        ) : chamado ? (
           <Button variante="secundario" onClick={() => aoAbrirEmPagina(chamado.id)}>
             <IconeLinkExterno className="h-4 w-4" aria-hidden="true" />
             Abrir em página para editar
@@ -262,17 +530,21 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
         ) : undefined
       }
     >
-      {carregando && (
+      {acessoEncerrado && (
+        <AcessoEncerrado mensagem={MENSAGEM_SEM_ACESSO} rascunhos={acessoEncerrado} />
+      )}
+
+      {carregando && !acessoEncerrado && (
         // Também era silencioso, e este é o pior dos três: é o modal do
         // chamado, a tela mais usada do sistema.
         <BlocoCarregando className="py-12" />
       )}
 
-      {erro && !carregando && (
+      {erro && !carregando && !acessoEncerrado && (
         <Aviso variante="perigo">{erro}</Aviso>
       )}
 
-      {chamado && !carregando && (
+      {chamado && !carregando && !acessoEncerrado && (
         // Duas colunas em tela larga: a conversa à esquerda, a ficha à direita.
         // Numa coluna só, a descrição estica por todo o modal e a leitura fica
         // ruim, enquanto sobra vazio ao lado.
@@ -303,10 +575,16 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                   {comentarios.map((c) => (
                     <li key={c.id} className="flex gap-2">
                       <Avatar nome={nome(c.usuario_id)} className="mt-0.5" />
-                      <div className="min-w-0 flex-1 rounded-lg border border-borda bg-superficie px-3 py-2">
+                      <div
+                        // Marca na borda E selo com texto: cor sozinha não basta.
+                        className={`min-w-0 flex-1 rounded-lg border bg-superficie px-3 py-2 ${
+                          c.is_interno ? 'border-alerta/30 border-l-4 border-l-alerta' : 'border-borda'
+                        }`}
+                      >
                         <div className="flex items-baseline justify-between gap-2">
-                          <span className="text-sm font-medium text-conteudo">
+                          <span className="flex items-center gap-1.5 text-sm font-medium text-conteudo">
                             {nome(c.usuario_id)}
+                            {c.is_interno && <SeloInterno />}
                           </span>
                           <span className="shrink-0 text-xs text-conteudo-tenue">
                             {dataHora(c.created_at)}
@@ -329,12 +607,25 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                   placeholder="Escrever um comentário…"
                   aria-label="Novo comentário"
                 />
+                <OpcaoDeComentarioInterno
+                  pode={alteraComoEquipe}
+                  interno={comentarioInterno}
+                  bloqueado={internoBloqueado}
+                  aoMudar={setComentarioInterno}
+                  semConfirmacao={semConfirmacao && !internoRecusado}
+                  aoConfirmarDeNovo={() => void revalidarIdentidade()}
+                  aoTornarPublico={() => {
+                    setComentarioInterno(false);
+                    setInternoRecusado(false);
+                  }}
+                  desabilitado={enviando}
+                />
                 <div className="flex justify-end">
                   <Button
                     tamanho="sm"
                     onClick={comentar}
                     carregando={enviando}
-                    disabled={!novoComentario.trim()}
+                    disabled={!novoComentario.trim() || internoBloqueado}
                   >
                     <IconeEnviar className="h-3.5 w-3.5" aria-hidden="true" />
                     Comentar
@@ -353,6 +644,9 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={chamado.status} />
               <PrioridadeBadge prioridade={chamado.prioridade} />
+              {/* Sempre, inclusive TI: o cartão só marca a exceção, e é aqui
+                  que se confere para onde o chamado foi. */}
+              <SetorBadge chamado={chamado} />
               {chamado.arquivado && <MarcaBadge marca="arquivado" />}
               {chamado.cancelado && <MarcaBadge marca="cancelado" />}
             </div>
@@ -363,7 +657,14 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 quase sempre quer fazer algo com ele, não conferir a data de
                 abertura. O componente some sozinho para quem não pode agir e
                 para chamado cancelado ou arquivado. */}
-            <AcoesRapidas chamado={chamado} aoMudar={registrarMudanca} />
+            <AcoesRapidas
+              chamado={chamado}
+              aoMudar={registrarMudanca}
+              aoPrecisarRecarregar={recarregar}
+              aoGuardarRascunho={(texto) => {
+                rascunhoDoAtendimento.current = texto;
+              }}
+            />
 
             <dl className="space-y-3 border-t border-borda pt-4 text-sm">
               <Campo rotulo="Solicitante">
@@ -374,10 +675,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
               </Campo>
 
               <Campo rotulo="Responsável">
-                {podeAtribuir ? (
-                  // Para a equipe o campo É o seletor, sem modo de edição à
-                  // parte: escolher salva na hora, como as ações de status. O
-                  // valor volta do servidor — o que aparece é o que ficou.
+                {reatribuiNaQualidade ? (
                   <Seletor
                     rotulo="Responsável"
                     disabled={atribuindo}
@@ -386,14 +684,30 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                         ? String(chamado.tecnico_responsavel_id)
                         : ''
                     }
+                    aoMudar={atribuirNaQualidade}
+                    opcoes={opcoesDeResponsavelDaQualidade(
+                      qualidade.atendentes,
+                      chamado.tecnico_responsavel_id,
+                      nome(chamado.tecnico_responsavel_id)
+                    )}
+                  />
+                ) : reatribuiNaTI ? (
+                  // Para quem administra o campo É o seletor, sem modo de
+                  // edição à parte: escolher salva na hora, como as ações de
+                  // status. O valor volta do servidor — o que aparece é o que
+                  // ficou. Sem a lista da API-9, nada para escolher: o atual
+                  // continua à vista, e o seletor fica travado.
+                  <SeletorDeResponsavelDaTI
+                    rotulo="Responsável"
+                    lista={responsaveisTI}
+                    atualId={chamado.tecnico_responsavel_id}
+                    nomeDoAtual={
+                      chamado.tecnico_responsavel_id
+                        ? usuarios[chamado.tecnico_responsavel_id]?.nome
+                        : null
+                    }
+                    ocupado={atribuindo}
                     aoMudar={atribuir}
-                    opcoes={[
-                      { valor: '', rotulo: 'Sem atribuição' },
-                      ...atribuiveis.map((u) => ({
-                        valor: String(u.id),
-                        rotulo: u.nome,
-                      })),
-                    ]}
                   />
                 ) : (
                   <span className="flex items-center gap-1.5">

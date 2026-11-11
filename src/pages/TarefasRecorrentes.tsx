@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useAuth } from '../hooks/useAuth';
+import { usePermissoes } from '../hooks/usePermissoes';
 import { useChamados } from '../hooks/useChamados';
 import {
   Badge,
@@ -156,11 +156,13 @@ const formInicial = (): FormState => ({
 // ========================================
 
 const TarefasRecorrentes: React.FC = () => {
-  const { user } = useAuth();
   const { categorias } = useChamados();
 
-  const podeGerenciar =
-    user?.role === 'Administrador' || user?.role === 'Tecnico';
+  // As sete rotas de tarefas são `require_equipe_ti`. Ser técnico não basta
+  // (FE-5): o da Qualidade levava 403 em cada uma, ao abrir a tela. A rota
+  // já barra quem não administra; esta guarda cobre o que montar a página por
+  // outro caminho, e é ela que decide os carregamentos abaixo.
+  const { podeAdministrar: podeGerenciar } = usePermissoes();
 
   const [tarefas, setTarefas] = useState<TarefaRecorrente[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -183,6 +185,7 @@ const TarefasRecorrentes: React.FC = () => {
   // ========================================
 
   const carregar = async () => {
+    if (!podeGerenciar) return;
     try {
       setLoading(true);
       const dados = await tarefasRecorrentesService.listar(
@@ -200,14 +203,15 @@ const TarefasRecorrentes: React.FC = () => {
   useEffect(() => {
     carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mostrarInativas]);
+  }, [mostrarInativas, podeGerenciar]);
 
   useEffect(() => {
+    if (!podeGerenciar) return;
     usuariosService
       .listar({ ativo: true })
       .then(setUsuarios)
       .catch(() => setUsuarios([]));
-  }, []);
+  }, [podeGerenciar]);
 
   const nomeUsuario = (id?: number | null) =>
     usuarios.find((u) => u.id === id)?.nome;
@@ -314,7 +318,7 @@ const TarefasRecorrentes: React.FC = () => {
   };
 
   const confirmarRealizar = async () => {
-    if (!selecionada || !user) return;
+    if (!selecionada || !podeGerenciar) return;
     try {
       setSalvando(true);
       await tarefasRecorrentesService.realizar(selecionada.id, {

@@ -11,6 +11,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Build de homologação (scripts/build-homologacao.mjs): só aponta para a API local
+dist-homologacao
 *.local
 
 # Environment variables

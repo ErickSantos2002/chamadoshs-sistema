@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
+import { usePermissoes } from '../hooks/usePermissoes';
+import { useChamados } from '../hooks/useChamados';
+import { useQualidade } from '../hooks/useQualidade';
 import { chamadosService } from '../services/chamadoshsapi';
+import {
+  interpretarErroDoAtendimento,
+  montarCorpoAtendimento,
+  podeAtenderPelaRota,
+} from '../lib/atendimento';
+import { setorDoChamado } from '../lib/setor';
+import {
+  MENSAGEM_CONFLITO_DE_VERSAO,
+  MENSAGEM_SEM_VERSAO,
+  MENSAGEM_VERSAO_AUSENTE,
+  ehConflitoDeVersao,
+  ehVersaoAusente,
+  lerVersao,
+  precondicaoDaEscrita,
+  versaoAtualDoConflito,
+} from '../lib/versao';
+import { MENSAGEM_INCERTA, classificarFalhaDeEscrita } from '../lib/escrita';
 import { MINIMO_SOLUCAO, validarMinimo } from '../lib/validacao';
 import ContadorMinimo from './ContadorMinimo';
 import { Button, RotuloDeCampo, Textarea } from './ui';
-import { Chamado, StatusEnum } from '../types/api';
+import { Chamado, SetorDestinoEnum, StatusDoAtendimento, StatusEnum } from '../types/api';
 import type { PropsDeIcone } from './ui/icones';
 import { IconeConfereCirculo, IconeDesfazer, IconeIniciar, IconeRelogio } from './ui/icones';
 
@@ -13,9 +33,29 @@ interface AcoesRapidasProps {
   chamado: Chamado;
   /** Recebe o chamado atualizado depois da mudança. */
   aoMudar: (atualizado: Chamado) => void;
+  /**
+   * O chamado na tela pode estar velho — a API recusou por permissão, por
+   * conflito ou porque ele não existe mais.
+   *
+   * Quem devolve uma promessa diz como a releitura terminou: `true`, o
+   * chamado novo está na tela (e os botões voltam a partir dele); `false` ou
+   * falha, não está — os botões ficam travados, com o motivo, até um clique
+   * em "Tentar de novo". Sem promessa, os botões esperam a versão nova chegar.
+   */
+  aoPrecisarRecarregar?: () => void | Promise<boolean | void>;
+  /**
+   * A solução digitada no passo de resolução, quando a escrita foi recusada
+   * e a tela vai reler — e `''` quando ela foi gravada. Se a releitura disser
+   * que a pessoa perdeu o acesso, quem mostra o chamado a deixa para copiar.
+   */
+  aoGuardarRascunho?: (texto: string) => void;
 }
 
-/** O que dá para fazer a partir de cada status, e com que palavra. */
+/**
+ * O que dá para fazer a partir de cada status, e com que palavra. É também o
+ * mapa de transições da rota de atendimento da Qualidade, que a API guarda
+ * idêntico — por isso os dois caminhos usam os mesmos botões.
+ */
 const TRANSICOES: Partial<
   Record<StatusEnum, Array<{ para: StatusEnum; texto: string; Icone: React.FC<PropsDeIcone> }>>
 > = {
@@ -58,16 +98,104 @@ const TRANSICOES: Partial<
  * Ela é o que fica de registro e o que alguém lê quando o mesmo problema
  * volta. Facilitar o caminho não é motivo para aceitar "ok" como solução, e o
  * mínimo vale igual aqui e na página inteira.
+ *
+ * ── Dois caminhos, os mesmos botões ───────────────────────────────────
+ *
+ * Quem atende um chamado da Qualidade em que é o responsável usa a rota
+ * restrita (`PATCH /atendimento`), seja qual for o perfil — as condições estão
+ * em `podeAtenderPelaRota`. Todo o resto da equipe segue pelo PUT de sempre.
+ * Nunca os dois: quando a rota vale, os botões mudam de caminho, e um erro
+ * dela nunca é repetido pelo PUT.
+ *
+ * ── A versão (FE-4; TI desde a API-12) ────────────────────────────────
+ *
+ * Nos dois setores, os dois caminhos levam a versão do chamado que está NA
+ * TELA — é ela que diz em que a pessoa se baseou ao clicar. Nada é relido
+ * antes de mandar: uma versão buscada na hora bateria sempre e deixaria a
+ * ação desfazer o que outra pessoa acabou de gravar. Se outra pessoa gravou
+ * antes, a API recusa com 409 e nada é sobrescrito: a tela relê o chamado,
+ * os botões são refeitos a partir dele e ficam travados até a versão nova
+ * chegar, e a solução digitada volta no próximo "resolver". Nada é repetido
+ * sozinho: a nova tentativa é um clique novo. Sem versão válida (API
+ * anterior à 4), a escrita da Qualidade nem sai, e a da TI sai sem versão.
+ *
+ * Sem resposta (timeout, rede, 5xx), não há como saber se a escrita entrou:
+ * a tela diz isso, guarda a solução e relê o chamado — nada é reenviado. Se
+ * a escrita tiver entrado, a versão subiu, e um clique repetido com a versão
+ * velha seria 409, não uma segunda gravação.
  */
-export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) => {
+export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
+  chamado,
+  aoMudar,
+  aoPrecisarRecarregar,
+  aoGuardarRascunho,
+}) => {
   const { user } = useAuth();
+  const { verificarQualidade, marcarAtendimentoIndisponivel, marcarQualidadeIndisponivel } =
+    useChamados();
+  const qualidade = useQualidade(setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE);
   const [resolvendo, setResolvendo] = useState(false);
   const [solucao, setSolucao] = useState('');
   const [salvando, setSalvando] = useState(false);
+  // O `disabled` só chega no próximo desenho; dois cliques no mesmo quadro
+  // passariam os dois. A trava é síncrona.
+  const travado = useRef(false);
+  // Depois de um 409 de versão: a versão que a tela precisa ver antes de
+  // liberar os botões de novo, e a solução que a pessoa tinha digitado.
+  const [esperandoVersao, setEsperandoVersao] = useState<number | null>(null);
+  const rascunhoDaSolucao = useRef<string | null>(null);
+  const versaoNaTela = lerVersao(chamado);
+  // A releitura pedida depois de uma recusa não trouxe o chamado: as ações do
+  // estado velho não voltam, e nada é tentado de novo sozinho (FE-5).
+  const [falhaAoAtualizar, setFalhaAoAtualizar] = useState(false);
+  const desatualizado =
+    falhaAoAtualizar || (esperandoVersao !== null && (versaoNaTela ?? 0) < esperandoVersao);
 
-  // Mudar status é da equipe. A API recusa para o solicitante, e mostrar o
-  // botão a ele seria oferecer um 403.
-  const podeAgir = user?.role === 'Administrador' || user?.role === 'Tecnico';
+  useEffect(() => {
+    if (esperandoVersao !== null && versaoNaTela !== null && versaoNaTela >= esperandoVersao) {
+      setEsperandoVersao(null);
+    }
+  }, [esperandoVersao, versaoNaTela]);
+
+  // Chamado novo na tela é a verdade de agora: a falha anterior não vale mais.
+  useEffect(() => {
+    setFalhaAoAtualizar(false);
+  }, [chamado]);
+
+  /**
+   * Pede a releitura e espera ela terminar, quando quem pediu diz como.
+   * A espera pela versão SEMPRE acaba: ou com o chamado relido, ou com a
+   * falha à vista — nunca com o aviso "Atualizando…" para sempre.
+   */
+  const pedirRecarga = () => {
+    if (solucao.trim()) aoGuardarRascunho?.(solucao);
+    const resultado = aoPrecisarRecarregar?.();
+    if (!resultado || typeof (resultado as Promise<unknown>).then !== 'function') return;
+    (resultado as Promise<boolean | void>).then(
+      (ok) => {
+        if (ok === undefined) return;
+        setEsperandoVersao(null);
+        setFalhaAoAtualizar(ok === false);
+      },
+      () => {
+        setEsperandoVersao(null);
+        setFalhaAoAtualizar(true);
+      }
+    );
+  };
+
+  const { podeAlterarComoEquipe } = usePermissoes();
+  const pelaRota = podeAtenderPelaRota(chamado, user?.id, qualidade);
+
+  // Mudar status pelo PUT é da equipe — `pode_alterar_como_equipe` da API,
+  // e não o perfil (C2). O técnico que lê o chamado só pelo vínculo, a conta
+  // de serviço e o solicitante levariam um 403.
+  const podeAgir =
+    pelaRota ||
+    podeAlterarComoEquipe(
+      chamado,
+      setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE ? qualidade.atendentes : null
+    );
 
   // Cancelado e arquivado saem do fluxo normal: reabrir um deles é decisão que
   // vive na página inteira, junto do motivo e do histórico.
@@ -76,26 +204,111 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
       ? (TRANSICOES[chamado.status] ?? [])
       : [];
 
-  if (!disponiveis.length && !resolvendo) return null;
+  if (!podeAgir || (!disponiveis.length && !resolvendo)) return null;
+
+  /**
+   * O erro da rota restrita. O que foi digitado só se perde quando não há
+   * mais o que fazer com ele: rota ou Qualidade fora do ar, ou chamado que
+   * mudou por baixo. Rede e validação mantêm o passo aberto, sem repetir.
+   */
+  /**
+   * 409 de versão ou 428, nos dois caminhos: nada foi gravado. A solução
+   * digitada fica guardada, a tela relê o chamado e, no 409, os botões
+   * esperam a versão nova — um botão do estado velho não pode ser clicado.
+   */
+  const tratarErroDeVersao = (err: unknown, versaoUsada: number | undefined): boolean => {
+    const conflito = ehConflitoDeVersao(err);
+    if (!conflito && !ehVersaoAusente(err)) return false;
+    toast.error(conflito ? MENSAGEM_CONFLITO_DE_VERSAO : MENSAGEM_VERSAO_AUSENTE);
+    if (solucao.trim()) rascunhoDaSolucao.current = solucao;
+    if (conflito) {
+      setEsperandoVersao(versaoAtualDoConflito(err) ?? (versaoUsada ?? 0) + 1);
+    }
+    setResolvendo(false);
+    pedirRecarga();
+    return true;
+  };
+
+  const tratarErroDoAtendimento = (err: unknown, versaoUsada: number | undefined) => {
+    if (tratarErroDeVersao(err, versaoUsada)) return;
+    const { tipo, mensagem, recarregar } = interpretarErroDoAtendimento(err);
+    if (mensagem) toast.error(mensagem);
+
+    if (tipo === 'rota-indisponivel') {
+      marcarAtendimentoIndisponivel();
+      setResolvendo(false);
+    } else if (tipo === 'qualidade-indisponivel') {
+      marcarQualidadeIndisponivel();
+      setResolvendo(false);
+    } else if (tipo === 'sem-permissao') {
+      // Quem atende pode ter mudado: relê os atendentes, e as ações somem se
+      // a pessoa saiu da lista.
+      void verificarQualidade();
+    }
+
+    if (recarregar) {
+      setResolvendo(false);
+      pedirRecarga();
+    }
+  };
 
   const aplicar = async (novoStatus: StatusEnum, textoDaSolucao?: string) => {
+    if (travado.current || desatualizado) return;
+    // A versão do chamado desta tela, lida dele mesmo. Sem versão válida na
+    // Qualidade, nada sai — e o que foi digitado continua no passo.
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
+    travado.current = true;
+    const viaRota = pelaRota;
+
     try {
       setSalvando(true);
-      const atualizado = await chamadosService.atualizar(chamado.id, {
-        status: novoStatus,
-        ...(textoDaSolucao ? { solucao: textoDaSolucao } : {}),
-      });
+      const atualizado = viaRota
+        ? await chamadosService.atender(
+            chamado.id,
+            montarCorpoAtendimento(
+              novoStatus as StatusDoAtendimento,
+              textoDaSolucao,
+              precondicao.versao_esperada
+            )
+          )
+        : await chamadosService.atualizar(chamado.id, {
+            status: novoStatus,
+            ...(textoDaSolucao ? { solucao: textoDaSolucao } : {}),
+            ...precondicao,
+          });
 
       aoMudar(atualizado);
       setResolvendo(false);
       setSolucao('');
+      rascunhoDaSolucao.current = null;
+      aoGuardarRascunho?.('');
     } catch (err: any) {
-      // O 403 já é anunciado pelo interceptor; repetir mostraria duas
-      // mensagens para o mesmo erro.
-      if (err?.response?.status !== 403) {
+      if (viaRota) {
+        tratarErroDoAtendimento(err, precondicao.versao_esperada);
+      } else if (tratarErroDeVersao(err, precondicao.versao_esperada)) {
+        // Já avisado, e a tela relê.
+      } else if (err?.response?.status === 404) {
+        // O chamado saiu do alcance de quem clicou (FE-5). Quem mostra o
+        // chamado relê, e é ela quem diz que ele não está mais disponível.
+        setResolvendo(false);
+        pedirRecarga();
+      } else if (classificarFalhaDeEscrita(err).tipo === 'incerta') {
+        // Pode ter entrado: diz isso, guarda a solução e relê. Nada é reenviado.
+        toast.error(MENSAGEM_INCERTA);
+        if (solucao.trim()) rascunhoDaSolucao.current = solucao;
+        setResolvendo(false);
+        pedirRecarga();
+      } else if (err?.response?.status !== 403) {
+        // O 403 já é anunciado pelo interceptor; repetir mostraria duas
+        // mensagens para o mesmo erro.
         toast.error(err?.response?.data?.detail || 'Não foi possível mudar o status.');
       }
     } finally {
+      travado.current = false;
       setSalvando(false);
     }
   };
@@ -109,7 +322,11 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
     aplicar(StatusEnum.RESOLVIDO, solucao);
   };
 
-  if (resolvendo) {
+  // Um chamado que mudou pode não permitir mais resolver: o passo some, e a
+  // solução digitada fica guardada para quando voltar a permitir.
+  const podeResolver = disponiveis.some((t) => t.para === StatusEnum.RESOLVIDO);
+
+  if (resolvendo && podeResolver) {
     return (
       <div className="space-y-3">
         {/* Rótulo, campo e contador são UM bloco: o `RotuloDeCampo` já traz a
@@ -131,9 +348,9 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
 
         <div className="flex gap-2">
           <Button
-            tamanho="sm"
             onClick={confirmarResolucao}
             carregando={salvando}
+            disabled={desatualizado}
             className="flex-1"
           >
             <IconeConfereCirculo className="h-4 w-4" aria-hidden="true" />
@@ -141,7 +358,6 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
           </Button>
           <Button
             variante="secundario"
-            tamanho="sm"
             onClick={() => setResolvendo(false)}
             disabled={salvando}
           >
@@ -154,15 +370,32 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({ chamado, aoMudar }) 
 
   return (
     <div className="flex flex-col gap-2">
+      {falhaAoAtualizar ? (
+        <div role="status" className="space-y-1.5">
+          <p className="text-sm text-conteudo-suave">
+            Não foi possível atualizar este chamado. As ações ficam travadas até ele ser relido.
+          </p>
+          <Button variante="secundario" tamanho="sm" onClick={pedirRecarga}>
+            Tentar de novo
+          </Button>
+        </div>
+      ) : (
+        desatualizado && (
+          <p role="status" className="text-sm text-conteudo-suave">
+            Este chamado mudou. Atualizando os dados antes de liberar as ações…
+          </p>
+        )
+      )}
+      {/* No tamanho padrão, como os outros controles do modal e da página:
+          em `sm` as ações eram os menores alvos da tela (homologação FE-5). */}
       {disponiveis.map(({ para, texto, Icone }) => (
         <Button
           key={para}
           variante={para === StatusEnum.RESOLVIDO ? 'sucesso' : 'secundario'}
-          tamanho="sm"
-          disabled={salvando}
+          disabled={salvando || desatualizado}
           onClick={() =>
             para === StatusEnum.RESOLVIDO
-              ? (setSolucao(chamado.solucao ?? ''), setResolvendo(true))
+              ? (setSolucao(rascunhoDaSolucao.current ?? chamado.solucao ?? ''), setResolvendo(true))
               : aplicar(para)
           }
         >

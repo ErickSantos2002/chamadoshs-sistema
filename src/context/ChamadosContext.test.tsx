@@ -39,12 +39,17 @@ const Sonda: React.FC = () => {
 };
 
 const SESSAO = {
-  user: { id: 1, username: 'rickelme', role: 'Administrador' },
+  user: { id: 1, username: 'rickelme', role: 'Administrador', conta_de_servico: false },
   token: 'token-de-teste',
   loading: false,
   error: null,
   login: async () => {},
   logout: () => {},
+  identidadeConfirmada: true,
+  falhaAoConfirmar: false,
+  confirmacaoRecusada: false,
+  revalidando: false,
+  revalidarIdentidade: async () => {},
 } as React.ContextType<typeof AuthContext>;
 
 let host: HTMLDivElement;
@@ -122,6 +127,22 @@ describe('aplicarChamado', () => {
     });
 
     expect(visto.map((c) => c.id)).toEqual([1, 2]);
+  });
+
+  /**
+   * FE-4: a versão do card é a que a próxima escrita manda. Uma resposta que
+   * chega atrasada, com versão menor, não pode trocá-la pela velha — a escrita
+   * seguinte levaria 409 sem ninguém ter mexido.
+   */
+  it('resposta atrasada, de versão menor, não desfaz a mais nova', () => {
+    const com = (status: StatusEnum, versao: number) => ({ ...chamadoDe(1, status), versao }) as Chamado;
+    act(() => {
+      acoes.aplicarChamado(com(StatusEnum.RESOLVIDO, 5));
+      acoes.aplicarChamado(com(StatusEnum.AGUARDANDO, 4));
+    });
+
+    expect(visto[0]).toEqual({ id: 1, status: StatusEnum.RESOLVIDO });
+    expect(acoes.chamados[0].versao).toBe(5);
   });
 });
 

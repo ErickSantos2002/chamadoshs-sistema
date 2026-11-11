@@ -381,3 +381,61 @@ describe('Seletor — as quatro telas com rótulo visível', () => {
     }
   });
 });
+
+/**
+ * FE-5: o valor que não está nas opções não vira a primeira opção — era o que
+ * fazia um chamado com responsável aparecer "Sem atribuição" —, e a opção
+ * desabilitada aparece sem poder ser escolhida, nem pelo clique nem pelo
+ * teclado.
+ */
+describe('Seletor — valor fora das opções e opção desabilitada (FE-5)', () => {
+  it('valor que não está nas opções não mostra a primeira', () => {
+    montar({ valor: '99' });
+    expect(gatilho().textContent).not.toContain('Selecione');
+    expect(gatilho().textContent).not.toContain('Lidisay');
+  });
+
+  it('opção desabilitada aparece, marcada, e o clique não escolhe', () => {
+    montar({
+      valor: '9',
+      opcoes: [...OPCOES, { valor: '9', rotulo: 'Antigo (fora da equipe)', desabilitada: true }],
+    });
+    expect(gatilho().textContent).toContain('Antigo (fora da equipe)');
+    abrir();
+    const fora = Array.from(document.querySelectorAll('[role="option"]')).find((o) =>
+      o.textContent?.includes('Antigo')
+    )!;
+    expect(fora.getAttribute('aria-disabled')).toBe('true');
+    act(() => {
+      fora.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(aoMudar).not.toHaveBeenCalled();
+  });
+
+  it('Enter sobre a opção desabilitada também não escolhe', () => {
+    montar({
+      valor: '9',
+      opcoes: [{ valor: '9', rotulo: 'Antigo (fora da equipe)', desabilitada: true }, ...OPCOES],
+    });
+    abrir();
+    act(() => {
+      lista()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    expect(aoMudar).not.toHaveBeenCalled();
+  });
+});
+
+// Homologação FE-5: no tema claro, `text-sinal` sobre o destaque `bg-sinal/15`
+// media 4,31:1 — texto abaixo de 4,5. A cor é medida no navegador; aqui fica
+// travado o que a corrigiu: a escolhida no texto do conteúdo, o sinal no ícone.
+describe('Seletor — a opção escolhida', () => {
+  it('fica no texto do conteúdo, com o sinal só no ícone', () => {
+    montar({ valor: '1' });
+    abrir();
+    const escolhida = document.querySelector('[role="option"][aria-selected="true"]')!;
+    expect(escolhida.textContent).toContain('Lidisay');
+    expect(escolhida.className).toContain('text-conteudo');
+    expect(escolhida.className).not.toMatch(/(^|\s)text-sinal(\s|$)/);
+    expect(escolhida.querySelector('svg')?.getAttribute('class')).toContain('text-sinal');
+  });
+});

@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ThemeProvider } from '../context/ThemeContext';
-import { PrioridadeEnum, StatusEnum } from '../types/api';
+import { Chamado, PrioridadeEnum, StatusEnum } from '../types/api';
 import { ROLE_MAP } from '../utils/roleMapper';
 import {
   MarcaBadge,
   PapelBadge,
   PrioridadeBadge,
+  SetorBadge,
   StatusBadge,
   VARIANTE_DE_PAPEL,
   VARIANTE_DE_PRIORIDADE,
@@ -181,5 +182,82 @@ describe('selo de papel', () => {
     const html = comTema(<PapelBadge roleId={99} />);
     expect(html).toContain('bg-tint-neutral');
     expect(html).toContain('Usuario');
+  });
+});
+
+describe('selo de setor', () => {
+  const comSetor = (setor_destino: unknown, props: Partial<React.ComponentProps<typeof SetorBadge>> = {}) =>
+    comTema(
+      <SetorBadge chamado={{ id: 1, setor_destino } as unknown as Chamado} {...props} />
+    );
+
+  it('TI e Qualidade com o rótulo de tela, e não o valor da API', () => {
+    expect(comSetor('TI')).toContain('>TI<');
+    const qualidade = comSetor('QUALIDADE');
+    expect(qualidade).toContain('Qualidade');
+    expect(qualidade).not.toContain('QUALIDADE');
+  });
+
+  it('campo ausente sai como TI', () => {
+    expect(comSetor(undefined)).toContain('>TI<');
+  });
+
+  /**
+   * Setor não é estado: neutro, como o selo de categoria. A cor não carrega
+   * nada aqui — quem distingue TI de Qualidade é a palavra.
+   */
+  it('é neutro, sem cor de significado', () => {
+    for (const valor of ['TI', 'QUALIDADE', 'RH']) {
+      const html = comSetor(valor);
+      expect(html, valor).toContain('bg-tint-neutral');
+      expect(html, valor).not.toMatch(/bg-tint-(info|success|warning|danger|primary)/);
+    }
+  });
+
+  it('diz a quem ouve que é o setor, a menos que já esteja rotulado', () => {
+    expect(comSetor('QUALIDADE')).toContain('Setor de destino:');
+    expect(comSetor('QUALIDADE', { semPrefixo: true })).not.toContain('Setor de destino:');
+  });
+
+  it('ocultarTI some com TI e com campo ausente, e só com eles', () => {
+    // O `ThemeProvider` embrulha num `div`: o que se confere é que não há selo.
+    for (const valor of ['TI', undefined]) {
+      const html = comSetor(valor, { ocultarTI: true });
+      expect(html, String(valor)).not.toContain('<span');
+      expect(html, String(valor)).not.toContain('TI');
+    }
+    expect(comSetor('QUALIDADE', { ocultarTI: true })).toContain('Qualidade');
+    expect(comSetor('RH', { ocultarTI: true })).toContain('RH');
+  });
+
+  it('valor desconhecido aparece como não reconhecido, com o que chegou', () => {
+    const html = comSetor('RH');
+    expect(html).toContain('Setor não reconhecido');
+    expect(html).toContain('RH');
+    expect(html).not.toContain('>TI<');
+  });
+
+  /**
+   * O valor da API é texto. Ele não pode virar marcação nem entrar em classe
+   * ou estilo — um selo que interpola o valor numa classe deixa a resposta da
+   * API decidir a aparência da tela.
+   */
+  it('valor hostil sai escapado, e fora de classe e estilo', () => {
+    const html = comSetor('<img src=x onerror=alert(1)>');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;img');
+    expect(html).not.toMatch(/class="[^"]*img/);
+    expect(html).not.toContain('style=');
+  });
+
+  it('valor longo é cortado e o selo pode encolher', () => {
+    const html = comSetor('X'.repeat(500));
+    expect(html).not.toContain('X'.repeat(41));
+    expect(html).toContain('truncate');
+  });
+
+  it('entrada que nem string é não quebra o selo', () => {
+    expect(comSetor({ a: 1 })).toContain('(objeto)');
+    expect(comSetor(null)).toContain('(nulo)');
   });
 });

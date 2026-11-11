@@ -6,6 +6,17 @@ import { normalizarDetalhe } from '../lib/erroApi';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Criar instância do Axios
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * O 403 desta requisição é resposta esperada, não erro a anunciar: o
+     * interceptor não mostra o toast de "Sem permissão". Quem chama trata.
+     * Usado pelo lembrete do quadro, que é pedido por quem talvez não o leia.
+     */
+    silenciarRecusa?: boolean;
+  }
+}
+
 const api: AxiosInstance = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   timeout: 30000,
@@ -75,14 +86,61 @@ async function renovarToken(): Promise<void> {
     );
 
     localStorage.setItem('token', data.access_token);
-    localStorage.setItem(
-      'user',
-      JSON.stringify({ id: data.user_id, nome: data.nome, role: data.role })
-    );
+    localStorage.setItem('user', JSON.stringify(identidadeGuardadaAposRenovar(data)));
   } catch {
     // Renovação falhou: segue com o token atual em vez de derrubar a
     // requisição do usuário. Se ele já não servir, o 401 é tratado adiante.
+    return;
   }
+
+  // Fora do `try`: um ouvinte com defeito não pode virar "a renovação falhou".
+  for (const ouvinte of [...ouvintesDaRenovacao]) {
+    try {
+      ouvinte();
+    } catch {
+      // O token já foi trocado; o ouvinte é quem perde.
+    }
+  }
+}
+
+/**
+ * O que fica guardado depois da renovação.
+ *
+ * O `/auth/refresh` devolve só `user_id`, `nome` e `role`. Gravar só isso
+ * apagava o `setor_id` que o login tinha guardado — e a sessão, recarregada
+ * depois, perdia o setor. Agora os campos que vieram valem, e os demais da
+ * MESMA conta continuam. Se o id mudou, nada do anterior é aproveitado.
+ *
+ * `integra_equipe_ti` nunca é guardado (FE-5): permissão da TI só vale
+ * confirmada pelo `/auth/me` da sessão, e um valor velho no navegador não
+ * pode voltar a valer depois de um F5.
+ */
+export function identidadeGuardadaAposRenovar(data: {
+  user_id: number;
+  nome: string;
+  role: string;
+}): Record<string, unknown> {
+  let anterior: Record<string, unknown> = {};
+  try {
+    const lido = JSON.parse(localStorage.getItem('user') ?? 'null');
+    if (lido && typeof lido === 'object' && lido.id === data.user_id) anterior = lido;
+  } catch {
+    // Guardado ilegível: fica só o que a renovação trouxe.
+  }
+  const { integra_equipe_ti: _descartado, ...semPermissao } = anterior;
+  return { ...semPermissao, id: data.user_id, nome: data.nome, role: data.role };
+}
+
+// Quem precisa saber que o token foi renovado: o `AuthContext`, que relê o
+// `/auth/me` para a permissão acompanhar o estado atual da conta.
+const ouvintesDaRenovacao = new Set<() => void>();
+
+/** Avisa a cada renovação bem-sucedida. Devolve a função que cancela o aviso. */
+export function aoRenovarToken(ouvinte: () => void): () => void {
+  ouvintesDaRenovacao.add(ouvinte);
+  return () => {
+    ouvintesDaRenovacao.delete(ouvinte);
+  };
 }
 
 // Uma renovação por vez: várias telas disparando chamadas ao mesmo tempo
@@ -161,7 +219,7 @@ api.interceptors.response.use(
     // aviso na tela a ação simplesmente não acontece — o usuário clica e nada
     // muda. O id fixo evita empilhar um toast por requisição quando uma tela
     // dispara várias chamadas negadas de uma vez.
-    if (error.response?.status === 403) {
+    if (error.response?.status === 403 && error.config?.silenciarRecusa !== true) {
       const detalhe = (error.response.data as { detail?: string } | undefined)?.detail;
 
       toast.error(

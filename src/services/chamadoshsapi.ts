@@ -1,4 +1,12 @@
-import api from './api';
+import axios from 'axios';
+import api, { identidadeGuardadaAposRenovar } from './api';
+import { versaoValida } from '../lib/versao';
+import { LembretesInvalidos, lerLembretes } from '../lib/lembretes';
+import {
+  ListaDeResponsaveisInvalida,
+  ResponsavelTI,
+  validarResponsaveisTI,
+} from '../lib/responsaveis';
 import {
   LoginRequest,
   TokenResponse,
@@ -6,7 +14,10 @@ import {
   UsuarioLogado,
   AlterarSenhaRequest,
   Chamado,
+  AtendenteQualidade,
   ChamadoCreate,
+  ChamadoCreateQualidade,
+  ChamadoAtendimento,
   ChamadoUpdate,
   ChamadosQueryParams,
   Comentario,
@@ -25,8 +36,16 @@ import {
   TarefaRecorrenteCreate,
   TarefaRecorrenteUpdate,
   RealizarTarefaRequest,
+  LembretesDoDia,
   EventoDeAuditoria,
 } from '../types/api';
+
+// A sonda do atendimento vai pelo axios puro (ver `sondarAtendimento`), então
+// monta a URL por conta própria, da mesma variável que a instância `api` usa.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+/** Quanto a sonda espera. O mesmo da sonda de saúde: não é uma consulta. */
+export const TIMEOUT_DA_SONDA_MS = 5_000;
 
 // ============================================
 // SERVIÇO DE AUTENTICAÇÃO
@@ -73,11 +92,11 @@ export const authService = {
    */
   async refresh(): Promise<TokenResponse> {
     const response = await api.post<TokenResponse>('/auth/refresh');
-    const { access_token, user_id, nome, role } = response.data;
 
-    // Atualizar token
-    localStorage.setItem('token', access_token);
-    localStorage.setItem('user', JSON.stringify({ id: user_id, nome, role }));
+    // Atualizar token. A identidade guardada da mesma conta continua, sem
+    // permissão da TI — ver `identidadeGuardadaAposRenovar`.
+    localStorage.setItem('token', response.data.access_token);
+    localStorage.setItem('user', JSON.stringify(identidadeGuardadaAposRenovar(response.data)));
 
     return response.data;
   },
@@ -109,6 +128,28 @@ export const authService = {
 // ============================================
 // SERVIÇO DE CHAMADOS
 // ============================================
+
+/**
+ * PATCH de marca, com ou sem a versão. Versão que não é inteiro ≥ 1 não sai
+ * daqui: uma pré-condição falsa é pior que nenhuma.
+ */
+async function marcar(
+  id: number,
+  marca: 'cancelar' | 'arquivar' | 'desarquivar',
+  versaoEsperada?: number
+): Promise<Chamado> {
+  const url = `/chamados/${id}/${marca}`;
+  if (versaoEsperada === undefined) return (await api.patch<Chamado>(url)).data;
+  if (!versaoValida(versaoEsperada)) throw new Error(`versão inválida para ${marca}`);
+  return (await api.patch<Chamado>(url, { versao_esperada: versaoEsperada })).data;
+}
+
+/** A mesma trava para o corpo do PUT e do atendimento. */
+function conferirCorpo(dados: { versao_esperada?: unknown }): void {
+  if ('versao_esperada' in dados && !versaoValida(dados.versao_esperada)) {
+    throw new Error('versão inválida no corpo');
+  }
+}
 
 export const chamadosService = {
   /**
@@ -156,10 +197,64 @@ export const chamadosService = {
   },
 
   /**
-   * Cria um novo chamado
+   * Cria um novo chamado. Mesmo POST para os dois setores: a API escolhe a
+   * validação pelo `setor_destino` do corpo — ausente é TI.
    */
-  async criar(dados: ChamadoCreate): Promise<Chamado> {
+  async criar(dados: ChamadoCreate | ChamadoCreateQualidade): Promise<Chamado> {
     const response = await api.post<Chamado>('/chamados/', dados);
+    return response.data;
+  },
+
+  /**
+   * Quem pode ser responsável de um chamado da Qualidade.
+   *
+   * É também a pergunta "a Qualidade existe aqui?": o que esta consulta
+   * responde decide se o formulário oferece o setor — ver `lib/qualidade`.
+   */
+  async listarAtendentesQualidade(): Promise<AtendenteQualidade[]> {
+    const response = await api.get<AtendenteQualidade[]>('/chamados/atendentes-qualidade');
+    return response.data;
+  },
+
+  /**
+   * Quem pode ser NOVO responsável de um chamado da TI (API-9). A única fonte
+   * do seletor da TI — ver `lib/responsaveis`. Só administrador e equipe da
+   * TI podem pedir; quem chama confere antes (`usePermissoes`).
+   *
+   * Resposta fora do contrato `[{id, nome}]` é erro, e não lista vazia.
+   */
+  async listarResponsaveisTI(): Promise<ResponsavelTI[]> {
+    const response = await api.get<unknown>('/chamados/responsaveis-ti');
+    const lista = validarResponsaveisTI(response.data);
+    if (lista === null) throw new ListaDeResponsaveisInvalida();
+    return lista;
+  },
+
+  /**
+   * Pergunta se a API tem o atendimento da Qualidade, sem escrever nada.
+   * O que a resposta quer dizer está em `lib/atendimento`.
+   *
+   * Pelo axios puro, como a sonda de `lib/saude`, e pelo mesmo motivo: a
+   * instância `api` põe o token, pode parar para renová-lo e espera 30s, e
+   * os interceptors dela tratam 401 e 403 como sessão — nenhum deles tem o
+   * que fazer numa pergunta sobre a versão. Sem barra final: com ela a API
+   * redireciona, e o 307 não diz nada.
+   */
+  async sondarAtendimento(): Promise<{ status: number; dados: unknown }> {
+    const response = await axios.get(`${API_BASE_URL}/api/v1/chamados/0/atendimento`, {
+      timeout: TIMEOUT_DA_SONDA_MS,
+      validateStatus: () => true,
+    });
+    return { status: response.status, dados: response.data };
+  },
+
+  /**
+   * Atende um chamado da Qualidade pela rota restrita: só o status e, ao
+   * resolver, a solução. Quem pode usar está em `lib/atendimento`.
+   */
+  async atender(id: number, dados: ChamadoAtendimento): Promise<Chamado> {
+    conferirCorpo(dados);
+    const response = await api.patch<Chamado>(`/chamados/${id}/atendimento`, dados);
     return response.data;
   },
 
@@ -167,6 +262,7 @@ export const chamadosService = {
    * Atualiza um chamado existente
    */
   async atualizar(id: number, dados: ChamadoUpdate): Promise<Chamado> {
+    conferirCorpo(dados);
     const response = await api.put<Chamado>(`/chamados/${id}`, dados);
     return response.data;
   },
@@ -179,27 +275,22 @@ export const chamadosService = {
   },
 
   /**
-   * Cancela um chamado
+   * Cancela um chamado. As três marcas aceitam, na API-4b, um corpo opcional
+   * `{versao_esperada}` — obrigatório na Qualidade. Sem versão, a requisição
+   * sai sem corpo, exatamente como antes (TI e API anterior).
    */
-  async cancelar(id: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/cancelar`);
-    return response.data;
+  async cancelar(id: number, versaoEsperada?: number): Promise<Chamado> {
+    return marcar(id, 'cancelar', versaoEsperada);
   },
 
-  /**
-   * Arquiva um chamado
-   */
-  async arquivar(id: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/arquivar`);
-    return response.data;
+  /** Arquiva um chamado. Corpo como em `cancelar`. */
+  async arquivar(id: number, versaoEsperada?: number): Promise<Chamado> {
+    return marcar(id, 'arquivar', versaoEsperada);
   },
 
-  /**
-   * Desarquiva um chamado
-   */
-  async desarquivar(id: number): Promise<Chamado> {
-    const response = await api.patch<Chamado>(`/chamados/${id}/desarquivar`);
-    return response.data;
+  /** Desarquiva um chamado. Corpo como em `cancelar`. */
+  async desarquivar(id: number, versaoEsperada?: number): Promise<Chamado> {
+    return marcar(id, 'desarquivar', versaoEsperada);
   },
 
   /**
@@ -590,6 +681,28 @@ export const slaConfigsService = {
 // ============================================
 
 export const tarefasRecorrentesService = {
+  /**
+   * O lembrete "tarefas do dia" do quadro (API-11, S1).
+   *
+   * Rota própria, de leitura mínima: lê quem a API deixa — a equipe e a
+   * conta do painel de parede listada em `PAINEL_CONTAS_IDS`. NÃO é a
+   * listagem administrativa: não há fallback para `GET /tarefas-recorrentes/`,
+   * e o sucesso daqui não diz nada sobre poder administrar tarefas.
+   *
+   * O 403 é a resposta esperada de quem não lê o lembrete, e por isso sai
+   * sem o toast global (`silenciarRecusa`): o quadro só esconde o bloco.
+   *
+   * Lança `LembretesInvalidos` se o corpo não for o contrato.
+   */
+  async lembretesDoDia(): Promise<LembretesDoDia> {
+    const response = await api.get<unknown>('/tarefas-recorrentes/lembretes-do-dia', {
+      silenciarRecusa: true,
+    });
+    const lido = lerLembretes(response.data);
+    if (!lido) throw new LembretesInvalidos();
+    return lido;
+  },
+
   /**
    * Lista tarefas recorrentes (ordenadas pela próxima data)
    */

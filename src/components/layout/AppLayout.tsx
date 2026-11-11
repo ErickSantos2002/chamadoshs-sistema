@@ -1,6 +1,65 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { usePermissoes } from '../../hooks/usePermissoes';
+import { useAuth } from '../../hooks/useAuth';
+import { ehAdministrador, ehTecnico, integraEquipeTI } from '../../lib/permissoes';
+import { Aviso, Button } from '../ui';
+
+/**
+ * A revalidação das permissões falhou (rede, servidor): diz que as funções
+ * de administração estão suspensas e oferece a nova tentativa — um clique,
+ * nunca um laço. Só para quem administraria: a quem não administra, a falha
+ * não tira nada.
+ *
+ * Na restauração (F5) o `integra_equipe_ti` não vem do armazenamento — de
+ * propósito, ver `AuthContext` —, então o técnico ainda não sabe se é da TI.
+ * Esse também vê o aviso: para o técnico da TI, sem ele a Gestão sumia sem
+ * explicação e sem a nova tentativa.
+ *
+ * Desde o fechamento da FE-5 (C2/C4) todo técnico vê: a escrita de equipe
+ * num chamado também fica suspensa enquanto a confirmação falha, e o técnico
+ * da Qualidade — fora da TI — perdia os botões sem saber por quê. Quem é só
+ * solicitante não vê: a falha não lhe tira nada.
+ *
+ * Um 403 do `/auth/me` não é rede: a mensagem diz que a API recusou.
+ */
+const AvisoDePermissoesSuspensas: React.FC = () => {
+  const { user, revalidarIdentidade } = useAuth();
+  const { semConfirmacao, confirmacaoRecusada, revalidando } = usePermissoes();
+  const [tentando, setTentando] = useState(false);
+  if (!semConfirmacao || !(ehAdministrador(user) || integraEquipeTI(user) || ehTecnico(user))) {
+    return null;
+  }
+  return (
+    <div className="mb-4">
+      <Aviso variante="alerta">
+        <span className="block">
+          {confirmacaoRecusada
+            ? 'A API recusou a confirmação da sua conta. As funções de administração e de equipe ficam suspensas; se persistir, fale com o administrador do sistema.'
+            : 'Não foi possível confirmar suas permissões. As funções de administração ficam suspensas até a confirmação.'}
+        </span>
+        <Button
+          variante="secundario"
+          tamanho="sm"
+          className="mt-2"
+          carregando={tentando || revalidando}
+          disabled={tentando || revalidando}
+          onClick={async () => {
+            setTentando(true);
+            try {
+              await revalidarIdentidade();
+            } finally {
+              setTentando(false);
+            }
+          }}
+        >
+          Confirmar de novo
+        </Button>
+      </Aviso>
+    </div>
+  );
+};
 
 interface AppLayoutProps {
   /** A página atual. */
@@ -93,6 +152,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
    * que é justamente o que a TV precisa.
    */
   const [recolhida, setRecolhida] = useState(recolhidaInicial);
+  // A Gestão no menu só para quem administra, e só depois do `/auth/me` (F5-3).
+  const { podeAdministrar } = usePermissoes();
   const [gavetaAberta, setGavetaAberta] = useState(gavetaAbertaInicial);
 
   return (
@@ -141,6 +202,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         aoAbrirNovidades={aoAbrirNovidades}
         temNovidade={temNovidade}
         versao={versao}
+        mostrarGestao={podeAdministrar}
       />
 
       {/* `min-w-0` para a coluna poder encolher: sem isso, uma tabela larga
@@ -159,6 +221,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           id="conteudo-principal"
           className="flex-1 overflow-y-auto bg-superficie-base p-4 md:p-6"
         >
+          <AvisoDePermissoesSuspensas />
           {children}
         </main>
       </div>

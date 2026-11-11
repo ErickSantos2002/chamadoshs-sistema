@@ -1,0 +1,886 @@
+import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import toast from 'react-hot-toast';
+import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
+import { ChamadosProvider } from '../context/ChamadosContext';
+import { chamadosService } from '../services/chamadoshsapi';
+import { Chamado, SetorDestinoEnum, StatusEnum } from '../types/api';
+import {
+  MENSAGEM_QUALIDADE_INDISPONIVEL,
+  MENSAGEM_ROTA_INDISPONIVEL,
+  MENSAGEM_SEM_RESPOSTA,
+} from '../lib/atendimento';
+import {
+  MENSAGEM_CONFLITO_DE_VERSAO,
+  MENSAGEM_SEM_VERSAO,
+  MENSAGEM_VERSAO_AUSENTE,
+} from '../lib/versao';
+import AcoesRapidas from './AcoesRapidas';
+
+/**
+ * As ações de status, montadas sobre o contexto de verdade.
+ *
+ * ── A trava da equipe ─────────────────────────────────────────────────
+ *
+ * Os casos de "equipe" descrevem o que o componente FAZ antes do atendimento
+ * da Qualidade existir: quais botões aparecem em cada status, e o corpo exato
+ * do PUT. O atendimento restrito entra ao lado deste fluxo, não em cima dele —
+ * se um destes casos mudar, a TI mudou.
+ */
+
+(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
+  true;
+
+const sessao = (id: number, role: string) =>
+  ({
+    user: { id, username: 'quem-atende', role, conta_de_servico: false },
+    token: 'token-de-teste',
+    loading: false,
+    error: null,
+    login: async () => {},
+    logout: () => {},
+    identidadeConfirmada: true,
+    falhaAoConfirmar: false,
+    confirmacaoRecusada: false,
+    revalidando: false,
+    revalidarIdentidade: async () => {},
+  }) as React.ContextType<typeof AuthContext>;
+
+const ADMIN = sessao(1, 'Administrador');
+// O técnico da equipe da TI: é a equipe, e não o perfil, que muda status
+// pelo PUT (C2). O que só lê pelo vínculo é `TECNICO_DE_FORA`.
+const TECNICO = (() => {
+  const s = sessao(3, 'Tecnico');
+  return { ...s, user: { ...s.user!, integra_equipe_ti: true } };
+})();
+const TECNICO_DE_FORA = sessao(3, 'Tecnico');
+// A técnica da equipe da Qualidade: fora da TI, e na lista de atendentes que
+// os casos da Qualidade montam (id 3). Na Qualidade, é ela a equipe — o
+// técnico da TI não altera os chamados de lá (API-13).
+const TECNICA_DA_QUALIDADE = TECNICO_DE_FORA;
+const USUARIO = sessao(7, 'Usuario');
+
+const chamadoCom = (extra: Partial<Chamado> = {}): Chamado =>
+  ({
+    id: 50,
+    protocolo: 'CHAM-2026-0050',
+    titulo: 'Rede caiu no RH',
+    descricao: 'x',
+    status: StatusEnum.EM_ANDAMENTO,
+    prioridade: 'Média',
+    solicitante_id: 7,
+    tecnico_responsavel_id: 3,
+    cancelado: false,
+    arquivado: false,
+    ...extra,
+  }) as Chamado;
+
+let host: HTMLDivElement;
+let root: Root;
+let aoMudar: ReturnType<typeof vi.fn>;
+
+const montar = async (quem: React.ContextType<typeof AuthContext>, chamado: Chamado) => {
+  await act(async () => {
+    root.render(
+      <AuthContext.Provider value={quem}>
+        <ChamadosProvider>
+          <AcoesRapidas chamado={chamado} aoMudar={aoMudar} />
+        </ChamadosProvider>
+      </AuthContext.Provider>
+    );
+  });
+};
+
+const botoes = () =>
+  Array.from(host.querySelectorAll('button')).map((b) => b.textContent?.trim() ?? '');
+
+const clicar = async (texto: string) => {
+  const alvo = Array.from(host.querySelectorAll('button')).find(
+    (b) => b.textContent?.trim() === texto
+  );
+  expect(alvo, `botão "${texto}" não apareceu`).toBeTruthy();
+  await act(async () => {
+    alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+};
+
+const digitarSolucao = async (valor: string) => {
+  const campo = host.querySelector<HTMLTextAreaElement>('#solucao-rapida');
+  expect(campo, 'campo de solução não apareceu').toBeTruthy();
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+  await act(async () => {
+    setter.call(campo, valor);
+    campo!.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+};
+
+const SOLUCAO_OK = 'Troquei o cabo do switch do RH.';
+
+beforeEach(() => {
+  // Nenhuma requisição sai daqui sem mock: o `.env` local aponta para
+  // produção, e uma chamada esquecida falha em vez de chegar lá.
+  for (const verbo of ['get', 'post', 'put', 'patch', 'delete'] as const) {
+    vi.spyOn(api, verbo).mockRejectedValue(new Error(`rede bloqueada no teste: ${verbo}`));
+  }
+  vi.spyOn(chamadosService, 'listarTodos').mockResolvedValue([]);
+  // Padrão: API sem o atendimento. Os casos da Qualidade trocam.
+  vi.spyOn(chamadosService, 'sondarAtendimento').mockResolvedValue({
+    status: 404,
+    dados: { detail: 'Not Found' },
+  });
+  vi.spyOn(chamadosService, 'listarAtendentesQualidade').mockResolvedValue([]);
+  vi.spyOn(toast, 'error').mockImplementation(() => '');
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  aoMudar = vi.fn();
+
+  host = document.createElement('div');
+  document.body.appendChild(host);
+  root = createRoot(host);
+});
+
+afterEach(() => {
+  act(() => root.unmount());
+  host.remove();
+  vi.restoreAllMocks();
+});
+
+describe('equipe — os botões de cada status', () => {
+  const casos: Array<[StatusEnum, string[]]> = [
+    [StatusEnum.ABERTO, ['Iniciar atendimento']],
+    [StatusEnum.EM_ANDAMENTO, ['Aguardando retorno', 'Marcar como resolvido']],
+    [StatusEnum.AGUARDANDO, ['Retomar atendimento', 'Marcar como resolvido']],
+    [StatusEnum.RESOLVIDO, ['Reabrir']],
+    [StatusEnum.FECHADO, ['Reabrir']],
+  ];
+
+  for (const [status, esperados] of casos) {
+    it(`${status}: ${esperados.join(', ')}`, async () => {
+      await montar(ADMIN, chamadoCom({ status }));
+      expect(botoes()).toEqual(esperados);
+    });
+  }
+
+  it('o técnico vê os mesmos botões', async () => {
+    await montar(TECNICO, chamadoCom({ status: StatusEnum.ABERTO }));
+    expect(botoes()).toEqual(['Iniciar atendimento']);
+  });
+
+  it('cancelado e arquivado: nenhum botão', async () => {
+    await montar(ADMIN, chamadoCom({ cancelado: true }));
+    expect(host.innerHTML).toBe('');
+    await montar(ADMIN, chamadoCom({ arquivado: true }));
+    expect(host.innerHTML).toBe('');
+  });
+
+  it('quem não é da equipe não vê botão', async () => {
+    await montar(USUARIO, chamadoCom());
+    expect(host.innerHTML).toBe('');
+  });
+
+  it('técnico de outro setor que é o responsável: lê, mas não muda status (C2)', async () => {
+    await montar(TECNICO_DE_FORA, chamadoCom({ status: StatusEnum.ABERTO }));
+    expect(host.innerHTML).toBe('');
+  });
+
+  it('administradora de serviço: nenhum botão (API-11, S2)', async () => {
+    const servico = sessao(1, 'Administrador');
+    await montar({ ...servico, user: { ...servico.user!, conta_de_servico: true } }, chamadoCom());
+    expect(host.innerHTML).toBe('');
+  });
+  // Homologação FE-5: em `sm` (30 px) as ações eram os menores alvos do modal,
+  // ao lado de controles de 38 px. Agora no tamanho padrão do `Button`.
+  it('as ações saem no tamanho padrão, não no pequeno', async () => {
+    await montar(ADMIN, chamadoCom({ status: StatusEnum.EM_ANDAMENTO }));
+    const acoes = Array.from(host.querySelectorAll('button'));
+    expect(acoes.length).toBe(2);
+    for (const b of acoes) {
+      expect(b.className).toContain('text-sm');
+      expect(b.className).not.toContain('text-xs');
+    }
+  });
+});
+
+describe('equipe — o PUT', () => {
+  it('mudar status manda só o status', async () => {
+    const depois = chamadoCom({ status: StatusEnum.AGUARDANDO });
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(depois);
+    await montar(ADMIN, chamadoCom());
+    await clicar('Aguardando retorno');
+
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(atualizar.mock.calls[0]).toStrictEqual([50, { status: StatusEnum.AGUARDANDO }]);
+    expect(aoMudar).toHaveBeenCalledWith(depois);
+  });
+
+  it('resolver é um passo: pede a solução, e manda status e solução', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(chamadoCom());
+    await montar(ADMIN, chamadoCom());
+    await clicar('Marcar como resolvido');
+    await digitarSolucao(SOLUCAO_OK);
+    await clicar('Resolver');
+
+    expect(atualizar.mock.calls[0]).toStrictEqual([
+      50,
+      { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK },
+    ]);
+  });
+
+  it('solução curta não sai', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar');
+    await montar(ADMIN, chamadoCom());
+    await clicar('Marcar como resolvido');
+    await digitarSolucao('ok');
+    await clicar('Resolver');
+
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith('Solução precisa de mais 8 caracteres.');
+  });
+
+  it('erro com detail: o detail vai para o toast', async () => {
+    vi.spyOn(chamadosService, 'atualizar').mockRejectedValue({
+      response: { status: 400, data: { detail: 'Atendente não encontrado' } },
+    });
+    await montar(ADMIN, chamadoCom());
+    await clicar('Aguardando retorno');
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith('Atendente não encontrado');
+  });
+
+  it('403: o componente não repete o toast do interceptor', async () => {
+    vi.spyOn(chamadosService, 'atualizar').mockRejectedValue({
+      response: { status: 403, data: { detail: 'x' } },
+    });
+    await montar(ADMIN, chamadoCom());
+    await clicar('Aguardando retorno');
+    expect(vi.mocked(toast.error)).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * O atendimento restrito da Qualidade: quem é o responsável e atende a
+ * Qualidade usa os mesmos botões, pelo PATCH.
+ */
+describe('Qualidade — atendimento pela rota restrita', () => {
+  // `versao` 3: o chamado veio de uma API-4. É ela que vai em `versao_esperada`.
+  const daQualidade = (extra: Partial<Chamado> = {}) =>
+    chamadoCom({
+      setor_destino: SetorDestinoEnum.QUALIDADE,
+      tecnico_responsavel_id: 7,
+      solicitante_id: 9,
+      versao: 3,
+      ...extra,
+    } as Partial<Chamado>);
+
+  let atender: MockInstance<typeof chamadosService.atender>;
+  let atualizar: MockInstance<typeof chamadosService.atualizar>;
+  let recarregar: ReturnType<typeof vi.fn>;
+
+  const montarQ = async (quem: React.ContextType<typeof AuthContext>, chamado: Chamado) => {
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={quem}>
+          <ChamadosProvider>
+            <AcoesRapidas chamado={chamado} aoMudar={aoMudar} aoPrecisarRecarregar={recarregar} />
+          </ChamadosProvider>
+        </AuthContext.Provider>
+      );
+    });
+  };
+
+  beforeEach(() => {
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 405,
+      dados: { detail: 'Method Not Allowed' },
+    });
+    vi.mocked(chamadosService.listarAtendentesQualidade).mockResolvedValue([
+      { id: 7, nome: 'Usuária da Qualidade' },
+      { id: 3, nome: 'Técnica da Qualidade' },
+    ]);
+    atender = vi
+      .spyOn(chamadosService, 'atender')
+      .mockImplementation(async (_id, corpo) => daQualidade({ status: corpo.status }));
+    atualizar = vi.spyOn(chamadosService, 'atualizar');
+    recarregar = vi.fn();
+  });
+
+  describe('quem vê', () => {
+    it('usuário comum responsável e elegível: os botões do status', async () => {
+      await montarQ(USUARIO, daQualidade());
+      expect(botoes()).toEqual(['Aguardando retorno', 'Marcar como resolvido']);
+    });
+
+    const status: Array<[StatusEnum, string[]]> = [
+      [StatusEnum.ABERTO, ['Iniciar atendimento']],
+      [StatusEnum.AGUARDANDO, ['Retomar atendimento', 'Marcar como resolvido']],
+      [StatusEnum.RESOLVIDO, ['Reabrir']],
+      [StatusEnum.FECHADO, ['Reabrir']],
+    ];
+    for (const [s, esperados] of status) {
+      it(`${s}: ${esperados.join(', ')}`, async () => {
+        await montarQ(USUARIO, daQualidade({ status: s }));
+        expect(botoes()).toEqual(esperados);
+      });
+    }
+
+    const nada: Array<[string, () => void, Partial<Chamado>?]> = [
+      [
+        'API sem a rota',
+        () =>
+          vi
+            .mocked(chamadosService.sondarAtendimento)
+            .mockResolvedValue({ status: 404, dados: { detail: 'Not Found' } }),
+      ],
+      [
+        'sonda falhou',
+        () => vi.mocked(chamadosService.sondarAtendimento).mockRejectedValue(new Error('timeout')),
+      ],
+      [
+        'atendentes 503',
+        () =>
+          vi
+            .mocked(chamadosService.listarAtendentesQualidade)
+            .mockRejectedValue({ response: { status: 503 } }),
+      ],
+      [
+        'atendentes falharam',
+        () =>
+          vi.mocked(chamadosService.listarAtendentesQualidade).mockRejectedValue(new Error('rede')),
+      ],
+      [
+        'fora da lista',
+        () =>
+          vi
+            .mocked(chamadosService.listarAtendentesQualidade)
+            .mockResolvedValue([{ id: 3, nome: 'Outra' }]),
+      ],
+      ['outro responsável', () => {}, { tecnico_responsavel_id: 3 }],
+      ['cancelado', () => {}, { cancelado: true }],
+      ['arquivado', () => {}, { arquivado: true }],
+    ];
+    for (const [nome, preparar, extra] of nada) {
+      it(`usuário comum, ${nome}: nenhum botão`, async () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        preparar();
+        await montarQ(USUARIO, daQualidade(extra));
+        expect(host.innerHTML).toBe('');
+      });
+    }
+
+    it('chamado da TI atribuído ao usuário: nenhum botão, e nada é sondado', async () => {
+      await montarQ(
+        USUARIO,
+        chamadoCom({ tecnico_responsavel_id: 7, setor_destino: SetorDestinoEnum.TI } as Partial<Chamado>)
+      );
+      expect(host.innerHTML).toBe('');
+      expect(chamadosService.sondarAtendimento).not.toHaveBeenCalled();
+      expect(chamadosService.listarAtendentesQualidade).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('o PATCH', () => {
+    it('mudar status: só o status, pela rota, e nunca pelo PUT', async () => {
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(atender.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.AGUARDANDO, versao_esperada: 3 }],
+      ]);
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(aoMudar).toHaveBeenCalledWith(
+        expect.objectContaining({ status: StatusEnum.AGUARDANDO })
+      );
+    });
+
+    it('reabrir não leva solução, nem a que o chamado já tinha', async () => {
+      await montarQ(
+        USUARIO,
+        daQualidade({ status: StatusEnum.RESOLVIDO, solucao: 'Solução antiga do chamado.' })
+      );
+      await clicar('Reabrir');
+      expect(atender.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.EM_ANDAMENTO, versao_esperada: 3 }],
+      ]);
+    });
+
+    it('resolver: status e solução, sem espaço nas pontas', async () => {
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao('  ' + SOLUCAO_OK + '  ');
+      await clicar('Resolver');
+      expect(atender.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 3 }],
+      ]);
+    });
+
+    it('solução curta não sai', async () => {
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao('curta');
+      await clicar('Resolver');
+      expect(atender).not.toHaveBeenCalled();
+    });
+
+    it('dois cliques no mesmo instante: uma requisição', async () => {
+      let soltar!: () => void;
+      atender.mockImplementation(
+        () =>
+          new Promise<Chamado>(
+            (r) => (soltar = () => r(daQualidade({ status: StatusEnum.AGUARDANDO })))
+          )
+      );
+      await montarQ(USUARIO, daQualidade());
+      const alvo = Array.from(host.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Aguardando retorno'
+      )!;
+      await act(async () => {
+        alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+      expect(atender).toHaveBeenCalledTimes(1);
+      await act(async () => soltar());
+    });
+
+    it('técnico responsável e elegível: a mesma rota, e os botões uma vez só', async () => {
+      await montarQ(TECNICA_DA_QUALIDADE, daQualidade({ tecnico_responsavel_id: 3 }));
+      expect(botoes()).toEqual(['Aguardando retorno', 'Marcar como resolvido']);
+      await clicar('Aguardando retorno');
+      expect(atender).toHaveBeenCalledTimes(1);
+      expect(atualizar).not.toHaveBeenCalled();
+    });
+
+    it('administrador que não é o responsável: o PUT de sempre', async () => {
+      atualizar.mockResolvedValue(daQualidade());
+      await montarQ(ADMIN, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.AGUARDANDO, versao_esperada: 3 }],
+      ]);
+      expect(atender).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('os erros do PATCH', () => {
+    const falhar = (erro: unknown) => atender.mockRejectedValue(erro);
+    const resp = (status: number, detail?: string) => ({ response: { status, data: { detail } } });
+
+    it('404 "Not Found": a rota não existe; avisa, esconde e não tenta o PUT', async () => {
+      falhar(resp(404, 'Not Found'));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_ROTA_INDISPONIVEL);
+      expect(host.innerHTML).toBe('');
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(recarregar).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Para a equipe o componente não some — ela tem o PUT. Mas o passo de
+     * resolução aberto pela rota não pode virar, no próximo clique, um PUT
+     * sem a pessoa ver que o caminho mudou: ele fecha.
+     */
+    it('rota indisponível ao resolver, para a equipe: o passo fecha, sem PUT', async () => {
+      falhar(resp(404, 'Not Found'));
+      await montarQ(TECNICA_DA_QUALIDADE, daQualidade({ tecnico_responsavel_id: 3 }));
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      expect(host.querySelector('#solucao-rapida')).toBeNull();
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(botoes()).toEqual(['Aguardando retorno', 'Marcar como resolvido']);
+    });
+
+    it('405: o mesmo', async () => {
+      falhar(resp(405, 'Method Not Allowed'));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_ROTA_INDISPONIVEL);
+      expect(host.innerHTML).toBe('');
+    });
+
+    it('404 "Chamado não encontrado": é o chamado, não a rota; recarrega', async () => {
+      falhar(resp(404, 'Chamado não encontrado'));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith('Chamado não encontrado');
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(botoes()).toEqual(['Aguardando retorno', 'Marcar como resolvido']);
+    });
+
+    it('403: o interceptor avisa; relê os atendentes e o chamado', async () => {
+      falhar(resp(403, 'Você não atende a Qualidade'));
+      await montarQ(USUARIO, daQualidade());
+      const consultas = vi.mocked(chamadosService.listarAtendentesQualidade);
+      const antes = consultas.mock.calls.length;
+      consultas.mockResolvedValue([{ id: 3, nome: 'Outra' }]);
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).not.toHaveBeenCalled();
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(consultas.mock.calls.length).toBe(antes + 1);
+      expect(host.innerHTML).toBe('');
+    });
+
+    it('409: mostra o motivo e recarrega', async () => {
+      falhar(resp(409, 'Transição de Aguardando para Aguardando não permitida'));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        'Transição de Aguardando para Aguardando não permitida'
+      );
+      expect(recarregar).toHaveBeenCalledTimes(1);
+    });
+
+    it('422 ao resolver: mostra a validação e mantém o texto, sem repetir', async () => {
+      falhar(resp(422, 'solucao: precisa de pelo menos 10 caracteres'));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        'solucao: precisa de pelo menos 10 caracteres'
+      );
+      expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+      expect(atender).toHaveBeenCalledTimes(1);
+      expect(recarregar).not.toHaveBeenCalled();
+    });
+
+    it('503: Qualidade indisponível; esconde, e nunca vira PUT', async () => {
+      falhar(resp(503, 'Abertura de chamados para a Qualidade não está disponível neste ambiente'));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_QUALIDADE_INDISPONIVEL);
+      expect(host.innerHTML).toBe('');
+      expect(atualizar).not.toHaveBeenCalled();
+    });
+
+    it('503 para a equipe responsável: também não vira PUT sozinho', async () => {
+      falhar(resp(503));
+      await montarQ(TECNICA_DA_QUALIDADE, daQualidade({ tecnico_responsavel_id: 3 }));
+      await clicar('Aguardando retorno');
+      expect(atender).toHaveBeenCalledTimes(1);
+      expect(atualizar).not.toHaveBeenCalled();
+    });
+
+    it('rede ao resolver: avisa, mantém o texto e não tenta de novo', async () => {
+      falhar(new Error('Network Error'));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 30));
+      });
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_RESPOSTA);
+      expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+      expect(atender).toHaveBeenCalledTimes(1);
+    });
+
+    it('401: quem avisa é o interceptor', async () => {
+      falhar(resp(401, 'Token expirado'));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).not.toHaveBeenCalled();
+      expect(recarregar).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * FE-4: a versão do chamado na tela vai junto, e um 409 de versão não
+   * sobrescreve nada nem é repetido. O re-render com outro `chamado` é o que
+   * a página faz depois de reler: o estado do componente fica (de propósito).
+   */
+  describe('a versão (FE-4)', () => {
+    const conflito = (versaoAtual = 8) => ({
+      response: {
+        status: 409,
+        data: {
+          detail: 'Este chamado foi alterado por outra pessoa. Atualize e tente de novo.',
+          codigo: 'versao_desatualizada',
+          versao_atual: versaoAtual,
+        },
+      },
+    });
+    const botao = (texto: string) =>
+      Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === texto);
+
+    it('sem versão válida: nada sai, avisa, e a solução digitada fica', async () => {
+      await montarQ(USUARIO, daQualidade({ versao: undefined }));
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      expect(atender).not.toHaveBeenCalled();
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
+      expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+    });
+
+    it.each([0, '3', 1.5])('versão %s não é versão: nada sai', async (v) => {
+      await montarQ(USUARIO, daQualidade({ versao: v as never }));
+      await clicar('Aguardando retorno');
+      expect(atender).not.toHaveBeenCalled();
+    });
+
+    it('409 de versão ao resolver: avisa, relê, não repete; a solução volta no próximo resolver', async () => {
+      atender.mockRejectedValueOnce(conflito(8));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(atender).toHaveBeenCalledTimes(1);
+      // Enquanto a tela não tem a versão nova, nenhum botão do estado velho vale.
+      expect(host.querySelector('[role="status"]')?.textContent).toContain('Este chamado mudou');
+      expect(botao('Marcar como resolvido')?.disabled).toBe(true);
+      await clicar('Aguardando retorno');
+      expect(atender).toHaveBeenCalledTimes(1);
+
+      // A página releu: a versão 8, ainda em andamento. Os botões voltam.
+      await montarQ(USUARIO, daQualidade({ versao: 8 }));
+      expect(host.querySelector('[role="status"]')).toBeNull();
+      expect(botao('Marcar como resolvido')?.disabled).toBe(false);
+      await clicar('Marcar como resolvido');
+      expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+
+      // A segunda tentativa é um clique novo, com a versão nova.
+      await clicar('Resolver');
+      expect(atender.mock.calls[1]).toStrictEqual([
+        50,
+        { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 8 },
+      ]);
+    });
+
+    it('409 de versão e o chamado relido já resolvido: os botões são os do status novo', async () => {
+      atender.mockRejectedValueOnce(conflito(4));
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      await montarQ(USUARIO, daQualidade({ versao: 4, status: StatusEnum.RESOLVIDO }));
+      expect(botoes()).toEqual(['Reabrir']);
+      expect(atender).toHaveBeenCalledTimes(1);
+    });
+
+    it('409 de versão sem versao_atual: espera a versão seguinte à usada', async () => {
+      atender.mockRejectedValueOnce({ response: { status: 409, data: { codigo: 'versao_desatualizada' } } });
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(botao('Aguardando retorno')?.disabled).toBe(true);
+      await montarQ(USUARIO, daQualidade({ versao: 4 }));
+      expect(botao('Aguardando retorno')?.disabled).toBe(false);
+    });
+
+    it('409 de estado continua com o motivo da API, sem a mensagem de versão', async () => {
+      atender.mockRejectedValueOnce({
+        response: { status: 409, data: { detail: 'Chamado cancelado não pode ser atendido' } },
+      });
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Aguardando retorno');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith('Chamado cancelado não pode ser atendido');
+      expect(vi.mocked(toast.error)).not.toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(botao('Aguardando retorno')?.disabled).toBe(false);
+    });
+
+    it('428: avisa, relê, não repete sem versão, e a solução fica guardada', async () => {
+      atender.mockRejectedValueOnce({ response: { status: 428, data: { detail: 'Informe a versão do chamado' } } });
+      await montarQ(USUARIO, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_VERSAO_AUSENTE);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(atender).toHaveBeenCalledTimes(1);
+      await clicar('Marcar como resolvido');
+      expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+    });
+
+    // M-1: o administrador clica numa ação com a tela velha. A API recusa, e
+    // o status gravado pelo responsável fica.
+    it('administrador pelo PUT: leva a versão; no 409 relê e não repete', async () => {
+      atualizar.mockRejectedValueOnce(conflito(5));
+      await montarQ(ADMIN, daQualidade());
+      await clicar('Marcar como resolvido');
+      await digitarSolucao(SOLUCAO_OK);
+      await clicar('Resolver');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 3 }],
+      ]);
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+
+      await montarQ(ADMIN, daQualidade({ versao: 5, status: StatusEnum.AGUARDANDO }));
+      expect(botoes()).toEqual(['Retomar atendimento', 'Marcar como resolvido']);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+      expect(atender).not.toHaveBeenCalled();
+    });
+
+    it('administrador sem versão na Qualidade: nem o PUT sai', async () => {
+      await montarQ(ADMIN, daQualidade({ versao: undefined }));
+      await clicar('Aguardando retorno');
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
+    });
+
+    // API-12: a TI com versão trava; a ação leva a versão do chamado na tela.
+    it('TI com versão no chamado: o PUT leva a versao_esperada dele', async () => {
+      atualizar.mockResolvedValue(chamadoCom({ status: StatusEnum.AGUARDANDO }));
+      await montarQ(ADMIN, chamadoCom({ setor_destino: SetorDestinoEnum.TI, versao: 6 } as Partial<Chamado>));
+      await clicar('Aguardando retorno');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.AGUARDANDO, versao_esperada: 6 }],
+      ]);
+    });
+
+    it('TI sem versão no chamado (API anterior à 4): o PUT de antes, sem versao_esperada', async () => {
+      atualizar.mockResolvedValue(chamadoCom({ status: StatusEnum.AGUARDANDO }));
+      await montarQ(ADMIN, chamadoCom({ setor_destino: SetorDestinoEnum.TI, versao: undefined } as Partial<Chamado>));
+      await clicar('Aguardando retorno');
+      expect(atualizar.mock.calls).toStrictEqual([[50, { status: StatusEnum.AGUARDANDO }]]);
+    });
+  });
+});
+
+/**
+ * A TI com versão (API-12): a ação leva a versão do chamado NA TELA, o 409
+ * não se repete, e a resposta que não chega não vira sucesso nem reenvio.
+ */
+describe('TI — a versão (API-12)', () => {
+  const TI = (extra: Partial<Chamado> = {}) =>
+    chamadoCom({ setor_destino: SetorDestinoEnum.TI, versao: 6, ...extra } as Partial<Chamado>);
+  const CONFLITO = {
+    response: { status: 409, data: { detail: 'versão', codigo: 'versao_desatualizada', versao_atual: 7 } },
+  };
+  const SEM_RESPOSTA = { code: 'ECONNABORTED', request: {}, message: 'timeout of 30000ms exceeded' };
+
+  let recarregar: ReturnType<typeof vi.fn>;
+  let guardar: ReturnType<typeof vi.fn>;
+  const montarTI = async (chamado: Chamado) => {
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={ADMIN}>
+          <ChamadosProvider>
+            <AcoesRapidas
+              chamado={chamado}
+              aoMudar={aoMudar}
+              aoPrecisarRecarregar={recarregar}
+              aoGuardarRascunho={guardar}
+            />
+          </ChamadosProvider>
+        </AuthContext.Provider>
+      );
+    });
+  };
+  const avisos = () => vi.mocked(toast.error).mock.calls.map((c) => String(c[0]));
+
+  beforeEach(() => {
+    recarregar = vi.fn();
+    guardar = vi.fn();
+  });
+
+  it('resolver leva status, solução e a versão do chamado na tela', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(TI({ versao: 7 }));
+    await montarTI(TI());
+    await clicar('Marcar como resolvido');
+    await digitarSolucao(SOLUCAO_OK);
+    await clicar('Resolver');
+
+    expect(atualizar.mock.calls).toStrictEqual([
+      [50, { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 6 }],
+    ]);
+  });
+
+  it('409: nada se repete, os botões esperam a versão nova, e a solução volta', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockRejectedValueOnce(CONFLITO);
+    await montarTI(TI());
+    await clicar('Marcar como resolvido');
+    await digitarSolucao(SOLUCAO_OK);
+    await clicar('Resolver');
+
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(aoMudar).not.toHaveBeenCalled();
+    expect(avisos().some((a) => a.includes('alterado por outra pessoa'))).toBe(true);
+    expect(recarregar).toHaveBeenCalledTimes(1);
+    expect(guardar).toHaveBeenCalledWith(SOLUCAO_OK);
+    // Ainda na versão velha: as ações estão travadas.
+    expect(host.textContent).toContain('Este chamado mudou');
+    expect(
+      Array.from(host.querySelectorAll('button')).every((b) => b.disabled)
+    ).toBe(true);
+
+    // O chamado relido chega: os botões voltam, a solução também, e o novo
+    // clique leva a versão relida.
+    atualizar.mockResolvedValueOnce(TI({ versao: 8 }));
+    await montarTI(TI({ versao: 7 }));
+    expect(host.textContent).not.toContain('Este chamado mudou');
+    await clicar('Marcar como resolvido');
+    expect(host.querySelector<HTMLTextAreaElement>('#solucao-rapida')?.value).toBe(SOLUCAO_OK);
+    await clicar('Resolver');
+    expect(atualizar.mock.calls[1]).toStrictEqual([
+      50,
+      { status: StatusEnum.RESOLVIDO, solucao: SOLUCAO_OK, versao_esperada: 7 },
+    ]);
+  });
+
+  it.each([
+    ['timeout', SEM_RESPOSTA],
+    ['5xx', { response: { status: 503, data: { detail: 'fora' } } }],
+  ])('%s: "não confirmado", sem reenviar, com a solução guardada e o chamado relido', async (_, erro) => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockRejectedValue(erro);
+    await montarTI(TI());
+    await clicar('Marcar como resolvido');
+    await digitarSolucao(SOLUCAO_OK);
+    await clicar('Resolver');
+
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(aoMudar).not.toHaveBeenCalled();
+    expect(avisos()).toContain(
+      'Não foi possível confirmar se a alteração foi salva (servidor ou conexão). Nada foi reenviado. Confira o chamado antes de tentar de novo.'
+    );
+    expect(guardar).toHaveBeenCalledWith(SOLUCAO_OK);
+    expect(recarregar).toHaveBeenCalledTimes(1);
+  });
+
+  it('dois cliques no mesmo quadro: uma escrita só', async () => {
+    let soltar: (c: Chamado) => void = () => {};
+    const atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(() => new Promise<Chamado>((r) => (soltar = r)));
+    await montarTI(TI());
+    const alvo = Array.from(host.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Aguardando retorno'
+    )!;
+    await act(async () => {
+      alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => soltar(TI({ versao: 7 })));
+    expect(atualizar).toHaveBeenCalledTimes(1);
+  });
+
+  it('404: nada é aplicado, e quem mostra o chamado relê', async () => {
+    vi.spyOn(chamadosService, 'atualizar').mockRejectedValue({ response: { status: 404, data: {} } });
+    await montarTI(TI());
+    await clicar('Aguardando retorno');
+    expect(aoMudar).not.toHaveBeenCalled();
+    expect(recarregar).toHaveBeenCalledTimes(1);
+  });
+
+  it('403: nada é aplicado nem repetido, e o toast é só o do interceptor', async () => {
+    const atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockRejectedValue({ response: { status: 403, data: { detail: 'x' } } });
+    await montarTI(TI());
+    await clicar('Aguardando retorno');
+    expect(atualizar).toHaveBeenCalledTimes(1);
+    expect(aoMudar).not.toHaveBeenCalled();
+    expect(vi.mocked(toast.error)).not.toHaveBeenCalled();
+  });
+
+  it('outro chamado na tela: a versão é a dele, nunca a do anterior', async () => {
+    const atualizar = vi.spyOn(chamadosService, 'atualizar').mockResolvedValue(TI());
+    await montarTI(TI({ versao: 3 }));
+    await montarTI(TI({ id: 51, versao: 9 } as Partial<Chamado>));
+    await clicar('Aguardando retorno');
+    expect(atualizar.mock.calls).toStrictEqual([
+      [51, { status: StatusEnum.AGUARDANDO, versao_esperada: 9 }],
+    ]);
+  });
+});

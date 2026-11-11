@@ -79,6 +79,7 @@ const PESSOA_DE_MENTIRA = {
   id: 0,
   username: 'Galeria DEV',
   role: 'Administrador',
+  conta_de_servico: false,
 };
 
 /** Só o que a `Topbar` consome. O resto do contrato é preenchido inerte. */
@@ -88,6 +89,11 @@ const AUTH_DE_MENTIRA = {
   loading: false,
   login: async () => {},
   logout: () => {},
+  identidadeConfirmada: true,
+  falhaAoConfirmar: false,
+  confirmacaoRecusada: false,
+  revalidando: false,
+  revalidarIdentidade: async () => {},
   error: null,
 };
 

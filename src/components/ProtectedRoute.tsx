@@ -1,19 +1,24 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { BlocoCarregando } from './ui';
+import { usePermissoes } from '../hooks/usePermissoes';
+import { Aviso, BlocoCarregando, Button } from './ui';
 import Bloqueio from '../pages/Bloqueio';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   /**
-   * Perfis que podem abrir a rota. Omitido, qualquer pessoa autenticada entra.
+   * Área de administração (F5-3): só quem `podeAdministrar` (ver
+   * `lib/permissoes`) — administrador, ou técnico da equipe da TI — e só
+   * depois de o `/auth/me` desta sessão confirmar a identidade. Omitido,
+   * qualquer pessoa autenticada entra.
    *
    * Isto NÃO é segurança: quem chama a API direto passa, e quem protege é a
-   * API. Serve para a pessoa encontrar uma explicação em vez de uma tela que só
-   * sabe responder 403.
+   * API. Serve para a URL digitada à mão não montar uma tela que só sabe
+   * responder 403 — e que dispararia, ao montar, as requisições que a
+   * recebem.
    */
-  perfil?: string[];
+  administrativa?: boolean;
   /** Nome da área, para a tela de bloqueio dizer qual é. */
   area?: string;
   /** Quem tem acesso, em linguagem de gente. */
@@ -22,11 +27,13 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
-  perfil,
+  administrativa,
   area,
   quemTem,
 }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, revalidarIdentidade } = useAuth();
+  const { podeAdministrar, confirmando, semConfirmacao, confirmacaoRecusada, revalidando } =
+    usePermissoes();
 
   if (loading) {
     return (
@@ -55,14 +62,49 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
 
-  // Autenticado, sem o perfil que a rota pede: EXPLICA, não redireciona.
-  //
-  // Redirecionar para o painel era o comportamento anterior, e ele mentia por
-  // omissão: a pessoa clicava em Cadastros e voltava ao Dashboard sem entender
-  // se tinha clicado errado, se a tela quebrou, ou se aquilo não é para ela.
-  // Sumir silenciosamente é a pior das três respostas possíveis.
-  if (perfil && !perfil.includes(user.role)) {
-    return <Bloqueio area={area} quemTem={quemTem} />;
+  if (administrativa) {
+    // A identidade ainda não foi confirmada: nem a tela, nem a recusa. A
+    // tela pediria à API o que talvez não possa; a recusa diria "sem acesso"
+    // a quem talvez tenha. Espera — o `/auth/me` já foi pedido, uma vez.
+    if (confirmando) {
+      return (
+        <BlocoCarregando className="min-h-full">
+          <span className="text-sm text-conteudo-tenue">Confirmando suas permissões...</span>
+        </BlocoCarregando>
+      );
+    }
+
+    // O `/auth/me` falhou (rede, servidor). Não libera, e não repete
+    // sozinho: a nova tentativa é um clique.
+    if (semConfirmacao) {
+      return (
+        <div className="flex min-h-full flex-col items-center justify-center gap-3 px-4 py-10">
+          <Aviso variante="alerta">
+            {confirmacaoRecusada
+              ? 'A API recusou a confirmação da sua conta agora — ela pode ter sido desativada ou perdido o acesso. Fale com o administrador do sistema, ou tente de novo.'
+              : 'Não foi possível confirmar suas permissões agora. Verifique a conexão e tente de novo.'}
+          </Aviso>
+          <Button
+            variante="secundario"
+            carregando={revalidando}
+            disabled={revalidando}
+            onClick={() => void revalidarIdentidade()}
+          >
+            Tentar de novo
+          </Button>
+        </div>
+      );
+    }
+
+    // Autenticado e confirmado, sem permissão: EXPLICA, não redireciona.
+    //
+    // Redirecionar para o painel era o comportamento anterior, e ele mentia
+    // por omissão: a pessoa voltava ao Dashboard sem entender se tinha
+    // clicado errado, se a tela quebrou, ou se aquilo não é para ela. Desde
+    // a F5-3 o menu nem mostra o link — quem chega aqui digitou a URL.
+    if (!podeAdministrar) {
+      return <Bloqueio area={area} quemTem={quemTem} />;
+    }
   }
 
   // Se está autenticado, renderiza os filhos (página protegida)

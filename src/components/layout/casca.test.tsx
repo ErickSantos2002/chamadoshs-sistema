@@ -76,8 +76,8 @@ describe('barra lateral', () => {
     expect(aberta).toContain('bg-[var(--overlay)]');
   });
 
-  it('mostra as cinco áreas do sistema, agrupadas', () => {
-    const html = barra();
+  it('para quem administra, mostra as cinco áreas do sistema, agrupadas', () => {
+    const html = barra({ mostrarGestao: true });
 
     for (const item of ITENS_DO_MENU) {
       expect(html, `${item.label} sumiu do menu`).toContain(item.label);
@@ -93,7 +93,7 @@ describe('barra lateral', () => {
    * 72px é uma coluna de ícones para adivinhar.
    */
   it('recolhida, o nome da área continua alcançável', () => {
-    const html = barra({ recolhida: true });
+    const html = barra({ recolhida: true, mostrarGestao: true });
 
     for (const item of ITENS_DO_MENU) {
       expect(html, `${item.label} sumiu no modo recolhido`).toContain(item.label);
@@ -105,6 +105,34 @@ describe('barra lateral', () => {
       );
     }
     expect(html).toContain('group-hover:opacity-100');
+  });
+
+  /**
+   * F5-3 (FE-5): a Gestão some para quem não administra — e some inteira,
+   * sem o título do grupo sozinho. Antes da FE-5 o menu mostrava tudo para
+   * todo mundo; o caso acima, que exigia as cinco áreas sempre, passou a
+   * valer só com `mostrarGestao`.
+   */
+  it('sem permissão de administrar, a Gestão não aparece — nem o título', () => {
+    for (const props of [{}, { mostrarGestao: false }, { recolhida: true }]) {
+      const html = barra(props);
+      for (const item of ITENS_DO_MENU) {
+        if (item.restrita) {
+          expect(html, `${item.to} apareceu sem permissão`).not.toContain(`href="${item.to}"`);
+        } else {
+          expect(html, `${item.to} sumiu do menu`).toContain(`href="${item.to}"`);
+        }
+      }
+      expect(html).not.toContain('Gest');
+    }
+  });
+
+  it('as três áreas restritas são exatamente as da Gestão', () => {
+    expect(ITENS_DO_MENU.filter((i) => i.restrita).map((i) => i.to)).toEqual([
+      '/cadastros',
+      '/tarefas-recorrentes',
+      '/auditoria',
+    ]);
   });
 
   it('a versão abre o aviso de novidades, e o ponto só aparece quando há', () => {

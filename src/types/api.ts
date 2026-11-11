@@ -25,6 +25,15 @@ export enum StatusEnum {
   FECHADO = 'Fechado',
 }
 
+/**
+ * Para qual equipe o chamado foi aberto. Os valores são o contrato com a API;
+ * o rótulo de tela ("Qualidade") vive em `lib/setor`.
+ */
+export enum SetorDestinoEnum {
+  TI = 'TI',
+  QUALIDADE = 'QUALIDADE',
+}
+
 // Autenticação
 export interface LoginRequest {
   nome: string;
@@ -59,6 +68,30 @@ export interface UsuarioLogado {
   setor_id?: number;
   role_id: number;
   ativo: boolean;
+  /**
+   * Se a conta é da equipe da TI (API-7), calculado pelo backend a cada
+   * `GET /auth/me`. Opcional: a API anterior à 7 não manda, e aí ninguém é
+   * reconhecido como TI. Diz a equipe, não o poder — o administrador fora da
+   * TI recebe `false` e administra pelo perfil (ver `lib/permissoes`).
+   */
+  integra_equipe_ti?: boolean;
+}
+
+/** A identidade que o `AuthContext` mantém para a tela. */
+export interface UsuarioAutenticado {
+  id: number;
+  username: string;
+  role: string;
+  role_id?: number;
+  setor_id?: number;
+  /** Só vem do `/auth/me` desta sessão, nunca do `localStorage`. */
+  integra_equipe_ti?: boolean;
+  /**
+   * Só vem do `GET /usuarios/{id}` desta sessão, lido quando o perfil é de
+   * administrador; nunca do `localStorage`. Ausente é "não se sabe", e não
+   * administra (`lib/permissoes`).
+   */
+  conta_de_servico?: boolean;
 }
 
 // Setores
@@ -170,15 +203,54 @@ export interface Chamado {
   created_at: string;
   updated_at: string;
   sla?: SLAInfo;
+  /**
+   * Opcional para o front continuar funcionando contra a API anterior ao
+   * campo — ausente é TI. O tipo é o contrato, não uma garantia: quem lê o
+   * valor passa por `lerSetor`, que não confia nele.
+   */
+  setor_destino?: SetorDestinoEnum;
+  /**
+   * A versão gravada (API-4a): inteiro ≥ 1 que sobe a cada mudança. Volta em
+   * `versao_esperada` na escrita seguinte de um chamado da Qualidade.
+   *
+   * Opcional porque uma API anterior à 4 não a manda, e ausente NÃO é zero:
+   * quem lê passa por `lerVersao`, que devolve `null` para ausente ou
+   * inválido — e sem versão a Qualidade não escreve (ver `lib/versao`).
+   */
+  versao?: number;
 }
 
 export interface ChamadoCreate {
+  /** Sempre enviado pelo formulário (1.8.0); a Qualidade usa `ChamadoCreateQualidade`. */
+  setor_destino: SetorDestinoEnum.TI;
   solicitante_id: number;
   categoria_id?: number;
   titulo: string;
   descricao: string;
   prioridade?: PrioridadeEnum;
   tecnico_responsavel_id?: number;
+}
+
+/**
+ * Chamado novo para a Qualidade — `ChamadoCreateQualidade` da API.
+ *
+ * Sem `titulo` e sem `categoria_id`, e não por omissão: a API recusa com 422
+ * a PRESENÇA dessas chaves, até com `null`. O título é gerado da descrição.
+ * O corpo sai de `montarCorpoQualidade`, que nunca as cria.
+ */
+export interface ChamadoCreateQualidade {
+  setor_destino: SetorDestinoEnum.QUALIDADE;
+  descricao: string;
+  prioridade: PrioridadeEnum;
+  solicitante_id: number;
+  /** Obrigatório, e um dos que `GET /chamados/atendentes-qualidade` devolve. */
+  tecnico_responsavel_id: number;
+}
+
+/** Quem pode atender um chamado da Qualidade: só o que o seletor precisa. */
+export interface AtendenteQualidade {
+  id: number;
+  nome: string;
 }
 
 export interface ChamadoUpdate {
@@ -199,6 +271,8 @@ export interface ChamadoUpdate {
   solucao?: string;
   observacoes?: string;
   avaliacao?: number;
+  /** Pré-condição da Qualidade (API-4b). Nunca vai na TI. Ver `lib/versao`. */
+  versao_esperada?: number;
 }
 
 // Comentários
@@ -254,6 +328,26 @@ export interface AnexoCreate {
 }
 
 // Filtros e Queries
+/** Os status que a rota de atendimento da Qualidade aceita. */
+export type StatusDoAtendimento =
+  | StatusEnum.EM_ANDAMENTO
+  | StatusEnum.AGUARDANDO
+  | StatusEnum.RESOLVIDO;
+
+/**
+ * O corpo de `PATCH /chamados/{id}/atendimento` (API-3). A API recusa campo
+ * a mais, e recusa `solucao` fora da resolução — até como `null`.
+ */
+export interface ChamadoAtendimento {
+  status: StatusDoAtendimento;
+  solucao?: string;
+  /**
+   * Obrigatória na API-4b. Uma API-3 recusa o campo com 422 — por isso ele só
+   * vai com uma versão lida do próprio chamado, e uma API-3 não devolve uma.
+   */
+  versao_esperada?: number;
+}
+
 export interface ChamadosQueryParams {
   skip?: number;
   limit?: number;
@@ -262,6 +356,8 @@ export interface ChamadosQueryParams {
   tecnico_id?: number;
   incluir_cancelados?: boolean;
   incluir_arquivados?: boolean;
+  /** A partir da API-1. A anterior ignora: quem filtra confere no front. */
+  setor_destino?: SetorDestinoEnum;
 }
 
 export interface UsuariosQueryParams {
@@ -330,6 +426,27 @@ export type TarefaRecorrenteUpdate = Partial<TarefaRecorrenteCreate> & {
 export interface RealizarTarefaRequest {
   // Sem usuario_id: quem realizou vem do token JWT, na API.
   observacao?: string | null;
+}
+
+/**
+ * O lembrete "tarefas do dia" do quadro (API-11, S1:
+ * `GET /tarefas-recorrentes/lembretes-do-dia`). Só id, título, próxima data e
+ * situação — a classificação é da API, no dia de Brasília dela. Não existe
+ * "pendente" neste contrato.
+ */
+export type SituacaoDoLembrete = 'atrasada' | 'hoje' | 'realizada_hoje';
+
+export interface LembreteDoDia {
+  id: number;
+  titulo: string;
+  proxima_data: string; // YYYY-MM-DD
+  situacao: SituacaoDoLembrete;
+}
+
+export interface LembretesDoDia {
+  /** O dia (Brasília) em que a API montou a lista. É ele, não o relógio do navegador. */
+  data: string; // YYYY-MM-DD
+  tarefas: LembreteDoDia[];
 }
 
 // ============================================

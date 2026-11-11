@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { usePermissoes } from '../hooks/usePermissoes';
 import { useChamados } from '../hooks/useChamados';
 import { useUsuariosPorId } from '../hooks/useUsuariosPorId';
-import { PrioridadeEnum, TarefaRecorrente } from '../types/api';
+import { LembretesDoDia, PrioridadeEnum } from '../types/api';
 import { tarefasRecorrentesService } from '../services/chamadoshsapi';
 import { KanbanColumn } from '../components/KanbanColumn';
 import {
@@ -18,20 +19,35 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { corDaPrioridade, corDoStatus } from '../lib/graficos';
 import { ehDaPessoa, responsaveisDosChamados } from '../lib/pessoas';
+import { ehAtribuidoNaQualidade } from '../lib/atendimento';
 import { agruparPorColuna, estaNoFluxo } from '../lib/quadro';
+import {
+  OPCOES_DE_SETOR,
+  casaComFiltroDeSetor,
+  temSetoresMisturados,
+  type FiltroDeSetor,
+} from '../lib/setor';
 import { cn } from '../lib/utils';
 import NovoChamadoForm from '../components/NovoChamadoForm';
 import ChamadoModal from '../components/ChamadoModal';
 import { IconeAgenda, IconeArquivar, IconeBusca, IconeConfereCirculo, IconeMais } from '../components/ui/icones';
 
-// Data de hoje (local) em YYYY-MM-DD, para comparar com proxima_data das tarefas
-const hojeYMD = (): string => {
-  const d = new Date();
-  const ano = d.getFullYear();
-  const mes = String(d.getMonth() + 1).padStart(2, '0');
-  const dia = String(d.getDate()).padStart(2, '0');
-  return `${ano}-${mes}-${dia}`;
-};
+/**
+ * O lembrete do quadro, numa máquina de estados só:
+ *
+ * - `aguardando`: a primeira resposta não chegou. Nada aparece.
+ * - `recusado`: a API disse 403 — esta conta não lê o lembrete. Nada
+ *   aparece, e ele não é pedido de novo enquanto a tela estiver aberta.
+ * - `pronto`: a última resposta válida. `atualizacaoFalhou` diz que a
+ *   tentativa seguinte caiu (rede, 5xx), e a lista mostrada é a anterior.
+ * - `falhou`: nenhuma resposta válida ainda — o bloco diz isso, discreto, e
+ *   a próxima atualização automática tenta de novo.
+ */
+type EstadoDoLembrete =
+  | { estado: 'aguardando' }
+  | { estado: 'recusado' }
+  | { estado: 'falhou' }
+  | { estado: 'pronto'; lembretes: LembretesDoDia; atualizacaoFalhou: boolean };
 
 const formatarDataBR = (ymd?: string | null): string => {
   if (!ymd) return '—';
@@ -62,6 +78,21 @@ const Chamados: React.FC = () => {
   const [filtroPessoa, setFiltroPessoa] = useState<string>('');
 
   /**
+   * Filtro por setor de destino. Filtra o que JÁ veio, no navegador, e não
+   * vai para a requisição: a API no ar é anterior ao campo e ignoraria o
+   * parâmetro — devolveria tudo, e o quadro mostraria "Qualidade" com
+   * chamado de TI dentro. A regra de casamento vive em `lib/setor`.
+   */
+  const [filtroSetor, setFiltroSetor] = useState<FiltroDeSetor>('');
+
+  /**
+   * "Atribuídos a mim": os chamados da Qualidade que a pessoa atende. Só para
+   * quem não é da equipe — a equipe já tem o filtro por responsável — e só
+   * quando há algum (ver `mostrarFiltroAtribuidos`).
+   */
+  const [filtroAtribuidos, setFiltroAtribuidos] = useState(false);
+
+  /**
    * Arquivado e cancelado não são etapas do atendimento e não podem disputar
    * espaço com o trabalho do dia: ficam atrás de um interruptor, desligado por
    * padrão. Um só, e não dois — são a mesma pergunta ("cadê o que saiu do
@@ -78,25 +109,30 @@ const Chamados: React.FC = () => {
   const [chamadoAberto, setChamadoAberto] = useState<number | null>(null);
 
   const temFiltro = Boolean(
-    filtroPrioridade || filtroCategoria || filtroPessoa || busca
+    filtroPrioridade || filtroCategoria || filtroPessoa || filtroSetor || filtroAtribuidos || busca
   );
 
   const limparFiltros = () => {
     setFiltroPrioridade('');
     setFiltroCategoria('');
     setFiltroPessoa('');
+    setFiltroSetor('');
+    setFiltroAtribuidos(false);
     setBusca('');
   };
 
   // Estado para armazenar os usuários (solicitantes)
   const usuarios = useUsuariosPorId();
 
-  // Lembrete de tarefas recorrentes do dia (pendentes + realizadas hoje) — só técnico/admin
-  const [tarefasDoDia, setTarefasDoDia] = useState<TarefaRecorrente[]>([]);
+  // Lembrete de tarefas recorrentes do dia (API-11, S1)
+  const [lembrete, setLembrete] = useState<EstadoDoLembrete>({ estado: 'aguardando' });
 
   // Permissões baseadas em role
   const isAdmin = user?.role === 'Administrador';
   const isTecnico = user?.role === 'Tecnico';
+  // Ler o lembrete NÃO é administrar tarefas: a TV lê e não administra. O
+  // `podeAdministrar` aqui só decide se o título vira link para a gestão.
+  const { podeAdministrar } = usePermissoes();
 
   /**
    * Quem enxerga o filtro por pessoa. É pergunta de quem distribui e atende
@@ -113,47 +149,83 @@ const Chamados: React.FC = () => {
   }, []);
 
   /**
-   * Carrega as tarefas recorrentes do dia para o lembrete: as pendentes
-   * (proxima_data <= hoje) e as que já foram realizadas hoje (ultima_execucao).
+   * O lembrete do dia, de `GET /tarefas-recorrentes/lembretes-do-dia`.
    *
-   * Função, e não corpo de efeito, porque o auto-refresh também precisa dela:
-   * o quadro numa TV recarrega sozinho e o lembrete ficava congelado no que
-   * era verdade quando a página abriu. `hojeYMD()` é lido a cada chamada de
-   * propósito — assim a virada de meia-noite entra na próxima atualização, em
-   * vez de manter as tarefas de ontem na tela até alguém recarregar no F5.
+   * Quem lê é quem a API deixa — a equipe e a conta do painel de parede
+   * (`PAINEL_CONTAS_IDS`). A tela não adivinha por perfil nem por nome: pede,
+   * e a resposta decide. Nunca cai na listagem administrativa.
+   *
+   * - 403: esconde o bloco e para de pedir até a tela ser aberta de novo
+   *   (ou outra conta entrar). Sem toast (`silenciarRecusa`).
+   * - 401: é da política global (o interceptor leva ao login).
+   * - Rede, 5xx, corpo fora do contrato: o quadro segue intacto; o bloco
+   *   mantém a última lista válida, ou diz que não carregou, e a próxima
+   *   volta do auto-refresh tenta de novo. Nada de nova tentativa sozinha.
+   *
+   * Um pedido por vez: se o anterior ainda não voltou, a volta do relógio
+   * não empilha outro. E a resposta de uma conta anterior não entra: cada
+   * troca de conta muda `geracaoDoLembrete`.
    */
-  const carregarTarefasDoDia = useCallback(() => {
-    if (!(isAdmin || isTecnico)) return;
-    const hoje = hojeYMD();
-    tarefasRecorrentesService
-      .listar({ ativo: true })
-      .then((todas) =>
-        setTarefasDoDia(
-          todas.filter(
-            (t) =>
-              t.proxima_data <= hoje ||
-              (t.ultima_execucao ?? '').slice(0, 10) === hoje
-          )
-        )
-      )
-      .catch(() => setTarefasDoDia([]));
-  }, [isAdmin, isTecnico]);
+  const lembreteEmAndamento = useRef(false);
+  const lembreteRecusado = useRef(false);
+  const geracaoDoLembrete = useRef(0);
 
+  const carregarLembretes = useCallback(() => {
+    if (lembreteRecusado.current || lembreteEmAndamento.current) return;
+    lembreteEmAndamento.current = true;
+    const minhaGeracao = geracaoDoLembrete.current;
+    tarefasRecorrentesService
+      .lembretesDoDia()
+      .then((lembretes) => {
+        if (minhaGeracao !== geracaoDoLembrete.current) return;
+        setLembrete({ estado: 'pronto', lembretes, atualizacaoFalhou: false });
+      })
+      .catch((err) => {
+        if (minhaGeracao !== geracaoDoLembrete.current) return;
+        const status = err?.response?.status;
+        if (status === 403) {
+          lembreteRecusado.current = true;
+          setLembrete({ estado: 'recusado' });
+          return;
+        }
+        if (status === 401) return;
+        setLembrete((anterior) =>
+          anterior.estado === 'pronto'
+            ? { ...anterior, atualizacaoFalhou: true }
+            : { estado: 'falhou' }
+        );
+      })
+      .finally(() => {
+        if (minhaGeracao === geracaoDoLembrete.current) lembreteEmAndamento.current = false;
+      });
+  }, []);
+
+  // Uma conta nova começa do zero: o 403 de uma não vale para a outra.
   useEffect(() => {
-    carregarTarefasDoDia();
-  }, [carregarTarefasDoDia]);
+    geracaoDoLembrete.current += 1;
+    lembreteRecusado.current = false;
+    lembreteEmAndamento.current = false;
+    setLembrete({ estado: 'aguardando' });
+    if (user?.id !== undefined) carregarLembretes();
+    return () => {
+      // Resposta que chegar depois de a tela sair (ou de a conta mudar)
+      // não grava nada.
+      geracaoDoLembrete.current += 1;
+    };
+  }, [user?.id, carregarLembretes]);
 
   // Auto-refresh a cada 10 minutos (para TV/monitoramento). Atualiza as duas
-  // coisas que a tela mostra: o quadro e o lembrete de tarefas do dia.
+  // coisas que a tela mostra: o quadro e o lembrete de tarefas do dia. Um
+  // relógio só, criado uma vez por montagem.
   useEffect(() => {
     const intervalo = setInterval(() => {
       carregarChamados();
-      carregarTarefasDoDia();
+      carregarLembretes();
     }, 600000); // 10 minutos em milissegundos
 
     // Cleanup: limpar o intervalo quando o componente desmontar
     return () => clearInterval(intervalo);
-  }, [carregarTarefasDoDia]);
+  }, [carregarLembretes]);
 
   // Nomes dos solicitantes: uma listagem só, em vez de um GET por usuário.
 
@@ -193,12 +265,35 @@ const Chamados: React.FC = () => {
     [chamados, usuarios]
   );
 
+  /**
+   * O seletor de setor só aparece quando há escolha: com todo chamado em TI —
+   * que é o quadro inteiro enquanto a API não conhece outro setor — ele teria
+   * uma opção útil só.
+   *
+   * A mistura é medida em `chamados`, e não na lista já filtrada, pelo mesmo
+   * motivo da lista de pessoas acima; e o filtro LIGADO segura o seletor na
+   * tela mesmo se a mistura acabar numa recarga. Sem isso, um quadro
+   * esvaziado pelo filtro esconderia justamente o controle que o esvaziou.
+   */
+  const setoresMisturados = useMemo(() => temSetoresMisturados(chamados), [chamados]);
+  const mostrarFiltroSetor = filtroSetor !== '' || setoresMisturados;
+
+  // Como o de setor: medido em `chamados`, e o filtro ligado segura o botão
+  // na tela — senão um quadro esvaziado esconderia o controle que o esvaziou.
+  const temAtribuidos = useMemo(
+    () => chamados.some((c) => ehAtribuidoNaQualidade(c, user?.id)),
+    [chamados, user?.id]
+  );
+  const mostrarFiltroAtribuidos = !podeFiltrarPorPessoa && (filtroAtribuidos || temAtribuidos);
+
   // Filtra os chamados localmente. A busca cobre título e protocolo: quem
   // lembra do assunto raramente lembra do número.
   const chamadosFiltrados = chamadosNoEscopo.filter((chamado) => {
     if (filtroPrioridade && chamado.prioridade !== filtroPrioridade) return false;
     if (filtroCategoria && chamado.categoria_id !== filtroCategoria) return false;
     if (!ehDaPessoa(chamado, filtroPessoa)) return false;
+    if (!casaComFiltroDeSetor(chamado, filtroSetor)) return false;
+    if (filtroAtribuidos && !ehAtribuidoNaQualidade(chamado, user?.id)) return false;
 
     if (busca) {
       const termo = busca.toLowerCase();
@@ -335,6 +430,16 @@ const Chamados: React.FC = () => {
             className="w-48"
           />
 
+          {mostrarFiltroSetor && (
+            <Seletor
+              rotulo="Filtrar por setor"
+              valor={filtroSetor}
+              aoMudar={(v) => setFiltroSetor(v as FiltroDeSetor)}
+              opcoes={OPCOES_DE_SETOR}
+              className="w-48"
+            />
+          )}
+
           {/* Filtro por pessoa: o responsável, que é a inicial que o card
               mostra no canto. Só para a equipe.
 
@@ -355,6 +460,17 @@ const Chamados: React.FC = () => {
               ]}
               className="w-48"
             />
+          )}
+
+          {mostrarFiltroAtribuidos && (
+            <Button
+              variante={filtroAtribuidos ? 'secundario' : 'fantasma'}
+              tamanho="sm"
+              aria-pressed={filtroAtribuidos}
+              onClick={() => setFiltroAtribuidos((antes) => !antes)}
+            >
+              Atribuídos a mim
+            </Button>
           )}
 
           {/* Não entra em `temFiltro` nem em "Limpar": não é recorte da
@@ -396,8 +512,8 @@ const Chamados: React.FC = () => {
         </div>
       </div>
 
-      {/* Lembrete de tarefas recorrentes (só técnico/admin) */}
-      {(isAdmin || isTecnico) && (
+      {/* Lembrete de tarefas recorrentes: aparece para quem a API deixa ler */}
+      {(lembrete.estado === 'pronto' || lembrete.estado === 'falhou') && (
         <div className="shrink-0 rounded-xl border border-borda bg-superficie p-5">
           <div className="mb-3 flex items-center gap-2">
             <IconeAgenda className="h-4 w-4 text-on-tint-info" />
@@ -406,7 +522,12 @@ const Chamados: React.FC = () => {
             </h2>
           </div>
 
-          {tarefasDoDia.length === 0 ? (
+          {lembrete.estado === 'falhou' ? (
+            <p className="text-sm text-conteudo-tenue" role="status">
+              Não foi possível carregar as tarefas do dia agora. A próxima atualização automática
+              tenta de novo.
+            </p>
+          ) : lembrete.lembretes.tarefas.length === 0 ? (
             // O ✅ era um emoji: desenhado pelo sistema, colorido por conta
             // própria e alheio ao tema. O ícone acompanha a cor do texto.
             <p className="flex items-center gap-2 text-sm text-conteudo-tenue">
@@ -417,73 +538,70 @@ const Chamados: React.FC = () => {
             // Teto proporcional: sem ele, um dia com muitas tarefas
             // espremia o quadro (que é `flex-1`) até zero.
             <ul className="max-h-[30vh] space-y-1.5 overflow-y-auto">
-              {tarefasDoDia.map((t) => {
-                const hoje = hojeYMD();
-                const pendente = t.proxima_data <= hoje;
-                const realizadaHoje =
-                  (t.ultima_execucao ?? '').slice(0, 10) === hoje;
-                const atrasada = t.proxima_data < hoje;
+              {lembrete.lembretes.tarefas.map((t) => {
+                const realizada = t.situacao === 'realizada_hoje';
+                const classeDoTitulo = cn(
+                  'text-left text-sm font-medium',
+                  realizada ? 'text-conteudo-tenue' : 'text-conteudo'
+                );
                 return (
                   <li key={t.id} className="flex flex-wrap items-center gap-2">
                     {/*
-                      Era um `<button>` com `navigate()` dentro, e a tela
-                      inteira dizia "link": sublinha no hover, sem moldura, sem
-                      preenchimento, e o clique leva para outra rota.
+                      Link só para quem administra: para os outros — a TV
+                      inclusive — a gestão é uma tela de bloqueio, e um link
+                      que só leva a ela não serve a quem o vê (F5-3).
 
-                      Botao que navega e o mesmo defeito de familia da linha
-                      clicavel e do `disabled` que significava "atual" -- o
-                      sinal certo pelo mecanismo errado. Quem usa leitor de tela
-                      ouve "botao" e nao sabe que vai sair da pagina; e o
-                      navegador tira junto o que so link tem: abrir em nova aba
-                      pelo meio ou pelo Ctrl, o menu do botao direito, e o
-                      endereco na barra de status antes de clicar.
-
-                      `Link` devolve as tres coisas sem mudar um pixel: o
-                      preflight do Tailwind ja tira o sublinhado e a cor padrao
-                      do `<a>`, entao as classes seguem valendo iguais.
+                      `Link`, e não `<button>` com `navigate()`: leitor de
+                      tela ouve "link", e o navegador devolve abrir em nova
+                      aba, o menu do botão direito e o endereço na barra de
+                      status.
                     */}
-                    <Link
-                      to="/tarefas-recorrentes"
-                      className={cn(
-                        'text-left text-sm font-medium transition-colors hover:text-on-tint-info hover:underline',
-                        'rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
-                        !pendente && realizadaHoje
-                          ? 'text-conteudo-tenue'
-                          : 'text-conteudo'
-                      )}
-                      title="Ir para Tarefas Recorrentes"
-                    >
-                      {t.titulo}
-                    </Link>
-
-                    {/* Os selos são os mesmos do resto do sistema: fundo de
-                        significado a 20% e texto na cor cheia, desenhados
-                        pelo `Badge` em vez de repetidos à mão aqui. */}
-                    {pendente ? (
-                      atrasada ? (
-                        <Badge variante="perigo">
-                          Atrasada desde {formatarDataBR(t.proxima_data)}
-                        </Badge>
-                      ) : (
-                        <Badge variante="alerta">Hoje</Badge>
-                      )
+                    {podeAdministrar ? (
+                      <Link
+                        to="/tarefas-recorrentes"
+                        className={cn(
+                          classeDoTitulo,
+                          'transition-colors hover:text-on-tint-info hover:underline',
+                          'rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]'
+                        )}
+                        title="Ir para Tarefas Recorrentes"
+                      >
+                        {t.titulo}
+                      </Link>
                     ) : (
-                      realizadaHoje && (
-                        <>
-                          <Badge variante="sucesso">
-                            <IconeConfereCirculo className="h-3 w-3" />
-                            Realizada
-                          </Badge>
-                          <span className="text-xs text-conteudo-tenue">
-                            Próxima: {formatarDataBR(t.proxima_data)}
-                          </span>
-                        </>
-                      )
+                      <span className={classeDoTitulo}>{t.titulo}</span>
+                    )}
+
+                    {/* A situação é a da API, no dia dela — o relógio do
+                        navegador não entra. Os selos são os do `Badge`. */}
+                    {t.situacao === 'atrasada' && (
+                      <Badge variante="perigo">
+                        Atrasada desde {formatarDataBR(t.proxima_data)}
+                      </Badge>
+                    )}
+                    {t.situacao === 'hoje' && <Badge variante="alerta">Hoje</Badge>}
+                    {realizada && (
+                      <>
+                        <Badge variante="sucesso">
+                          <IconeConfereCirculo className="h-3 w-3" />
+                          Realizada
+                        </Badge>
+                        <span className="text-xs text-conteudo-tenue">
+                          Próxima: {formatarDataBR(t.proxima_data)}
+                        </span>
+                      </>
                     )}
                   </li>
                 );
               })}
             </ul>
+          )}
+
+          {lembrete.estado === 'pronto' && lembrete.atualizacaoFalhou && (
+            <p className="mt-3 text-xs text-conteudo-tenue" role="status">
+              Lista de {formatarDataBR(lembrete.lembretes.data)}. A última atualização falhou; a
+              próxima tenta de novo.
+            </p>
           )}
         </div>
       )}

@@ -1,0 +1,113 @@
+import { Chamado, ChamadoUpdate, PrioridadeEnum, StatusEnum } from '../types/api';
+
+/**
+ * A edição de um chamado da Qualidade na página, contra a edição de outra
+ * pessoa ao mesmo tempo.
+ *
+ * ── O defeito que isto evita ──────────────────────────────────────────
+ *
+ * A edição da TI manda os quatro campos sempre, inclusive os que a pessoa
+ * nem tocou. Na Qualidade isso apaga trabalho alheio: o atendente muda o
+ * status pela rota restrita, o coordenador — com a página aberta desde
+ * antes — troca só a prioridade e salva, e o PUT devolve o status antigo.
+ *
+ * Por isso — na Qualidade desde o FE-3, e na TI desde o T-1 (fechamento da
+ * FE-5), que tinha o mesmo defeito:
+ *
+ * 1. ao entrar na edição, o chamado é relido e vira a REFERÊNCIA;
+ * 2. ao salvar, vai só o que difere da referência;
+ * 3. antes do PUT o chamado é relido de novo; se algum campo que a pessoa
+ *    editou mudou no servidor desde a referência, o salvamento para, o que
+ *    ela digitou fica, e a tela mostra o que mudou.
+ *
+ * Mudança remota em campo que a pessoa NÃO editou não para nada: o PUT nem
+ * leva esse campo.
+ *
+ * ── A janela entre a releitura e o PUT ────────────────────────────────
+ *
+ * Entre a releitura e o PUT há uma janela, curta, em que outra escrita
+ * passaria sem ser vista. Quem a fecha é a API (API-4b): o PUT leva a
+ * versão da releitura em `versao_esperada`, e uma escrita que tenha entrado
+ * no meio faz a API recusar com 409, sem gravar nada. A página trata esse
+ * 409 como o conflito acima — relê, mostra, não repete (FE-4).
+ *
+ * Na TI a API confere a versão sem travar a linha (sem `FOR UPDATE`): fica
+ * de fora só a corrida de duas gravações dentro da API no mesmo instante.
+ */
+
+export type CampoEditavel =
+  | 'categoria_id'
+  | 'status'
+  | 'prioridade'
+  | 'tecnico_responsavel_id'
+  | 'solucao';
+
+/** Os campos da edição, com vazio e ausente escritos de um jeito só. */
+export interface FotoDaEdicao {
+  categoria_id: number | null;
+  status: StatusEnum;
+  prioridade: PrioridadeEnum;
+  tecnico_responsavel_id: number | null;
+  solucao: string;
+}
+
+export const ROTULOS_DOS_CAMPOS: Record<CampoEditavel, string> = {
+  categoria_id: 'Categoria',
+  status: 'Status',
+  prioridade: 'Prioridade',
+  tecnico_responsavel_id: 'Técnico responsável',
+  solucao: 'Solução',
+};
+
+const ORDEM: CampoEditavel[] = [
+  'status',
+  'categoria_id',
+  'tecnico_responsavel_id',
+  'prioridade',
+  'solucao',
+];
+
+export function fotografar(
+  chamado: Pick<
+    Chamado,
+    'categoria_id' | 'status' | 'prioridade' | 'tecnico_responsavel_id' | 'solucao'
+  >
+): FotoDaEdicao {
+  return {
+    categoria_id: chamado.categoria_id ?? null,
+    status: chamado.status,
+    prioridade: chamado.prioridade,
+    tecnico_responsavel_id: chamado.tecnico_responsavel_id ?? null,
+    solucao: chamado.solucao ?? '',
+  };
+}
+
+/**
+ * O que mudou, pronto para o PUT. Solução apagada não vai — a mesma regra da
+ * edição da TI, que manda `solucao` só quando há texto.
+ */
+export function diferencaDaEdicao(
+  referencia: FotoDaEdicao,
+  editado: FotoDaEdicao
+): ChamadoUpdate {
+  const diferenca: ChamadoUpdate = {};
+  if (editado.categoria_id !== referencia.categoria_id) diferenca.categoria_id = editado.categoria_id;
+  if (editado.status !== referencia.status) diferenca.status = editado.status;
+  if (editado.prioridade !== referencia.prioridade) diferenca.prioridade = editado.prioridade;
+  if (editado.tecnico_responsavel_id !== referencia.tecnico_responsavel_id) {
+    diferenca.tecnico_responsavel_id = editado.tecnico_responsavel_id;
+  }
+  if (editado.solucao !== referencia.solucao && editado.solucao) {
+    diferenca.solucao = editado.solucao;
+  }
+  return diferenca;
+}
+
+/** Os campos da diferença que mudaram no servidor desde a referência. */
+export function camposEmConflito(
+  referencia: FotoDaEdicao,
+  servidor: FotoDaEdicao,
+  diferenca: ChamadoUpdate
+): CampoEditavel[] {
+  return ORDEM.filter((campo) => campo in diferenca && servidor[campo] !== referencia[campo]);
+}
