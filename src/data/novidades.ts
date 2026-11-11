@@ -30,6 +30,28 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.9.0',
+    // Data da preparação: trocar pela data da publicação ao subir.
+    data: '2026-11-11',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Ao abrir um chamado para a Qualidade, você não precisa mais escolher o responsável: basta descrever o caso. A equipe da Qualidade define quem vai atender.',
+      },
+      {
+        tipo: 'novidade',
+        texto:
+          'Enquanto a Qualidade não define o responsável, o chamado aparece como "Aguardando atribuição" no quadro e na tela do chamado. O atendimento começa depois que ele tiver um responsável.',
+      },
+      {
+        tipo: 'novidade',
+        texto:
+          'Para a equipe da Qualidade: o botão "Assumir" coloca você como responsável de um chamado que aguarda atribuição, e o campo Responsável permite passá-lo a outra pessoa da equipe. Cada atribuição fica registrada no histórico do chamado.',
+      },
+    ],
+  },
+  {
     versao: '1.8.1',
     data: '2026-11-11',
     itens: [

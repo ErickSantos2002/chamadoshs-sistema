@@ -7,7 +7,9 @@ import {
   MENSAGEM_QUALIDADE_INDISPONIVEL,
   MENSAGEM_ROTA_INDISPONIVEL,
   MENSAGEM_SEM_RESPOSTA,
+  ROTULO_AGUARDANDO_ATRIBUICAO,
   ROTULO_FORA_DOS_ATENDENTES,
+  aguardaAtribuicao,
   classificarSonda,
   ehAtribuidoNaQualidade,
   MENSAGEM_ATRIBUICAO_MUDOU,
@@ -15,8 +17,10 @@ import {
   interpretarErroDoAtendimento,
   montarCorpoAtendimento,
   opcoesDeResponsavelDaQualidade,
+  podeAssumir,
   podeAtenderPelaRota,
   podeReatribuirNaQualidade,
+  rotuloSemResponsavel,
   sondarSuporte,
   unirChamados,
 } from './atendimento';
@@ -178,6 +182,94 @@ describe('unirChamados', () => {
   });
 });
 
+describe('a fila da Qualidade (1.9.0)', () => {
+  const Q = SetorDestinoEnum.QUALIDADE;
+  // `null` é o que a API manda no chamado sem responsável; o tipo do front
+  // só conhece a ausência.
+  const NULO = null as unknown as undefined;
+
+  it('aguarda atribuição: chamado da Qualidade sem responsável', () => {
+    expect(ROTULO_AGUARDANDO_ATRIBUICAO).toBe('Aguardando atribuição');
+    expect(aguardaAtribuicao({ setor_destino: Q, tecnico_responsavel_id: NULO })).toBe(true);
+    expect(aguardaAtribuicao({ setor_destino: Q, tecnico_responsavel_id: undefined })).toBe(true);
+  });
+
+  it('com responsável, não aguarda', () => {
+    expect(aguardaAtribuicao({ setor_destino: Q, tecnico_responsavel_id: 7 })).toBe(false);
+  });
+
+  /** Na TI o chamado sem responsável é o estado comum, e pode ser atendido. */
+  it('chamado da TI sem responsável não é fila', () => {
+    expect(
+      aguardaAtribuicao({ setor_destino: SetorDestinoEnum.TI, tecnico_responsavel_id: NULO })
+    ).toBe(false);
+    expect(aguardaAtribuicao({ setor_destino: undefined, tecnico_responsavel_id: NULO })).toBe(false);
+    expect(
+      aguardaAtribuicao({ setor_destino: 'RH' as never, tecnico_responsavel_id: NULO })
+    ).toBe(false);
+  });
+
+  it('sem chamado, não aguarda', () => {
+    expect(aguardaAtribuicao(null)).toBe(false);
+    expect(aguardaAtribuicao(undefined)).toBe(false);
+  });
+
+  it('o rótulo de quem não tem responsável depende do setor', () => {
+    expect(rotuloSemResponsavel({ setor_destino: Q, tecnico_responsavel_id: NULO })).toBe(
+      'Aguardando atribuição'
+    );
+    expect(
+      rotuloSemResponsavel({ setor_destino: SetorDestinoEnum.TI, tecnico_responsavel_id: NULO })
+    ).toBe('Sem atribuição');
+    expect(rotuloSemResponsavel({ setor_destino: undefined, tecnico_responsavel_id: NULO })).toBe(
+      'Sem atribuição'
+    );
+  });
+
+  describe('podeAssumir', () => {
+    const naFila = {
+      setor_destino: Q,
+      tecnico_responsavel_id: NULO,
+      cancelado: false,
+      arquivado: false,
+    };
+    const ok = {
+      suporte: 'suportado' as const,
+      disponibilidade: 'disponivel',
+      atendentes: [{ id: 7 }, { id: 3 }],
+    };
+
+    it('técnico da lista de atendentes, chamado na fila: sim', () => {
+      expect(podeAssumir(naFila, 7, ok)).toBe(true);
+      expect(podeAssumir(naFila, 3, ok)).toBe(true);
+    });
+
+    const casos: Array<[string, Parameters<typeof podeAssumir>]> = [
+      // O administrador distribui pelo campo, mas não é elegível: a API o
+      // recusaria como responsável (400).
+      ['administrador, fora da lista', [naFila, 1, ok]],
+      ['solicitante, fora da lista', [naFila, 9, ok]],
+      ['sem usuário', [naFila, undefined, ok]],
+      ['já atribuído a outro', [{ ...naFila, tecnico_responsavel_id: 3 }, 7, ok]],
+      ['já atribuído a quem pergunta', [{ ...naFila, tecnico_responsavel_id: 7 }, 7, ok]],
+      ['chamado da TI', [{ ...naFila, setor_destino: SetorDestinoEnum.TI }, 7, ok]],
+      ['chamado sem setor', [{ ...naFila, setor_destino: undefined }, 7, ok]],
+      ['cancelado', [{ ...naFila, cancelado: true }, 7, ok]],
+      ['arquivado', [{ ...naFila, arquivado: true }, 7, ok]],
+      ['API sem a troca', [naFila, 7, { ...ok, suporte: 'nao-suportado' }]],
+      ['sonda falhou', [naFila, 7, { ...ok, suporte: 'falhou' }]],
+      ['ainda verificando', [naFila, 7, { ...ok, suporte: 'verificando' }]],
+      ['atendentes com 503', [naFila, 7, { ...ok, disponibilidade: 'indisponivel', atendentes: [] }]],
+      ['atendentes falharam', [naFila, 7, { ...ok, disponibilidade: 'falhou' }]],
+    ];
+    for (const [nome, args] of casos) {
+      it(`${nome}: não`, () => {
+        expect(podeAssumir(...args)).toBe(false);
+      });
+    }
+  });
+});
+
 describe('podeAtenderPelaRota', () => {
   const chamado = {
     setor_destino: SetorDestinoEnum.QUALIDADE,
@@ -201,6 +293,8 @@ describe('podeAtenderPelaRota', () => {
     ['chamado da TI', [{ ...chamado, setor_destino: SetorDestinoEnum.TI }, 7, ok]],
     ['chamado sem setor', [{ ...chamado, setor_destino: undefined }, 7, ok]],
     ['outro responsável', [{ ...chamado, tecnico_responsavel_id: 3 }, 7, { ...ok, atendentes: [{ id: 3 }, { id: 7 }] }]],
+    // 1.9.0: na fila ninguém atende — nem quem depois vai assumir.
+    ['sem responsável (aguardando atribuição)', [{ ...chamado, tecnico_responsavel_id: undefined }, 7, ok]],
     ['cancelado', [{ ...chamado, cancelado: true }, 7, ok]],
     ['arquivado', [{ ...chamado, arquivado: true }, 7, ok]],
     ['sem usuário', [chamado, undefined, ok]],
@@ -309,9 +403,26 @@ describe('reatribuição na Qualidade', () => {
     ]);
   });
 
-  it('sem responsável atual, nada é inventado', () => {
-    expect(opcoesDeResponsavelDaQualidade(ATENDENTES, null, 'x')).toHaveLength(2);
-    expect(opcoesDeResponsavelDaQualidade([], undefined, 'x')).toEqual([]);
+  /**
+   * 1.9.0: o chamado na fila mostra "Aguardando atribuição" como o valor de
+   * partida — uma opção que aparece e não se escolhe. Ninguém da lista é
+   * posto no lugar: o primeiro atendente não vira responsável por estar em
+   * primeiro.
+   */
+  it('sem responsável atual: "Aguardando atribuição" à frente, desabilitada', () => {
+    const fila = { valor: '', rotulo: 'Aguardando atribuição', desabilitada: true };
+    expect(opcoesDeResponsavelDaQualidade(ATENDENTES, null, 'x')).toStrictEqual([
+      fila,
+      { valor: '7', rotulo: 'Ana' },
+      { valor: '3', rotulo: 'Bia' },
+    ]);
+    expect(opcoesDeResponsavelDaQualidade([], undefined, 'x')).toStrictEqual([fila]);
+  });
+
+  it('com responsável, a opção da fila não existe: o atribuído não volta', () => {
+    const opcoes = opcoesDeResponsavelDaQualidade(ATENDENTES, 7, 'Ana');
+    expect(opcoes.map((o) => o.valor)).toEqual(['7', '3']);
+    expect(opcoes.some((o) => o.rotulo === ROTULO_AGUARDANDO_ATRIBUICAO)).toBe(false);
   });
 
   const resp = (status: number, detail?: string) => ({ response: { status, data: { detail } } });

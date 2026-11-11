@@ -313,7 +313,6 @@ describe('T-2 — o corpo enviado', () => {
     });
     await digitar('descricao', DESCRICAO_OK);
     await escolher('solicitante', 'Gabriel Ficticio');
-    await escolher('responsavel', 'Ana Qualidade Ficticia');
 
     await montar(ADMIN_SERVICO, { setor: null });
     expect(temSeletor()).toBe(false);

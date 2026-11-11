@@ -574,6 +574,80 @@ describe('ChamadoModal — reatribuição na Qualidade', () => {
     expect(erro).toHaveBeenCalledWith(MENSAGEM_SEM_VERSAO);
   });
 
+  /**
+   * A fila da Qualidade (1.9.0): o chamado nasce sem responsável. A janela
+   * mostra "Aguardando atribuição" — no seletor de quem distribui, como valor
+   * de partida que não se escolhe —, e não oferece início de atendimento.
+   */
+  describe('aguardando atribuição', () => {
+    // `null`, como a API manda; o tipo do front só conhece a ausência.
+    const NA_FILA = {
+      status: StatusEnum.ABERTO,
+      tecnico_responsavel_id: null as never,
+    } as Partial<Chamado>;
+    const botoes = () =>
+      Array.from(document.querySelectorAll('button')).map((b) => b.textContent?.trim() ?? '');
+
+    it('o seletor parte de "Aguardando atribuição", desabilitada, e ninguém é atribuído sozinho', async () => {
+      await abrir(NA_FILA);
+      expect(seletorDoResponsavel()?.textContent).toContain('Aguardando atribuição');
+      const opcoes = await abrirOpcoes();
+      expect(opcoes.map((o) => o.textContent?.trim())).toEqual(['Aguardando atribuição', 'Ana', 'Bia']);
+      expect(opcoes[0].getAttribute('aria-disabled')).toBe('true');
+      expect(atualizar).not.toHaveBeenCalled();
+    });
+
+    it('clicar em "Aguardando atribuição" não faz requisição', async () => {
+      await abrir(NA_FILA);
+      await escolherOpcao('Aguardando atribuição');
+      expect(atualizar).not.toHaveBeenCalled();
+    });
+
+    it('escolher um atendente atribui, só com o responsável e a versão', async () => {
+      await abrir(NA_FILA);
+      await escolherOpcao('Bia');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [5, { tecnico_responsavel_id: 3, versao_esperada: 3 }],
+      ]);
+    });
+
+    it('nenhuma ação de status na janela, e a orientação de atribuir', async () => {
+      await abrir(NA_FILA);
+      expect(botoes()).not.toContain('Iniciar atendimento');
+      expect(document.body.textContent).toContain('Defina o responsável para liberar o atendimento.');
+    });
+
+    it('409 ao atribuir: avisa, relê quem ficou, e não repete', async () => {
+      await abrir(NA_FILA);
+      vi.mocked(chamadosService.buscar).mockResolvedValue({
+        ...QUAL,
+        status: StatusEnum.ABERTO,
+        tecnico_responsavel_id: 7,
+        versao: 4,
+      } as Chamado);
+      atualizar.mockRejectedValueOnce({
+        response: { status: 409, data: { detail: 'x', codigo: 'versao_desatualizada', versao_atual: 4 } },
+      });
+      await escolherOpcao('Bia');
+      await act(async () => {});
+
+      expect(atualizar).toHaveBeenCalledTimes(1);
+      expect(erro).toHaveBeenCalledWith(MENSAGEM_ATRIBUICAO_MUDOU);
+      expect(seletorDoResponsavel()?.textContent).toContain('Ana');
+    });
+
+    it('API sem a rota: só leitura, com "Aguardando atribuição" no lugar do nome', async () => {
+      vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+        status: 404,
+        dados: { detail: 'Not Found' },
+      });
+      await abrir(NA_FILA);
+      expect(seletorDoResponsavel()).toBeUndefined();
+      expect(document.body.textContent).toContain('Aguardando atribuição');
+      expect(document.body.textContent).not.toContain('Sem atribuição');
+    });
+  });
+
   // API-12: a troca da TI leva a versão do chamado desta janela.
   it('chamado da TI com versão: a troca leva a versao_esperada dele', async () => {
     await abrir({ setor_destino: 'TI', versao: 9 } as Partial<Chamado>);

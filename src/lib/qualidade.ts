@@ -13,9 +13,11 @@ import { MINIMO_DESCRICAO, validarMinimo } from './validacao';
  *
  * ── A API é quem diz se a Qualidade existe ───────────────────────────
  *
- * Não há flag no front. A consulta de atendentes — que o formulário faz de
- * qualquer jeito, para preencher o seletor de responsável — é também a
- * pergunta "a Qualidade existe aqui?", e cada resposta tem um sentido:
+ * Não há flag no front. A consulta de atendentes é a pergunta "a Qualidade
+ * existe aqui, e tem quem atenda?", e cada resposta tem um sentido. Até a
+ * 1.8.1 ela também preenchia o seletor de responsável da abertura; desde a
+ * 1.9.0 quem abre não escolhe mais o responsável — a equipe da Qualidade o
+ * define depois —, e a consulta ficou só com a pergunta:
  *
  * | Resposta              | API                              | Estado          |
  * |-----------------------|----------------------------------|-----------------|
@@ -54,7 +56,8 @@ export interface ConsultaDaQualidade {
   atendentes: AtendenteQualidade[];
 }
 
-export const MENSAGEM_RESPONSAVEL = 'Selecione o responsável.';
+/** O que o formulário diz no lugar do antigo campo "Responsável" (1.9.0). */
+export const ORIENTACAO_DA_QUALIDADE = 'A equipe da Qualidade definirá o responsável.';
 export const MENSAGEM_SEM_ATENDENTES = 'Nenhum atendente da Qualidade cadastrado';
 export const MENSAGEM_INDISPONIVEL_NO_ENVIO =
   'A abertura para a Qualidade ficou indisponível. Abra para a TI ou tente mais tarde.';
@@ -175,44 +178,38 @@ export function montarCorpoTI(campos: {
  * O corpo da Qualidade, montado do zero — e não um corpo da TI com campos
  * apagados. A API recusa a PRESENÇA de `titulo` e `categoria_id`, até com
  * null; aqui eles não existem para serem esquecidos.
+ *
+ * Sem responsável (1.9.0): o chamado nasce aguardando atribuição. A chave
+ * nem existe no corpo — nem como `null` —, para que nenhuma escolha de quem
+ * abre chegue à API.
  */
 export function montarCorpoQualidade(campos: {
   descricao: string;
   prioridade: PrioridadeEnum;
   solicitante_id: number;
-  tecnico_responsavel_id: number;
 }): ChamadoCreateQualidade {
   return {
     setor_destino: SetorDestinoEnum.QUALIDADE,
     descricao: campos.descricao.trim(),
     prioridade: campos.prioridade,
     solicitante_id: campos.solicitante_id,
-    tecnico_responsavel_id: campos.tecnico_responsavel_id,
   };
 }
 
 /**
- * O problema do formulário da Qualidade, na ordem da tela: descrição,
- * solicitante, responsável. As duas primeiras mensagens são as da TI, saídas
- * da mesma função.
- *
- * O responsável precisa estar na lista CARREGADA. A lista é a fonte: um id
- * que sobrou de uma lista anterior, ou que nunca esteve nela, não é escolha.
+ * O problema do formulário da Qualidade, na ordem da tela: descrição e
+ * solicitante. As mensagens são as da TI, saídas da mesma função. O
+ * responsável saiu na 1.9.0: não é mais escolha de quem abre.
  */
 export function validarQualidade(campos: {
   descricao: string;
   escolheSolicitante: boolean;
   solicitanteId: number | undefined;
-  responsavelId: number | undefined;
-  atendentes: AtendenteQualidade[];
 }): string | null {
   const descricao = validarMinimo(campos.descricao, MINIMO_DESCRICAO, 'Descrição');
   if (descricao) return descricao;
 
   if (campos.escolheSolicitante && !campos.solicitanteId) return 'Selecione o solicitante.';
-
-  const naLista = campos.atendentes.some((a) => a.id === campos.responsavelId);
-  if (!naLista) return MENSAGEM_RESPONSAVEL;
 
   return null;
 }
@@ -224,8 +221,10 @@ export function validarQualidade(campos: {
  * própria, e o setor sai do formulário — o que estava digitado fica, e nada é
  * reenviado para a TI.
  *
- * 400: responsável inexistente ou que deixou de ser elegível. A lista na tela
- * pode estar velha, então ela recarrega.
+ * 409: a Qualidade ficou sem ninguém que atenda entre a consulta e o envio
+ * (API-14). A mensagem é a da API, e a consulta é refeita — o setor sai do
+ * formulário com o motivo. 400 (de antes da 1.9.0, quando o responsável ia
+ * no corpo) refaz a consulta pelo mesmo motivo.
  *
  * O resto é o detail que o interceptor já deixou em texto, ou a mensagem
  * genérica de sempre.
@@ -243,7 +242,7 @@ export function interpretarErroDaQualidade(erro: unknown): {
 
   return {
     mensagem: detailDe(erro) ?? MENSAGEM_GENERICA,
-    recarregarAtendentes: status === 400,
+    recarregarAtendentes: status === 400 || status === 409,
     indisponivel: false,
   };
 }

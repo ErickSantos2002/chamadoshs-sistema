@@ -4,6 +4,7 @@ import { precisaAvaliar } from '../utils/avaliacao';
 import { cn } from '../lib/utils';
 import { Avatar, Badge } from './ui';
 import { MarcaBadge, PrioridadeBadge, SetorBadge } from './SelosDeChamado';
+import { ROTULO_AGUARDANDO_ATRIBUICAO, aguardaAtribuicao } from '../lib/atendimento';
 import SlaProgresso from './SlaProgresso';
 import { IconeEstrela } from './ui/icones';
 
@@ -269,6 +270,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       lê; o que merece marca é a exceção. A janela e a página
                       mostram o setor sempre. */}
                   <SetorBadge chamado={chamado} ocultarTI />
+
+                  {/* A fila da Qualidade (1.9.0): o chamado nasce sem
+                      responsável, e é este selo que diz à equipe o que ainda
+                      precisa ser distribuído. Com palavra, e não só o avatar
+                      vazio — que na TI é o estado comum e não pede nada. */}
+                  {aguardaAtribuicao(chamado) && !chamado.cancelado && !chamado.arquivado && (
+                    <Badge variante="alerta">{ROTULO_AGUARDANDO_ATRIBUICAO}</Badge>
+                  )}
 
                   {/* Mesmas palavras e mesmas variantes que a janela do chamado
                       usa. Dentro das colunas "Arquivado" e "Cancelado" o selo é
