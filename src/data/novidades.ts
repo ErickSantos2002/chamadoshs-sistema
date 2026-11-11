@@ -30,6 +30,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.8.1',
+    data: '2026-11-11',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Depois de uma atualização do sistema, basta abrir ou recarregar a página normalmente para receber a versão nova. Antes, o navegador podia continuar mostrando a versão anterior até um recarregamento forçado (Ctrl+Shift+R).',
+      },
+    ],
+  },
+  {
     versao: '1.8.0',
     data: '2026-11-11',
     itens: [

@@ -13,6 +13,31 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
+## [1.8.1] — 2026-11-11
+
+Por Rickelme David. Branch `fix/cache-index-1-8-1`. Publicada em 11/11/2026.
+
+### Fixed
+
+- **O navegador segurava a versão anterior depois de uma publicação.** O
+  `nginx.conf` não dizia nada sobre o cache do `index.html`, e o navegador
+  reaproveitava a cópia antiga por conta própria — ela aponta para o bundle
+  da versão anterior, que fica um ano em cache. Na publicação da 1.8.0 a tela
+  antiga (sem a escolha de setor) continuou aparecendo até um Ctrl+Shift+R.
+  O `location /` passa a responder `Cache-Control: no-cache`: o navegador
+  revalida o HTML a cada visita (304 quando nada mudou). Vale para `/` e para
+  as rotas do React Router. Os arquivos com hash em `/assets` seguem com
+  cache de um ano.
+
+### ⚠️ Requer ação no deploy
+
+- Só o front, com rebuild da imagem (o `nginx.conf` é copiado no build). Sem
+  API, banco ou variável.
+- Quem ainda estiver com o `index.html` antigo em cache precisa de um último
+  Ctrl+Shift+R; a partir daí o recarregamento comum basta.
+
+---
+
 ## [1.8.0] — 2026-11-11
 
 Por Rickelme David. Branches `feat/setor-destino-fe-1` (FE-1, exibição e
