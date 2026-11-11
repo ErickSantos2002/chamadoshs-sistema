@@ -13,7 +13,7 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [1.8.0] — não publicada
+## [1.8.0] — 2026-11-11
 
 Por Rickelme David. Branches `feat/setor-destino-fe-1` (FE-1, exibição e
 filtro), `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade),
@@ -24,8 +24,8 @@ filtro), `feat/setor-destino-fe-2` (FE-2, abertura para a Qualidade),
 entre as equipes, com a API-13), da funcionalidade Setor de Destino.
 
 A versão subiu para **1.8.0** no FE-6, quando a publicação passou a ligar a
-TI e a Qualidade juntas: o aviso de novidades fala das duas. A data entra no
-`novidades.ts` e aqui no dia da publicação; até lá, nada aqui está no ar.
+TI e a Qualidade juntas: o aviso de novidades fala das duas. Publicada em
+11/11/2026, depois da API-13.
 
 ### ⚠️ Requer ação no deploy (FE-6)
 
