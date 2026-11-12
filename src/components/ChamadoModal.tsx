@@ -16,6 +16,8 @@ import {
 } from '../lib/acesso';
 import {
   MENSAGEM_ATRIBUICAO_MUDOU,
+  ROTULO_AGUARDANDO_ATRIBUICAO,
+  aguardaAtribuicao,
   interpretarErroDaReatribuicao,
   opcoesDeResponsavelDaQualidade,
   podeReatribuirNaQualidade,
@@ -187,7 +189,9 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
   const rascunhoDoAtendimento = useRef('');
 
   // Na Qualidade o seletor é outro: os atendentes, sem "Sem atribuição", e só
-  // quando a API sabe validar a troca. Fora disso o campo fica só leitura.
+  // quando a API sabe validar a troca. Fora disso o campo fica só leitura. O
+  // chamado que ainda não tem responsável mostra "Aguardando atribuição"
+  // (1.9.0), no seletor de quem distribui e no texto de quem só lê.
   const ehDaQualidade = chamado
     ? setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE
     : false;
@@ -609,6 +613,7 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                 />
                 <OpcaoDeComentarioInterno
                   pode={alteraComoEquipe}
+                  daQualidade={ehDaQualidade}
                   interno={comentarioInterno}
                   bloqueado={internoBloqueado}
                   aoMudar={setComentarioInterno}
@@ -719,7 +724,9 @@ export const ChamadoModal: React.FC<ChamadoModalProps> = ({
                       }
                     />
                     <span className="truncate text-conteudo">
-                      {nome(chamado.tecnico_responsavel_id)}
+                      {aguardaAtribuicao(chamado)
+                        ? ROTULO_AGUARDANDO_ATRIBUICAO
+                        : nome(chamado.tecnico_responsavel_id)}
                     </span>
                   </span>
                 )}

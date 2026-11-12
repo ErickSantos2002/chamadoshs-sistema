@@ -884,3 +884,333 @@ describe('TI — a versão (API-12)', () => {
     ]);
   });
 });
+
+/**
+ * A fila da Qualidade (1.9.0, API-14): o chamado nasce sem responsável, e
+ * enquanto não tiver um o atendimento não começa. As ações de status dão
+ * lugar a "Aguardando atribuição" e, para quem atende a Qualidade, ao
+ * "Assumir" — uma atribuição a si mesmo, pelo PUT, com a versão da tela.
+ *
+ * Esconder os botões é cortesia: a API recusa a mudança de status sem
+ * responsável (409), e é lá que a regra está provada.
+ */
+describe('Qualidade — a fila (aguardando atribuição)', () => {
+  const naFila = (extra: Partial<Chamado> = {}) =>
+    chamadoCom({
+      setor_destino: SetorDestinoEnum.QUALIDADE,
+      status: StatusEnum.ABERTO,
+      // `null`, como a API manda; o tipo do front só conhece a ausência.
+      tecnico_responsavel_id: null as never,
+      solicitante_id: 9,
+      versao: 2,
+      ...extra,
+    } as Partial<Chamado>);
+  const CONFLITO = {
+    response: { status: 409, data: { detail: 'versão', codigo: 'versao_desatualizada', versao_atual: 3 } },
+  };
+  // O técnico da TI, que não está entre os atendentes da Qualidade.
+  const TECNICO_DA_TI = (() => {
+    const s = sessao(4, 'Tecnico');
+    return { ...s, user: { ...s.user!, integra_equipe_ti: true } };
+  })();
+  const SOLICITANTE = sessao(9, 'Usuario');
+
+  let atualizar: MockInstance<typeof chamadosService.atualizar>;
+  let atender: MockInstance<typeof chamadosService.atender>;
+  let recarregar: ReturnType<typeof vi.fn>;
+
+  const montarF = async (quem: React.ContextType<typeof AuthContext>, chamado: Chamado) => {
+    await act(async () => {
+      root.render(
+        <AuthContext.Provider value={quem}>
+          <ChamadosProvider>
+            <AcoesRapidas chamado={chamado} aoMudar={aoMudar} aoPrecisarRecarregar={recarregar} />
+          </ChamadosProvider>
+        </AuthContext.Provider>
+      );
+    });
+  };
+  const botao = (texto: string) =>
+    Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.trim() === texto);
+  const avisos = () => vi.mocked(toast.error).mock.calls.map((c) => String(c[0]));
+
+  beforeEach(() => {
+    vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+      status: 405,
+      dados: { detail: 'Method Not Allowed' },
+    });
+    vi.mocked(chamadosService.listarAtendentesQualidade).mockResolvedValue([
+      { id: 3, nome: 'Técnica da Qualidade' },
+      { id: 8, nome: 'Outro Técnico da Qualidade' },
+    ]);
+    atualizar = vi
+      .spyOn(chamadosService, 'atualizar')
+      .mockImplementation(async (_id, corpo) =>
+        naFila({ tecnico_responsavel_id: corpo.tecnico_responsavel_id ?? undefined, versao: 3 })
+      );
+    atender = vi.spyOn(chamadosService, 'atender');
+    recarregar = vi.fn();
+  });
+
+  describe('quem vê o quê', () => {
+    it('técnica da Qualidade: "Aguardando atribuição" e o botão Assumir, só ele', async () => {
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      expect(host.textContent).toContain('Aguardando atribuição.');
+      expect(botoes()).toEqual(['Assumir']);
+    });
+
+    /** O administrador distribui pelo campo Responsável; não é elegível para assumir. */
+    it('administrador: o aviso e a orientação, sem Assumir', async () => {
+      await montarF(ADMIN, naFila());
+      expect(host.textContent).toContain('Aguardando atribuição.');
+      expect(host.textContent).toContain('Defina o responsável para liberar o atendimento.');
+      expect(botoes()).toEqual([]);
+    });
+
+    it('solicitante: nenhum controle', async () => {
+      await montarF(SOLICITANTE, naFila());
+      expect(host.innerHTML).toBe('');
+    });
+
+    it('usuário comum que não é o solicitante: nenhum controle', async () => {
+      await montarF(USUARIO, naFila());
+      expect(host.innerHTML).toBe('');
+    });
+
+    it('técnico da TI: nenhum controle', async () => {
+      await montarF(TECNICO_DA_TI, naFila());
+      expect(host.innerHTML).toBe('');
+    });
+
+    /** Nenhum status oferece início de atendimento enquanto não há responsável. */
+    for (const s of [
+      StatusEnum.ABERTO,
+      StatusEnum.EM_ANDAMENTO,
+      StatusEnum.AGUARDANDO,
+      StatusEnum.RESOLVIDO,
+      StatusEnum.FECHADO,
+    ]) {
+      it(`${s} sem responsável: nenhuma ação de status, para técnica e administrador`, async () => {
+        await montarF(TECNICA_DA_QUALIDADE, naFila({ status: s }));
+        expect(botoes()).toEqual(['Assumir']);
+        act(() => root.unmount());
+        root = createRoot(host);
+        await montarF(ADMIN, naFila({ status: s }));
+        expect(botoes()).toEqual([]);
+      });
+    }
+
+    it('cancelado e arquivado: nem aviso, nem Assumir', async () => {
+      for (const extra of [{ cancelado: true }, { arquivado: true }]) {
+        act(() => root.unmount());
+        root = createRoot(host);
+        await montarF(TECNICA_DA_QUALIDADE, naFila(extra));
+        expect(host.innerHTML, JSON.stringify(extra)).toBe('');
+      }
+    });
+
+    it('Qualidade indisponível ou sem a rota: o aviso fica, o Assumir não', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.mocked(chamadosService.sondarAtendimento).mockResolvedValue({
+        status: 404,
+        dados: { detail: 'Not Found' },
+      });
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      expect(botoes()).not.toContain('Assumir');
+      expect(botoes()).not.toContain('Iniciar atendimento');
+    });
+  });
+
+  describe('Assumir', () => {
+    it('manda só o próprio id e a versão da tela, pelo PUT', async () => {
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { tecnico_responsavel_id: 3, versao_esperada: 2 }],
+      ]);
+      expect(atender).not.toHaveBeenCalled();
+      expect(aoMudar).toHaveBeenCalledWith(
+        expect.objectContaining({ tecnico_responsavel_id: 3, versao: 3 })
+      );
+    });
+
+    it('não muda o status junto: assumir é atribuir', async () => {
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      expect('status' in atualizar.mock.calls[0][1]).toBe(false);
+    });
+
+    it('depois de atribuído a quem assumiu, os botões do status aparecem', async () => {
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      await montarF(TECNICA_DA_QUALIDADE, naFila({ tecnico_responsavel_id: 3, versao: 3 }));
+      expect(host.textContent).not.toContain('Aguardando atribuição');
+      expect(botoes()).toEqual(['Iniciar atendimento']);
+    });
+
+    /** Atendimento compartilhado: o colega que não é o responsável também atende. */
+    it('depois de atribuído a um colega, a técnica também atende — pelo PUT', async () => {
+      await montarF(TECNICA_DA_QUALIDADE, naFila({ tecnico_responsavel_id: 8, versao: 3 }));
+      expect(botoes()).toEqual(['Iniciar atendimento']);
+      await clicar('Iniciar atendimento');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.EM_ANDAMENTO, versao_esperada: 3 }],
+      ]);
+      expect(atender).not.toHaveBeenCalled();
+    });
+
+    it('sem versão válida: nada sai, e avisa', async () => {
+      await montarF(TECNICA_DA_QUALIDADE, naFila({ versao: undefined }));
+      await clicar('Assumir');
+      expect(atualizar).not.toHaveBeenCalled();
+      expect(avisos()).toEqual([MENSAGEM_SEM_VERSAO]);
+    });
+
+    it('dois cliques seguidos: uma requisição só', async () => {
+      let soltar: (c: Chamado) => void = () => {};
+      atualizar.mockImplementationOnce(() => new Promise<Chamado>((r) => (soltar = r)));
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      await clicar('Assumir');
+      expect(atualizar).toHaveBeenCalledTimes(1);
+      await act(async () => soltar(naFila({ tecnico_responsavel_id: 3, versao: 3 })));
+    });
+  });
+
+  describe('Assumir — os erros', () => {
+    /**
+     * Um colega assumiu — ou foi atribuído — antes. Nada foi gravado, a tela
+     * relê, e a atribuição NÃO é repetida: repetir com a versão nova tiraria
+     * o chamado de quem acabou de recebê-lo.
+     */
+    it('409 de versão: avisa, relê e não repete', async () => {
+      atualizar.mockRejectedValueOnce(CONFLITO);
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+
+      expect(avisos()).toEqual([MENSAGEM_CONFLITO_DE_VERSAO]);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+      expect(aoMudar).not.toHaveBeenCalled();
+
+      // Enquanto a versão nova não chega, o botão do estado velho não vale.
+      expect(host.querySelector('[role="status"]')?.textContent).toContain('Este chamado mudou');
+      expect(botao('Assumir')?.disabled).toBe(true);
+      await clicar('Assumir');
+      expect(atualizar).toHaveBeenCalledTimes(1);
+    });
+
+    it('409 e o chamado relido já é de um colega: some o Assumir, e nada foi regravado', async () => {
+      atualizar.mockRejectedValueOnce(CONFLITO);
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      await montarF(TECNICA_DA_QUALIDADE, naFila({ tecnico_responsavel_id: 8, versao: 3 }));
+
+      expect(host.querySelector('[role="status"]')).toBeNull();
+      expect(botoes()).toEqual(['Iniciar atendimento']);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+    });
+
+    it('409 e o chamado relido segue na fila: assumir de novo é um clique novo, com a versão nova', async () => {
+      atualizar.mockRejectedValueOnce(CONFLITO);
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      await montarF(TECNICA_DA_QUALIDADE, naFila({ versao: 3, prioridade: 'Alta' as never }));
+      expect(atualizar).toHaveBeenCalledTimes(1);
+
+      await clicar('Assumir');
+      expect(atualizar.mock.calls[1]).toStrictEqual([
+        50,
+        { tecnico_responsavel_id: 3, versao_esperada: 3 },
+      ]);
+    });
+
+    it('428: avisa e relê, sem repetir', async () => {
+      atualizar.mockRejectedValueOnce({
+        response: { status: 428, data: { detail: 'versão', codigo: 'versao_obrigatoria' } },
+      });
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      expect(avisos()).toEqual([MENSAGEM_VERSAO_AUSENTE]);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+    });
+
+    it('404: a tela relê, e nada é repetido', async () => {
+      atualizar.mockRejectedValueOnce({ response: { status: 404, data: { detail: 'x' } } });
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+    });
+
+    it('sem resposta: diz que pode ter entrado, relê e não reenvia', async () => {
+      atualizar.mockRejectedValueOnce({
+        code: 'ECONNABORTED',
+        request: {},
+        message: 'timeout of 30000ms exceeded',
+      });
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      expect(avisos()).toHaveLength(1);
+      expect(recarregar).toHaveBeenCalledTimes(1);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+    });
+
+    /** Quem clicou deixou de ser elegível: a lista é relida, e o botão some. */
+    it('400: mostra o detail, relê os atendentes, e o Assumir some', async () => {
+      atualizar.mockRejectedValueOnce({
+        response: { status: 400, data: { detail: 'Atendente não é elegível para a Qualidade' } },
+      });
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      vi.mocked(chamadosService.listarAtendentesQualidade).mockResolvedValue([
+        { id: 8, nome: 'Outro Técnico da Qualidade' },
+      ]);
+      await clicar('Assumir');
+
+      expect(avisos()).toEqual(['Atendente não é elegível para a Qualidade']);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+      expect(botoes()).not.toContain('Assumir');
+    });
+
+    it('503: avisa que a Qualidade está indisponível, e não repete', async () => {
+      atualizar.mockRejectedValueOnce({ response: { status: 503, data: { detail: 'x' } } });
+      await montarF(TECNICA_DA_QUALIDADE, naFila());
+      await clicar('Assumir');
+      expect(avisos()).toEqual([MENSAGEM_QUALIDADE_INDISPONIVEL]);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  /** A TI não tem fila: sem responsável, o atendimento segue como sempre. */
+  describe('a TI não muda', () => {
+    it('chamado da TI sem responsável: os botões do status, sem aviso nem Assumir', async () => {
+      await montarF(
+        TECNICO,
+        chamadoCom({
+          setor_destino: SetorDestinoEnum.TI,
+          status: StatusEnum.ABERTO,
+          tecnico_responsavel_id: null as never,
+          versao: 5,
+        } as Partial<Chamado>)
+      );
+      expect(host.textContent).not.toContain('Aguardando atribuição');
+      expect(botoes()).toEqual(['Iniciar atendimento']);
+      await clicar('Iniciar atendimento');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [50, { status: StatusEnum.EM_ANDAMENTO, versao_esperada: 5 }],
+      ]);
+    });
+
+    it('chamado sem setor (API antiga) e sem responsável: os botões do status', async () => {
+      await montarF(
+        ADMIN,
+        chamadoCom({
+          status: StatusEnum.ABERTO,
+          tecnico_responsavel_id: null as never,
+        } as Partial<Chamado>)
+      );
+      expect(botoes()).toEqual(['Iniciar atendimento']);
+    });
+  });
+});

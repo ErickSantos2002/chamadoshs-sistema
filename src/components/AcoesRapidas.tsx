@@ -6,8 +6,12 @@ import { useChamados } from '../hooks/useChamados';
 import { useQualidade } from '../hooks/useQualidade';
 import { chamadosService } from '../services/chamadoshsapi';
 import {
+  ROTULO_AGUARDANDO_ATRIBUICAO,
+  aguardaAtribuicao,
+  interpretarErroDaReatribuicao,
   interpretarErroDoAtendimento,
   montarCorpoAtendimento,
+  podeAssumir,
   podeAtenderPelaRota,
 } from '../lib/atendimento';
 import { setorDoChamado } from '../lib/setor';
@@ -27,7 +31,7 @@ import ContadorMinimo from './ContadorMinimo';
 import { Button, RotuloDeCampo, Textarea } from './ui';
 import { Chamado, SetorDestinoEnum, StatusDoAtendimento, StatusEnum } from '../types/api';
 import type { PropsDeIcone } from './ui/icones';
-import { IconeConfereCirculo, IconeDesfazer, IconeIniciar, IconeRelogio } from './ui/icones';
+import { IconeConfereCirculo, IconeDesfazer, IconeIniciar, IconeRelogio, IconeUsuario } from './ui/icones';
 
 interface AcoesRapidasProps {
   chamado: Chamado;
@@ -123,6 +127,16 @@ const TRANSICOES: Partial<
  * a tela diz isso, guarda a solução e relê o chamado — nada é reenviado. Se
  * a escrita tiver entrado, a versão subiu, e um clique repetido com a versão
  * velha seria 409, não uma segunda gravação.
+ *
+ * ── A fila da Qualidade (1.9.0) ───────────────────────────────────────
+ *
+ * O chamado da Qualidade nasce sem responsável, e enquanto não tiver um o
+ * atendimento não começa: a API recusa a mudança de status com 409 (API-14).
+ * Aqui as ações de status dão lugar a "Aguardando atribuição" e, para quem
+ * atende a Qualidade, ao botão "Assumir" — uma atribuição a si mesmo, pelo
+ * mesmo PUT e com a mesma versão. Quem só distribui (o administrador) usa o
+ * campo Responsável. Um 409 de versão no "Assumir" é outra pessoa que gravou
+ * antes: a tela relê e mostra quem ficou, e nada é repetido.
  */
 export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
   chamado,
@@ -199,12 +213,16 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
 
   // Cancelado e arquivado saem do fluxo normal: reabrir um deles é decisão que
   // vive na página inteira, junto do motivo e do histórico.
+  // Na fila da Qualidade nenhuma ação de status é oferecida: a API as
+  // recusaria. Esconder aqui é cortesia; a regra é dela.
+  const naFila = aguardaAtribuicao(chamado) && !chamado.cancelado && !chamado.arquivado;
+  const assume = podeAssumir(chamado, user?.id, qualidade);
   const disponiveis =
-    podeAgir && !chamado.cancelado && !chamado.arquivado
+    podeAgir && !naFila && !chamado.cancelado && !chamado.arquivado
       ? (TRANSICOES[chamado.status] ?? [])
       : [];
 
-  if (!podeAgir || (!disponiveis.length && !resolvendo)) return null;
+  if (!podeAgir || (!disponiveis.length && !resolvendo && !naFila)) return null;
 
   /**
    * O erro da rota restrita. O que foi digitado só se perde quando não há
@@ -313,6 +331,51 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
     }
   };
 
+  /**
+   * Atribui o chamado da fila a quem clicou. A versão é a do chamado na
+   * tela: se um colega assumiu — ou atribuiu — antes, a API recusa com 409,
+   * a tela relê e mostra o responsável de agora. Nada é repetido sozinho.
+   */
+  const assumir = async () => {
+    if (travado.current || desatualizado || !user || !assume) return;
+    const precondicao = precondicaoDaEscrita(chamado);
+    if (precondicao === null) {
+      toast.error(MENSAGEM_SEM_VERSAO);
+      return;
+    }
+    travado.current = true;
+
+    try {
+      setSalvando(true);
+      const atualizado = await chamadosService.atualizar(chamado.id, {
+        tecnico_responsavel_id: user.id,
+        ...precondicao,
+      });
+      aoMudar(atualizado);
+    } catch (err: any) {
+      if (tratarErroDeVersao(err, precondicao.versao_esperada)) {
+        // Já avisado, e a tela relê.
+      } else if (err?.response?.status === 404) {
+        pedirRecarga();
+      } else if (err?.response?.status !== 503 && classificarFalhaDeEscrita(err).tipo === 'incerta') {
+        toast.error(MENSAGEM_INCERTA);
+        pedirRecarga();
+      } else {
+        // 400: quem clicou deixou de ser elegível — a lista é relida, e o
+        // botão some. 403 é do interceptor. 503: a Qualidade foi desligada —
+        // é recusa da API antes de gravar, e não resposta incerta, como na
+        // troca de responsável da janela do chamado.
+        const { mensagem, recarregarAtendentes, indisponivel } = interpretarErroDaReatribuicao(err);
+        if (mensagem) toast.error(mensagem);
+        if (indisponivel) marcarQualidadeIndisponivel();
+        if (recarregarAtendentes) void verificarQualidade();
+      }
+    } finally {
+      travado.current = false;
+      setSalvando(false);
+    }
+  };
+
   const confirmarResolucao = () => {
     const problema = validarMinimo(solucao, MINIMO_SOLUCAO, 'Solução');
     if (problema) {
@@ -368,24 +431,51 @@ export const AcoesRapidas: React.FC<AcoesRapidasProps> = ({
     );
   }
 
+  const avisoDeAtualizacao = falhaAoAtualizar ? (
+    <div role="status" className="space-y-1.5">
+      <p className="text-sm text-conteudo-suave">
+        Não foi possível atualizar este chamado. As ações ficam travadas até ele ser relido.
+      </p>
+      <Button variante="secundario" tamanho="sm" onClick={pedirRecarga}>
+        Tentar de novo
+      </Button>
+    </div>
+  ) : (
+    desatualizado && (
+      <p role="status" className="text-sm text-conteudo-suave">
+        Este chamado mudou. Atualizando os dados antes de liberar as ações…
+      </p>
+    )
+  );
+
+  if (naFila) {
+    return (
+      <div className="flex flex-col gap-2">
+        {avisoDeAtualizacao}
+        <p className="text-sm text-conteudo-suave">
+          <strong className="font-semibold text-conteudo">{ROTULO_AGUARDANDO_ATRIBUICAO}.</strong>{' '}
+          {assume
+            ? 'O atendimento começa depois que o chamado tiver um responsável.'
+            : 'Defina o responsável para liberar o atendimento.'}
+        </p>
+        {assume && (
+          <Button
+            variante="primario"
+            carregando={salvando}
+            disabled={salvando || desatualizado}
+            onClick={assumir}
+          >
+            <IconeUsuario className="h-4 w-4" aria-hidden="true" />
+            Assumir
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      {falhaAoAtualizar ? (
-        <div role="status" className="space-y-1.5">
-          <p className="text-sm text-conteudo-suave">
-            Não foi possível atualizar este chamado. As ações ficam travadas até ele ser relido.
-          </p>
-          <Button variante="secundario" tamanho="sm" onClick={pedirRecarga}>
-            Tentar de novo
-          </Button>
-        </div>
-      ) : (
-        desatualizado && (
-          <p role="status" className="text-sm text-conteudo-suave">
-            Este chamado mudou. Atualizando os dados antes de liberar as ações…
-          </p>
-        )
-      )}
+      {avisoDeAtualizacao}
       {/* No tamanho padrão, como os outros controles do modal e da página:
           em `sm` as ações eram os menores alvos da tela (homologação FE-5). */}
       {disponiveis.map(({ para, texto, Icone }) => (

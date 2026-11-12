@@ -22,10 +22,12 @@ import {
   rascunhosComConteudo,
 } from '../lib/acesso';
 import {
+  aguardaAtribuicao,
   interpretarErroDaReatribuicao,
   opcoesDeResponsavelDaQualidade,
   podeAtenderPelaRota,
   podeReatribuirNaQualidade,
+  rotuloSemResponsavel,
 } from '../lib/atendimento';
 import {
   CampoEditavel,
@@ -217,6 +219,11 @@ const ChamadoDetalhes: React.FC = () => {
     : false;
   const qualidade = useQualidade(ehDaQualidade);
   const atendePelaRota = chamado ? podeAtenderPelaRota(chamado, user?.id, qualidade) : false;
+  // A fila da Qualidade (1.9.0): sem responsável o atendimento não começa, e
+  // as ações de status desta página dão lugar às do `AcoesRapidas`, que
+  // mostra "Aguardando atribuição" e o "Assumir".
+  const naFilaDaQualidade =
+    aguardaAtribuicao(chamado) && !chamado?.cancelado && !chamado?.arquivado;
 
   // ── Permissões (C2) ───────────────────────────────────────────────────
   //
@@ -1577,7 +1584,7 @@ const ChamadoDetalhes: React.FC = () => {
               {/* Um caminho ou outro, nunca os dois. O da Qualidade não
                   aparece em cancelado nem arquivado; o da equipe segue como
                   sempre foi (D-12). */}
-              {atendePelaRota ? (
+              {atendePelaRota || naFilaDaQualidade ? (
                 <AcoesRapidas
                   chamado={chamado}
                   aoMudar={aplicarAtendimento}
@@ -1682,6 +1689,9 @@ const ChamadoDetalhes: React.FC = () => {
                     <Seletor
                       rotulo="Status"
                       valor={statusEditado}
+                      // Na fila da Qualidade o status só muda junto com a
+                      // escolha do responsável (API-14: 409 sem ele).
+                      disabled={naFilaDaQualidade && !tecnicoEditado}
                       aoMudar={(v) => setStatusEditado(v as StatusEnum)}
                       opcoes={Object.values(StatusEnum)
                         .filter((status) => status !== StatusEnum.FECHADO) // Remove Fechado do dropdown
@@ -1800,9 +1810,10 @@ const ChamadoDetalhes: React.FC = () => {
                 <dd>
                   {modoEdicao && ehDaQualidade ? (
                     reatribuiNaQualidade ? (
-                      // Sem "Sem atribuição": na Qualidade o responsável é
-                      // obrigatório. Quem já está e saiu da lista continua
-                      // como escolha atual até alguém trocar.
+                      // Sem "Sem atribuição": o atribuído não volta à fila.
+                      // Quem já está e saiu da lista continua como escolha
+                      // atual até alguém trocar. Na fila, o valor de partida
+                      // é "Aguardando atribuição", que não se escolhe.
                       <Seletor
                         rotulo="Técnico responsável"
                         valor={tecnicoEditado ? String(tecnicoEditado) : ''}
@@ -1820,7 +1831,7 @@ const ChamadoDetalhes: React.FC = () => {
                         <p className="text-sm font-medium text-conteudo">
                           {(chamado.tecnico_responsavel_id &&
                             usuarios[chamado.tecnico_responsavel_id]?.nome) ||
-                            'Sem atribuição'}
+                            rotuloSemResponsavel(chamado)}
                         </p>
                         <p className="mt-0.5 text-xs text-conteudo-tenue">
                           A troca de responsável da Qualidade não está disponível agora.
@@ -1873,7 +1884,7 @@ const ChamadoDetalhes: React.FC = () => {
                         </>
                       ) : (
                         <p className="text-sm text-conteudo">
-                          Sem atribuição
+                          {rotuloSemResponsavel(chamado)}
                         </p>
                       )}
                     </div>
@@ -2054,6 +2065,7 @@ const ChamadoDetalhes: React.FC = () => {
               <div className="mt-2">
                 <OpcaoDeComentarioInterno
                   pode={alteraComoEquipe}
+                  daQualidade={ehDaQualidade}
                   interno={comentarioInterno}
                   bloqueado={internoBloqueado}
                   aoMudar={setComentarioInterno}

@@ -1101,3 +1101,205 @@ describe('Qualidade — as ações da equipe com versão (FE-4)', () => {
     });
   });
 });
+
+/**
+ * A fila da Qualidade na página (1.9.0, API-14): o chamado nasce sem
+ * responsável, e enquanto não tiver um o atendimento não começa. A página
+ * mostra "Aguardando atribuição", troca as ações de status pelo "Assumir" de
+ * quem atende a Qualidade, e a edição deixa mexer nos outros campos sem
+ * inventar um responsável.
+ */
+describe('Qualidade — a fila na página (aguardando atribuição)', () => {
+  // `null`, como a API manda; o tipo do front só conhece a ausência.
+  const NA_FILA = {
+    status: StatusEnum.ABERTO,
+    tecnico_responsavel_id: null as never,
+  } as Partial<Chamado>;
+  const TECNICA = sessao(7, 'Tecnico');
+  const SOLICITANTE = sessao(2, 'Usuario');
+  const DE_STATUS = /^(iniciar|retomar|aguardando retorno|marcar como|resolver|reabrir)/i;
+  const acoesDeStatus = () => textos().filter((t) => DE_STATUS.test(t));
+
+  const nomeDe = (el: Element) =>
+    (el.getAttribute('aria-labelledby') ?? '')
+      .split(/\s+/)
+      .map((i) => document.getElementById(i)?.textContent?.trim() ?? '')
+      .join(' ');
+  const seletor = (rotulo: string) =>
+    Array.from(host.querySelectorAll('[role="combobox"]')).find((b) =>
+      nomeDe(b).startsWith(rotulo)
+    ) as HTMLButtonElement | undefined;
+  const opcoesDe = async (rotulo: string) => {
+    const s = seletor(rotulo);
+    expect(s, `seletor "${rotulo}" não apareceu`).toBeTruthy();
+    await act(async () => {
+      s!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    return Array.from(document.querySelectorAll('[role="option"]'));
+  };
+  const escolher = async (rotulo: string, opcao: string) => {
+    const alvo = (await opcoesDe(rotulo)).find((o) => o.textContent?.trim() === opcao);
+    expect(alvo, `opção "${opcao}" não apareceu`).toBeTruthy();
+    await act(async () => {
+      alvo!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  };
+
+  let atualizar: MockInstance<typeof chamadosService.atualizar>;
+
+  beforeEach(() => {
+    atualizar = vi.spyOn(chamadosService, 'atualizar').mockImplementation(async (_id, d) => {
+      const { versao_esperada: _v, ...campos } = d;
+      noServidor = { ...noServidor, ...campos, versao: (noServidor.versao ?? 0) + 1 } as Chamado;
+      return noServidor;
+    });
+  });
+
+  describe('o que cada um vê', () => {
+    it('o responsável é "Aguardando atribuição", e não "Sem atribuição"', async () => {
+      await montar(SOLICITANTE, NA_FILA);
+      expect(valorDe('Técnico Responsável')).toBe('Aguardando atribuição');
+      expect(host.textContent).not.toContain('Sem atribuição');
+    });
+
+    it('solicitante: lê, e não tem controle nenhum de atribuição ou atendimento', async () => {
+      await montar(SOLICITANTE, NA_FILA);
+      expect(textos()).not.toContain('Assumir');
+      expect(textos()).not.toContain('Editar Detalhes');
+      expect(acoesDeStatus()).toEqual([]);
+      expect(host.textContent).not.toContain('Ações Rápidas');
+    });
+
+    it('técnica da Qualidade: Assumir, e nenhuma ação de status', async () => {
+      await montar(TECNICA, NA_FILA);
+      expect(textos()).toContain('Assumir');
+      expect(acoesDeStatus()).toEqual([]);
+      expect(host.textContent).toContain('O atendimento começa depois que o chamado tiver um responsável.');
+    });
+
+    it('chamado da TI sem responsável: "Sem atribuição", e as ações de sempre', async () => {
+      await montar(ADMIN, { ...NA_FILA, setor_destino: SetorDestinoEnum.TI } as Partial<Chamado>);
+      expect(valorDe('Técnico Responsável')).toBe('Sem atribuição');
+      expect(host.textContent).not.toContain('Aguardando atribuição');
+      expect(textos()).not.toContain('Assumir');
+      expect(acoesDeStatus().length).toBeGreaterThan(0);
+    });
+
+    it('cancelado na fila: sem Assumir', async () => {
+      await montar(TECNICA, { ...NA_FILA, cancelado: true });
+      expect(textos()).not.toContain('Assumir');
+    });
+  });
+
+  describe('Assumir', () => {
+    it('atribui a quem clicou, com a versão da página; depois, o atendimento', async () => {
+      await montar(TECNICA, NA_FILA);
+      await clicar('Assumir');
+
+      expect(atualizar.mock.calls).toStrictEqual([
+        [1, { tecnico_responsavel_id: 7, versao_esperada: 3 }],
+      ]);
+      expect(atender).not.toHaveBeenCalled();
+      expect(valorDe('Técnico Responsável')).toContain('Ana da Qualidade');
+      expect(textos()).not.toContain('Assumir');
+      expect(acoesDeStatus()).toEqual(['Iniciar atendimento']);
+    });
+
+    /** Um colega assumiu antes: nada é gravado por cima, e nada é repetido. */
+    it('409 de versão: avisa, relê, mostra quem ficou, e não repete', async () => {
+      await montar(TECNICA, NA_FILA);
+      noServidor = { ...noServidor, tecnico_responsavel_id: 1, versao: 4 } as Chamado;
+      atualizar.mockRejectedValueOnce({
+        response: {
+          status: 409,
+          data: { detail: 'versão', codigo: 'versao_desatualizada', versao_atual: 4 },
+        },
+      });
+      await clicar('Assumir');
+
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(MENSAGEM_CONFLITO_DE_VERSAO);
+      expect(atualizar).toHaveBeenCalledTimes(1);
+      expect(valorDe('Técnico Responsável')).toContain('rickelme');
+      expect(textos()).not.toContain('Assumir');
+    });
+  });
+
+  describe('a edição', () => {
+    const editar = async () => {
+      await montar(ADMIN, NA_FILA);
+      await clicar('Editar Detalhes');
+    };
+
+    it('o seletor do responsável parte de "Aguardando atribuição", que não se escolhe', async () => {
+      await editar();
+      expect(seletor('Técnico responsável')?.textContent).toContain('Aguardando atribuição');
+      const opcoes = await opcoesDe('Técnico responsável');
+      expect(opcoes.map((o) => o.textContent?.trim())).toEqual([
+        'Aguardando atribuição',
+        'Ana da Qualidade',
+        'rickelme',
+      ]);
+      expect(opcoes[0].getAttribute('aria-disabled')).toBe('true');
+      expect(opcoes.map((o) => o.textContent?.trim())).not.toContain('Sem atribuição');
+    });
+
+    /** Editar outro campo não atribui ninguém: o chamado segue na fila. */
+    it('mudar só a prioridade: o PUT não leva responsável nem status', async () => {
+      await editar();
+      await escolher('Prioridade', 'Alta');
+      await clicar('Salvar');
+      expect(atualizar.mock.calls).toStrictEqual([[1, { prioridade: 'Alta', versao_esperada: 3 }]]);
+      expect(valorDe('Técnico Responsável')).toBe('Aguardando atribuição');
+    });
+
+    it('sem mudança: nenhuma escrita, e ninguém vira responsável', async () => {
+      await editar();
+      await clicar('Salvar');
+      expect(atualizar).not.toHaveBeenCalled();
+    });
+
+    it('o status fica travado enquanto não há responsável escolhido', async () => {
+      await editar();
+      expect(seletor('Status')?.disabled).toBe(true);
+      await escolher('Técnico responsável', 'Ana da Qualidade');
+      expect(seletor('Status')?.disabled).toBe(false);
+    });
+
+    it('atribuir pela edição leva só o responsável', async () => {
+      await editar();
+      await escolher('Técnico responsável', 'Ana da Qualidade');
+      await clicar('Salvar');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [1, { tecnico_responsavel_id: 7, versao_esperada: 3 }],
+      ]);
+      expect(valorDe('Técnico Responsável')).toContain('Ana da Qualidade');
+    });
+
+    it('atribuir e iniciar na mesma edição: os dois campos numa escrita só', async () => {
+      await editar();
+      await escolher('Técnico responsável', 'Ana da Qualidade');
+      await escolher('Status', 'Em Andamento');
+      await clicar('Salvar');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [1, { status: StatusEnum.EM_ANDAMENTO, tecnico_responsavel_id: 7, versao_esperada: 3 }],
+      ]);
+    });
+
+    /** Redistribuição: o atribuído muda de mão, e não volta à fila. */
+    it('chamado já atribuído: redistribuir leva o novo, e a fila não é opção', async () => {
+      await montar(ADMIN, { status: StatusEnum.ABERTO });
+      await clicar('Editar Detalhes');
+      const opcoes = (await opcoesDe('Técnico responsável')).map((o) => o.textContent?.trim());
+      expect(opcoes).toEqual(['Ana da Qualidade', 'rickelme']);
+      await act(async () => {
+        Array.from(document.querySelectorAll('[role="option"]'))
+          .find((o) => o.textContent?.trim() === 'rickelme')!
+          .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+      await clicar('Salvar');
+      expect(atualizar.mock.calls).toStrictEqual([
+        [1, { tecnico_responsavel_id: 1, versao_esperada: 3 }],
+      ]);
+    });
+  });
+});

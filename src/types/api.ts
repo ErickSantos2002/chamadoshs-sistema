@@ -243,8 +243,9 @@ export interface ChamadoCreateQualidade {
   descricao: string;
   prioridade: PrioridadeEnum;
   solicitante_id: number;
-  /** Obrigatório, e um dos que `GET /chamados/atendentes-qualidade` devolve. */
-  tecnico_responsavel_id: number;
+  // Sem `tecnico_responsavel_id` desde a 1.9.0: o chamado nasce aguardando
+  // atribuição, e a equipe da Qualidade define o responsável depois. A API
+  // (API-14) ainda aceita o campo, só para o front de antes.
 }
 
 /** Quem pode atender um chamado da Qualidade: só o que o seletor precisa. */

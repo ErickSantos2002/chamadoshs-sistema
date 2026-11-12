@@ -188,4 +188,36 @@ describe('cartão do quadro — o setor de destino', () => {
       expect(html).toContain(texto);
     }
   });
+
+  /**
+   * A fila da Qualidade (1.9.0): o chamado nasce sem responsável, e o selo
+   * diz à equipe o que falta distribuir.
+   */
+  describe('aguardando atribuição', () => {
+    const SELO = 'Aguardando atribuição';
+
+    it('Qualidade sem responsável ganha o selo, fora do botão', () => {
+      const html = comSetor({ setor_destino: 'QUALIDADE', tecnico_responsavel_id: null });
+      expect(html).toContain(SELO);
+      const botao = html.slice(html.indexOf('<button'), html.indexOf('</button>'));
+      expect(botao).not.toContain(SELO);
+    });
+
+    it('Qualidade com responsável não ganha', () => {
+      expect(comSetor({ setor_destino: 'QUALIDADE' })).not.toContain(SELO);
+    });
+
+    it('TI sem responsável não ganha: lá é o estado comum', () => {
+      expect(comSetor({ setor_destino: 'TI', tecnico_responsavel_id: null })).not.toContain(SELO);
+      expect(comSetor({ tecnico_responsavel_id: null })).not.toContain(SELO);
+    });
+
+    it('cancelado e arquivado não pedem atribuição', () => {
+      for (const extra of [{ cancelado: true }, { arquivado: true }]) {
+        expect(
+          comSetor({ setor_destino: 'QUALIDADE', tecnico_responsavel_id: null, ...extra })
+        ).not.toContain(SELO);
+      }
+    });
+  });
 });

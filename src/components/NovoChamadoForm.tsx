@@ -5,7 +5,6 @@ import { ehAdministrador } from '../lib/permissoes';
 import { useChamados } from '../hooks/useChamados';
 import { slaConfigsService } from '../services/chamadoshsapi';
 import {
-  AtendenteQualidade,
   Chamado,
   PrioridadeEnum,
   SLAConfig,
@@ -34,6 +33,7 @@ import {
 import {
   DisponibilidadeQualidade,
   MENSAGEM_SEM_ATENDENTES,
+  ORIENTACAO_DA_QUALIDADE,
   consultarQualidade,
   interpretarErroDaQualidade,
   montarCorpoQualidade,
@@ -117,19 +117,23 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
   // ── A Qualidade ──────────────────────────────────────────────────────
   //
   // A API decide se ela existe: a consulta de atendentes é a pergunta, e só
-  // `disponivel` libera o setor (ver `lib/qualidade`).
+  // `disponivel` libera o setor (ver `lib/qualidade`) — sem ninguém que
+  // atenda, a Qualidade fica desabilitada com o motivo, e a API recusaria a
+  // abertura de todo modo (409).
+  //
+  // Quem abre não escolhe o responsável (1.9.0): o chamado nasce aguardando
+  // atribuição, e a equipe da Qualidade o distribui. O campo saiu, e no lugar
+  // dele fica a orientação.
   //
   // O setor de atendimento é escolha de quem abre, e nasce sem nenhum
   // marcado (1.8.0): não há padrão, nem pelo perfil de quem abre, nem pela
   // categoria. Até a escolha, o formulário mostra só ela — os campos dependem
-  // do setor. Título, categoria e responsável ficam guardados ao trocar de
-  // setor: quem volta encontra o que digitou. Só o setor marcado decide o que
-  // vai no corpo.
+  // do setor. Título e categoria ficam guardados ao trocar de setor: quem
+  // volta encontra o que digitou. Só o setor marcado decide o que vai no
+  // corpo.
   const [setor, setSetor] = useState<SetorDestinoEnum | null>(null);
   const [disponibilidade, setDisponibilidade] =
     useState<DisponibilidadeQualidade>('verificando');
-  const [atendentes, setAtendentes] = useState<AtendenteQualidade[]>([]);
-  const [responsavelId, setResponsavelId] = useState<number | undefined>();
 
   const naQualidade = setor === SetorDestinoEnum.QUALIDADE;
   const idDoMotivo = useId();
@@ -144,7 +148,6 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
     const resposta = await consultarQualidade();
     if (minha !== consulta.current) return null;
     setDisponibilidade(resposta.estado);
-    setAtendentes(resposta.atendentes);
     return resposta;
   }, []);
 
@@ -180,8 +183,6 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       descricao,
       escolheSolicitante,
       solicitanteId,
-      responsavelId,
-      atendentes,
     });
     if (problema) {
       setErro(problema);
@@ -196,7 +197,6 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
         descricao,
         prioridade,
         solicitante_id: escolheSolicitante ? solicitanteId! : usuarioId,
-        tecnico_responsavel_id: responsavelId!,
       });
 
       aoCriar(await criarChamado(novo));
@@ -207,12 +207,9 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
       if (indisponivel) setDisponibilidade('indisponivel');
 
-      if (recarregarAtendentes) {
-        const resposta = await consultar();
-        if (resposta && !resposta.atendentes.some((a) => a.id === responsavelId)) {
-          setResponsavelId(undefined);
-        }
-      }
+      // A Qualidade pode ter ficado sem quem atenda: a consulta refeita
+      // desabilita o setor, com o motivo. Nada é reenviado.
+      if (recarregarAtendentes) await consultar();
     } finally {
       setSalvando(false);
     }
@@ -417,23 +414,14 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {naQualidade ? (
+              // No lugar do campo "Responsável" (até a 1.8.1): quem abre não
+              // escolhe mais quem atende. Texto, e não campo desabilitado —
+              // não há o que preencher, só o que saber.
               <div>
-                <RotuloDeCampo htmlFor="responsavel" obrigatorio>Responsável</RotuloDeCampo>
-                {/* Só quem a API devolveu, e nada escolhido de partida: atribuir a
-                    alguém é decisão de quem abre, e "Sem atribuição" a API recusa. */}
-                <Seletor
-                  id="responsavel"
-                  rotulo="Responsável"
-                  valor={responsavelId ? String(responsavelId) : ''}
-                  aoMudar={(v) => setResponsavelId(v ? Number(v) : undefined)}
-                  opcoes={[
-                    { valor: '', rotulo: 'Selecione o responsável' },
-                    ...atendentes.map((atendente) => ({
-                      valor: String(atendente.id),
-                      rotulo: atendente.nome,
-                    })),
-                  ]}
-                />
+                <p className="mb-1.5 text-sm font-medium text-conteudo">Responsável</p>
+                <p className="rounded-lg border border-borda bg-superficie-elevada px-3 py-2 text-sm text-conteudo-suave">
+                  {ORIENTACAO_DA_QUALIDADE}
+                </p>
               </div>
             ) : (
               <div>

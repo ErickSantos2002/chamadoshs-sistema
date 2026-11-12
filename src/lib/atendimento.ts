@@ -126,6 +126,36 @@ export function unirChamados(proprios: Chamado[], atribuidos: Chamado[]): Chamad
   return [...proprios, ...novos].sort((a, b) => b.id - a.id);
 }
 
+// ── A fila da Qualidade (1.9.0) ─────────────────────────────────────────
+//
+// O chamado da Qualidade nasce sem responsável, e a equipe o distribui.
+// "Aguardando atribuição" não é status: é a ausência de responsável num
+// chamado da Qualidade. Enquanto ela dura o atendimento não começa — a API
+// recusa a mudança de status com 409 (API-14) —, e por isso a tela troca as
+// ações de status pela atribuição. Na TI nada disso vale: lá o chamado sem
+// responsável sempre pôde ser atendido.
+
+export const ROTULO_AGUARDANDO_ATRIBUICAO = 'Aguardando atribuição';
+
+/** Chamado da Qualidade que ainda não tem responsável. */
+export function aguardaAtribuicao(
+  chamado: Pick<Chamado, 'setor_destino' | 'tecnico_responsavel_id'> | null | undefined
+): boolean {
+  return (
+    !!chamado &&
+    !chamado.tecnico_responsavel_id &&
+    setorDoChamado(chamado).setor === SetorDestinoEnum.QUALIDADE
+  );
+}
+
+/** O que mostrar no lugar do nome quando o chamado não tem responsável. */
+export function rotuloSemResponsavel(
+  chamado: Pick<Chamado, 'setor_destino' | 'tecnico_responsavel_id'>,
+  rotuloDaTI = 'Sem atribuição'
+): string {
+  return aguardaAtribuicao(chamado) ? ROTULO_AGUARDANDO_ATRIBUICAO : rotuloDaTI;
+}
+
 // ── Quem atende pela rota restrita ──────────────────────────────────────
 //
 // As seis condições, todas juntas. Nenhuma delas é "não ser da equipe": um
@@ -154,6 +184,33 @@ export function podeAtenderPelaRota(
     qualidade.disponibilidade === 'disponivel' &&
     qualidade.atendentes.some((a) => a.id === usuarioId) &&
     ehAtribuidoNaQualidade(chamado, usuarioId) &&
+    !chamado.cancelado &&
+    !chamado.arquivado
+  );
+}
+
+/**
+ * Quem pode ASSUMIR um chamado da fila: quem a API aceita como responsável —
+ * está na lista de atendentes (Técnico ativo da Qualidade) —, com a API que
+ * valida a troca. O administrador distribui pelo campo Responsável, mas não
+ * assume: ele não é elegível, e o PUT o recusaria com 400. O solicitante e o
+ * técnico de outro setor não estão na lista. A regra é da API; aqui a tela só
+ * deixa de oferecer o que ela recusaria.
+ */
+export function podeAssumir(
+  chamado: Pick<
+    Chamado,
+    'setor_destino' | 'tecnico_responsavel_id' | 'cancelado' | 'arquivado'
+  >,
+  usuarioId: number | undefined,
+  qualidade: QualidadeParaAtender
+): boolean {
+  return (
+    usuarioId !== undefined &&
+    aguardaAtribuicao(chamado) &&
+    qualidade.suporte === 'suportado' &&
+    qualidade.disponibilidade === 'disponivel' &&
+    qualidade.atendentes.some((a) => a.id === usuarioId) &&
     !chamado.cancelado &&
     !chamado.arquivado
   );
@@ -260,12 +317,16 @@ export function interpretarErroDoAtendimento(erro: unknown): {
 
 // ── A reatribuição na Qualidade ─────────────────────────────────────────
 //
-// Na Qualidade o responsável é obrigatório e vem da lista de atendentes. Não
-// há "Sem atribuição" (a API recusa `null` com 400), e quem já está no
-// chamado sem estar na lista — saiu do setor, foi desativado — continua
-// aparecendo como a escolha atual até alguém trocar de propósito. Tirá-lo da
-// lista faria o seletor mostrar outra pessoa, ou nada, e o próximo "Salvar"
-// trocaria o responsável sem ninguém ter pedido.
+// Na Qualidade o responsável vem da lista de atendentes. O chamado atribuído
+// não volta à fila: não há "Sem atribuição" para escolher (a API recusa
+// `null` com 400). Quem já está no chamado sem estar na lista — saiu do
+// setor, foi desativado — continua aparecendo como a escolha atual até alguém
+// trocar de propósito. Tirá-lo da lista faria o seletor mostrar outra pessoa,
+// ou nada, e o próximo "Salvar" trocaria o responsável sem ninguém ter pedido.
+//
+// O chamado que ainda aguarda atribuição (1.9.0) mostra isso como o valor
+// atual do seletor: uma opção que aparece e não se escolhe — escolher é
+// atribuir a alguém da lista.
 
 export const ROTULO_FORA_DOS_ATENDENTES = '(fora dos atendentes)';
 
@@ -282,9 +343,12 @@ export function opcoesDeResponsavelDaQualidade(
   atendentes: ReadonlyArray<{ id: number; nome: string }>,
   atualId: number | null | undefined,
   nomeDoAtual: string
-): Array<{ valor: string; rotulo: string }> {
+): Array<{ valor: string; rotulo: string; desabilitada?: boolean }> {
   const opcoes = atendentes.map((a) => ({ valor: String(a.id), rotulo: a.nome }));
-  if (atualId == null || atendentes.some((a) => a.id === atualId)) return opcoes;
+  if (atualId == null) {
+    return [{ valor: '', rotulo: ROTULO_AGUARDANDO_ATRIBUICAO, desabilitada: true }, ...opcoes];
+  }
+  if (atendentes.some((a) => a.id === atualId)) return opcoes;
   return [{ valor: String(atualId), rotulo: `${nomeDoAtual} ${ROTULO_FORA_DOS_ATENDENTES}` }, ...opcoes];
 }
 
@@ -296,7 +360,8 @@ export const MENSAGEM_ATRIBUICAO_MUDOU =
  * 400 é atendente que não existe ou deixou de ser elegível: a lista na tela
  * está velha e recarrega. 503 é a Qualidade desligada. 403 é do interceptor.
  * 409 de versão (FE-4): outra pessoa gravou antes — o chamado na tela está
- * velho e é relido; a troca não é repetida. 428: a versão não foi.
+ * velho e é relido; a troca não é repetida. 428: a versão não foi. Vale igual
+ * para "Assumir" (1.9.0), que é uma atribuição a si mesmo.
  */
 export function interpretarErroDaReatribuicao(erro: unknown): {
   mensagem: string | null;

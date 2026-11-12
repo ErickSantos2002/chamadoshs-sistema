@@ -13,6 +13,101 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
+## [1.9.0] — 2026-11-12
+
+Por Rickelme David. Branch `feat/distribuicao-qualidade-fe-7` (FE-7,
+distribuição interna dos chamados da Qualidade, com a API-14). Publicada em
+12/11/2026.
+
+### ⚠️ Requer ação no deploy
+
+- **API-14 antes deste front.** O corpo da abertura da Qualidade deixou de
+  levar `tecnico_responsavel_id`; a API-13 o exige, e responderia 422 a toda
+  abertura para a Qualidade. A ordem inversa é segura: a API-14 continua
+  aceitando o corpo do front 1.8.1, com o responsável.
+- Rebuild da imagem do front. Sem variável nova, sem migration.
+- Rollback do front para a 1.8.1 é seguro com a API-14 no ar: a abertura
+  volta a pedir o responsável, e os chamados que estiverem aguardando
+  atribuição aparecem nela como "Sem atribuição", com o seletor de
+  responsável da equipe funcionando. A 1.8.1 não esconde os botões de status
+  desses chamados; a API-14 recusa o clique com 409 e o motivo.
+
+### Changed
+
+- **Quem abre para a Qualidade não escolhe mais o responsável.** O campo
+  "Responsável" saiu da abertura; no lugar fica a orientação "A equipe da
+  Qualidade definirá o responsável." Descrição, Solicitante (para o
+  administrador humano) e Prioridade seguem como eram. O corpo enviado tem
+  quatro chaves — `setor_destino`, `descricao`, `prioridade`,
+  `solicitante_id` —, e `tecnico_responsavel_id` não existe nele. **A
+  abertura da TI não mudou**: mesmos campos, mesmo corpo, mesmas mensagens.
+- **A Qualidade sem ninguém que atenda continua desabilitada na abertura**,
+  com o motivo. Se a equipe ficar vazia entre a consulta e o envio, a API-14
+  recusa com 409 e a tela mostra a mensagem dela, refaz a consulta e trava o
+  envio da Qualidade; o texto digitado fica, e nada é reenviado nem vira TI.
+
+### Added
+
+- **"Aguardando atribuição".** O chamado da Qualidade sem responsável mostra
+  isso no cartão do quadro (selo), na janela do chamado e na página de
+  detalhes, no lugar de "Sem atribuição". Não é um status novo: é a ausência
+  de responsável num chamado da Qualidade (`aguardaAtribuicao`, em
+  `lib/atendimento`). Na TI nada muda — lá "Sem atribuição" segue o estado
+  comum, e o chamado pode ser atendido. O filtro "Sem responsável" do quadro
+  é o mesmo, e encontra a fila da Qualidade.
+- **Botão "Assumir"**, nas ações do chamado, para o técnico da Qualidade
+  (quem está em `GET /chamados/atendentes-qualidade`): atribui o chamado a
+  quem clicou, pelo `PUT`, com a versão do chamado na tela, sem mudar o
+  status. O administrador não assume — não é elegível como responsável na
+  API —, e distribui pelo campo Responsável.
+- **Atribuir e redistribuir** seguem pelo campo Responsável da janela e da
+  edição, só entre os atendentes da Qualidade. No chamado que aguarda
+  atribuição o seletor parte de "Aguardando atribuição", opção que aparece e
+  não se escolhe; no chamado atribuído ela não existe, e "Sem atribuição"
+  continua fora — o atribuído não volta à fila.
+- **Sem responsável, a tela não oferece início de atendimento.** As ações de
+  status dão lugar ao aviso e ao "Assumir"; na edição da página, o Status
+  fica travado até um responsável ser escolhido (atribuir e mudar o status
+  na mesma edição vai numa escrita só). Prioridade e os demais campos seguem
+  editáveis, e editar um deles não manda responsável. É cortesia da tela: a
+  regra é da API-14, que recusa a mudança de status sem responsável (409)
+  no `PUT` e em `PATCH /chamados/{id}/atendimento`.
+- **Conflito ao assumir ou atribuir (409 de versão):** outra pessoa gravou
+  antes. A tela avisa, relê o chamado e mostra quem ficou; a atribuição
+  **não é repetida** — a nova tentativa, se ainda couber, é um clique novo
+  com a versão nova. Sem resposta (timeout, rede, 5xx), a tela diz que não
+  confirmou, relê e não reenvia.
+- O solicitante e o usuário comum não ganham controle nenhum: sem "Assumir",
+  sem seletor de responsável, sem ações de status.
+
+### Fixed
+
+- **A dica do comentário interno dizia "equipe da TI" em chamado da
+  Qualidade.** O texto era um só para os dois setores, mas desde a API-13 o
+  interno é da equipe do setor do chamado: na Qualidade quem lê é a equipe
+  da Qualidade, e a TI não. No chamado da Qualidade a dica passa a dizer
+  "Visível só para administradores e para a equipe da Qualidade."; na TI,
+  segue como era. Só o texto mudou — quem vê e quem cria é regra da API.
+
+### Tests
+
+- Novos: a fila em `AcoesRapidas.test.tsx` (quem vê o quê, o corpo do
+  "Assumir", 409/428/404/400/503/sem resposta, a TI sem mudança),
+  `ChamadoDetalhes.qualidade.test.tsx` (página e edição na fila),
+  `ChamadoModal.test.tsx` (seletor na fila), `KanbanColumn.test.tsx` (selo),
+  `lib/atendimento.test.ts` (`aguardaAtribuicao`, `podeAssumir`,
+  `rotuloSemResponsavel`).
+- Mudaram de expectativa, por descreverem a regra antiga: os casos da
+  abertura da Qualidade que escolhiam o responsável
+  (`NovoChamadoForm.test.tsx`, `NovoChamadoForm.solicitante.test.tsx`,
+  `lib/qualidade.test.ts` — o corpo passa de cinco para quatro chaves, e
+  "Selecione o responsável." deixa de existir) e "sem responsável atual, nada
+  é inventado" em `lib/atendimento.test.ts` (o seletor ganha a opção
+  desabilitada "Aguardando atribuição"). Os casos da abertura da TI não
+  foram tocados.
+
+---
+
 ## [1.8.1] — 2026-11-11
 
 Por Rickelme David. Branch `fix/cache-index-1-8-1`. Publicada em 11/11/2026.

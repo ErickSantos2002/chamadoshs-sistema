@@ -4,7 +4,7 @@ import { chamadosService } from '../services/chamadoshsapi';
 import { PrioridadeEnum, SetorDestinoEnum } from '../types/api';
 import {
   MENSAGEM_INDISPONIVEL_NO_ENVIO,
-  MENSAGEM_RESPONSAVEL,
+  ORIENTACAO_DA_QUALIDADE,
   classificarFalha,
   consultarQualidade,
   interpretarErroDaQualidade,
@@ -50,7 +50,6 @@ describe('serviço', () => {
       descricao: 'Desvio na calibração da balança 3.',
       prioridade: PrioridadeEnum.MEDIA,
       solicitante_id: 7,
-      tecnico_responsavel_id: 21,
     });
     await chamadosService.criar(corpo);
     expect(post).toHaveBeenCalledWith('/chamados/', corpo);
@@ -251,20 +250,23 @@ describe('montarCorpoQualidade — só o que a Qualidade aceita', () => {
     descricao: '  Desvio na calibração da balança 3.  ',
     prioridade: PrioridadeEnum.MEDIA,
     solicitante_id: 7,
-    tecnico_responsavel_id: 21,
   });
 
   /**
    * A API recusa com 422 a PRESENÇA de `titulo` ou `categoria_id`, mesmo com
    * null. `undefined` o axios descartaria — mas a garantia não pode depender
    * de quem serializa: a chave simplesmente não existe.
+   *
+   * O responsável saiu do corpo na 1.9.0: quem abre não escolhe, e o chamado
+   * nasce aguardando atribuição. Até a 1.8.1 eram cinco chaves.
    */
-  it('exatamente as cinco chaves do contrato', () => {
+  it('exatamente as quatro chaves do contrato, sem responsável', () => {
     expect(Object.keys(corpo).sort()).toEqual(
-      ['descricao', 'prioridade', 'setor_destino', 'solicitante_id', 'tecnico_responsavel_id'].sort()
+      ['descricao', 'prioridade', 'setor_destino', 'solicitante_id'].sort()
     );
     expect('titulo' in corpo).toBe(false);
     expect('categoria_id' in corpo).toBe(false);
+    expect('tecnico_responsavel_id' in corpo).toBe(false);
   });
 
   it('o formato exato, com a descrição aparada', () => {
@@ -273,14 +275,25 @@ describe('montarCorpoQualidade — só o que a Qualidade aceita', () => {
       descricao: 'Desvio na calibração da balança 3.',
       prioridade: PrioridadeEnum.MEDIA,
       solicitante_id: 7,
-      tecnico_responsavel_id: 21,
     });
+  });
+
+  /** Um responsável que chegue de fora não passa: a função não o copia. */
+  it('um responsável passado por engano não entra no corpo', () => {
+    const comSobra = montarCorpoQualidade({
+      descricao: 'Desvio na calibração da balança 3.',
+      prioridade: PrioridadeEnum.MEDIA,
+      solicitante_id: 7,
+      tecnico_responsavel_id: 21,
+    } as Parameters<typeof montarCorpoQualidade>[0]);
+    expect(comSobra).not.toHaveProperty('tecnico_responsavel_id');
   });
 
   it('sobrevive à serialização sem as chaves proibidas', () => {
     const viagem = JSON.parse(JSON.stringify(corpo));
     expect(viagem).not.toHaveProperty('titulo');
     expect(viagem).not.toHaveProperty('categoria_id');
+    expect(viagem).not.toHaveProperty('tecnico_responsavel_id');
   });
 });
 
@@ -289,39 +302,28 @@ describe('validarQualidade — na ordem da tela', () => {
     descricao: 'Desvio na calibração da balança 3.',
     escolheSolicitante: false,
     solicitanteId: undefined as number | undefined,
-    responsavelId: 21 as number | undefined,
-    atendentes: ATENDENTES,
   };
 
-  it('tudo certo: nenhum problema', () => {
+  /** 1.9.0: descrição boa basta — não há responsável a escolher. */
+  it('tudo certo, sem responsável nenhum: nenhum problema', () => {
     expect(validarQualidade(ok)).toBeNull();
   });
 
   // As mesmas mensagens da TI, saídas da mesma função.
   it('descrição primeiro, com a mensagem de sempre', () => {
-    expect(validarQualidade({ ...ok, descricao: '   ', responsavelId: undefined })).toBe(
-      'Descrição é obrigatório.'
-    );
+    expect(validarQualidade({ ...ok, descricao: '   ' })).toBe('Descrição é obrigatório.');
     expect(validarQualidade({ ...ok, descricao: 'Parou de novo' })).toBe(
       'Descrição precisa de mais 7 caracteres.'
     );
   });
 
-  it('quem escolhe o solicitante e não escolheu: antes do responsável', () => {
-    expect(validarQualidade({ ...ok, escolheSolicitante: true, responsavelId: undefined })).toBe(
-      'Selecione o solicitante.'
-    );
+  it('quem escolhe o solicitante e não escolheu', () => {
+    expect(validarQualidade({ ...ok, escolheSolicitante: true })).toBe('Selecione o solicitante.');
+    expect(validarQualidade({ ...ok, escolheSolicitante: true, solicitanteId: 8 })).toBeNull();
   });
 
-  it('sem responsável: "Selecione o responsável."', () => {
-    expect(MENSAGEM_RESPONSAVEL).toBe('Selecione o responsável.');
-    expect(validarQualidade({ ...ok, responsavelId: undefined })).toBe(MENSAGEM_RESPONSAVEL);
-  });
-
-  /** Um id que não está na lista carregada não é escolha válida. */
-  it('responsável fora da lista carregada também é recusado', () => {
-    expect(validarQualidade({ ...ok, responsavelId: 999 })).toBe(MENSAGEM_RESPONSAVEL);
-    expect(validarQualidade({ ...ok, atendentes: [] })).toBe(MENSAGEM_RESPONSAVEL);
+  it('a orientação que ocupa o lugar do campo', () => {
+    expect(ORIENTACAO_DA_QUALIDADE).toBe('A equipe da Qualidade definirá o responsável.');
   });
 });
 
@@ -337,7 +339,17 @@ describe('interpretarErroDaQualidade — o erro do envio', () => {
     });
   });
 
-  it('400: o detail da API, e a lista recarrega', () => {
+  /** API-14: a Qualidade ficou sem ninguém elegível entre a consulta e o envio. */
+  it('409 sem técnicos: o detail da API, e a consulta é refeita', () => {
+    const detail = 'Não há técnico da Qualidade disponível para receber chamados no momento';
+    expect(interpretarErroDaQualidade(erroHttp(409, detail))).toEqual({
+      mensagem: detail,
+      recarregarAtendentes: true,
+      indisponivel: false,
+    });
+  });
+
+  it('400: o detail da API, e a consulta é refeita', () => {
     expect(
       interpretarErroDaQualidade(erroHttp(400, 'Atendente não é elegível para a Qualidade'))
     ).toEqual({
@@ -347,11 +359,14 @@ describe('interpretarErroDaQualidade — o erro do envio', () => {
     });
   });
 
-  it('422: o texto que o interceptor já normalizou', () => {
+  it('422: o texto que o interceptor já normalizou, sem refazer a consulta', () => {
     expect(
       interpretarErroDaQualidade(erroHttp(422, 'descricao: String should have at least 20 characters'))
-        .mensagem
-    ).toBe('descricao: String should have at least 20 characters');
+    ).toEqual({
+      mensagem: 'descricao: String should have at least 20 characters',
+      recarregarAtendentes: false,
+      indisponivel: false,
+    });
   });
 
   it('sem detail: a mensagem genérica de sempre', () => {

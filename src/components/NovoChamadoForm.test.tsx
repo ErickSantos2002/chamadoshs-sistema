@@ -499,21 +499,6 @@ const marcar = async (rotulo: string) => {
   });
 };
 
-/** As opções de um `Seletor`, lidas com a lista aberta e fechada em seguida. */
-const opcoesDo = async (id: string): Promise<string[]> => {
-  const gatilho = document.getElementById(id)!;
-  await act(async () => {
-    gatilho.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  });
-  const textos = Array.from(document.querySelectorAll('[role="option"]')).map(
-    (o) => o.textContent?.trim() ?? ''
-  );
-  await act(async () => {
-    gatilho.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  });
-  return textos;
-};
-
 const corpoEnviado = () => criar.mock.calls[criar.mock.calls.length - 1][0];
 
 describe('disponibilidade — o que a consulta decide', () => {
@@ -761,33 +746,40 @@ describe('modo Qualidade — os campos', () => {
     expect(document.body.textContent).not.toContain('Você fica como técnico responsável.');
   });
 
-  it('descrição, prioridade e responsável na tela; prioridade nasce Média', async () => {
+  it('descrição e prioridade na tela; prioridade nasce Média', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
     expect(document.getElementById('descricao')).toBeTruthy();
     expect(document.getElementById('prioridade')?.textContent).toContain('Média');
-    expect(document.getElementById('responsavel')).toBeTruthy();
   });
 
-  it('responsável: só os atendentes da API, sem "Sem atribuição", sem escolha automática', async () => {
-    await montar(USUARIO);
-    await marcar('Qualidade');
-    expect(document.getElementById('responsavel')?.textContent).toContain(
-      'Selecione o responsável'
-    );
-    const opcoes = await opcoesDo('responsavel');
-    expect(opcoes).not.toContain('Sem atribuição');
-    expect(opcoes.filter((o) => o !== 'Selecione o responsável')).toEqual([
-      'Ana Qualidade',
-      'Bruno Qualidade',
-    ]);
+  /**
+   * 1.9.0: quem abre não escolhe o responsável. O campo saiu — não há
+   * seletor, nem rótulo apontando para um —, e os nomes da equipe não
+   * aparecem para quem abre.
+   */
+  it('nenhum seletor de responsável, para nenhum perfil', async () => {
+    for (const quem of [USUARIO, TECNICO, ADMIN]) {
+      await remontar(quem);
+      await marcar('Qualidade');
+      const papel = quem.user!.role;
+      expect(document.getElementById('responsavel'), papel).toBeNull();
+      expect(document.querySelector('label[for="responsavel"]'), papel).toBeNull();
+      expect(document.body.textContent, papel).not.toContain('Selecione o responsável');
+      expect(document.body.textContent, papel).not.toContain('Ana Qualidade');
+      expect(document.body.textContent, papel).not.toContain('Bruno Qualidade');
+    }
   });
 
-  it('o rótulo visível aponta para o seletor de responsável', async () => {
+  it('no lugar do campo, a orientação', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
-    const rotulo = document.querySelector('label[for="responsavel"]');
-    expect(rotulo?.textContent).toContain('Responsável');
+    expect(document.body.textContent).toContain('A equipe da Qualidade definirá o responsável.');
+  });
+
+  it('a orientação é da Qualidade: na TI ela não aparece', async () => {
+    await montar(USUARIO);
+    expect(document.body.textContent).not.toContain('definirá o responsável');
   });
 
   // T-2: a mesma regra da TI — a criação da Qualidade passa pela mesma
@@ -809,11 +801,10 @@ describe('modo Qualidade — o corpo enviado', () => {
     qualidadeDisponivel();
   });
 
-  it('Usuario: as cinco chaves do contrato, sem título nem categoria', async () => {
+  it('Usuario: as quatro chaves do contrato, sem título, categoria nem responsável', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
     await digitar('descricao', DESCRICAO_Q);
-    await escolher('responsavel', 'Bruno Qualidade');
     await enviar();
 
     expect(corpoEnviado()).toStrictEqual({
@@ -821,18 +812,17 @@ describe('modo Qualidade — o corpo enviado', () => {
       descricao: DESCRICAO_Q,
       prioridade: PrioridadeEnum.MEDIA,
       solicitante_id: 7,
-      tecnico_responsavel_id: 22,
     });
     expect('titulo' in corpoEnviado()).toBe(false);
     expect('categoria_id' in corpoEnviado()).toBe(false);
+    expect('tecnico_responsavel_id' in corpoEnviado()).toBe(false);
   });
 
-  it('Administrador escolhe o solicitante', async () => {
+  it('Administrador escolhe o solicitante, e não o responsável', async () => {
     await montar(ADMIN);
     await marcar('Qualidade');
     await digitar('descricao', DESCRICAO_Q);
     await escolher('solicitante', 'Lidisay');
-    await escolher('responsavel', 'Ana Qualidade');
     await escolher('prioridade', PrioridadeEnum.ALTA);
     await enviar();
 
@@ -841,19 +831,26 @@ describe('modo Qualidade — o corpo enviado', () => {
       descricao: DESCRICAO_Q,
       prioridade: PrioridadeEnum.ALTA,
       solicitante_id: 8,
-      tecnico_responsavel_id: 21,
     });
   });
 
-  /** T-2: o Técnico abre para si, como na TI — é o que a API grava. */
-  it('Técnico manda o próprio id, sem seletor', async () => {
+  /**
+   * T-2: o Técnico abre para si, como na TI — é o que a API grava. E não
+   * vira responsável do que abriu: na TI o id dele ia no corpo (dívida
+   * registrada); na Qualidade, nem isso.
+   */
+  it('Técnico manda o próprio id como solicitante, e não se atribui', async () => {
     await montar(TECNICO);
     await marcar('Qualidade');
     await digitar('descricao', DESCRICAO_Q);
     expect(document.getElementById('solicitante')).toBeNull();
-    await escolher('responsavel', 'Ana Qualidade');
     await enviar();
-    expect(corpoEnviado()).toMatchObject({ solicitante_id: 3, tecnico_responsavel_id: 21 });
+    expect(corpoEnviado()).toStrictEqual({
+      setor_destino: 'QUALIDADE',
+      descricao: DESCRICAO_Q,
+      prioridade: PrioridadeEnum.MEDIA,
+      solicitante_id: 3,
+    });
   });
 
   it('título e categoria digitados antes na TI não vão junto', async () => {
@@ -861,10 +858,9 @@ describe('modo Qualidade — o corpo enviado', () => {
     await preencherTI();
     await escolher('categoria', 'Impressoras');
     await marcar('Qualidade');
-    await escolher('responsavel', 'Ana Qualidade');
     await enviar();
     expect(Object.keys(corpoEnviado()).sort()).toEqual(
-      ['descricao', 'prioridade', 'setor_destino', 'solicitante_id', 'tecnico_responsavel_id'].sort()
+      ['descricao', 'prioridade', 'setor_destino', 'solicitante_id'].sort()
     );
   });
 
@@ -872,7 +868,6 @@ describe('modo Qualidade — o corpo enviado', () => {
     await montar(USUARIO);
     await marcar('Qualidade');
     await digitar('descricao', DESCRICAO_Q);
-    await escolher('responsavel', 'Ana Qualidade');
     await enviar();
     expect(aoCriar).toHaveBeenCalledWith(CRIADO);
     expect(naLista[0]).toBe(99);
@@ -888,27 +883,28 @@ describe('modo Qualidade — validação', () => {
     await montar(USUARIO);
     await marcar('Qualidade');
     await digitar('descricao', 'Parou de novo');
-    await escolher('responsavel', 'Ana Qualidade');
     await enviar();
     expect(mensagem()).toBe('Descrição precisa de mais 7 caracteres.');
     expect(criar).not.toHaveBeenCalled();
   });
 
-  it('sem responsável: "Selecione o responsável."', async () => {
+  /** 1.9.0: não há mais "Selecione o responsável." — a descrição basta. */
+  it('descrição boa basta: abre sem pedir responsável', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
     await digitar('descricao', DESCRICAO_Q);
     await enviar();
-    expect(mensagem()).toBe('Selecione o responsável.');
-    expect(criar).not.toHaveBeenCalled();
+    expect(mensagem()).toBeNull();
+    expect(criar).toHaveBeenCalledTimes(1);
   });
 
-  it('a equipe sem solicitante: antes do responsável', async () => {
+  it('o administrador sem solicitante: "Selecione o solicitante."', async () => {
     await montar(ADMIN);
     await marcar('Qualidade');
     await digitar('descricao', DESCRICAO_Q);
     await enviar();
     expect(mensagem()).toBe('Selecione o solicitante.');
+    expect(criar).not.toHaveBeenCalled();
   });
 });
 
@@ -934,21 +930,12 @@ describe('alternância entre TI e Qualidade', () => {
     expect(document.getElementById('categoria')?.textContent).toContain('Impressoras');
   });
 
-  it('o responsável escolhido espera na Qualidade', async () => {
-    await montar(USUARIO);
-    await marcar('Qualidade');
-    await escolher('responsavel', 'Bruno Qualidade');
-    await marcar('TI');
-    await marcar('Qualidade');
-    expect(document.getElementById('responsavel')?.textContent).toContain('Bruno Qualidade');
-  });
-
   it('trocar de setor apaga a mensagem de erro', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
-    await digitar('descricao', DESCRICAO_Q);
+    await digitar('descricao', 'Parou de novo');
     await enviar();
-    expect(mensagem()).toBe('Selecione o responsável.');
+    expect(mensagem()).toBe('Descrição precisa de mais 7 caracteres.');
     await marcar('TI');
     expect(mensagem()).toBeNull();
   });
@@ -957,7 +944,6 @@ describe('alternância entre TI e Qualidade', () => {
     await montar(USUARIO);
     await preencherTI();
     await marcar('Qualidade');
-    await escolher('responsavel', 'Ana Qualidade');
     await marcar('TI');
     await enviar();
     expect(corpoEnviado()).toStrictEqual({
@@ -977,41 +963,80 @@ describe('modo Qualidade — erros do envio', () => {
     qualidadeDisponivel();
   });
 
+  const SEM_TECNICOS = 'Não há técnico da Qualidade disponível para receber chamados no momento';
+
   const prontoParaEnviar = async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
     await digitar('descricao', DESCRICAO_Q);
-    await escolher('responsavel', 'Bruno Qualidade');
   };
 
-  it('400: mostra o detail, recarrega a lista e guarda o texto', async () => {
-    criar.mockRejectedValueOnce(erroHttp(400, 'Atendente não é elegível para a Qualidade'));
+  /**
+   * API-14: a Qualidade ficou sem ninguém elegível entre a consulta e o
+   * envio. A mensagem é a da API; a consulta refeita desabilita o setor, com
+   * o motivo; o texto fica, e nada é reenviado — nem para a TI.
+   */
+  it('409 sem técnicos: o detail, a consulta refeita, o texto guardado e o envio travado', async () => {
+    criar.mockRejectedValueOnce(erroHttp(409, SEM_TECNICOS));
     await prontoParaEnviar();
-    atendentes.mockResolvedValue([ATENDENTES[0]]);
+    atendentes.mockResolvedValue([]);
     await enviar();
 
-    expect(mensagem()).toBe('Atendente não é elegível para a Qualidade');
+    expect(mensagem()).toBe(SEM_TECNICOS);
     expect(atendentes).toHaveBeenCalledTimes(2);
     expect((document.getElementById('descricao') as HTMLTextAreaElement).value).toBe(DESCRICAO_Q);
+    expect(radio('Qualidade')?.disabled).toBe(true);
+    expect(document.body.textContent).toContain('Nenhum atendente da Qualidade cadastrado');
+
+    expect(botao('Abrir chamado')?.disabled).toBe(true);
+    await enviar();
+    expect(criar).toHaveBeenCalledTimes(1);
+    expect(corpoEnviado().setor_destino).toBe('QUALIDADE');
   });
 
-  /** O escolhido saiu da lista nova: a escolha cai e precisa ser refeita. */
-  it('400: escolha que saiu da lista precisa ser refeita', async () => {
-    criar.mockRejectedValueOnce(erroHttp(400, 'Atendente não é elegível para a Qualidade'));
+  it('409 sem técnicos: a TI abre em seguida, por escolha, com o texto guardado', async () => {
+    criar.mockRejectedValueOnce(erroHttp(409, SEM_TECNICOS));
+    await montar(USUARIO);
+    await preencherTI();
+    await marcar('Qualidade');
+    atendentes.mockResolvedValue([]);
+    await enviar();
+
+    await marcar('TI');
+    await enviar();
+    expect(criar).toHaveBeenCalledTimes(2);
+    expect(corpoEnviado()).toMatchObject({
+      setor_destino: 'TI',
+      titulo: 'Impressora do RH sem papel',
+      descricao: DESCRICAO_OK,
+    });
+  });
+
+  /** A equipe voltou a ter gente: a consulta refeita deixa a Qualidade de pé. */
+  it('409 e a consulta refeita ainda traz atendentes: nada trava, e nada é repetido', async () => {
+    criar.mockRejectedValueOnce(erroHttp(409, SEM_TECNICOS));
     await prontoParaEnviar();
-    atendentes.mockResolvedValue([ATENDENTES[0]]);
     await enviar();
 
-    expect(document.getElementById('responsavel')?.textContent).toContain(
-      'Selecione o responsável'
-    );
-    await enviar();
-    expect(mensagem()).toBe('Selecione o responsável.');
+    expect(mensagem()).toBe(SEM_TECNICOS);
     expect(criar).toHaveBeenCalledTimes(1);
+    expect(radio('Qualidade')?.disabled).toBe(false);
+    expect(botao('Abrir chamado')?.disabled).toBe(false);
 
-    await escolher('responsavel', 'Ana Qualidade');
+    // A nova tentativa é um clique novo.
     await enviar();
-    expect(corpoEnviado()).toMatchObject({ tecnico_responsavel_id: 21 });
+    expect(criar).toHaveBeenCalledTimes(2);
+  });
+
+  it('400: mostra o detail, refaz a consulta e guarda o texto', async () => {
+    criar.mockRejectedValueOnce(erroHttp(400, 'Solicitante não encontrado'));
+    await prontoParaEnviar();
+    await enviar();
+
+    expect(mensagem()).toBe('Solicitante não encontrado');
+    expect(atendentes).toHaveBeenCalledTimes(2);
+    expect(criar).toHaveBeenCalledTimes(1);
+    expect((document.getElementById('descricao') as HTMLTextAreaElement).value).toBe(DESCRICAO_Q);
   });
 
   it('422: o texto já normalizado pelo interceptor', async () => {
@@ -1021,6 +1046,7 @@ describe('modo Qualidade — erros do envio', () => {
     await prontoParaEnviar();
     await enviar();
     expect(mensagem()).toBe('descricao: String should have at least 20 characters');
+    expect(atendentes).toHaveBeenCalledTimes(1);
   });
 
   /**
@@ -1053,7 +1079,6 @@ describe('modo Qualidade — erros do envio', () => {
     await montar(USUARIO);
     await preencherTI();
     await marcar('Qualidade');
-    await escolher('responsavel', 'Bruno Qualidade');
     await enviar();
 
     await marcar('TI');
@@ -1069,8 +1094,8 @@ describe('modo Qualidade — erros do envio', () => {
     expect(corpoEnviado().setor_destino).toBe('TI');
   });
 
-  it('400 que recarrega para 503: o envio da Qualidade trava sem virar TI', async () => {
-    criar.mockRejectedValueOnce(erroHttp(400, 'Atendente não encontrado'));
+  it('409 que recarrega para 503: o envio da Qualidade trava sem virar TI', async () => {
+    criar.mockRejectedValueOnce(erroHttp(409, SEM_TECNICOS));
     await prontoParaEnviar();
     atendentes.mockRejectedValue(erroHttp(503));
     await enviar();
