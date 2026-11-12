@@ -31,8 +31,7 @@ export interface VersaoNovidade {
 export const NOVIDADES: VersaoNovidade[] = [
   {
     versao: '1.9.0',
-    // Data da preparação: trocar pela data da publicação ao subir.
-    data: '2026-11-11',
+    data: '2026-11-12',
     itens: [
       {
         tipo: 'melhoria',

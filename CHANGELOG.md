@@ -13,12 +13,11 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [1.9.0] — não publicada
+## [1.9.0] — 2026-11-12
 
 Por Rickelme David. Branch `feat/distribuicao-qualidade-fe-7` (FE-7,
-distribuição interna dos chamados da Qualidade, com a API-14). Preparada em
-11/11/2026; a data do aviso de novidades (`src/data/novidades.ts`) é a da
-preparação, e deve ser trocada pela da publicação.
+distribuição interna dos chamados da Qualidade, com a API-14). Publicada em
+12/11/2026.
 
 ### ⚠️ Requer ação no deploy
 
