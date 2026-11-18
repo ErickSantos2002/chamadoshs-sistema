@@ -234,12 +234,17 @@ export interface ChamadoCreate {
 /**
  * Chamado novo para a Qualidade — `ChamadoCreateQualidade` da API.
  *
- * Sem `titulo` e sem `categoria_id`, e não por omissão: a API recusa com 422
- * a PRESENÇA dessas chaves, até com `null`. O título é gerado da descrição.
- * O corpo sai de `montarCorpoQualidade`, que nunca as cria.
+ * Sem `categoria_id`, e não por omissão: a API recusa com 422 a PRESENÇA
+ * dessa chave, até com `null`. O corpo sai de `montarCorpoQualidade`, que
+ * nunca a cria.
+ *
+ * O título vai digitado desde a 1.10.0 (API-16). A API ainda o aceita
+ * ausente, e então o gera da descrição — o front de antes —, mas recusa
+ * `null`: aqui ele é sempre texto.
  */
 export interface ChamadoCreateQualidade {
   setor_destino: SetorDestinoEnum.QUALIDADE;
+  titulo: string;
   descricao: string;
   prioridade: PrioridadeEnum;
   solicitante_id: number;

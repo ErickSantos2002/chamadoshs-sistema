@@ -407,17 +407,18 @@ describe('abertura TI — validação, na ordem', () => {
     expect(mensagem()).toBe('Descrição é obrigatório.');
   });
 
-  it('o administrador sem solicitante: "Selecione o solicitante." depois dos textos', async () => {
+  it('o administrador sem escolher solicitante: os textos são conferidos, e ele abre para si', async () => {
     await montar(ADMIN);
     await digitar('titulo', 'Impressor');
     await digitar('descricao', DESCRICAO_OK);
     await enviar();
     expect(mensagem()).toBe('Título precisa de mais 1 caractere.');
+    expect(criar).not.toHaveBeenCalled();
 
     await digitar('titulo', 'Impressora do RH sem papel');
     await enviar();
-    expect(mensagem()).toBe('Selecione o solicitante.');
-    expect(criar).not.toHaveBeenCalled();
+    expect(mensagem()).toBeNull();
+    expect(corpoEnviado().solicitante_id).toBe(1);
   });
 });
 
@@ -482,6 +483,7 @@ const ATENDENTES = [
 ];
 
 const DESCRICAO_Q = 'Desvio na calibração da balança 3 do laboratório.';
+const TITULO_Q = 'Balança 3 do laboratório descalibrada';
 
 const qualidadeDisponivel = (lista = ATENDENTES) => atendentes.mockResolvedValue(lista);
 
@@ -729,7 +731,7 @@ describe('TI com a Qualidade disponível — o corpo não muda', () => {
     expect(mensagem()).toBe('Título precisa de mais 1 caractere.');
     await digitar('titulo', 'Impressora do RH sem papel');
     await enviar();
-    expect(mensagem()).toBe('Selecione o solicitante.');
+    expect(mensagem()).toBeNull();
   });
 });
 
@@ -738,10 +740,18 @@ describe('modo Qualidade — os campos', () => {
     qualidadeDisponivel();
   });
 
-  it('sem título, sem categoria e sem a dica da TI', async () => {
+  /** 1.10.0: o título é dos dois setores, com o mesmo teto e antes da descrição. */
+  it('com título, obrigatório e antes da descrição; sem categoria e sem a dica da TI', async () => {
     await montar(TECNICO);
     await marcar('Qualidade');
-    expect(document.getElementById('titulo')).toBeNull();
+    const titulo = document.getElementById('titulo') as HTMLInputElement;
+    const descricao = document.getElementById('descricao')!;
+    expect(titulo.required).toBe(true);
+    expect(titulo.maxLength).toBe(200);
+    expect(titulo.placeholder).toBe('Ex: Balança da linha 3 descalibrada');
+    expect(
+      titulo.compareDocumentPosition(descricao) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
     expect(document.getElementById('categoria')).toBeNull();
     expect(document.body.textContent).not.toContain('Você fica como técnico responsável.');
   });
@@ -801,19 +811,20 @@ describe('modo Qualidade — o corpo enviado', () => {
     qualidadeDisponivel();
   });
 
-  it('Usuario: as quatro chaves do contrato, sem título, categoria nem responsável', async () => {
+  it('Usuario: as cinco chaves do contrato, com o título e sem categoria nem responsável', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', DESCRICAO_Q);
     await enviar();
 
     expect(corpoEnviado()).toStrictEqual({
       setor_destino: 'QUALIDADE',
+      titulo: TITULO_Q,
       descricao: DESCRICAO_Q,
       prioridade: PrioridadeEnum.MEDIA,
       solicitante_id: 7,
     });
-    expect('titulo' in corpoEnviado()).toBe(false);
     expect('categoria_id' in corpoEnviado()).toBe(false);
     expect('tecnico_responsavel_id' in corpoEnviado()).toBe(false);
   });
@@ -821,6 +832,7 @@ describe('modo Qualidade — o corpo enviado', () => {
   it('Administrador escolhe o solicitante, e não o responsável', async () => {
     await montar(ADMIN);
     await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', DESCRICAO_Q);
     await escolher('solicitante', 'Lidisay');
     await escolher('prioridade', PrioridadeEnum.ALTA);
@@ -828,6 +840,7 @@ describe('modo Qualidade — o corpo enviado', () => {
 
     expect(corpoEnviado()).toStrictEqual({
       setor_destino: 'QUALIDADE',
+      titulo: TITULO_Q,
       descricao: DESCRICAO_Q,
       prioridade: PrioridadeEnum.ALTA,
       solicitante_id: 8,
@@ -842,31 +855,44 @@ describe('modo Qualidade — o corpo enviado', () => {
   it('Técnico manda o próprio id como solicitante, e não se atribui', async () => {
     await montar(TECNICO);
     await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', DESCRICAO_Q);
     expect(document.getElementById('solicitante')).toBeNull();
     await enviar();
     expect(corpoEnviado()).toStrictEqual({
       setor_destino: 'QUALIDADE',
+      titulo: TITULO_Q,
       descricao: DESCRICAO_Q,
       prioridade: PrioridadeEnum.MEDIA,
       solicitante_id: 3,
     });
   });
 
-  it('título e categoria digitados antes na TI não vão junto', async () => {
+  it('o título digitado antes na TI vai junto; a categoria, não', async () => {
     await montar(USUARIO);
     await preencherTI();
     await escolher('categoria', 'Impressoras');
     await marcar('Qualidade');
     await enviar();
     expect(Object.keys(corpoEnviado()).sort()).toEqual(
-      ['descricao', 'prioridade', 'setor_destino', 'solicitante_id'].sort()
+      ['descricao', 'prioridade', 'setor_destino', 'solicitante_id', 'titulo'].sort()
     );
+    expect(corpoEnviado().titulo).toBe('Impressora do RH sem papel');
+  });
+
+  it('o título vai aparado', async () => {
+    await montar(USUARIO);
+    await marcar('Qualidade');
+    await digitar('titulo', '   ' + TITULO_Q + '  ');
+    await digitar('descricao', DESCRICAO_Q);
+    await enviar();
+    expect(corpoEnviado().titulo).toBe(TITULO_Q);
   });
 
   it('201: devolve o chamado e põe no topo da lista do contexto', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', DESCRICAO_Q);
     await enviar();
     expect(aoCriar).toHaveBeenCalledWith(CRIADO);
@@ -882,29 +908,75 @@ describe('modo Qualidade — validação', () => {
   it('descrição curta: a mensagem da TI', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', 'Parou de novo');
     await enviar();
     expect(mensagem()).toBe('Descrição precisa de mais 7 caracteres.');
     expect(criar).not.toHaveBeenCalled();
   });
 
-  /** 1.9.0: não há mais "Selecione o responsável." — a descrição basta. */
-  it('descrição boa basta: abre sem pedir responsável', async () => {
+  it('título só de espaços: "Título é obrigatório.", antes da descrição', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
+    await digitar('titulo', '     ');
+    await digitar('descricao', 'Parou de novo');
+    await enviar();
+    expect(mensagem()).toBe('Título é obrigatório.');
+    expect(criar).not.toHaveBeenCalled();
+  });
+
+  it('título curto: quantos caracteres faltam', async () => {
+    await montar(USUARIO);
+    await marcar('Qualidade');
+    await digitar('titulo', 'Balança 3');
+    await digitar('descricao', DESCRICAO_Q);
+    await enviar();
+    expect(mensagem()).toBe('Título precisa de mais 1 caractere.');
+    expect(criar).not.toHaveBeenCalled();
+  });
+
+  it('título vazio: o navegador barra antes, e nada é enviado', async () => {
+    await montar(USUARIO);
+    await marcar('Qualidade');
+    await digitar('descricao', DESCRICAO_Q);
+    await enviar();
+    expect(criar).not.toHaveBeenCalled();
+  });
+
+  it('título nos limites, 10 e 200, é enviado inteiro', async () => {
+    for (const tamanho of [10, 200]) {
+      await remontar(USUARIO);
+      await marcar('Qualidade');
+      await digitar('titulo', 't'.repeat(tamanho));
+      await digitar('descricao', DESCRICAO_Q);
+      await enviar();
+      expect(corpoEnviado().titulo, String(tamanho)).toBe('t'.repeat(tamanho));
+    }
+  });
+
+  /** 1.9.0: não há mais "Selecione o responsável." — título e descrição bastam. */
+  it('título e descrição bons bastam: abre sem pedir responsável', async () => {
+    await montar(USUARIO);
+    await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', DESCRICAO_Q);
     await enviar();
     expect(mensagem()).toBeNull();
     expect(criar).toHaveBeenCalledTimes(1);
   });
 
-  it('o administrador sem solicitante: "Selecione o solicitante."', async () => {
+  it('o administrador sem escolher solicitante abre para si, e o corpo segue o da Qualidade', async () => {
     await montar(ADMIN);
     await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', DESCRICAO_Q);
     await enviar();
-    expect(mensagem()).toBe('Selecione o solicitante.');
-    expect(criar).not.toHaveBeenCalled();
+    expect(mensagem()).toBeNull();
+    expect(corpoEnviado()).toMatchObject({
+      setor_destino: 'QUALIDADE',
+      titulo: TITULO_Q,
+      solicitante_id: 1,
+    });
   });
 });
 
@@ -913,13 +985,16 @@ describe('alternância entre TI e Qualidade', () => {
     qualidadeDisponivel();
   });
 
-  it('descrição e prioridade atravessam; título e categoria esperam na TI', async () => {
+  it('título, descrição e prioridade atravessam; a categoria espera na TI', async () => {
     await montar(USUARIO);
     await preencherTI();
     await escolher('categoria', 'Impressoras');
     await escolher('prioridade', PrioridadeEnum.ALTA);
 
     await marcar('Qualidade');
+    expect((document.getElementById('titulo') as HTMLInputElement).value).toBe(
+      'Impressora do RH sem papel'
+    );
     expect((document.getElementById('descricao') as HTMLTextAreaElement).value).toBe(DESCRICAO_OK);
     expect(document.getElementById('prioridade')?.textContent).toContain('Alta');
 
@@ -933,6 +1008,7 @@ describe('alternância entre TI e Qualidade', () => {
   it('trocar de setor apaga a mensagem de erro', async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', 'Parou de novo');
     await enviar();
     expect(mensagem()).toBe('Descrição precisa de mais 7 caracteres.');
@@ -968,6 +1044,7 @@ describe('modo Qualidade — erros do envio', () => {
   const prontoParaEnviar = async () => {
     await montar(USUARIO);
     await marcar('Qualidade');
+    await digitar('titulo', TITULO_Q);
     await digitar('descricao', DESCRICAO_Q);
   };
 

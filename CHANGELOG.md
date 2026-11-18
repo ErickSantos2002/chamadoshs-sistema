@@ -13,6 +13,37 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
+## [1.10.0] — 2026-11-18
+
+Por Rickelme David. Branch `feat/novo-chamado-solicitante-padrao` (título na
+abertura da Qualidade, com a API-16, e solicitante padrão). Ainda não
+publicada: a data acima e a do aviso de novidades são as da preparação, e
+devem ser trocadas pela da publicação.
+
+### ⚠️ Requer ação no deploy
+
+- **API-16 antes deste front.** A abertura para a Qualidade passa a mandar
+  `titulo`; a API anterior recusa o campo com 422. A ordem inversa é segura:
+  a API-16 aceita o corpo do front 1.9.0, sem título.
+- Rebuild da imagem do front. Sem variável nova, sem migration.
+- Rollback: voltar o front para a 1.9.0 antes de voltar a API.
+
+### Added
+
+- **Título na abertura para a Qualidade.** O campo é o mesmo da TI:
+  obrigatório, de 10 a 200 caracteres, antes da descrição. O que foi
+  digitado fica ao trocar de setor. O chamado da Qualidade deixa de ter o
+  título tirado do começo da descrição.
+
+### Changed
+
+- **O solicitante já vem preenchido com quem está abrindo.** Vale para o
+  administrador, o único perfil que escolhe o solicitante: o campo continua
+  editável para abrir em nome de outra pessoa, e a abertura seguinte volta
+  para quem abre. A opção "Selecione o solicitante" saiu.
+
+---
+
 ## [1.9.0] — 2026-11-12
 
 Por Rickelme David. Branch `feat/distribuicao-qualidade-fe-7` (FE-7,

@@ -30,6 +30,22 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.10.0',
+    data: '2026-11-18',
+    itens: [
+      {
+        tipo: 'novidade',
+        texto:
+          'Ao abrir um chamado para a Qualidade, agora você escreve o título, como já fazia nos chamados da TI. Antes, o título era tirado do começo da descrição.',
+      },
+      {
+        tipo: 'melhoria',
+        texto:
+          'Para administradores: na abertura de chamado, o campo Solicitante já vem preenchido com o seu nome. Troque quando for abrir o chamado em nome de outra pessoa.',
+      },
+    ],
+  },
+  {
     versao: '1.9.0',
     data: '2026-11-12',
     itens: [

@@ -47,6 +47,7 @@ describe('serviço', () => {
   it('a abertura da Qualidade usa o mesmo POST da TI', async () => {
     post.mockResolvedValue({ data: { id: 1 } } as never);
     const corpo = montarCorpoQualidade({
+      titulo: 'Balança 3 descalibrada',
       descricao: 'Desvio na calibração da balança 3.',
       prioridade: PrioridadeEnum.MEDIA,
       solicitante_id: 7,
@@ -247,31 +248,32 @@ describe('montarCorpoTI — o corpo de sempre', () => {
 
 describe('montarCorpoQualidade — só o que a Qualidade aceita', () => {
   const corpo = montarCorpoQualidade({
+    titulo: '  Balança 3 descalibrada  ',
     descricao: '  Desvio na calibração da balança 3.  ',
     prioridade: PrioridadeEnum.MEDIA,
     solicitante_id: 7,
   });
 
   /**
-   * A API recusa com 422 a PRESENÇA de `titulo` ou `categoria_id`, mesmo com
-   * null. `undefined` o axios descartaria — mas a garantia não pode depender
+   * A API recusa com 422 a PRESENÇA de `categoria_id`, mesmo com null (o
+   * título passou a ir na 1.10.0, API-16). `undefined` o axios descartaria — mas a garantia não pode depender
    * de quem serializa: a chave simplesmente não existe.
    *
    * O responsável saiu do corpo na 1.9.0: quem abre não escolhe, e o chamado
-   * nasce aguardando atribuição. Até a 1.8.1 eram cinco chaves.
+   * nasce aguardando atribuição. O título entrou na 1.10.0.
    */
-  it('exatamente as quatro chaves do contrato, sem responsável', () => {
+  it('exatamente as cinco chaves do contrato, sem responsável', () => {
     expect(Object.keys(corpo).sort()).toEqual(
-      ['descricao', 'prioridade', 'setor_destino', 'solicitante_id'].sort()
+      ['descricao', 'prioridade', 'setor_destino', 'solicitante_id', 'titulo'].sort()
     );
-    expect('titulo' in corpo).toBe(false);
     expect('categoria_id' in corpo).toBe(false);
     expect('tecnico_responsavel_id' in corpo).toBe(false);
   });
 
-  it('o formato exato, com a descrição aparada', () => {
+  it('o formato exato, com título e descrição aparados', () => {
     expect(corpo).toStrictEqual({
       setor_destino: SetorDestinoEnum.QUALIDADE,
+      titulo: 'Balança 3 descalibrada',
       descricao: 'Desvio na calibração da balança 3.',
       prioridade: PrioridadeEnum.MEDIA,
       solicitante_id: 7,
@@ -281,6 +283,7 @@ describe('montarCorpoQualidade — só o que a Qualidade aceita', () => {
   /** Um responsável que chegue de fora não passa: a função não o copia. */
   it('um responsável passado por engano não entra no corpo', () => {
     const comSobra = montarCorpoQualidade({
+      titulo: 'Balança 3 descalibrada',
       descricao: 'Desvio na calibração da balança 3.',
       prioridade: PrioridadeEnum.MEDIA,
       solicitante_id: 7,
@@ -291,7 +294,7 @@ describe('montarCorpoQualidade — só o que a Qualidade aceita', () => {
 
   it('sobrevive à serialização sem as chaves proibidas', () => {
     const viagem = JSON.parse(JSON.stringify(corpo));
-    expect(viagem).not.toHaveProperty('titulo');
+    expect(viagem.titulo).toBe('Balança 3 descalibrada');
     expect(viagem).not.toHaveProperty('categoria_id');
     expect(viagem).not.toHaveProperty('tecnico_responsavel_id');
   });
@@ -299,6 +302,7 @@ describe('montarCorpoQualidade — só o que a Qualidade aceita', () => {
 
 describe('validarQualidade — na ordem da tela', () => {
   const ok = {
+    titulo: 'Balança 3 descalibrada',
     descricao: 'Desvio na calibração da balança 3.',
     escolheSolicitante: false,
     solicitanteId: undefined as number | undefined,
@@ -307,6 +311,13 @@ describe('validarQualidade — na ordem da tela', () => {
   /** 1.9.0: descrição boa basta — não há responsável a escolher. */
   it('tudo certo, sem responsável nenhum: nenhum problema', () => {
     expect(validarQualidade(ok)).toBeNull();
+  });
+
+  it('título antes da descrição, com as mensagens da TI', () => {
+    expect(validarQualidade({ ...ok, titulo: '   ', descricao: '' })).toBe('Título é obrigatório.');
+    expect(validarQualidade({ ...ok, titulo: ' Balança 3 ' })).toBe(
+      'Título precisa de mais 1 caractere.'
+    );
   });
 
   // As mesmas mensagens da TI, saídas da mesma função.

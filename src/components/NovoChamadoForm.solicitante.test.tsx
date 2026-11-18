@@ -257,12 +257,66 @@ describe('T-2 — o corpo enviado', () => {
     expect(aoCriar).toHaveBeenCalledWith(CRIADO);
   });
 
-  it('o administrador humano sem escolher: "Selecione o solicitante.", nada enviado', async () => {
+  it('o administrador humano sem escolher abre para si: o campo já nasce com ele', async () => {
     await montar(ADMIN_HUMANO);
+    expect(document.getElementById('solicitante')?.textContent).toContain('admin.ficticio');
     await preencher();
     await enviar();
-    expect(document.querySelector('[role="alert"]')?.textContent).toBe('Selecione o solicitante.');
-    expect(criar).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="alert"]')).toBeNull();
+    expect(criar).toHaveBeenCalledTimes(1);
+    expect(corpo().solicitante_id).toBe(ADMIN_ID);
+  });
+
+  it('o solicitante é quem abre desde o primeiro quadro, antes de a lista de pessoas chegar', async () => {
+    let chegar: (lista: Usuario[]) => void = () => {};
+    listarUsuarios.mockReturnValue(new Promise<Usuario[]>((resolve) => (chegar = resolve)));
+    await montar(ADMIN_HUMANO);
+
+    // Lista pendente: o campo mostra quem abre, e nenhum outro nome.
+    expect(document.getElementById('solicitante')?.textContent).toContain('admin.ficticio');
+    expect(document.getElementById('solicitante')?.textContent).not.toContain('Ficticio');
+
+    // A lista chega sem o administrador nela, e com outras pessoas: o campo não muda.
+    await act(async () => {
+      chegar([
+        { id: 21, nome: 'Gabriel Ficticio', role_id: 3, ativo: true },
+        { id: 22, nome: 'Lidia Ficticia', role_id: 3, ativo: true },
+      ] as Usuario[]);
+    });
+    expect(document.getElementById('solicitante')?.textContent).toContain('admin.ficticio');
+
+    await preencher();
+    await enviar();
+    expect(corpo().solicitante_id).toBe(ADMIN_ID);
+  });
+
+  it('quem abre aparece uma vez só na lista, mesmo vindo nela', async () => {
+    listarUsuarios.mockResolvedValue([
+      { id: ADMIN_ID, nome: 'Admin Ficticio', role_id: 1, ativo: true },
+      { id: 21, nome: 'Gabriel Ficticio', role_id: 3, ativo: true },
+    ] as Usuario[]);
+    await montar(ADMIN_HUMANO);
+    await act(async () => {
+      document.getElementById('solicitante')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const opcoes = Array.from(document.querySelectorAll('[role="option"]')).map((o) =>
+      o.textContent?.trim()
+    );
+    expect(opcoes).toEqual(['Admin Ficticio', 'Gabriel Ficticio']);
+  });
+
+  it('a escolha manual fica enquanto o formulário está aberto, e a abertura seguinte volta para quem abre', async () => {
+    await montar(ADMIN_HUMANO);
+    await escolher('solicitante', 'Lidia Ficticia');
+    await preencher();
+    expect(document.getElementById('solicitante')?.textContent).toContain('Lidia Ficticia');
+
+    // Fechar e abrir o modal desmonta e monta o formulário.
+    await remontar(ADMIN_HUMANO);
+    expect(document.getElementById('solicitante')?.textContent).toContain('admin.ficticio');
+    await preencher();
+    await enviar();
+    expect(corpo().solicitante_id).toBe(ADMIN_ID);
   });
 
   it.each([
@@ -311,6 +365,7 @@ describe('T-2 — o corpo enviado', () => {
     await act(async () => {
       qualidade!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
+    await digitar('titulo', 'Impressora do RH sem papel');
     await digitar('descricao', DESCRICAO_OK);
     await escolher('solicitante', 'Gabriel Ficticio');
 
