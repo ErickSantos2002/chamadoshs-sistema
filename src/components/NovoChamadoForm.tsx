@@ -71,7 +71,13 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
   const [descricao, setDescricao] = useState('');
   const [prioridade, setPrioridade] = useState<PrioridadeEnum>(PrioridadeEnum.MEDIA);
   const [categoriaId, setCategoriaId] = useState<number | undefined>();
-  const [solicitanteId, setSolicitanteId] = useState<number | undefined>();
+  // O solicitante nasce como quem está abrindo, e só muda por escolha: o
+  // valor é derivado da sessão, não copiado para o estado, então não há
+  // instante em que o campo aponte para outra pessoa enquanto a lista de
+  // usuários carrega. O formulário é desmontado ao fechar o modal, e a
+  // abertura seguinte volta para quem abre.
+  const [solicitanteEscolhido, setSolicitanteEscolhido] = useState<number | undefined>();
+  const solicitanteId = solicitanteEscolhido ?? user?.id;
 
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -108,6 +114,19 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       .then(setPrazos)
       .catch(() => setPrazos([]));
   }, []);
+
+  // Quem abre entra na lista mesmo antes de ela chegar (ou se não vier nela):
+  // sem isso o campo mostraria um valor sem nome.
+  const opcoesDeSolicitante = useMemo(() => {
+    const lista = usuarios.map((usuario) => ({
+      valor: String(usuario.id),
+      rotulo: usuario.nome,
+    }));
+    if (user && !usuarios.some((usuario) => usuario.id === user.id)) {
+      lista.unshift({ valor: String(user.id), rotulo: user.username });
+    }
+    return lista;
+  }, [usuarios, user]);
 
   const prazoEscolhido = useMemo(
     () => prazos.find((p) => p.prioridade === prioridade),
@@ -180,6 +199,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
     if (!qualidadeLiberada) return;
 
     const problema = validarQualidade({
+      titulo,
       descricao,
       escolheSolicitante,
       solicitanteId,
@@ -194,6 +214,7 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
       setErro(null);
 
       const novo = montarCorpoQualidade({
+        titulo,
         descricao,
         prioridade,
         solicitante_id: escolheSolicitante ? solicitanteId! : usuarioId,
@@ -347,24 +368,28 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
 
       {setor !== null && (
         <>
-          {!naQualidade && (
-            <div>
-              <RotuloDeCampo htmlFor="titulo" obrigatorio>Título</RotuloDeCampo>
-              <Input
-                id="titulo"
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-                maxLength={TITULO_MAXIMO}
-                placeholder="Ex: Impressora do financeiro não conecta"
-                required
-              />
-              <ContadorMinimo
-                valor={titulo}
-                minimo={MINIMO_TITULO}
-                maximo={TITULO_MAXIMO}
-              />
-            </div>
-          )}
+          {/* Nos dois setores desde a 1.10.0. O campo é o mesmo ao trocar de
+              setor: o que foi digitado fica. */}
+          <div>
+            <RotuloDeCampo htmlFor="titulo" obrigatorio>Título</RotuloDeCampo>
+            <Input
+              id="titulo"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              maxLength={TITULO_MAXIMO}
+              placeholder={
+                naQualidade
+                  ? 'Ex: Balança da linha 3 descalibrada'
+                  : 'Ex: Impressora do financeiro não conecta'
+              }
+              required
+            />
+            <ContadorMinimo
+              valor={titulo}
+              minimo={MINIMO_TITULO}
+              maximo={TITULO_MAXIMO}
+            />
+          </div>
 
           <div>
             <RotuloDeCampo htmlFor="descricao" obrigatorio>Descrição</RotuloDeCampo>
@@ -384,21 +409,18 @@ export const NovoChamadoForm: React.FC<NovoChamadoFormProps> = ({ aoCriar, aoCan
               <RotuloDeCampo htmlFor="solicitante" obrigatorio>Solicitante</RotuloDeCampo>
               {/* A lista mais longa do sistema — trinta e poucos nomes. É onde a
                   busca por digitação do seletor mais vale: digitar "ga" chega em
-                  Gabriel sem rolar. O `required` nativo saiu junto com o <select>,
-                  e não faz falta: `enviar` já recusa com "Selecione o solicitante". */}
+                  Gabriel sem rolar. Não há opção vazia: o campo nasce com quem
+                  abre, e `enviar` ainda recusa um solicitante ausente. */}
               <Seletor
                 id="solicitante"
                 rotulo="Solicitante"
                 valor={solicitanteId ? String(solicitanteId) : ''}
-                aoMudar={(v) => setSolicitanteId(v ? Number(v) : undefined)}
-                opcoes={[
-                  { valor: '', rotulo: 'Selecione o solicitante' },
-                  ...usuarios.map((usuario) => ({
-                    valor: String(usuario.id),
-                    rotulo: usuario.nome,
-                  })),
-                ]}
+                aoMudar={(v) => setSolicitanteEscolhido(v ? Number(v) : undefined)}
+                opcoes={opcoesDeSolicitante}
               />
+              <p className="mt-1 text-xs text-conteudo-tenue">
+                Já vem com você. Troque para abrir o chamado em nome de outra pessoa.
+              </p>
               {/* A dica "Você fica como técnico responsável." saiu: na abertura
                   da TI a API descarta o responsável do corpo, e o chamado nasce
                   sem atribuição — a dica prometia o que não acontece. */}

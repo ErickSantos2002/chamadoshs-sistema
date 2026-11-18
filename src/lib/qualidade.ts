@@ -6,7 +6,7 @@ import {
   PrioridadeEnum,
   SetorDestinoEnum,
 } from '../types/api';
-import { MINIMO_DESCRICAO, validarMinimo } from './validacao';
+import { MINIMO_DESCRICAO, MINIMO_TITULO, validarMinimo } from './validacao';
 
 /**
  * A abertura de chamado para a Qualidade, fora do formulário.
@@ -176,20 +176,25 @@ export function montarCorpoTI(campos: {
 
 /**
  * O corpo da Qualidade, montado do zero — e não um corpo da TI com campos
- * apagados. A API recusa a PRESENÇA de `titulo` e `categoria_id`, até com
- * null; aqui eles não existem para serem esquecidos.
+ * apagados. A API recusa a PRESENÇA de `categoria_id`, até com null; aqui
+ * ela não existe para ser esquecida.
+ *
+ * O título vai aparado, como o da TI (1.10.0, API-16). Nunca `null`: a API
+ * recusa, e a validação da tela não deixa chegar aqui um título vazio.
  *
  * Sem responsável (1.9.0): o chamado nasce aguardando atribuição. A chave
  * nem existe no corpo — nem como `null` —, para que nenhuma escolha de quem
  * abre chegue à API.
  */
 export function montarCorpoQualidade(campos: {
+  titulo: string;
   descricao: string;
   prioridade: PrioridadeEnum;
   solicitante_id: number;
 }): ChamadoCreateQualidade {
   return {
     setor_destino: SetorDestinoEnum.QUALIDADE,
+    titulo: campos.titulo.trim(),
     descricao: campos.descricao.trim(),
     prioridade: campos.prioridade,
     solicitante_id: campos.solicitante_id,
@@ -197,15 +202,19 @@ export function montarCorpoQualidade(campos: {
 }
 
 /**
- * O problema do formulário da Qualidade, na ordem da tela: descrição e
- * solicitante. As mensagens são as da TI, saídas da mesma função. O
+ * O problema do formulário da Qualidade, na ordem da tela: título, descrição
+ * e solicitante. As mensagens são as da TI, saídas da mesma função. O
  * responsável saiu na 1.9.0: não é mais escolha de quem abre.
  */
 export function validarQualidade(campos: {
+  titulo: string;
   descricao: string;
   escolheSolicitante: boolean;
   solicitanteId: number | undefined;
 }): string | null {
+  const titulo = validarMinimo(campos.titulo, MINIMO_TITULO, 'Título');
+  if (titulo) return titulo;
+
   const descricao = validarMinimo(campos.descricao, MINIMO_DESCRICAO, 'Descrição');
   if (descricao) return descricao;
 
