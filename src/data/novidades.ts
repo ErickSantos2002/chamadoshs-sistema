@@ -31,7 +31,7 @@ export interface VersaoNovidade {
 export const NOVIDADES: VersaoNovidade[] = [
   {
     versao: '1.10.0',
-    data: '2026-11-18',
+    data: '2026-11-19',
     itens: [
       {
         tipo: 'novidade',
