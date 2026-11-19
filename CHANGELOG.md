@@ -13,12 +13,10 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [1.11.0] — não publicada
+## [1.11.0] — 2026-11-19
 
 Por Rickelme David. Branch `feat/usuarios-ativos-primeiro-1-11-0` (lista de
-usuários da administração). Preparada em 19/11/2026; a data do aviso de
-novidades (`src/data/novidades.ts`) é a da preparação, e deve ser trocada pela
-da publicação.
+usuários da administração). Publicada em 19/11/2026.
 
 ### ⚠️ Requer ação no deploy
 
