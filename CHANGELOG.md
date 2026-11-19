@@ -13,12 +13,11 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [1.10.0] — 2026-11-18
+## [1.10.0] — 2026-11-19
 
 Por Rickelme David. Branch `feat/novo-chamado-solicitante-padrao` (título na
-abertura da Qualidade, com a API-16, e solicitante padrão). Ainda não
-publicada: a data acima e a do aviso de novidades são as da preparação, e
-devem ser trocadas pela da publicação.
+abertura da Qualidade, com a API-16, e solicitante padrão). Publicada em
+19/11/2026.
 
 ### ⚠️ Requer ação no deploy
 
