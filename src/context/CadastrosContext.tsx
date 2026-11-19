@@ -22,6 +22,7 @@ import type {
   UsuarioUpdate,
   CadastrosContextData,
 } from '../types/cadastros.types';
+import { unicosPorId } from '../lib/usuariosLista';
 
 // ========================================
 // CONTEXT & PROVIDER
@@ -39,6 +40,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [usuariosIncompletos, setUsuariosIncompletos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,12 +57,20 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
       const [categoriasData, setoresData, usuariosData] = await Promise.all([
         categoriasService.listar(),
         setoresService.listar(),
-        usuariosService.listar(),
+        // `listarTodos`, e não `listar`: uma chamada só traz os 100 primeiros,
+        // e a aba Usuários conta ativos e inativos sobre esta lista.
+        usuariosService.listarTodos(),
       ]);
+
+      // A listagem da API não declara ordem, então duas páginas podem se
+      // sobrepor. O ID repetido sai da lista (a tabela usa o ID como chave) e
+      // fica registrado: se uma linha veio duas vezes, outra pode ter faltado.
+      const carga = unicosPorId(usuariosData || []);
 
       setCategorias(categoriasData || []);
       setSetores(setoresData || []);
-      setUsuarios(usuariosData || []);
+      setUsuarios(carga.usuarios);
+      setUsuariosIncompletos(carga.repetidos > 0);
     } catch (err: any) {
       console.error('Erro ao carregar cadastros:', err);
       setError(
@@ -374,6 +384,7 @@ export const CadastrosProvider: React.FC<{ children: React.ReactNode }> = ({
     categorias,
     setores,
     usuarios,
+    usuariosIncompletos,
 
     // Estados
     loading,

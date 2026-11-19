@@ -30,6 +30,18 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.11.0',
+    // Data da preparação: trocar pela data da publicação ao subir.
+    data: '2026-11-19',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Para administradores: na tela de Usuários, os ativos aparecem primeiro e os inativos ficam no fim da lista. Dá para ver só os ativos ou só os inativos, e cada opção mostra quantos são.',
+      },
+    ],
+  },
+  {
     versao: '1.10.0',
     data: '2026-11-19',
     itens: [

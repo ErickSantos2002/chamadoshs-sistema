@@ -20,6 +20,11 @@ import {
 } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleName } from '../../utils/roleMapper';
+import {
+  estaAtivo,
+  montarListaDeUsuarios,
+  type FiltroDeStatus,
+} from '../../lib/usuariosLista';
 import UsuarioModal from './UsuarioModal';
 import { IconeBusca, IconeChave, IconeDesfazer, IconeEditar, IconeEnergia, IconeMais, IconeOlho, IconeRecarregar, IconeSetor, IconeUsuarios } from '../ui/icones';
 import type {
@@ -33,10 +38,20 @@ import type {
 // COMPONENTE USUARIOS TAB
 // ========================================
 
+/** Quantas colunas a tabela tem — é o `colSpan` da linha separadora. */
+const COLUNAS = 6;
+
+/** Como cada filtro é chamado no aviso de resultado fora do filtro. */
+const NOME_DO_FILTRO: Record<FiltroDeStatus, string> = {
+  todos: 'Todos',
+  ativos: 'Ativos',
+  inativos: 'Inativos',
+};
 
 const UsuariosTab: React.FC = () => {
   const {
     usuarios,
+    usuariosIncompletos,
     setores,
     desativarUsuario,
     reativarUsuario,
@@ -53,6 +68,9 @@ const UsuariosTab: React.FC = () => {
   // ========================================
 
   const [busca, setBusca] = useState('');
+  // "Todos" de saída: ninguém some da tela sem que a pessoa peça. Os ativos
+  // já vêm em cima pela ordenação.
+  const [filtro, setFiltro] = useState<FiltroDeStatus>('todos');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
@@ -93,54 +111,31 @@ const UsuariosTab: React.FC = () => {
   // FILTRAGEM E ORDENAÇÃO
   // ========================================
 
-  const usuariosFiltrados = useMemo(() => {
-    if (!busca) return usuarios;
+  // Busca, filtro e ordem saem de `lib/usuariosLista`, que não toca na lista
+  // do contexto. Ativos vêm antes de inativos em qualquer coluna e direção.
+  const lista = useMemo(
+    () => montarListaDeUsuarios(usuarios, { busca, filtro, ordenacao }),
+    [usuarios, busca, filtro, ordenacao]
+  );
+  const usuariosOrdenados = lista.visiveis;
+  const { contagem } = lista;
 
-    const termo = busca.toLowerCase();
-    return usuarios.filter(
-      (u) =>
-        u.nome.toLowerCase().includes(termo) ||
-        getRoleName(u.role_id).toLowerCase().includes(termo)
-    );
-  }, [usuarios, busca]);
+  const filtros: { valor: FiltroDeStatus; rotulo: string; total: number }[] = [
+    { valor: 'todos', rotulo: 'Todos', total: contagem.total },
+    { valor: 'ativos', rotulo: 'Ativos', total: contagem.ativos },
+    { valor: 'inativos', rotulo: 'Inativos', total: contagem.inativos },
+  ];
 
-  const usuariosOrdenados = useMemo(() => {
-    return [...usuariosFiltrados].sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
+  // Carga que falhou sem lista anterior: não há o que contar, e "(0)" leria
+  // como "não existe ninguém". O erro aparece no aviso; os números somem.
+  const totaisConfiaveis = !(error && contagem.total === 0);
 
-      switch (ordenacao.campo) {
-        case 'nome':
-          aVal = a.nome;
-          bVal = b.nome;
-          break;
-        case 'created_at':
-          aVal = a.created_at || '';
-          bVal = b.created_at || '';
-          break;
-        default:
-          aVal = a[ordenacao.campo as keyof Usuario];
-          bVal = b[ordenacao.campo as keyof Usuario];
-      }
-
-      // Tratar valores nulos/undefined
-      if (aVal == null) aVal = '';
-      if (bVal == null) bVal = '';
-
-      // Comparação
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return ordenacao.direcao === 'asc'
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
-      }
-
-      if (ordenacao.direcao === 'asc') {
-        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-      } else {
-        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-      }
-    });
-  }, [usuariosFiltrados, ordenacao]);
+  const mensagemDeListaVazia = (): string => {
+    if (busca) return 'Nenhum usuário encontrado com os critérios de busca';
+    if (filtro === 'ativos') return 'Nenhum usuário ativo';
+    if (filtro === 'inativos') return 'Nenhum usuário inativo';
+    return 'Nenhum usuário cadastrado ainda';
+  };
 
   // ========================================
   // HANDLERS
@@ -347,9 +342,58 @@ const UsuariosTab: React.FC = () => {
         </div>
       </div>
 
+      {/* Filtro por status.
+
+          `aria-pressed` em cada botão, como nos atalhos de período do
+          Dashboard: são alternativas de um mesmo filtro, e qual está valendo
+          não pode ser dito só pela cor. Os números são do cadastro inteiro e
+          não mudam com a busca. */}
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
+        <div
+          role="group"
+          aria-label="Filtrar usuários por status"
+          className="flex flex-wrap gap-2"
+        >
+          {filtros.map((f) => (
+            <button
+              key={f.valor}
+              type="button"
+              onClick={() => setFiltro(f.valor)}
+              aria-pressed={filtro === f.valor}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                filtro === f.valor
+                  ? 'border-transparent bg-sinal text-[var(--text-on-primary)]'
+                  : 'border-borda bg-superficie-elevada text-conteudo-suave hover:text-conteudo'
+              }`}
+            >
+              {totaisConfiaveis ? `${f.rotulo} (${f.total})` : f.rotulo}
+            </button>
+          ))}
+        </div>
+
+        {/* A busca achou gente que o filtro está escondendo. O filtro não muda
+            sozinho: a tela só diz onde o resto está. */}
+        {lista.ocultosPeloFiltro > 0 && (
+          <p role="status" className="text-sm text-conteudo-tenue">
+            {lista.ocultosPeloFiltro === 1
+              ? `A busca encontrou mais 1 usuário fora do filtro ${NOME_DO_FILTRO[filtro]}.`
+              : `A busca encontrou mais ${lista.ocultosPeloFiltro} usuários fora do filtro ${NOME_DO_FILTRO[filtro]}.`}
+          </p>
+        )}
+      </div>
+
       {/* Mensagem de erro */}
       {error && (
         <Aviso variante="perigo" className="shrink-0">{error}</Aviso>
+      )}
+
+      {/* A carga trouxe o mesmo usuário em duas páginas: os números acima
+          podem não ser o cadastro inteiro, e a tela precisa dizer. */}
+      {usuariosIncompletos && (
+        <Aviso variante="alerta" className="shrink-0">
+          A lista pode estar incompleta: a carga trouxe usuários repetidos. Os
+          totais podem não ser exatos. Use Atualizar para carregar de novo.
+        </Aviso>
       )}
 
       {/* Tabela */}
@@ -362,11 +406,9 @@ const UsuariosTab: React.FC = () => {
           <div className="flex h-full flex-col items-center justify-center p-8">
             <IconeUsuarios className="mb-4 h-12 w-12 text-conteudo-tenue" />
             <p className="text-center text-sm text-conteudo-tenue">
-              {busca
-                ? 'Nenhum usuário encontrado com os critérios de busca'
-                : 'Nenhum usuário cadastrado ainda'}
+              {mensagemDeListaVazia()}
             </p>
-            {isAdmin && !busca && (
+            {isAdmin && !busca && contagem.total === 0 && (
               <Button className="mt-4" onClick={handleNovoUsuario}>
                 <IconeMais className="h-4 w-4" />
                 Criar primeiro usuário
@@ -407,10 +449,22 @@ const UsuariosTab: React.FC = () => {
               </tr>
             </TabelaCabecalho>
             <TabelaCorpo>
-              {usuariosOrdenados.map((usuario) => (
+              {usuariosOrdenados.map((usuario, indice) => (
+                <React.Fragment key={usuario.id}>
+                {/* Onde os ativos acabam. Só existe quando há os dois grupos
+                    na tela — na prática, no filtro Todos. */}
+                {indice === lista.inicioDosInativos && (
+                  <tr className="border-b border-borda-suave bg-superficie-elevada">
+                    <td
+                      colSpan={COLUNAS}
+                      className="px-4 py-2 text-xs font-medium uppercase tracking-wide text-conteudo-tenue"
+                    >
+                      Inativos ({usuariosOrdenados.length - lista.inicioDosInativos})
+                    </td>
+                  </tr>
+                )}
                 <TabelaLinha
-                  key={usuario.id}
-                  className={usuario.ativo ? undefined : 'opacity-60'}
+                  className={estaAtivo(usuario) ? undefined : 'opacity-60'}
                 >
                   <TabelaCelula>#{usuario.id}</TabelaCelula>
                   <TabelaCelula>
@@ -422,7 +476,7 @@ const UsuariosTab: React.FC = () => {
                       {/* A API desativa em vez de apagar, para não quebrar a FK
                           dos chamados que a pessoa abriu. Sem este selo, a linha
                           volta idêntica à ativa e parece que a ação falhou. */}
-                      {!usuario.ativo && (
+                      {!estaAtivo(usuario) && (
                         <Badge variante="discreto">Inativo</Badge>
                       )}
                     </div>
@@ -483,7 +537,7 @@ const UsuariosTab: React.FC = () => {
                           usuário perde o acesso mas o histórico dele continua
                           referenciando um registro que existe. */}
                       {isAdmin && usuario.id !== Number(user?.id) && (
-                        !usuario.ativo ? (
+                        !estaAtivo(usuario) ? (
                           <BotaoDeAcao
                             tom="sucesso"
                             titulo="Reativar"
@@ -526,6 +580,7 @@ const UsuariosTab: React.FC = () => {
                     </div>
                   </TabelaCelula>
                 </TabelaLinha>
+                </React.Fragment>
               ))}
             </TabelaCorpo>
           </Tabela>
@@ -535,7 +590,7 @@ const UsuariosTab: React.FC = () => {
       {/* Footer com informações */}
       <div className="flex shrink-0 items-center justify-between text-sm text-conteudo-tenue">
         <div>
-          Total: {usuariosOrdenados.length} usuário(s)
+          Exibindo {usuariosOrdenados.length} de {contagem.total} usuário(s)
         </div>
         {busca && (
           <div>

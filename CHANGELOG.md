@@ -13,6 +13,40 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
+## [1.11.0] — não publicada
+
+Por Rickelme David. Branch `feat/usuarios-ativos-primeiro-1-11-0` (lista de
+usuários da administração). Preparada em 19/11/2026; a data do aviso de
+novidades (`src/data/novidades.ts`) é a da preparação, e deve ser trocada pela
+da publicação.
+
+### ⚠️ Requer ação no deploy
+
+- Rebuild da imagem do front. Só o front muda: sem API nova, sem variável,
+  sem migration. Funciona com a API-16, que já está em produção.
+
+### Added
+
+- **Filtro por status na aba Usuários.** Todos, Ativos e Inativos, cada um
+  com a quantidade do cadastro inteiro — os números não mudam com a busca. A
+  tela abre em Todos.
+- **Aviso quando a busca acha alguém fora do filtro.** A tela diz quantos
+  resultados ficaram de fora e em qual filtro está; o filtro não muda sozinho.
+
+### Changed
+
+- **Ativos primeiro, inativos no fim.** Vale para qualquer coluna e direção
+  de ordenação: a coluna escolhida ordena dentro de cada grupo, e o ID
+  desempata. No filtro Todos, uma linha "Inativos (N)" separa os grupos.
+  Desativar alguém leva a linha para o grupo de baixo; reativar, de volta.
+- **A aba carrega o cadastro inteiro.** Antes vinha só a primeira página da
+  API (100 usuários); agora vêm todas. Se a carga trouxer o mesmo usuário em
+  duas páginas, a repetição sai da lista e a tela avisa que os totais podem
+  não ser exatos — a listagem da API ainda não declara ordem.
+- O rodapé da aba passa a dizer "Exibindo X de Y usuário(s)".
+
+---
+
 ## [1.10.0] — 2026-11-19
 
 Por Rickelme David. Branch `feat/novo-chamado-solicitante-padrao` (título na

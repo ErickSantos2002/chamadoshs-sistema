@@ -126,6 +126,11 @@ export interface CadastrosContextData {
   categorias: Categoria[];
   setores: Setor[];
   usuarios: Usuario[];
+  /**
+   * A última carga de usuários trouxe o mesmo ID em mais de uma página: a
+   * lista pode estar incompleta, e os totais não devem ser lidos como exatos.
+   */
+  usuariosIncompletos: boolean;
 
   // Estados
   loading: boolean;
