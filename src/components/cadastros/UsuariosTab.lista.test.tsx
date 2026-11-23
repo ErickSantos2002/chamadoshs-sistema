@@ -267,15 +267,25 @@ describe('UsuariosTab — ordem, filtro e contadores', () => {
     expect(linha.querySelector('td')?.getAttribute('colspan')).toBe('6');
   });
 
-  it('inativo segue com o selo e a linha esmaecida', async () => {
+  // Até a 1.11.0 este caso exigia `opacity-60` na linha inativa. A FE-12 mediu
+  // o que a opacidade fazia com o contraste do que está dentro da linha (selo
+  // a 2,73:1) e a tirou: o inativo passa a ser marcado pelo selo e pelo nome
+  // em tom tênue. O detalhe das três abas está em `linhasInativas.test.tsx`.
+  it('inativo segue com o selo e o nome em tom tênue, sem esmaecer a linha', async () => {
     await montar();
     const linhas = Array.from(host.querySelectorAll('tbody tr')).filter((tr) =>
       tr.querySelector('td')?.textContent?.startsWith('#')
     );
-    expect(linhas[0].className).not.toContain('opacity-60');
+    const nome = (tr: Element) => tr.querySelectorAll('td')[1].querySelector('span')!;
+
+    expect(linhas[0].className).not.toContain('opacity');
     expect(linhas[0].textContent).not.toContain('Inativo');
-    expect(linhas[3].className).toContain('opacity-60');
+    expect(nome(linhas[0]).className).toBe('text-sm font-medium text-conteudo');
+
+    expect(linhas[3].className).not.toContain('opacity');
+    expect(linhas[3].className).toBe(linhas[0].className);
     expect(linhas[3].textContent).toContain('Inativo');
+    expect(nome(linhas[3]).className).toBe('text-sm font-medium text-conteudo-tenue');
   });
 
   it('Ativos e Inativos mostram só o seu grupo, sem separador', async () => {

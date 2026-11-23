@@ -13,6 +13,43 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
+## [1.11.1] — não publicada
+
+Por Rickelme David. Branch `fix/contraste-inativos-fe-12` (contraste das
+linhas inativas em Cadastros, FE-12). Preparada em 23/11/2026; a data do aviso
+de novidades (`src/data/novidades.ts`) é a da preparação, e deve ser trocada
+pela da publicação.
+
+### ⚠️ Requer ação no deploy
+
+- Rebuild da imagem do front. Só o front muda: sem API nova, sem variável,
+  sem migration.
+
+### Fixed
+
+- **Linhas inativas de Usuários, Categorias e Setores ficaram legíveis.** A
+  linha inativa inteira levava 60% de opacidade, e tudo o que estava dentro
+  dela herdava: medido no navegador, o selo "Inativo" ficava em 2,73:1 no
+  tema claro e 2,86:1 no escuro, a descrição e a data em 2,88:1 e 3,14:1, e
+  os ícones de ação em 2,88:1 no claro — abaixo de 4,5:1 para texto e de 3:1
+  para ícone. A opacidade saiu da linha. O inativo passa a ser marcado pelo
+  selo e pelo nome e ID em tom tênue (7,58:1 no claro, 6,23:1 no escuro),
+  além do separador "Inativos (N)" que a aba Usuários já tinha.
+- **Selos, ícones e botões da linha inativa são os mesmos da ativa.** O selo
+  "Inativo"/"Inativa", os selos de perfil e os botões de ação não mudaram de
+  classe: só deixaram de ser esmaecidos pela linha. O foco por teclado e o
+  realce ao passar o mouse nos botões voltam a ter o contraste das linhas
+  ativas.
+- Vale nos temas claro e escuro. Linhas ativas, filtros, busca, ordenação,
+  contadores e permissões não mudam.
+
+### Fora desta entrega
+
+- A tela de Tarefas Recorrentes usa o mesmo esmaecimento nas tarefas
+  inativas e não foi alterada.
+
+---
+
 ## [1.11.0] — 2026-11-19
 
 Por Rickelme David. Branch `feat/usuarios-ativos-primeiro-1-11-0` (lista de
