@@ -13,12 +13,10 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [1.11.1] — não publicada
+## [1.11.1] — 2026-11-23
 
 Por Rickelme David. Branch `fix/contraste-inativos-fe-12` (contraste das
-linhas inativas em Cadastros, FE-12). Preparada em 23/11/2026; a data do aviso
-de novidades (`src/data/novidades.ts`) é a da preparação, e deve ser trocada
-pela da publicação.
+linhas inativas em Cadastros, FE-12). Publicada em 23/11/2026.
 
 ### ⚠️ Requer ação no deploy
 
