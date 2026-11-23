@@ -264,15 +264,23 @@ const SetoresTab: React.FC = () => {
             </TabelaCabecalho>
             <TabelaCorpo>
               {setoresOrdenados.map((setor) => (
-                <TabelaLinha
-                  key={setor.id}
-                  className={setor.ativo ? undefined : 'opacity-60'}
-                >
-                  <TabelaCelula>#{setor.id}</TabelaCelula>
+                // A linha inativa NÃO leva opacidade (FE-12). `opacity-60` aqui era
+                // herdada por tudo o que está dentro e reprovava o contraste do
+                // selo (2,73:1), da descrição, da data e dos ícones de ação. O
+                // inativo é marcado pelo selo e pelo nome e ID em tom tênue, que
+                // mede 7,58:1 no claro e 6,23:1 no escuro.
+                <TabelaLinha key={setor.id}>
+                  <TabelaCelula tenue={!setor.ativo}>#{setor.id}</TabelaCelula>
                   <TabelaCelula>
                     <div className="flex items-center gap-2">
                       <IconeSetor className="h-4 w-4 text-conteudo-tenue" />
-                      <span className="text-sm font-medium text-conteudo">
+                      <span
+                        className={
+                          setor.ativo
+                            ? 'text-sm font-medium text-conteudo'
+                            : 'text-sm font-medium text-conteudo-tenue'
+                        }
+                      >
                         {setor.nome}
                       </span>
                       {/* Setor também é desativado, não apagado: usuários

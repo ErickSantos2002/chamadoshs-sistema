@@ -30,6 +30,18 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.11.1',
+    // Data da preparação: trocar pela data da publicação ao subir.
+    data: '2026-11-23',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Para administradores: nas telas de Usuários, Categorias e Setores, os itens inativos ficaram mais fáceis de ler. Eles continuam marcados com o selo "Inativo" e aparecem em um tom mais suave, sem ficarem apagados.',
+      },
+    ],
+  },
+  {
     versao: '1.11.0',
     data: '2026-11-19',
     itens: [
