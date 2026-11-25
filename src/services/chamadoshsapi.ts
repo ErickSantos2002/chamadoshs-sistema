@@ -75,8 +75,12 @@ export const authService = {
   /**
    * Obtém dados do usuário logado
    */
-  async me(): Promise<UsuarioLogado> {
-    const response = await api.get<UsuarioLogado>('/auth/me');
+  async me(opcoes?: { conferenciaDeSessao?: boolean }): Promise<UsuarioLogado> {
+    const response = await api.get<UsuarioLogado>(
+      '/auth/me',
+      // Só quando pedido: sem opções a chamada fica como sempre foi.
+      opcoes?.conferenciaDeSessao ? { conferenciaDeSessao: true } : undefined
+    );
     return response.data;
   },
 

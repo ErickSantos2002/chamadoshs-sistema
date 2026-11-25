@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { usePermissoes } from '../../hooks/usePermissoes';
@@ -58,6 +59,99 @@ const AvisoDePermissoesSuspensas: React.FC = () => {
         </Button>
       </Aviso>
     </div>
+  );
+};
+
+/**
+ * Outra aba deste navegador entrou com outra conta (AUTH-01). A sessão do
+ * navegador é uma só: esta aba continuaria mostrando a conta antiga e
+ * operando com a nova. Ela para — nada sai dela, ver a guarda em
+ * `services/api.ts` — e diz por quê. O que foi digitado continua na tela,
+ * para ser copiado antes de recarregar.
+ *
+ * ── Por cima dos modais, e fora do `<main>` ──────────────────────────
+ *
+ * Nasceu dentro do conteúdo da página, e a homologação em navegador mostrou
+ * o custo: com o formulário de novo chamado aberto no modal, o aviso e o
+ * botão ficavam atrás do fundo escurecido — quem estava no modal só sabia da
+ * troca depois de tentar enviar, e só alcançava o botão fechando o modal.
+ *
+ * Agora é uma faixa fixa no topo, num portal no `<body>`, uma camada acima
+ * do `Modal` (`z-50`) e abaixo dos toasts. Faixa, e não tela cheia: o que
+ * foi digitado precisa continuar visível e selecionável para ser copiado.
+ *
+ * Por cima do modal ela cobria o cabeçalho dele, com o X. A altura da faixa
+ * vai então para `--altura-aviso-de-sessao`, e o `Modal` desce essa medida.
+ *
+ * O foco vai para a FAIXA, não para o botão: quem estava digitando não pode
+ * recarregar a página com o Enter ou o espaço da palavra seguinte. Da faixa,
+ * um Tab chega ao botão.
+ *
+ * Com um modal aberto, o Tab e o Shift+Tab andam num ciclo só — faixa →
+ * modal → faixa —, sem cair na página atrás do véu. Quem cuida disso é a
+ * armadilha de foco do `Modal` (`prenderTab`, em `lib/foco.ts`), que recebe
+ * a faixa como região vizinha: aqui não há tratamento de tecla nenhum, para
+ * não haver dois donos do mesmo Tab.
+ *
+ * Sem troca de sessão nada é montado: os modais ficam como sempre.
+ */
+export const AvisoDeSessaoAlterada: React.FC = () => {
+  const { sessaoAlterada } = useAuth();
+  const faixa = useRef<HTMLDivElement>(null);
+  const conta = sessaoAlterada?.conta;
+
+  useEffect(() => {
+    if (conta) faixa.current?.focus();
+  }, [conta]);
+
+  // A altura da faixa vai para uma variável CSS que o `Modal` lê: com ela o
+  // modal aberto desce e o cabeçalho dele — o X de fechar — não fica coberto.
+  // Ao sumir a faixa, a variável sai e os modais voltam ao lugar de sempre.
+  useLayoutEffect(() => {
+    const no = faixa.current;
+    if (!conta || !no) return;
+    const raiz = document.documentElement;
+    const medir = () => raiz.style.setProperty('--altura-aviso-de-sessao', `${no.offsetHeight}px`);
+    medir();
+    const observador = typeof ResizeObserver === 'function' ? new ResizeObserver(medir) : null;
+    observador?.observe(no);
+    return () => {
+      observador?.disconnect();
+      raiz.style.removeProperty('--altura-aviso-de-sessao');
+    };
+  }, [conta]);
+
+  if (!sessaoAlterada) return null;
+  return createPortal(
+    <div
+      ref={faixa}
+      tabIndex={-1}
+      data-aviso-de-sessao=""
+      role="region"
+      aria-label="Sessão alterada em outra aba"
+      className="fixed inset-x-0 top-0 z-[70] p-3 outline-none md:p-4"
+    >
+      {/* Fundo opaco por baixo da tinta do aviso: sobre o modal escurecido, a
+          tinta translúcida sozinha deixaria o texto sem contraste. */}
+      <div className="mx-auto max-w-3xl rounded-lg bg-superficie shadow-xl">
+        <Aviso variante="perigo">
+          <span className="block">
+            A conta “{sessaoAlterada.conta}” entrou neste navegador em outra aba. Esta aba ficou
+            parada para não misturar as duas contas: nada do que está aqui será enviado. Copie o
+            que precisar e recarregue a página.
+          </span>
+          <Button
+            variante="secundario"
+            tamanho="sm"
+            className="mt-2"
+            onClick={() => window.location.reload()}
+          >
+            Recarregar a página
+          </Button>
+        </Aviso>
+      </div>
+    </div>,
+    document.body
   );
 };
 
@@ -221,6 +315,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           id="conteudo-principal"
           className="flex-1 overflow-y-auto bg-superficie-base p-4 md:p-6"
         >
+          <AvisoDeSessaoAlterada />
           <AvisoDePermissoesSuspensas />
           {children}
         </main>

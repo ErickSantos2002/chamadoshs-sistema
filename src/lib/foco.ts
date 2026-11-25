@@ -90,10 +90,25 @@ const FOCAVEIS = [
  * fecharia a lista no primeiro Tab de quem está escolhendo. O `Seletor` já
  * trata o Tab dele fechando a lista.
  *
+ * ── A região vizinha ─────────────────────────────────────────────────
+ *
+ * `vizinha` é uma segunda região que entra no MESMO ciclo, antes da raiz: a
+ * faixa de sessão alterada (AUTH-01), que fica por cima do modal e fora dele.
+ * Sem isto havia dois donos do Tab, e as costuras vazavam: o Shift+Tab a
+ * partir da faixa, ou do painel, caía na página atrás do véu, e de dentro do
+ * modal não se voltava ao botão da faixa. Com ela o ciclo é um só —
+ * vizinha → raiz → vizinha —, nos dois sentidos, e quem decide é só esta
+ * função. Sem `vizinha`, nada muda.
+ *
  * Devolve `true` quando tratou a tecla, para quem chama saber se deve parar.
  */
-export function prenderTab(e: KeyboardEvent, raiz: HTMLElement | null): boolean {
+export function prenderTab(
+  e: KeyboardEvent,
+  raiz: HTMLElement | null,
+  vizinha: HTMLElement | null = null
+): boolean {
   if (e.key !== 'Tab' || !raiz) return false;
+  if (vizinha) return prenderTabEntre(e, [vizinha, raiz]);
   if (!raiz.contains(document.activeElement)) return false;
 
   // SEM filtro de visibilidade, e isso foi uma correção.
@@ -128,6 +143,45 @@ export function prenderTab(e: KeyboardEvent, raiz: HTMLElement | null): boolean 
   if (!e.shiftKey && atual === ultimo) {
     e.preventDefault();
     primeiro.focus();
+    return true;
+  }
+  return false;
+}
+
+/**
+ * O ciclo do Tab por várias regiões, na ordem dada.
+ *
+ * Só age na COSTURA: quando o foco está na ponta de uma região (ou na própria
+ * região, que recebe foco por código e não está na ordem do Tab) e a tecla o
+ * levaria para fora dela. No meio de uma região o navegador anda sozinho, como
+ * sempre — é ele quem sabe pular o rádio não marcado de um grupo.
+ *
+ * Com o foco fora de todas, não faz nada, pelo mesmo motivo de `prenderTab`.
+ */
+function prenderTabEntre(e: KeyboardEvent, regioes: HTMLElement[]): boolean {
+  const atual = document.activeElement;
+  const i = regioes.findIndex((r) => r.contains(atual));
+  if (i === -1) return false;
+
+  const listas = regioes.map((r) => Array.from(r.querySelectorAll<HTMLElement>(FOCAVEIS)));
+  const seus = listas[i];
+  const naPropriaRegiao = atual === regioes[i];
+  const naPonta = e.shiftKey
+    ? naPropriaRegiao || atual === seus[0]
+    : seus.length === 0
+      ? naPropriaRegiao
+      : atual === seus[seus.length - 1];
+  if (!naPonta) return false;
+
+  // A região seguinte que tenha onde pousar, no sentido da tecla. A última
+  // volta do laço é a própria região: sozinha, ela dá a volta em si mesma.
+  const n = regioes.length;
+  for (let passo = 1; passo <= n; passo++) {
+    const j = (((i + (e.shiftKey ? -passo : passo)) % n) + n) % n;
+    const lista = listas[j];
+    if (lista.length === 0) continue;
+    e.preventDefault();
+    (e.shiftKey ? lista[lista.length - 1] : lista[0]).focus();
     return true;
   }
   return false;

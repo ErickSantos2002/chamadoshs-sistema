@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act, useContext } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import axios from 'axios';
-import api from '../services/api';
+import api, { fixarSessaoDaAba } from '../services/api';
 import { authService, usuariosService } from '../services/chamadoshsapi';
 import { AuthContext, AuthProvider } from './AuthContext';
 import { podeAdministrar } from '../lib/permissoes';
@@ -227,6 +227,10 @@ describe('renovação do token', () => {
     const exp = Math.floor((Date.now() + 5 * 60_000) / 1000);
     const payload = btoa(JSON.stringify({ sub: '10', exp })).replace(/=+$/, '');
     localStorage.setItem('token', `c.${payload}.a`);
+    // O token perto de vencer é o DESTA aba. Sem dizer isso à guarda de sessão
+    // (AUTH-01), trocá-lo direto no armazenamento é, para ela, outra aba
+    // mexendo na sessão — e a conferência entraria na frente da renovação.
+    fixarSessaoDaAba({ token: `c.${payload}.a`, id: 10 });
     vi.spyOn(axios, 'post').mockResolvedValue({
       data: { access_token: 'token-renovado', ...dados },
     } as never);
