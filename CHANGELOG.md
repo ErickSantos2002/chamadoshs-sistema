@@ -13,12 +13,10 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [1.11.2] — não publicada
+## [1.11.2] — 2026-11-25
 
 Por Rickelme David. Branch `fix/auth-01-sincronizacao-sessao` (sessão entre
-abas do navegador, AUTH-01). Preparada em 25/11/2026; a data do aviso de
-novidades (`src/data/novidades.ts`) é a da preparação, e deve ser trocada
-pela da publicação.
+abas do navegador, AUTH-01). Publicação planejada para 25/11/2026.
 
 ### ⚠️ Requer ação no deploy
 
