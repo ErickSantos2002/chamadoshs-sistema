@@ -30,6 +30,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.11.2',
+    data: '2026-11-25',
+    itens: [
+      {
+        tipo: 'corrigido',
+        texto:
+          'Melhoramos a segurança ao usar o ChamadosHS em várias abas. Se outra conta entrar no mesmo navegador, a aba anterior interrompe suas operações e avisa para recarregar, evitando ações com a conta errada.',
+      },
+    ],
+  },
+  {
     versao: '1.11.1',
     data: '2026-11-23',
     itens: [

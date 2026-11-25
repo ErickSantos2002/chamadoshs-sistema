@@ -108,7 +108,16 @@ export const Modal: React.FC<ModalProps> = ({
       }
       // A armadilha que o docblock acima prometia e o código não entregava.
       // Ver a nota longa em `lib/foco.ts`.
-      prenderTab(e, painelRef.current);
+      //
+      // Com a faixa de sessão alterada na tela (AUTH-01), ela entra no mesmo
+      // ciclo: faixa → modal → faixa. Só o modal de cima a recebe — com dois
+      // empilhados, cada um tem o seu ouvinte, e o de baixo não disputa.
+      const dialogos = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+      const deCima = dialogos[dialogos.length - 1] === painelRef.current;
+      const faixa = deCima
+        ? document.querySelector<HTMLElement>('[data-aviso-de-sessao]')
+        : null;
+      prenderTab(e, painelRef.current, faixa);
     };
 
     document.addEventListener('keydown', aoTeclar);
@@ -131,7 +140,11 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      // `--altura-aviso-de-sessao` só existe enquanto a faixa de sessão
+      // alterada está na tela (`AvisoDeSessaoAlterada`, AUTH-01): o modal
+      // desce e encolhe o bastante para o cabeçalho, com o X, não ficar
+      // debaixo dela. Sem a faixa a variável não existe, e vale o `0px`.
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 pt-[calc(1rem+var(--altura-aviso-de-sessao,0px))] backdrop-blur-sm"
       // `undefined`, e não uma função que não faz nada: sem manipulador, o
       // React não registra o ouvinte no fundo.
       onClick={fecharAoClicarFora ? aoFechar : undefined}
@@ -151,7 +164,7 @@ export const Modal: React.FC<ModalProps> = ({
         // Com o rodapé fixo ele passaria a separar os dois campos de "Nova
         // Categoria" dos botões por meia tela de nada.
         className={cn(
-          'relative flex max-h-[92vh] w-full flex-col rounded-xl border border-borda bg-superficie shadow-xl',
+          'relative flex max-h-[calc(92vh-var(--altura-aviso-de-sessao,0px))] w-full flex-col rounded-xl border border-borda bg-superficie shadow-xl',
           LARGURAS[largura]
         )}
       >

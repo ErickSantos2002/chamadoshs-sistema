@@ -13,6 +13,68 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
+## [1.11.2] — não publicada
+
+Por Rickelme David. Branch `fix/auth-01-sincronizacao-sessao` (sessão entre
+abas do navegador, AUTH-01). Preparada em 25/11/2026; a data do aviso de
+novidades (`src/data/novidades.ts`) é a da preparação, e deve ser trocada
+pela da publicação.
+
+### ⚠️ Requer ação no deploy
+
+- Rebuild da imagem do front. Só o front muda: sem API nova, sem variável,
+  sem migration.
+
+### Fixed
+
+- **A sessão passa a ser conferida por aba.** O token e a identidade ficam no
+  armazenamento do navegador, que é um só para todas as abas, e a conta que a
+  tela mostra é de cada aba. Outra aba que entrava com outra conta trocava o
+  token de todas: a aba antiga seguia mostrando a primeira conta e requisitava
+  com a segunda. Agora cada aba guarda o token com que a API confirmou a
+  identidade dela, e toda requisição passa por uma guarda única em
+  `services/api.ts`.
+- **Requisição bloqueada quando a conta exibida não é a da sessão.** Se o
+  token do navegador deixou de ser o da aba, nada sai antes de um `/auth/me`
+  dizer de quem é o token novo. Outra conta: a aba para, e nenhuma leitura ou
+  escrita sai dela até recarregar. A mesma conta (outra aba renovou o token):
+  a aba acompanha e segue, sem aviso. Se a API não responde à conferência,
+  nada é liberado.
+- **Aviso visível quando outra conta assume a sessão.** Uma faixa fixa no
+  topo, por cima dos modais, diz qual conta entrou e oferece recarregar a
+  página; o que foi digitado continua na tela para ser copiado. Com um modal
+  aberto, ele desce a altura da faixa e o botão de fechar fica livre.
+- **Logout em outra aba encerra a sessão nesta**, na hora, sem esperar a
+  próxima requisição.
+- **Renovação concorrente.** A renovação do token que termina depois de a
+  sessão do navegador ter mudado é descartada, em vez de gravar a sessão
+  antiga por cima da nova. O token que vai no cabeçalho é o mesmo valor que
+  foi conferido contra a sessão da aba.
+- **401 atrasado.** A recusa de uma requisição que saiu com a sessão anterior
+  não apaga mais a sessão de quem entrou depois, nem manda a aba ao login —
+  inclusive quando a resposta atrasada é a do próprio `/auth/me`. O 401 da
+  sessão atual continua encerrando a sessão, como sempre.
+- **A tela de login não adota a sessão de outra aba.** A aba sem sessão
+  continua no login quando outra aba entra; entrar ali, ou recarregar, é
+  decisão de quem está nela.
+
+### Limites conhecidos
+
+- O armazenamento do navegador não tem operação atômica entre abas. A guarda
+  garante que a requisição sai com o token que a API confirmou para a aba;
+  uma troca de sessão no instante exato do envio só é tratada na requisição
+  seguinte. A correção reduz as janelas de corrida, não as elimina.
+- Homologado em Chromium, em laboratório local. Outros navegadores não foram
+  testados.
+
+### Fora desta entrega
+
+- O logout em outra aba leva ao login também a aba com um formulário em
+  preenchimento, e o que foi digitado se perde.
+- O modal de Novo Chamado não preserva o formulário quando a criação falha.
+
+---
+
 ## [1.11.1] — 2026-11-23
 
 Por Rickelme David. Branch `fix/contraste-inativos-fe-12` (contraste das
