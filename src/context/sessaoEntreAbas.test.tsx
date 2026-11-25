@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act, useContext } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import api, { MENSAGEM_SESSAO_ALTERADA, SessaoAlteradaError } from '../services/api';
+import api, {
+  fixarSessaoDaAba,
+  MENSAGEM_SESSAO_ALTERADA,
+  pararAba,
+  SessaoAlteradaError,
+  sessaoFixadaDaAba,
+} from '../services/api';
 import {
   categoriasService,
   chamadosService,
@@ -69,6 +75,8 @@ let seguraUrl: Record<string, Promise<void> | undefined> = {};
 let responde401 = new Set<string>();
 /** Tokens que a API não aceita mais: qualquer requisição com eles recebe 401. */
 let tokensRecusados = new Set<string>();
+/** Quem o `/auth/login` devolve: por padrão, o administrador B. */
+let loginComo: { token: string; dono: typeof ME_A; role: string };
 
 const adaptador = async (config: InternalAxiosRequestConfig) => {
   const autorizacao = (config.headers?.get?.('Authorization') as string | undefined) ?? null;
@@ -82,7 +90,12 @@ const adaptador = async (config: InternalAxiosRequestConfig) => {
     delete seguraUrl[url];
     await espera;
   }
-  if (responde401.has(url) || tokensRecusados.has((autorizacao ?? '').replace('Bearer ', ''))) {
+  // Como na API: fora do login, sem token ou com token que ela não conhece, é
+  // 401. O adaptador não responde "de favor" como a conta A (R2): uma
+  // requisição com a credencial errada tem de aparecer como erro no teste.
+  const tokenDoPedido = (autorizacao ?? '').replace('Bearer ', '');
+  const semCredencialValida = url !== '/auth/login' && !(tokenDoPedido in donos);
+  if (responde401.has(url) || tokensRecusados.has(tokenDoPedido) || semCredencialValida) {
     throw new AxiosError('Request failed with status code 401', 'ERR_BAD_REQUEST', config, null, {
       status: 401,
       statusText: 'Unauthorized',
@@ -100,11 +113,17 @@ const adaptador = async (config: InternalAxiosRequestConfig) => {
       seguraMe = null;
       await espera;
     }
-    data = donos[(autorizacao ?? '').replace('Bearer ', '')] ?? ME_A;
+    data = donos[tokenDoPedido];
   } else if (url === '/auth/login') {
-    data = { access_token: TOKEN_B, token_type: 'bearer', user_id: ME_B.id, nome: ME_B.nome, role: 'Administrador' };
+    data = {
+      access_token: loginComo.token,
+      token_type: 'bearer',
+      user_id: loginComo.dono.id,
+      nome: loginComo.dono.nome,
+      role: loginComo.role,
+    };
   } else if (url.startsWith('/usuarios/')) {
-    data = { id: ME_B.id, conta_de_servico: false };
+    data = { id: Number(url.split('/')[2]), conta_de_servico: false };
   } else if (metodo === 'post' && url === '/chamados/') {
     data = { id: 99, protocolo: 'CHAM-FICTICIO', ...(corpo as object) };
   }
@@ -242,6 +261,7 @@ beforeEach(() => {
   seguraUrl = {};
   responde401 = new Set();
   tokensRecusados = new Set();
+  loginComo = { token: TOKEN_B, dono: ME_B, role: 'Administrador' };
   donos = { [TOKEN_A]: ME_A, [TOKEN_A2]: ME_A, [TOKEN_B]: ME_B };
   localStorage.clear();
 
@@ -669,8 +689,9 @@ describe('login e logout nesta aba continuam como antes', () => {
 
     expect(visto.user).toBeNull();
     expect(localStorage.getItem('token')).toBeNull();
-    await api.get('/sonda');
-    expect(ultimo()?.autorizacao).toBeNull();
+    // Sem credencial a API responde 401; o que importa é como a requisição saiu.
+    await api.get('/sonda').catch(() => {});
+    expect(ultimo()).toMatchObject({ url: '/sonda', autorizacao: null });
   });
 });
 
@@ -701,10 +722,13 @@ describe('aba sem sessão: o login de outra aba não é adotado (D6)', () => {
     await montar();
     await outraAbaGrava(TOKEN_B, ME_B);
 
-    await api.get('/sonda');
-    await api.post('/sonda', {});
+    await api.get('/sonda').catch(() => {});
+    await api.post('/sonda', {}).catch(() => {});
 
-    expect(pedidos.slice(-2).map((p) => p.autorizacao)).toStrictEqual([null, null]);
+    expect(pedidos.slice(-2).map((p) => `${p.url} ${p.autorizacao}`)).toStrictEqual([
+      '/sonda null',
+      '/sonda null',
+    ]);
   });
 
   it('a outra aba sai e entra com outra conta: quem era A fica no login, não vira B', async () => {
@@ -747,8 +771,8 @@ describe('aba sem sessão: o login de outra aba não é adotado (D6)', () => {
     expect(visto.user).toBeNull();
     expect(visto.error).toBe('Usuário ou senha incorretos.');
     expect(localStorage.getItem('token')).toBe(TOKEN_A);
-    await api.get('/sonda');
-    expect(ultimo()?.autorizacao).toBeNull();
+    await api.get('/sonda').catch(() => {});
+    expect(ultimo()).toMatchObject({ url: '/sonda', autorizacao: null });
   });
 
   it('recarregar é a decisão explícita: a montagem restaura a sessão que está no navegador', async () => {
@@ -1095,5 +1119,273 @@ describe('401 atrasado no `/auth/me` de revalidação', () => {
     expect(localStorage.getItem('user')).toBeNull();
     expect(window.location.href).toBe('/login');
     expect(visto.sessaoAlterada).toBeNull();
+  });
+});
+
+/**
+ * R1 — a corrida no login (revisão do PR #17, 25/11/2026).
+ *
+ * Durante o login a guarda ficava desligada até o `/auth/me` responder. Se
+ * outra aba entrava com outra conta nesse intervalo, o login aplicava a
+ * identidade recebida mas não fixava a sessão (o token do navegador já era
+ * outro), e o aviso de `storage` era ignorado porque o login estava em
+ * andamento. A aba ficava mostrando A, requisitando com o token de B, com a
+ * guarda desligada para sempre — o defeito original, por outra porta.
+ */
+describe('login concorrente em duas abas (R1)', () => {
+  const comoA = () => {
+    loginComo = { token: TOKEN_A, dono: ME_A, role: 'Usuario' };
+  };
+  /** O login desta aba sai e fica pendurado na URL dada; devolve como soltá-lo. */
+  const loginPendenteEm = async (url: string, nome = 'usuario.ficticio.a') => {
+    let soltar!: () => void;
+    seguraUrl[url] = new Promise<void>((r) => {
+      soltar = r;
+    });
+    let pendente!: Promise<void>;
+    act(() => {
+      pendente = visto.login(nome, 'senha-ficticia');
+    });
+    await assentar();
+    return async () => {
+      await act(async () => {
+        soltar();
+        await pendente;
+      });
+      await assentar();
+    };
+  };
+  const comTokenDeB = () => pedidos.filter((x) => x.autorizacao === `Bearer ${TOKEN_B}`);
+
+  it('B entra em outra aba enquanto o `/auth/me` do login de A anda: a sessão de A não é ativada, e nada sai com o token de B', async () => {
+    comoA();
+    await montar();
+    const soltar = await loginPendenteEm('/auth/me');
+    expect(ultimo()).toMatchObject({ url: '/auth/me', autorizacao: `Bearer ${TOKEN_A}` });
+
+    await outraAbaGrava(TOKEN_B, ME_B);
+    await soltar();
+
+    // A aba não vira A em silêncio por cima da sessão de B, nem vira B.
+    expect(visto.user).toBeNull();
+    expect(visto.identidadeConfirmada).toBe(false);
+    expect(visto.sessaoAlterada).toBeNull();
+    expect(visto.error).toContain('outra aba');
+    // A sessão de B, da outra aba, fica inteira.
+    expect(localStorage.getItem('token')).toBe(TOKEN_B);
+    expect(JSON.parse(localStorage.getItem('user')!).id).toBe(ME_B.id);
+
+    // E o token de B não sai em requisição nenhuma desta aba.
+    await api.post('/chamados/', { solicitante_id: ME_A.id }).catch(() => {});
+    await api.get('/chamados/').catch(() => {});
+    expect(comTokenDeB()).toHaveLength(0);
+    expect(envios().filter((x) => x.autorizacao !== null)).toHaveLength(0);
+  });
+
+  it('a mesma corrida, sem o aviso de `storage`: o mesmo resultado', async () => {
+    comoA();
+    await montar();
+    const soltar = await loginPendenteEm('/auth/me');
+
+    await outraAbaGrava(TOKEN_B, ME_B, { comAviso: false });
+    await soltar();
+
+    expect(visto.user).toBeNull();
+    expect(visto.error).toContain('outra aba');
+    expect(localStorage.getItem('token')).toBe(TOKEN_B);
+    await api.post('/chamados/', { solicitante_id: ME_A.id }).catch(() => {});
+    expect(comTokenDeB()).toHaveLength(0);
+  });
+
+  it('o aviso de `storage` chega atrasado, depois de o login ter falhado: continua sem sessão e sem usar o token de B', async () => {
+    comoA();
+    await montar();
+    const soltar = await loginPendenteEm('/auth/me');
+    await outraAbaGrava(TOKEN_B, ME_B, { comAviso: false });
+    await soltar();
+
+    await avisar('token', TOKEN_A, TOKEN_B);
+    await avisar('user', null, localStorage.getItem('user'));
+    await assentar();
+
+    expect(visto.user).toBeNull();
+    expect(visto.sessaoAlterada).toBeNull();
+    await api.post('/sonda', {}).catch(() => {});
+    expect(comTokenDeB()).toHaveLength(0);
+  });
+
+  it('B entra entre o `/auth/login` e o `/auth/me` desta aba: a confirmação nem sai com o token de B', async () => {
+    comoA();
+    await montar();
+    const soltar = await loginPendenteEm('/auth/login');
+    // A resposta do login é gravada; antes de o `/auth/me` sair, a outra aba grava B.
+    const original = Storage.prototype.setItem;
+    let feito = false;
+    const espia = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
+      this: Storage,
+      chave: string,
+      valor: string
+    ) {
+      original.call(this, chave, valor);
+      if (chave === 'user' && !feito) {
+        feito = true;
+        original.call(this, 'token', TOKEN_B);
+        original.call(this, 'user', JSON.stringify({ id: ME_B.id, nome: ME_B.nome, role: 'x' }));
+      }
+    });
+    await soltar();
+    espia.mockRestore();
+
+    expect(visto.user).toBeNull();
+    expect(visto.error).toContain('outra aba');
+    expect(localStorage.getItem('token')).toBe(TOKEN_B);
+    expect(pedidosPara('/auth/me')).toHaveLength(0);
+    expect(comTokenDeB()).toHaveLength(0);
+  });
+
+  it('a troca acontece na última etapa do login (a leitura da marca de serviço): a aba para com o aviso', async () => {
+    // Esta aba entra como o administrador B; a outra entra como A.
+    await montar();
+    const soltar = await loginPendenteEm(`/usuarios/${ME_B.id}`, 'admin.ficticio.b');
+
+    await outraAbaGrava(TOKEN_A, ME_A);
+    await soltar();
+
+    expect(visto.user?.id).toBe(ME_B.id);
+    expect(visto.sessaoAlterada).toStrictEqual({ conta: ME_A.nome });
+    await expect(api.post('/chamados/', { solicitante_id: ME_B.id })).rejects.toBeInstanceOf(
+      SessaoAlteradaError
+    );
+    expect(envios()).toHaveLength(0);
+  });
+
+  it('aba parada bloqueia mesmo sem sessão fixada', async () => {
+    await montar();
+    fixarSessaoDaAba(null);
+    localStorage.setItem('token', TOKEN_B);
+    const antes = pedidos.length;
+
+    pararAba();
+
+    await expect(api.post('/chamados/', {})).rejects.toBeInstanceOf(SessaoAlteradaError);
+    await expect(api.get('/chamados/')).rejects.toBeInstanceOf(SessaoAlteradaError);
+    expect(pedidos.length).toBe(antes);
+    fixarSessaoDaAba(null);
+  });
+
+  it('a outra aba SAI durante o `/auth/me` do login: a sessão não fica de pé nesta aba', async () => {
+    comoA();
+    await montar();
+    const soltar = await loginPendenteEm('/auth/me');
+
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    await soltar();
+
+    expect(visto.user).toBeNull();
+    expect(localStorage.getItem('token')).toBeNull();
+    const antes = pedidos.length;
+    await api.post('/sonda', {}).catch(() => {});
+    expect(pedidos.slice(antes).every((x) => x.autorizacao === null)).toBe(true);
+  });
+
+  it('resposta de login obsoleta: quem saiu nesta aba durante o login não volta a ter identidade', async () => {
+    comoA();
+    await montar();
+    const soltar = await loginPendenteEm('/auth/login');
+
+    act(() => visto.logout());
+    await soltar();
+
+    expect(visto.user).toBeNull();
+    expect(visto.identidadeConfirmada).toBe(false);
+    expect(visto.sessaoAlterada).toBeNull();
+    expect(pedidosPara('/auth/me')).toHaveLength(0);
+  });
+
+  it('login normal, sem concorrência: a sessão da aba fica fixada no token que o login devolveu', async () => {
+    comoA();
+    await montar();
+
+    await act(async () => {
+      await visto.login('usuario.ficticio.a', 'senha-ficticia');
+    });
+
+    expect(visto.user?.id).toBe(ME_A.id);
+    expect(visto.identidadeConfirmada).toBe(true);
+    expect(visto.error).toBeNull();
+    expect(sessaoFixadaDaAba()).toStrictEqual({ token: TOKEN_A, id: ME_A.id });
+    await api.post('/sonda', {});
+    expect(ultimo()).toMatchObject({ url: '/sonda', autorizacao: `Bearer ${TOKEN_A}` });
+  });
+
+  it('outra conta entra nesta aba depois do logout: passa a valer a nova, inteira', async () => {
+    guardarSessaoA();
+    await montar();
+    expect(visto.user?.id).toBe(ME_A.id);
+
+    act(() => visto.logout());
+    await act(async () => {
+      await visto.login('admin.ficticio.b', 'senha-ficticia');
+    });
+
+    expect(visto.user?.id).toBe(ME_B.id);
+    expect(visto.identidadeConfirmada).toBe(true);
+    expect(sessaoFixadaDaAba()).toStrictEqual({ token: TOKEN_B, id: ME_B.id });
+    await api.post('/sonda', {});
+    expect(ultimo()).toMatchObject({ url: '/sonda', autorizacao: `Bearer ${TOKEN_B}` });
+  });
+});
+
+/** R2 — o adaptador não confirma identidade nenhuma para token que a API não conhece. */
+describe('token desconhecido não confirma identidade (R2)', () => {
+  const localizacaoOriginal = window.location;
+  beforeEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: { href: '', pathname: '/chamados' },
+    });
+  });
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: localizacaoOriginal,
+    });
+  });
+
+  it('na restauração: o `/auth/me` responde 401, e a sessão acaba em vez de ser confirmada', async () => {
+    guardarSessaoA('token-que-a-api-nao-conhece');
+
+    await montar();
+
+    expect(pedidosPara('/auth/me')).toHaveLength(1);
+    expect(visto.identidadeConfirmada).toBe(false);
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(window.location.href).toBe('/login');
+  });
+
+  it('gravado por outra aba: a conferência não o confirma, e nenhuma escrita sai com ele', async () => {
+    guardarSessaoA();
+    await montar();
+
+    await outraAbaGrava('token-que-a-api-nao-conhece', ME_A);
+
+    expect(visto.sessaoAlterada).toBeNull();
+    await api.post('/chamados/', { solicitante_id: ME_A.id }).catch(() => {});
+    expect(
+      pedidos.filter((x) => x.url !== '/auth/me' && x.autorizacao === 'Bearer token-que-a-api-nao-conhece')
+    ).toHaveLength(0);
+    expect(envios().filter((x) => x.autorizacao !== null)).toHaveLength(0);
+  });
+
+  it('sem credencial, o `/auth/me` é 401: o adaptador não responde como a conta A', async () => {
+    await montar();
+
+    const erro = await api.get('/auth/me').catch((e) => e);
+
+    expect(ultimo()).toMatchObject({ url: '/auth/me', autorizacao: null });
+    expect((erro as AxiosError).response?.status).toBe(401);
   });
 });

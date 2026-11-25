@@ -223,8 +223,12 @@ export class SessaoAlteradaError extends Error {
 
 /**
  * Diz à guarda qual é a sessão desta aba: o token com que o `/auth/me`
- * respondeu e o id que ele devolveu. `null` desliga a guarda (sem sessão, ou
- * login em andamento).
+ * respondeu e o id que ele devolveu. `null` desliga a guarda (aba sem sessão).
+ *
+ * No login a sessão é fixada ANTES do `/auth/me`, com o token e o id que o
+ * `/auth/login` desta aba devolveu (R1): a guarda já vale para a própria
+ * confirmação. Fixar não é confirmar — quem confirma a identidade continua
+ * sendo o `/auth/me`, no `AuthContext`.
  */
 export function fixarSessaoDaAba(sessao: SessaoDaAba | null): void {
   sessaoDaAba = sessao;
@@ -261,17 +265,23 @@ export function definirConferenteDeSessao(conferente: (() => Promise<void>) | nu
 }
 
 async function conferirSessaoDaAba(): Promise<void> {
+  // Aba parada recusa tudo, com ou sem sessão fixada (R1): "parada" é uma
+  // decisão já tomada, e não pode depender de a guarda estar armada.
+  if (abaParada) {
+    toast.error(MENSAGEM_SESSAO_ALTERADA, { id: 'sessao-alterada' });
+    throw new SessaoAlteradaError();
+  }
   if (!sessaoDaAba) return;
-  if (!abaParada && localStorage.getItem('token') === sessaoDaAba.token) return;
+  if (localStorage.getItem('token') === sessaoDaAba.token) return;
 
-  if (!abaParada && conferenteDeSessao) {
+  if (conferenteDeSessao) {
     try {
       await conferenteDeSessao();
     } catch {
       // Conferência que falha não libera nada: cai na recusa abaixo.
     }
-    if (!sessaoDaAba) return;
-    if (!abaParada && localStorage.getItem('token') === sessaoDaAba.token) return;
+    if (!abaParada && !sessaoDaAba) return;
+    if (!abaParada && localStorage.getItem('token') === sessaoDaAba?.token) return;
   }
 
   toast.error(MENSAGEM_SESSAO_ALTERADA, { id: 'sessao-alterada' });
@@ -308,9 +318,11 @@ async function tokenConferido(): Promise<string | null> {
     }
 
     // Daqui até o `return` nada espera: o que foi lido é o que é comparado
-    // e é o que sai.
+    // e é o que sai. A aba pode ter sido parada durante a renovação: aí nada
+    // sai, tenha ela sessão fixada ou não.
+    if (abaParada) break;
     if (!sessaoDaAba) return sessaoAlheiaRecusada ? null : token;
-    if (!abaParada && token === sessaoDaAba.token) return token;
+    if (token === sessaoDaAba.token) return token;
   }
 
   toast.error(MENSAGEM_SESSAO_ALTERADA, { id: 'sessao-alterada' });

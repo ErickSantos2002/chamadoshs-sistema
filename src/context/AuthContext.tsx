@@ -462,22 +462,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       if (!valeAinda()) return;
 
+      // A tentativa fica presa ao token que ESTE login recebeu (R1). A guarda
+      // passa a valer já, para a própria confirmação: se outra aba trocar o
+      // token do navegador daqui em diante, o `/auth/me` desta aba não sai
+      // com ele. Fixar não é confirmar — a identidade só vale depois do
+      // `/auth/me`, e só se ele disser a mesma conta que o login devolveu.
+      //
+      // Antes a guarda ficava desligada até a confirmação responder, e só
+      // era ligada se o token do navegador ainda fosse o do login. Outra
+      // conta que entrasse nesse intervalo deixava a aba com a identidade
+      // deste login, o token da outra, e a guarda desligada para sempre.
+      fixarSessaoDaAba({ token: loginData.access_token, id: loginData.user_id });
       setToken(loginData.access_token);
 
       // Busca dados completos do usuário logado — é daqui que sai a
       // identidade e a permissão.
-      const tokenDoLogin = localStorage.getItem('token');
       const userData = await authService.me();
       if (!valeAinda()) return;
-      if (tokenDoLogin !== null && localStorage.getItem('token') === tokenDoLogin) {
-        fixarSessaoDaAba({ token: tokenDoLogin, id: userData.id });
+      // A sessão do navegador foi trocada por outra aba enquanto a
+      // confirmação andava, ou a API confirmou outra conta: a sessão deste
+      // login não é ativada. (Token que sumiu — a outra aba saiu — é tratado
+      // pela conferência, no fim.)
+      const noNavegador = localStorage.getItem('token');
+      const fixada = sessaoFixadaDaAba();
+      if (
+        (typeof loginData.user_id === 'number' && userData.id !== loginData.user_id) ||
+        (noNavegador !== null && noNavegador !== fixada?.token)
+      ) {
+        throw new SessaoAlteradaError();
       }
+      // O id que vale para a guarda é o que o `/auth/me` confirmou.
+      if (fixada) fixarSessaoDaAba({ token: fixada.token, id: userData.id });
 
       await aplicarMe(userData, valeAinda);
     } catch (err: any) {
       if (!valeAinda()) return;
-      // Tratamento de erros HTTP
-      if (err.response) {
+      if (err instanceof SessaoAlteradaError) {
+        // Outra aba ficou com a sessão do navegador durante este login. A aba
+        // fica sem sessão, na tela de login; a da outra aba fica onde está, e
+        // o `finally` desfaz a sessão provisória e marca que o token do
+        // navegador não é desta aba (D6).
+        setToken(null);
+        setError(
+          'A sessão deste navegador mudou em outra aba durante o seu login. Entre de novo para usar esta conta.'
+        );
+      } else if (err.response) {
+        // Tratamento de erros HTTP
         if (err.response.status === 401) {
           setError('Usuário ou senha incorretos.');
         } else if (err.response.status === 403) {
@@ -499,10 +529,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (valeAinda()) {
         entrando.current = false;
         setLoading(false);
-        // A entrada não deu em sessão (senha errada, rede) e o navegador
-        // guarda o token de outra aba: continua não sendo desta (D6).
-        if (idExibido.current === null && localStorage.getItem('token') !== null) {
-          recusarSessaoAlheia();
+        if (idExibido.current === null) {
+          // A entrada não deu em sessão (senha errada, rede, sessão trocada
+          // por outra aba): a sessão provisória do login é desfeita, e o
+          // token que o navegador guardar continua não sendo desta aba (D6).
+          fixarSessaoDaAba(null);
+          if (localStorage.getItem('token') !== null) recusarSessaoAlheia();
+        } else {
+          // Entrou. O aviso de `storage` é ignorado enquanto o login anda;
+          // se a sessão do navegador mudou nesse meio-tempo (na última etapa,
+          // depois da confirmação), a conferência decide agora, sem esperar a
+          // próxima requisição. Sem mudança, ela não pede nada.
+          void conferirSessao();
         }
       }
     }
