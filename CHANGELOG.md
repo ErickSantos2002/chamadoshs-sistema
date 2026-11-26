@@ -45,8 +45,10 @@ pela da publicação.
 ### Changed
 
 - Nenhuma funcionalidade nova e nenhuma mudança intencional de comportamento
-  ou no uso da API. O código do sistema é o mesmo da 1.11.2; mudam só
-  `package.json` e `package-lock.json`.
+  ou no uso da API. As etapas A e B atualizaram exclusivamente dependências
+  e seus manifestos (`package.json` e `package-lock.json`), sem modificar o
+  código funcional da aplicação. A preparação da versão 1.11.3 também
+  atualizou o versionamento e adicionou uma entrada no aviso de novidades.
 - O arquivo principal de JavaScript cresce de 380,59 kB para 391,42 kB
   (de 125,97 kB para 129,59 kB com gzip), quase tudo por conta do Axios novo.
 
@@ -63,9 +65,20 @@ pela da publicação.
 - A imagem continua sendo construída com Node 20 e servida por nginx 1.25,
   os dois fora de suporte. A troca fica para etapa própria (SEC-DEP-01,
   etapa C).
-- Validado localmente com Node 24: suíte completa, build e regressão da
-  AUTH-01 em Chromium, em laboratório. O build da imagem Docker com estas
-  dependências não foi ensaiado antes da publicação.
+- **Cobertura da validação**, toda local, com Node 24:
+  - A integração das etapas A e B passou em 1.952 de 1.952 testes
+    automatizados, numa única execução, com `.env` fictício de endereço não
+    local. A versão 1.11.3 preparada passou na mesma suíte completa.
+  - A regressão da AUTH-01 em Chromium, em laboratório, foi executada com o
+    build da etapa A. O build combinado das etapas A e B foi comparado com
+    ele e gerou os mesmos arquivos; não houve nova rodada em navegador.
+  - Renovação de token com expiração curta e os viewports de 390 e 800 px
+    não foram repetidos em navegador.
+  - Não houve homologação em produção.
+- **Ensaio Docker.** Até a preparação desta release, não foi executado ensaio
+  Docker com o conjunto A+B. O ambiente de build permanece baseado em Node 20
+  e nginx 1.25. A validação do build Docker continua pendente de decisão
+  pré-implantação.
 
 ---
 
