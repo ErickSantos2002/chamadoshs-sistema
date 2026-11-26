@@ -30,6 +30,17 @@ export interface VersaoNovidade {
 
 export const NOVIDADES: VersaoNovidade[] = [
   {
+    versao: '1.11.3',
+    data: '2026-11-26',
+    itens: [
+      {
+        tipo: 'melhoria',
+        texto:
+          'Atualização de manutenção: melhoramos componentes internos do ChamadosHS para reforçar a segurança e a estabilidade do sistema. Não há mudanças nas telas nem na forma de abrir e acompanhar chamados.',
+      },
+    ],
+  },
+  {
     versao: '1.11.2',
     data: '2026-11-25',
     itens: [

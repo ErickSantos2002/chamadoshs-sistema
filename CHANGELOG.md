@@ -13,6 +13,62 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
+## [1.11.3] — não publicada
+
+Por Rickelme David. Branches `chore/sec-dep-01a-dependencias-navegador` e
+`chore/sec-dep-01b-build-dependencies` (segurança das dependências,
+SEC-DEP-01, etapas A e B). Preparada em 26/11/2026; a data do aviso de
+novidades (`src/data/novidades.ts`) é a da preparação, e deve ser trocada
+pela da publicação.
+
+### ⚠️ Requer ação no deploy
+
+- Rebuild da imagem do front. Só o front muda: sem API nova, sem variável,
+  sem migration. O `dockerfile` e o `nginx.conf` são os mesmos da 1.11.2.
+
+### Security
+
+- **Axios 1.19.0 → 1.21.1**, com `follow-redirects` 1.16.3. Fecha os alertas
+  de severidade alta do `npm audit` nas dependências que vão para o
+  navegador.
+- **React Router 6.30.4 → 6.30.6** (`react-router` e `react-router-dom`),
+  ainda na linha 6.
+- **Vite 7.3.6 → 7.3.8 e dependências de build**: `postcss` 8.5.33,
+  `undici` 8.13.1, `nanoid` 3.3.20, `source-map-js` 1.2.4, `browserslist`
+  4.29.6, `postcss-selector-parser` 6.1.6 e `sucrase` 3.35.1. `glob`,
+  `minimatch` e `brace-expansion` saem da árvore, com outros 39 pacotes que
+  só existiam por causa deles. Essas dependências são usadas para construir e
+  testar; não vão para o navegador.
+- O `npm audit` passa de 17 alertas (2 críticos, 8 altos, 7 moderados) para
+  5 (2 críticos, nenhum alto, 3 moderados).
+
+### Changed
+
+- Nenhuma funcionalidade nova e nenhuma mudança intencional de comportamento
+  ou no uso da API. O código do sistema é o mesmo da 1.11.2; mudam só
+  `package.json` e `package-lock.json`.
+- O arquivo principal de JavaScript cresce de 380,59 kB para 391,42 kB
+  (de 125,97 kB para 129,59 kB com gzip), quase tudo por conta do Axios novo.
+
+### Limites conhecidos
+
+- **Cinco alertas do `npm audit` continuam abertos**, sem correção nesta
+  entrega:
+  - `vitest` e `tinypool` (críticos) e `@vitest/mocker` (moderado).
+    São dependências de teste e não vão para o navegador. A correção exige
+    migração de versão maior do Vitest, a tratar em etapa própria.
+  - `react-router` e `react-router-dom` (moderados): dois avisos corrigidos
+    só na linha 7. Não há correção na linha 6; a migração é decisão
+    separada.
+- A imagem continua sendo construída com Node 20 e servida por nginx 1.25,
+  os dois fora de suporte. A troca fica para etapa própria (SEC-DEP-01,
+  etapa C).
+- Validado localmente com Node 24: suíte completa, build e regressão da
+  AUTH-01 em Chromium, em laboratório. O build da imagem Docker com estas
+  dependências não foi ensaiado antes da publicação.
+
+---
+
 ## [1.11.2] — 2026-11-25
 
 Por Rickelme David. Branch `fix/auth-01-sincronizacao-sessao` (sessão entre
