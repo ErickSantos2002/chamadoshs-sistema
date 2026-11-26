@@ -13,13 +13,11 @@ informação se perde entre quem escreve o código e quem sobe.
 
 ---
 
-## [1.11.3] — não publicada
+## [1.11.3] — 2026-11-26
 
 Por Rickelme David. Branches `chore/sec-dep-01a-dependencias-navegador` e
 `chore/sec-dep-01b-build-dependencies` (segurança das dependências,
-SEC-DEP-01, etapas A e B). Preparada em 26/11/2026; a data do aviso de
-novidades (`src/data/novidades.ts`) é a da preparação, e deve ser trocada
-pela da publicação.
+SEC-DEP-01, etapas A e B). Preparada e publicada em 26/11/2026.
 
 ### ⚠️ Requer ação no deploy
 
@@ -74,11 +72,11 @@ pela da publicação.
     ele e gerou os mesmos arquivos; não houve nova rodada em navegador.
   - Renovação de token com expiração curta e os viewports de 390 e 800 px
     não foram repetidos em navegador.
-  - Não houve homologação em produção.
+  - Antes da publicação, não houve homologação em produção.
 - **Ensaio Docker.** Até a preparação desta release, não foi executado ensaio
   Docker com o conjunto A+B. O ambiente de build permanece baseado em Node 20
-  e nginx 1.25. A validação do build Docker continua pendente de decisão
-  pré-implantação.
+  e nginx 1.25. O primeiro build Docker com esse conjunto foi o da própria
+  publicação.
 
 ---
 
