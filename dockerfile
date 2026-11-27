@@ -30,8 +30,11 @@ ENV VITE_API_URL=${VITE_API_URL}
 # Build do projeto Vite (gera /dist)
 RUN npm run build
 
-# Etapa final: Nginx para servir os arquivos (linha estável, versão e digest fixos)
-FROM nginx:1.30.8-alpine@sha256:8eb04fe3b385090e9aa02961f77398ad09b6bf33ab07f6669a5bb7acce22c0d3
+# Etapa final: Nginx para servir os arquivos (linha estável, versão e digest fixos).
+# Variante slim: só o nginx, sem os módulos opcionais (xslt, njs, image-filter,
+# geoip, acme) que este projeto não carrega. Menos bibliotecas na imagem, menos
+# superfície de ataque. A tag sozinha muda sem aviso; o digest não.
+FROM nginx:1.30.8-alpine-slim@sha256:e9eaa7298465eab06d618c51556fdcf3fb5061f9ff40bd28ee898fbd7ee7f900
 
 # Copia o build final da etapa anterior
 COPY --from=builder /app/dist /usr/share/nginx/html
