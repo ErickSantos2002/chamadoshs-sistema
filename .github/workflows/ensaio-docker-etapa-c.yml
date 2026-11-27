@@ -1,0 +1,137 @@
+# Ensaio isolado da imagem Docker da Etapa C (SEC-DEP-01).
+#
+# Existe só na branch de ensaio e só roda em push nela. Não usa secrets, não
+# publica imagem, não faz deploy e não fala com produção: o build recebe um
+# endereço de API fictício, que não resolve.
+#
+# Job verde NÃO é aprovação da Etapa C. A varredura de vulnerabilidades termina
+# sempre com código zero e precisa de avaliação humana.
+name: ensaio-docker-etapa-c
+
+on:
+  push:
+    branches:
+      - ensaio/sec-dep-01c-docker
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ensaio-docker-etapa-c
+  cancel-in-progress: true
+
+env:
+  TRIVY: aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+  API_FICTICIA: https://api.exemplo.invalid
+
+jobs:
+  ensaio:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Identificação
+        run: |
+          set -euo pipefail
+          echo "commit $(git rev-parse HEAD)"
+          echo "runner $(uname -m)"
+          docker version --format 'docker {{.Server.Version}}'
+          grep -E '^FROM ' dockerfile
+
+      - name: Build (Node 24, npm ci, Vite)
+        run: |
+          set -euo pipefail
+          docker build --pull -f dockerfile --target builder \
+            --build-arg VITE_API_URL="$API_FICTICIA" -t ensaio-c:builder .
+          docker build -f dockerfile \
+            --build-arg VITE_API_URL="$API_FICTICIA" -t ensaio-c:final .
+
+      - name: Versões, arquitetura e binários musl
+        run: |
+          set -euo pipefail
+          NODE=$(docker run --rm ensaio-c:builder node -v)
+          NPM=$(docker run --rm ensaio-c:builder npm -v)
+          NGINX=$(docker run --rm ensaio-c:final nginx -v 2>&1)
+          echo "node $NODE"
+          echo "npm $NPM"
+          echo "$NGINX"
+          test "$NODE" = "v24.22.3"
+          case "$NPM" in 11.*) ;; *) echo "npm fora da linha 11"; exit 1 ;; esac
+          case "$NGINX" in *nginx/1.30.8*) ;; *) echo "nginx diferente de 1.30.8"; exit 1 ;; esac
+          docker run --rm ensaio-c:builder sh -c \
+            'test -d node_modules/@rollup/rollup-linux-x64-musl && test -d node_modules/@esbuild/linux-x64 && test -f dist/index.html'
+          docker image inspect ensaio-c:final --format 'final {{.Architecture}} {{.Id}} {{.Size}}'
+          docker image inspect ensaio-c:builder --format 'builder {{.Architecture}} {{.Id}} {{.Size}}'
+          docker image ls --digests | grep -E 'node|nginx' || true
+
+      - name: Conteúdo da imagem final
+        run: |
+          set -euo pipefail
+          # A versão e o endereço fictício têm de estar no que o nginx serve;
+          # o endereço da API de produção não pode ter entrado no build.
+          docker run --rm ensaio-c:final sh -c \
+            'cd /usr/share/nginx/html && ls assets | wc -l && grep -rlq "1\.11\.3" assets && grep -rlq "api\.exemplo\.invalid" assets && ! grep -rlq "chamadoshsapi" assets'
+
+      - name: Container, HTTP, SPA e cache
+        run: |
+          set -euo pipefail
+          B=http://127.0.0.1:8080
+          docker run -d --name ensaio -p 127.0.0.1:8080:80 ensaio-c:final
+          for i in $(seq 1 15); do
+            if curl -fsS -o /dev/null "$B/"; then break; fi
+            sleep 1
+          done
+          cod() { curl -s -o /dev/null -w '%{http_code}' "$1"; }
+          cab() { curl -sI "$1" | tr -d '\r' | tr 'A-Z' 'a-z'; }
+          espera() { if [ "$1" != "$2" ]; then echo "FALHA: $3 (esperado $2, veio $1)"; exit 1; fi; echo "ok: $3 $1"; }
+
+          espera "$(cod "$B/")" 200 "raiz"
+          espera "$(cod "$B/chamados")" 200 "rota profunda /chamados"
+          espera "$(cod "$B/chamados/1")" 200 "rota profunda /chamados/1"
+
+          CAB_RAIZ=$(cab "$B/")
+          CAB_ROTA=$(cab "$B/chamados")
+          echo "$CAB_RAIZ" | grep -E '^(server|cache-control):'
+          case "$CAB_RAIZ" in *"cache-control: no-cache"*) echo "ok: cache da raiz" ;; *) echo "FALHA: cache da raiz"; exit 1 ;; esac
+          case "$CAB_ROTA" in *"cache-control: no-cache"*) echo "ok: cache da rota" ;; *) echo "FALHA: cache da rota"; exit 1 ;; esac
+
+          curl -s -o index.out "$B/"
+          JS=$(grep -m1 -oE 'assets/index-[A-Za-z0-9_-]+\.js' index.out)
+          CSS=$(grep -m1 -oE 'assets/index-[A-Za-z0-9_-]+\.css' index.out)
+          test -n "$JS"
+          test -n "$CSS"
+          curl -fsS -o /dev/null -w "$JS %{http_code} %{size_download}\n" "$B/$JS"
+          curl -fsS -o /dev/null -w "$CSS %{http_code} %{size_download}\n" "$B/$CSS"
+          CAB_JS=$(cab "$B/$JS")
+          case "$CAB_JS" in *"max-age=31536000"*) echo "ok: cache dos assets" ;; *) echo "FALHA: cache dos assets"; exit 1 ;; esac
+
+          # Os logs são conferidos antes do pedido de arquivo inexistente,
+          # que por si só grava uma linha de erro no nginx.
+          docker logs ensaio > nginx.log 2>&1
+          tail -40 nginx.log
+          if grep -E '\[(emerg|alert|crit|error)\]' nginx.log; then echo "FALHA: erro nos logs do nginx"; exit 1; fi
+          echo "ok: logs sem erro"
+
+          espera "$(cod "$B/assets/nao-existe.js")" 404 "asset inexistente"
+
+      - name: Varredura das imagens (não decide o resultado)
+        run: |
+          set -euo pipefail
+          docker save ensaio-c:final -o final.tar
+          docker save ensaio-c:builder -o builder.tar
+          for alvo in final builder; do
+            echo "### Imagem: $alvo"
+            docker run --rm -v "$PWD/$alvo.tar:/img.tar:ro" "$TRIVY" image \
+              --input /img.tar --scanners vuln --severity MEDIUM,HIGH,CRITICAL \
+              --exit-code 0 --format table
+          done
+
+      - name: Encerramento
+        if: always()
+        run: |
+          docker rm -f ensaio || true
+          echo "Execução técnica encerrada."
+          echo "A varredura exige avaliação humana; este resultado NÃO é aprovação da Etapa C."
