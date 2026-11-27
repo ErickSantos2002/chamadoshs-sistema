@@ -75,6 +75,26 @@ jobs:
           docker run --rm ensaio-c:final sh -c \
             'cd /usr/share/nginx/html && ls assets | wc -l && grep -rlq "1\.11\.3" assets && grep -rlq "api\.exemplo\.invalid" assets && ! grep -rlq "chamadoshsapi" assets'
 
+      - name: Pacotes Alpine da imagem final
+        run: |
+          set -euo pipefail
+          # Informativo: versões do que estiver instalado. Não decide nada.
+          docker run --rm ensaio-c:final sh -c \
+            'echo "alpine $(cat /etc/alpine-release)"; apk info -v 2>/dev/null | grep -E "^(nginx|zlib|libxml2|libexpat)-[0-9]" || true'
+
+          # Obrigatório. "apk info -e" termina em zero só se o pacote está
+          # instalado. O nginx entra como controle: se a consulta em si não
+          # funcionar, ele falha, e a ausência dos outros não passa à toa.
+          instalado() { docker run --rm ensaio-c:final apk info -e "$1" > /dev/null 2>&1; }
+          if ! instalado nginx; then echo "FALHA: consulta de pacotes não funcionou (nginx não encontrado)"; exit 1; fi
+          echo "ok: nginx instalado"
+          if ! instalado zlib; then echo "FALHA: zlib deveria estar instalada"; exit 1; fi
+          echo "ok: zlib instalada"
+          if instalado libxml2; then echo "FALHA: libxml2 está instalada"; exit 1; fi
+          echo "ok: libxml2 ausente"
+          if instalado libexpat; then echo "FALHA: libexpat está instalada"; exit 1; fi
+          echo "ok: libexpat ausente"
+
       - name: Container, HTTP, SPA e cache
         run: |
           set -euo pipefail
